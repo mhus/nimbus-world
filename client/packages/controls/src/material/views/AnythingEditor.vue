@@ -342,7 +342,7 @@ const handleDelete = async (entity: WAnything) => {
   }
 
   try {
-    await anythingService.delete(entity.worldId!, entity.collection, entity.name);
+    await anythingService.delete(entity.worldId!, entity.collection, entity.name!);
     handleSearch();
   } catch (e: any) {
     error.value = e.message || 'Failed to delete entity';

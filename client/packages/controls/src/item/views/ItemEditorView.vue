@@ -492,7 +492,14 @@ const toggleWearableSlot = (slot: string) => {
   } else {
     slots.push(slot);
   }
-  localItem.value.parameters.wearableSlots = slots.length > 0 ? slots : undefined;
+  // Item.parameters is Record<string, string> in the contract, but wearableSlots is
+  // handled as an array everywhere in this editor (Array.isArray/splice/spread).
+  // Kept as-is; unifying the parameter value type belongs with the contract task.
+  if (slots.length > 0) {
+    (localItem.value.parameters as Record<string, unknown>).wearableSlots = slots;
+  } else {
+    delete localItem.value.parameters.wearableSlots;
+  }
 };
 
 async function loadItem() {

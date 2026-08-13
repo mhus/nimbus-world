@@ -18,6 +18,8 @@ interface Flat {
   worldId: string;
   layerDataId: string;
   flatId: string;
+  title: string | null;
+  description: string | null;
   sizeX: number;
   sizeZ: number;
   mountX: number;

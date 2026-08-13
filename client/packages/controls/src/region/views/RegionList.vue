@@ -150,6 +150,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { regionService, type Region } from '../services/RegionService';
 import JobWatch from '@/components/JobWatch.vue';
+import type { Job } from '@/composables/useJobs';
 
 const emit = defineEmits<{
   select: [id: string];
@@ -269,9 +270,9 @@ const handleJobCompleted = async () => {
   await loadRegions();
 };
 
-const handleJobFailed = async (errorMessage: string) => {
-  console.error('[RegionList] Collection cleanup job failed:', errorMessage);
-  error.value = `Collection cleanup failed: ${errorMessage}`;
+const handleJobFailed = async (job: Job) => {
+  console.error('[RegionList] Collection cleanup job failed:', job);
+  error.value = `Collection cleanup failed: ${job.errorMessage ?? 'unknown error'}`;
   handleJobWatchClose();
   await loadRegions();
 };

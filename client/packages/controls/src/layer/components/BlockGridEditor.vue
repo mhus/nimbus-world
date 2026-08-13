@@ -591,7 +591,7 @@ async function loadBlockCoordinates() {
     } else {
       // For model: use relative coordinates directly (without adding mountPoint)
       // This shows the block coordinates as stored in WLayerModel.content
-      allBlockCoordinates.value = (data.blocks || []).map(block => ({
+      allBlockCoordinates.value = (data.blocks || []).map((block: { x: number; y: number; z: number; color?: string }) => ({
         x: block.x,
         y: block.y,
         z: block.z,

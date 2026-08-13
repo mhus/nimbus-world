@@ -729,7 +729,7 @@ const handleMarkDirty = async () => {
   markingDirty.value = true;
 
   try {
-    const response = await apiService.post(
+    const response = await apiService.post<{ chunksMarked: number }>(
       `/control/worlds/${props.worldId}/hexgrid/${formData.value.position.q}/${formData.value.position.r}/dirty`,
       {}
     );

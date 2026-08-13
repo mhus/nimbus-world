@@ -7,6 +7,8 @@ import type { WItem } from '@nimbus/shared/generated/entities/WItem';
 import { apiService } from '../../services/ApiService';
 
 // Use WItem as primary type (includes metadata)
+import type { Item } from '@nimbus/shared';
+
 type ItemData = WItem;
 
 export interface ItemSearchResult {
@@ -48,7 +50,7 @@ export class ItemApiService {
   /**
    * Create a new item
    */
-  static async createItem(item: ItemData, worldId: string, server?: Record<string, string>): Promise<void> {
+  static async createItem(item: Item, worldId: string, server?: Record<string, string>): Promise<void> {
     const url = `/control/worlds/${worldId}/items`;
 
     const body: any = { ...item };
@@ -63,7 +65,7 @@ export class ItemApiService {
    */
   static async updateItem(
     itemId: string,
-    item: ItemData,
+    item: Item,
     worldId: string,
     server?: Record<string, string>,
     trading?: {
