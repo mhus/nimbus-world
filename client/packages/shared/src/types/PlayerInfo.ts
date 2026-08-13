@@ -92,7 +92,7 @@ export interface PlayerInfo {
   thirdPersonModelId?: string;
 
   /** Modifiers for third-person model appearance (e.g., colors, accessories) */
-  thirdPersonModelModifiers?: Map<string, string>;
+  thirdPersonModelModifiers?: Record<string, string>; // javaType: Map<String,String>
 
   /** Path to the player's portrait image (optional) */
   portraitPath?: string;

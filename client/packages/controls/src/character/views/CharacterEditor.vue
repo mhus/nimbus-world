@@ -871,8 +871,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { DEFAULT_STATE_VALUES } from '@nimbus/shared';
 import { useRegion } from '@/composables/useRegion';
 import { characterService, type RCharacter, type PlayerInfo } from '../services/CharacterService';
+import type { PlayerBackpack } from '@nimbus/shared';
 import { userService, type RUser } from '../../user/services/UserService';
 import EntityModelSelectorDialog from '@components/EntityModelSelectorDialog.vue';
 import ItemSelectorDialog from '@components/ItemSelectorDialog.vue';
@@ -1054,9 +1056,11 @@ const handleSave = async () => {
           ? thirdPersonModelModifiers.value
           : undefined,
         stateValues: stateValues.value,
-      };
+      } as PlayerInfo;
 
       // Update backpack with current items (filter out count=0 and empty strings)
+      // Object.fromEntries widens the enum-keyed Records to plain string keys, and
+      // the UI only sends the slots it actually has - the server merges the rest.
       const updatedBackpack = {
         ...character.value.backpack,
         itemIds: Object.fromEntries(
@@ -1065,7 +1069,7 @@ const handleSave = async () => {
         wearingItemIds: Object.fromEntries(
           Object.entries(wearingItems.value).filter(([_, itemId]) => itemId && itemId.trim() !== '')
         ),
-      };
+      } as PlayerBackpack;
 
       // Update existing character with full DTO
       const updatedChar = await characterService.updateCharacter(
@@ -1341,9 +1345,9 @@ const handleSaveShortcuts = () => {
         ...character.value,
         publicData: {
           playerId: character.value.userId,
-          title: character.value.publicData?.title || character.value.name,
+          title: character.value.name,
           shortcuts: parsed,
-          stateValues: character.value.publicData?.stateValues || {},
+          stateValues: DEFAULT_STATE_VALUES,
         },
       };
     } else {
@@ -1383,9 +1387,9 @@ const handleSaveEditorShortcuts = () => {
         ...character.value,
         publicData: {
           playerId: character.value.userId,
-          title: character.value.publicData?.title || character.value.name,
+          title: character.value.name,
           editorShortcuts: parsed,
-          stateValues: character.value.publicData?.stateValues || {},
+          stateValues: DEFAULT_STATE_VALUES,
         },
       };
     } else {
