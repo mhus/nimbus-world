@@ -363,7 +363,7 @@ function openSlotPicker(idx: number) {
   showPicker.value = true;
 }
 
-function selectItem(itemId: string, maxAmount: number) {
+function selectItem(itemId: string, _maxAmount: number) {
   const slot = materialSlots.value[pickerSlotIdx.value];
   slot.itemId = itemId;
   slot.amount = 1;

@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import type { ScriptActionDefinition, ScrawlScript } from '@nimbus/shared';
 import ScrawlAppEmbedded from '../../scrawl/ScrawlAppEmbedded.vue';
 

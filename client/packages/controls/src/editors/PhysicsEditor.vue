@@ -179,7 +179,6 @@
 import { ref, watch, computed } from 'vue';
 import type { PhysicsModifier } from '@nimbus/shared';
 import { Direction, DirectionHelper } from '@nimbus/shared';
-import CollapsibleSection from '@components/CollapsibleSection.vue';
 import TriStateCheckboxSimple from '@components/TriStateCheckboxSimple.vue';
 
 interface Props {

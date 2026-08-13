@@ -488,7 +488,7 @@
 
           <div class="space-y-2">
             <div
-              v-for="(modifier, status) in blockData.modifiers"
+              v-for="(_modifier, status) in blockData.modifiers"
               :key="status"
               class="flex items-center gap-2 p-2 bg-base-200 rounded"
             >
@@ -682,7 +682,6 @@ import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 import { saveBlockAsBlockType, getBlockTypeEditorUrl as getBlockTypeEditorUrlHelper } from './BlockInstanceEditor_SaveAsBlockType';
 import { blockService } from '@/services/BlockService';
 import { apiService } from '@/services/ApiService';
-import type { BlockOriginDto } from '@nimbus/shared';
 
 // Parse URL parameters
 function parseBlockCoordinates(): { x: number; y: number; z: number } | null {

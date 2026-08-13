@@ -540,7 +540,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityService, type EntityData, type EntityType, type SchedulePhase } from '../services/EntityService';
 import { entityModelService } from '../../entitymodel/services/EntityModelService';

@@ -421,7 +421,7 @@
 
           <div class="space-y-3">
             <div
-              v-for="(value, key) in modelData.modelModifierMapping"
+              v-for="(_value, key) in modelData.modelModifierMapping"
               :key="key"
               class="border border-base-300 rounded-lg p-2"
             >

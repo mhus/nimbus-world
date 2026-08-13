@@ -1633,7 +1633,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRegion } from '@/composables/useRegion';
 import { apiService } from '@/services/ApiService';
-import { worldServiceFrontend, type World, type WorldInfo } from '../services/WorldServiceFrontend';
+import { worldServiceFrontend, type World } from '../services/WorldServiceFrontend';
 import JobWatch from '@/components/JobWatch.vue';
 import { useJobs } from '@/composables/useJobs';
 

@@ -287,7 +287,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import type { WChest, ChestType } from '@shared/generated/entities/WChest';
-import type { ItemRef } from '@shared/generated/types/ItemRef';
+import type { ItemRef } from '@nimbus/shared';
 import type { ItemSearchResult } from '@/composables/useItems';
 import { useWorld } from '@/composables/useWorld';
 import { useChests } from '@/composables/useChests';

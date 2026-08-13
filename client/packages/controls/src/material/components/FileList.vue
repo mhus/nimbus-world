@@ -250,7 +250,7 @@ const handleFileDoubleClick = (asset: Asset) => {
 /**
  * Handle context menu (right-click)
  */
-const handleContextMenu = (asset: Asset, event: MouseEvent) => {
+const handleContextMenu = (asset: Asset, _event: MouseEvent) => {
   // Right-click: open rename dialog
   emit('assetRename', asset);
 };

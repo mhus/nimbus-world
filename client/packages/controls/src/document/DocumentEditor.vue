@@ -337,7 +337,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { useDocuments } from '@/composables/useDocuments';
 import { useJobs, type Job, type JobCreateRequest } from '@/composables/useJobs';
@@ -417,7 +417,7 @@ const handleLoadDocuments = async () => {
 };
 
 // Auto-load documents when worldId becomes available
-watch(currentWorldId, (newWorldId, oldWorldId) => {
+watch(currentWorldId, (_newWorldId, oldWorldId) => {
   logger.info('DocumentEditor: currentWorldId changed', {
     oldValue: oldWorldId,
     newValue: currentWorldId.value,

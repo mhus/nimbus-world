@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref } from 'vue';
 import type { BlockModifier } from '@nimbus/shared';
 import CollapsibleSection from './CollapsibleSection.vue';
 import VisibilityEditor from '@editors/VisibilityEditor.vue';

@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import type { Asset } from '../services/AssetService';
 import { useAssets } from '../composables/useAssets';
 import SearchInput from './SearchInput.vue';

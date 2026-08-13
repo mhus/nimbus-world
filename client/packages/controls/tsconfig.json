@@ -25,7 +25,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@nimbus/shared": ["../shared/src/index.ts"],
-      "@nimbus/shared/*": ["../shared/src/*"]
+      "@nimbus/shared/*": ["../shared/src/*"],
+      "@shared": ["../shared/src/index.ts"],
+      "@shared/*": ["../shared/src/*"]
     }
   },
   "include": ["src/**/*", "src/**/*.vue"],

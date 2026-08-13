@@ -1,2 +1,9 @@
 packages:
   - 'packages/*'
+
+# pnpm 10+ requires build scripts to be approved explicitly. Both packages need
+# theirs: esbuild and unrs-resolver download their native binary in postinstall,
+# without which vite cannot build. pnpm 9 (used by CI) ignores this block.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

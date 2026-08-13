@@ -181,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { apiService } from '@/services/ApiService';
 import ProgressDialog from './ProgressDialog.vue';

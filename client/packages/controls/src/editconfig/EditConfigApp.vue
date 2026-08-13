@@ -814,7 +814,7 @@ watch(() => editState.value.selectedModelId, (newModelId) => {
 });
 
 // Watch selectedLayer and load groups for GROUND layers from WLayer
-watch(() => editState.value.selectedLayer, (newLayer) => {
+watch(() => editState.value.selectedLayer, (_newLayer) => {
   const layerInfo = selectedLayerInfo.value;
 
   // If it's a GROUND layer, load groups from WLayer
@@ -1014,7 +1014,7 @@ function getTextureUrl(icon: string): string {
 }
 
 // Handle image load error (fallback to placeholder)
-function handleImageError(event: Event, index: number) {
+function handleImageError(event: Event, _index: number) {
   const target = event.target as HTMLImageElement;
   target.style.display = 'none';
 }

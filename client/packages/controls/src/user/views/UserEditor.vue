@@ -623,7 +623,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { apiService } from '@/services/ApiService';
-import { userService, type RUser, type Settings, SectorRoles } from '../services/UserService';
+import { userService, type RUser, SectorRoles } from '../services/UserService';
 import { useRegion } from '@/composables/useRegion';
 import { ClientType } from '@nimbus/shared/network/MessageTypes';
 

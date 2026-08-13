@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { ApiService } from '@/services/ApiService';
 import { type VoiceInfo } from '@/utils/VoiceSpeaker';
 import SpeechPlayer from '@/components/SpeechPlayer.vue';

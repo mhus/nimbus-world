@@ -165,7 +165,7 @@
                   </label>
 
                   <div
-                    v-for="(value, key) in customFields"
+                    v-for="(_value, key) in customFields"
                     :key="key"
                     class="flex gap-2 items-start"
                   >
@@ -405,7 +405,7 @@ const toggleAudioPlayback = async () => {
         isPlaying.value = false;
       });
 
-      audioElement.value.addEventListener('error', (e) => {
+      audioElement.value.addEventListener('error', (_e) => {
         audioError.value = 'Fehler beim Laden der Audio-Datei';
         isPlaying.value = false;
         audioLoading.value = false;

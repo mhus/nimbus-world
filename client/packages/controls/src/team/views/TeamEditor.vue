@@ -135,7 +135,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(value, key) in editParameters" :key="key">
+              <tr v-for="(_value, key) in editParameters" :key="key">
                 <td class="font-mono text-sm">{{ key }}</td>
                 <td>
                   <input v-model="editParameters[key]" type="text" class="input input-bordered input-xs w-full" />

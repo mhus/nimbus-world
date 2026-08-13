@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import RegionList from './views/RegionList.vue';
 import RegionEditor from './views/RegionEditor.vue';
 

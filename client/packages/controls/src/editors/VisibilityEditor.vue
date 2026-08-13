@@ -712,8 +712,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import type { VisibilityModifier, TextureDefinition } from '@nimbus/shared';
-import { Shape, ShapeNames, TextureKey, TextureKeyNames, BlockEffect } from '@nimbus/shared';
+import type { VisibilityModifier } from '@nimbus/shared';
+import { ShapeNames, TextureKeyNames } from '@nimbus/shared';
 import AssetPickerDialog from '@components/AssetPickerDialog.vue';
 import CollapsibleSection from '@components/CollapsibleSection.vue';
 import OffsetsEditor from './OffsetsEditor.vue';

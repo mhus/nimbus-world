@@ -251,7 +251,7 @@
         <!-- Parameters -->
         <div class="divider">Parameters (Generator Configuration)</div>
         <div class="space-y-2">
-          <div v-for="(value, key) in formData.parameters" :key="key" class="flex gap-2">
+          <div v-for="(_value, key) in formData.parameters" :key="key" class="flex gap-2">
             <input
               :value="key"
               type="text"

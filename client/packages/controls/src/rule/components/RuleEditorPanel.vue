@@ -323,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import type { LogicRuleDto, LogicEffect, CreateLogicRuleRequest, UpdateLogicRuleRequest } from '@/services/LogicRuleService';
 import { logicRuleService } from '@/services/LogicRuleService';
 import ErrorAlert from '@components/ErrorAlert.vue';

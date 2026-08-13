@@ -803,7 +803,7 @@ function handleCanvasClick(event: MouseEvent) {
 }
 
 // Handle canvas hover (optional - for highlighting)
-function handleCanvasHover(event: MouseEvent) {
+function handleCanvasHover(_event: MouseEvent) {
   // Could implement hover highlighting here
   // Note: If implementing, use the same scaling logic as handleCanvasClick:
   // const canvas = canvasRef.value;

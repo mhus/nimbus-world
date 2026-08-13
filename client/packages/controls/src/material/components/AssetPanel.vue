@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import FolderTree from '@material/components/FolderTree.vue';
 import FileList from '@material/components/FileList.vue';

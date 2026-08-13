@@ -117,7 +117,7 @@
 import { ref, computed } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import type { WChest } from '@shared/generated/entities/WChest';
-import type { ItemRef } from '@shared/generated/types/ItemRef';
+import type { ItemRef } from '@nimbus/shared';
 import type { ItemSearchResult } from '@/composables/useItems';
 import { chestService } from '@/services/ChestService';
 import { getLogger } from '@nimbus/shared';

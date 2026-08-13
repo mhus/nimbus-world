@@ -64,7 +64,7 @@
         <!-- Parameters -->
         <div class="divider">Parameters</div>
         <div class="space-y-2 mb-4">
-          <div v-for="(value, key) in localArea.parameters" :key="key" class="flex gap-2">
+          <div v-for="(_value, key) in localArea.parameters" :key="key" class="flex gap-2">
             <input
               :value="key"
               type="text"

@@ -485,7 +485,6 @@ import ErrorAlert from '@components/ErrorAlert.vue';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
 import JobWatch from '@components/JobWatch.vue';
 import ModelList from '@layer/components/ModelList.vue';
-import ModelEditorPanel from '@layer/components/ModelEditorPanel.vue';
 import { useLayers } from '@/composables/useLayers';
 import { useJobs } from '@/composables/useJobs';
 import { layerModelService } from '@/services/LayerModelService';

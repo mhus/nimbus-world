@@ -820,7 +820,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import type { LayerModelDto, CreateLayerModelRequest, UpdateLayerModelRequest, WorldInfo } from '@nimbus/shared';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import { layerModelService } from '@/services/LayerModelService';

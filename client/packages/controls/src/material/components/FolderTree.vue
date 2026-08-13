@@ -35,8 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useFolders } from '@/composables/useFolders';
+import { ref, computed, watch } from 'vue';
 import FolderTreeNode from '@material/components/FolderTreeNode.vue';
 
 const props = withDefaults(defineProps<{
