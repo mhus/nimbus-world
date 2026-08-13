@@ -262,14 +262,18 @@ const handleSave = async () => {
 
     if (isEditMode.value && props.entity) {
       // Update existing entity
-      await anythingService.update(props.entity.id, {
+      // PUT /control/anything/{id} resolves via findById, so the update needs the
+      // MongoDB id. It is marked @TypeScript(ignore = true) on the entity and thus
+      // missing from WAnything, but Jackson still sends it.
+      const entityId = (props.entity as WAnything & { id?: string }).id;
+      await anythingService.update(entityId!, {
         title: formData.value.title || undefined,
         description: formData.value.description || undefined,
         type: formData.value.type || undefined,
         data: data || undefined,
         enabled: formData.value.enabled,
       });
-      logger.info('Entity updated', { id: props.entity.id });
+      logger.info('Entity updated', { id: entityId });
     } else {
       // Create new entity
       await anythingService.create({
@@ -311,7 +315,7 @@ const initializeForm = () => {
       try {
         dataJson.value = JSON.stringify(props.entity.data, null, 2);
       } catch (e) {
-        logger.warn('Failed to serialize entity data', {}, e);
+        logger.warn('Failed to serialize entity data', { error: e });
         dataJson.value = '{}';
       }
     } else {

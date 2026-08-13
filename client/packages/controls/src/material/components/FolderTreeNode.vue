@@ -50,10 +50,17 @@
 import { ref, computed } from 'vue';
 import type { FolderInfo } from '@shared/generated/entities/FolderInfo';
 
+/**
+ * A folder as shown in the tree. FolderTree synthesizes pseudo folders for
+ * intermediate path segments that have no asset of their own, so isPseudo is a
+ * UI concept on top of the contract type.
+ */
+type FolderNode = FolderInfo & { isPseudo?: boolean };
+
 const props = withDefaults(defineProps<{
-  folder: FolderInfo;
+  folder: FolderNode;
   currentPath: string;
-  allFolders: FolderInfo[];
+  allFolders: FolderNode[];
   depth?: number;
 }>(), {
   depth: 0,

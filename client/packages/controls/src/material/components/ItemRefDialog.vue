@@ -41,7 +41,7 @@
                 <!-- Item Info -->
                 <div class="p-4 bg-base-200 rounded">
                   <div class="text-sm font-semibold mb-2">Item</div>
-                  <div class="font-semibold">{{ item.name }}</div>
+                  <div class="font-semibold">{{ item.title || item.itemId }}</div>
                   <div class="text-xs font-mono text-base-content/60">{{ item.itemId }}</div>
                   <div v-if="item.texture" class="text-xs text-base-content/50 mt-1">{{ item.texture }}</div>
                 </div>
@@ -49,7 +49,7 @@
                 <!-- Chest Info -->
                 <div class="p-4 bg-base-200 rounded">
                   <div class="text-sm font-semibold mb-2">Target Chest</div>
-                  <div class="font-semibold">{{ chest.displayName || chest.name }}</div>
+                  <div class="font-semibold">{{ chest.title || chest.name }}</div>
                   <div class="text-xs font-mono text-base-content/60">{{ chest.name }}</div>
                 </div>
 
@@ -164,7 +164,7 @@ const handleAdd = async () => {
   try {
     const itemRef: ItemRef = {
       itemId: props.item.itemId,
-      name: customName.value || props.item.name,
+      name: customName.value || props.item.title || props.item.itemId,
       texture: props.item.texture || '',
       amount: amount.value,
     };
