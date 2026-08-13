@@ -44,7 +44,7 @@
             </svg>
             <span class="flex-1 text-left">
               <span class="font-mono text-xs">{{ item.itemId }}</span>
-              <span v-if="item.name" class="text-xs text-base-content/70 ml-2">- {{ item.name }}</span>
+              <span v-if="item.title" class="text-xs text-base-content/70 ml-2">- {{ item.title }}</span>
             </span>
             <span v-if="item.itemId === currentItemId" class="badge badge-sm badge-primary">Current</span>
           </button>

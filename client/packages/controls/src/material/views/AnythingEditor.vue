@@ -97,7 +97,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="entity in entities" :key="entity.id" class="hover">
+          <tr v-for="entity in entities" :key="entity.name" class="hover">
             <td class="font-medium">{{ entity.name || '-' }}</td>
             <td>{{ entity.title || '-' }}</td>
             <td>

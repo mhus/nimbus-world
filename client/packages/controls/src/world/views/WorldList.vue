@@ -312,7 +312,7 @@ const filteredWorlds = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(w =>
-      w.name.toLowerCase().includes(query) ||
+      w.title.toLowerCase().includes(query) ||
       w.worldId.toLowerCase().includes(query) ||
       (w.description && w.description.toLowerCase().includes(query))
     );

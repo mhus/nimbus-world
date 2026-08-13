@@ -48,7 +48,7 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <div
           v-for="user in paginatedUsers"
-          :key="user.id"
+          :key="user.name"
           class="card bg-base-100 shadow hover:shadow-lg transition-shadow cursor-pointer"
           @click="handleSelect(user.name)"
         >

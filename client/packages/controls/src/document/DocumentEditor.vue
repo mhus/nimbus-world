@@ -543,7 +543,7 @@ const confirmDelete = async () => {
 };
 
 // Format date
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: string | Date): string => {
   if (!dateString) return '';
   const date = new Date(dateString);
   return date.toLocaleString();

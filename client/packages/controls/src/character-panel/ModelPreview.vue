@@ -169,7 +169,7 @@ async function loadModel(url: string) {
     let max = new Vector3(-Infinity, -Infinity, -Infinity);
     for (const mesh of result.meshes) {
       if (!mesh.getBoundingInfo) continue;
-      mesh.refreshBoundingInfo();
+      mesh.refreshBoundingInfo({});
       const bi = mesh.getBoundingInfo();
       min = Vector3.Minimize(min, bi.boundingBox.minimumWorld);
       max = Vector3.Maximize(max, bi.boundingBox.maximumWorld);

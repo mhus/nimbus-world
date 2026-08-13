@@ -97,7 +97,7 @@ async function duplicateItem(itemId: string) {
   }
   try {
     const duplicated = await ItemApiService.duplicateItem(itemId, currentWorldId.value, newName.trim());
-    selectedItemId.value = duplicated.itemId;
+    selectedItemId.value = duplicated.name;
     isNewItem.value = false;
   } catch (e: any) {
     console.error('Failed to duplicate item:', e);

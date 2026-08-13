@@ -65,16 +65,16 @@
 </template>
 
 <script setup lang="ts">
-import type { WLayer } from '@nimbus/shared';
+import type { LayerDto } from '@nimbus/shared';
 
 interface Props {
-  layer: WLayer;
+  layer: LayerDto;
 }
 
 defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'edit', layer: WLayer): void;
-  (e: 'delete', layer: WLayer): void;
+  (e: 'edit', layer: LayerDto): void;
+  (e: 'delete', layer: LayerDto): void;
 }>();
 </script>

@@ -13,7 +13,7 @@
         >
           <option value="">Select World</option>
           <option v-for="world in worlds" :key="world.worldId" :value="world.worldId">
-            {{ world.publicData?.name || world.worldId }}
+            {{ world.title || world.worldId }}
           </option>
         </select>
       </div>
@@ -347,9 +347,8 @@ const chestItemsLoading = ref(false);
  * Handle world change
  */
 const handleWorldChange = () => {
-  currentWorldId.value = selectedWorldId.value;
+  currentWorldId.value = selectedWorldId.value ?? '';
   itemSearchQuery.value = '';
-  itemSearchResults.value = [];
 };
 
 /**

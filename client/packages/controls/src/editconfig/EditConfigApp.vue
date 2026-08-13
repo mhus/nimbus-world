@@ -1264,7 +1264,7 @@ async function pollMarkedBlockContent() {
           if (texture) {
             // If texture is a string, use it directly, otherwise get path from TextureDefinition
             icon = typeof texture === 'string' ? texture : texture.path;
-            logger.debug('[Polling] Selected icon from block modifier key', i, ':', icon);
+            logger.debug('[Polling] Selected icon from block modifier key', { key: i, icon });
             break;
           }
         }
@@ -1306,7 +1306,7 @@ async function pollMarkedBlockContent() {
               if (texture) {
                 // If texture is a string, use it directly, otherwise get path from TextureDefinition
                 icon = typeof texture === 'string' ? texture : texture.path;
-                logger.debug('[Polling] Selected icon from BlockType key', i, ':', icon);
+                logger.debug('[Polling] Selected icon from BlockType key', { key: i, icon });
                 break;
               }
             }

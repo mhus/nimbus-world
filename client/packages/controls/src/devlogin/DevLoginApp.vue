@@ -419,7 +419,7 @@
 
             <!-- Login Summary -->
             <div class="bg-base-200 p-4 rounded-lg space-y-2">
-              <div><strong>World:</strong> {{ selectedWorld.name }}</div>
+              <div><strong>World:</strong> {{ selectedWorld!.name }}</div>
               <div><strong>Type:</strong> {{ loginType === 'session' ? 'Session' : 'Agent' }}</div>
               <div v-if="loginType === 'session'">
                 <strong>User:</strong> {{ selectedSessionUser?.username }}

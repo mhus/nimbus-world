@@ -29,7 +29,7 @@
         >
           <option value="">{{ worldsLoading ? 'Loading worlds...' : 'Select World...' }}</option>
           <option v-for="world in worlds" :key="world.worldId" :value="world.worldId">
-            {{ world.name || world.worldId }}
+            {{ world.title || world.worldId }}
           </option>
         </select>
 
