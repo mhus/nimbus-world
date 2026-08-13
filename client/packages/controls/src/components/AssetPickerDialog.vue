@@ -109,7 +109,7 @@ const emit = defineEmits<{
   (e: 'select', path: string): void;
 }>();
 
-const { assets, loading, error, loadAssets, searchAssets, getAssetUrl, isImage, getIcon } = useAssets(props.worldId, props.extensions);
+const { assets, loading, error, loadAssets, searchAssets, getAssetUrl, isImage, getIcon } = useAssets(props.worldId, { extensions: props.extensions });
 
 const localSearchQuery = ref('');
 

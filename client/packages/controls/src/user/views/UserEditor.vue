@@ -707,12 +707,15 @@ const handleSave = async () => {
   successMessage.value = null;
 
   try {
-    // Create clean RUser object
+    // Start from the loaded user so untouched fields (modifiedAt, gold, language)
+    // survive the update instead of being dropped
     const updatedUser: RUser = {
+      ...user.value,
       name: user.value.name,
       email: formData.value.email,
       createdAt: user.value.createdAt,
       publicData: {
+        ...user.value.publicData,
         name: props.username,
         title: formData.value.displayName,
       },
@@ -773,6 +776,7 @@ const handleAddSetting = () => {
         name: '',
         inputController: '',
         inputMappings: {},
+        properties: {},
       },
     },
   };

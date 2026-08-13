@@ -116,6 +116,13 @@ const loadEntityFromUrl = async () => {
       chunk: '',
       modelId: publicData.model || '',
       enabled: true,
+      // getEntity only returns publicData; the remaining EntityData fields are
+      // server-side metadata that is not available here
+      type: null,
+      portraitPath: null,
+      server: null,
+      epoches: [],
+      schedule: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
