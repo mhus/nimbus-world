@@ -10,8 +10,8 @@
     <div class="text-xs opacity-70 ml-6">
       <div v-if="step.kind === 'Play'">
         Effect: <code>{{ step.effectId }}</code>
-        <div v-if="step.source">Source: <code>{{ step.source }}</code></div>
-        <div v-if="step.target">Target: <code>{{ step.target }}</code></div>
+        <div v-if="step.ctx?.source">Source: <code>{{ step.ctx.source }}</code></div>
+        <div v-if="step.ctx?.target">Target: <code>{{ step.ctx.target }}</code></div>
       </div>
 
       <div v-else-if="step.kind === 'Wait'">
@@ -149,7 +149,9 @@ function getStepTitle(step: ScrawlStep): string {
     case 'LodSwitch':
       return 'LOD Switch';
     default:
-      return step.kind;
+      // all known kinds are handled above, so `step` is never here; the server
+      // may still send a newer kind, so fall back to showing it
+      return (step as { kind: string }).kind;
   }
 }
 </script>

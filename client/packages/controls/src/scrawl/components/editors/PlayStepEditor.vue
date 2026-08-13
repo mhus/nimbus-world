@@ -27,7 +27,7 @@
         <span class="label-text text-xs">Source (optional)</span>
       </label>
       <input
-        :value="modelValue.source || ''"
+        :value="modelValue.ctx?.source || ''"
         type="text"
         class="input input-bordered input-sm"
         placeholder="$actor"
@@ -41,7 +41,7 @@
         <span class="label-text text-xs">Target (optional)</span>
       </label>
       <input
-        :value="modelValue.target || ''"
+        :value="modelValue.ctx?.target || ''"
         type="text"
         class="input input-bordered input-sm"
         placeholder="$patient"
@@ -132,24 +132,30 @@ function updateEffectId(event: Event) {
 function updateSource(event: Event) {
   const target = event.target as HTMLInputElement;
   const value = target.value.trim();
-  const updated = { ...props.modelValue };
+  // source/target are subject references and live in ctx, where the executor
+  // resolves them ($actor, $patient, $patient[N], ...)
+  const ctx = { ...(props.modelValue.ctx || {}) };
   if (value) {
-    updated.source = value;
+    ctx.source = value;
   } else {
-    delete updated.source;
+    delete ctx.source;
   }
+  const updated = { ...props.modelValue, ctx };
   emit('update:modelValue', updated);
 }
 
 function updateTarget(event: Event) {
   const target = event.target as HTMLInputElement;
   const value = target.value.trim();
-  const updated = { ...props.modelValue };
+  // source/target are subject references and live in ctx, where the executor
+  // resolves them ($actor, $patient, $patient[N], ...)
+  const ctx = { ...(props.modelValue.ctx || {}) };
   if (value) {
-    updated.target = value;
+    ctx.target = value;
   } else {
-    delete updated.target;
+    delete ctx.target;
   }
+  const updated = { ...props.modelValue, ctx };
   emit('update:modelValue', updated);
 }
 
@@ -185,12 +191,14 @@ function updateCtx(event: Event) {
 
 function applyEffectPreset(preset: EffectPreset) {
   const template = preset.template;
+  const ctx = { ...(template.ctx || {}) };
+  // older presets still carry source/target at step level - migrate them into ctx
+  if (template.source) ctx.source = template.source;
+  if (template.target) ctx.target = template.target;
   emit('update:modelValue', {
     ...props.modelValue,
     effectId: template.effectId,
-    source: template.source,
-    target: template.target,
-    ctx: template.ctx || {},
+    ctx,
   });
 }
 

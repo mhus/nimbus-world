@@ -161,7 +161,7 @@ function changeStepType(event: Event) {
       newStep = { kind: 'Wait', seconds: 1 };
       break;
     case 'Play':
-      newStep = { kind: 'Play', effectId: '', source: '$source', target: '$target', ctx: {} };
+      newStep = { kind: 'Play', effectId: '', ctx: {} };
       break;
     case 'Cmd':
       newStep = { kind: 'Cmd', cmd: '', parameters: [] };
