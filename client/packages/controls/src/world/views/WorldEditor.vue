@@ -854,9 +854,9 @@
             <p class="text-sm text-base-content/70 mb-4">Map action names to scripts (optional). If not defined here, scripts will be started by action name directly.</p>
 
             <!-- Existing scripts -->
-            <div v-if="formData.publicData.settings.environmentScripts && formData.publicData.settings.environmentScripts.length > 0" class="space-y-2 mb-4">
+            <div v-if="formData.publicData.settings.environment.environmentScripts && formData.publicData.settings.environment.environmentScripts.length > 0" class="space-y-2 mb-4">
               <div
-                v-for="(scriptDef, index) in formData.publicData.settings.environmentScripts"
+                v-for="(scriptDef, index) in formData.publicData.settings.environment.environmentScripts"
                 :key="`script-${index}`"
                 class="flex gap-2 items-center"
               >
@@ -1859,7 +1859,7 @@ const formData = ref({
           { enabled: false, size: 60, positionOnCircle: 120, heightOverCamera: 45, distance: 450, phase: 0.5, texture: '' },
           { enabled: false, size: 60, positionOnCircle: 240, heightOverCamera: 45, distance: 450, phase: 0.5, texture: '' }
         ],
-        environmentScripts: []
+        environmentScripts: [] as Array<{ name: string; script: string }>
       },
       worldTime: {
         minuteScaling: 1,
@@ -1973,7 +1973,7 @@ const loadWorld = () => {
               { enabled: false, size: 60, positionOnCircle: 120, heightOverCamera: 45, distance: 450, phase: 0.5, texture: '' },
               { enabled: false, size: 60, positionOnCircle: 240, heightOverCamera: 45, distance: 450, phase: 0.5, texture: '' }
             ],
-            environmentScripts: []
+            environmentScripts: [] as Array<{ name: string; script: string }>
           },
           worldTime: {
             minuteScaling: 1,
@@ -2118,7 +2118,7 @@ const loadWorld = () => {
     player: world.player ? [...world.player] : [],
     epoches: world.epoches ? world.epoches.map(e => ({ ...e, parentEpoch: e.parentEpoch ?? null, worldStatus: e.worldStatus ?? 'default', splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
     groundLevel: world.groundLevel,
-    oceanLevel: world.oceanLevel,
+    oceanLevel: world.oceanLevel ?? 50,
     groundBlockType: world.groundBlockType,
     seaBlockType: world.seaBlockType,
     noiseSeed: world.noiseSeed,
@@ -2250,10 +2250,10 @@ const formatDate = (dateString: string | undefined): string => {
 
 // Helper method to add environment script
 const addEnvironmentScript = () => {
-  if (!formData.value.publicData.settings.environmentScripts) {
-    formData.value.publicData.settings.environmentScripts = [];
+  if (!formData.value.publicData.settings.environment.environmentScripts) {
+    formData.value.publicData.settings.environment.environmentScripts = [];
   }
-  formData.value.publicData.settings.environmentScripts.push({
+  formData.value.publicData.settings.environment.environmentScripts.push({
     name: '',
     script: ''
   });
@@ -2261,8 +2261,8 @@ const addEnvironmentScript = () => {
 
 // Helper method to remove environment script
 const removeEnvironmentScript = (index: number) => {
-  if (formData.value.publicData.settings.environmentScripts) {
-    formData.value.publicData.settings.environmentScripts.splice(index, 1);
+  if (formData.value.publicData.settings.environment.environmentScripts) {
+    formData.value.publicData.settings.environment.environmentScripts.splice(index, 1);
   }
 };
 
@@ -2345,6 +2345,11 @@ const handleCancelCreate = () => {
 };
 
 const performSave = async () => {
+  if (!currentRegionId.value) {
+    error.value = 'No region selected';
+    return;
+  }
+
   saving.value = true;
   error.value = null;
   successMessage.value = null;

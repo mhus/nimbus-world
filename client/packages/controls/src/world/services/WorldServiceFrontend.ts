@@ -1,6 +1,24 @@
 import { apiService } from '@/services/ApiService';
 
 // RGB Color object
+/**
+ * One epoch of a world.
+ *
+ * The extra fields beyond epoch/name/description are optional because older
+ * worlds were stored without them; the server fills them in where present
+ * (worldStatus is applied per epoch by WorldConfigController, parentEpoch
+ * drives the weather fallback chain).
+ */
+export interface WorldEpoch {
+  epoch: number;
+  name: string;
+  description: string;
+  parentEpoch?: number | null;
+  worldStatus?: string;
+  splashScreen?: string;
+  splashScreenAudio?: string;
+}
+
 export interface RGBColor {
   r: number;
   g: number;
@@ -111,7 +129,7 @@ export interface World {
   player: string[];
   publicFlag: boolean;
   universeSync: boolean;
-  epoches: { epoch: number; name: string; description: string }[];
+  epoches: WorldEpoch[];
 }
 
 export interface WorldRequest {
@@ -133,7 +151,7 @@ export interface WorldRequest {
   seaBlockType?: string;
   noiseSeed?: number;
   noiseFrequency?: number;
-  epoches?: { epoch: number; name: string; description: string }[];
+  epoches?: WorldEpoch[];
 }
 
 export interface WorldCreateResponse extends World {
