@@ -117,7 +117,7 @@
                   >
                     <option value="">Select world...</option>
                     <option v-for="world in worlds" :key="world.worldId" :value="world.worldId">
-                      {{ world.publicData?.name || world.worldId }}
+                      {{ world.title || world.worldId }}
                     </option>
                   </select>
                   <label class="label">
@@ -136,8 +136,8 @@
                     :disabled="loadingUsers"
                   >
                     <option value="">{{ loadingUsers ? 'Loading users...' : 'Select user...' }}</option>
-                    <option v-for="user in users" :key="user.id" :value="user.id">
-                      {{ user.publicData?.displayName || user.username }} ({{ user.username }})
+                    <option v-for="user in users" :key="user.name" :value="user.name">
+                      {{ user.publicData?.title || user.name }} ({{ user.name }})
                     </option>
                   </select>
                   <label class="label">
@@ -430,7 +430,7 @@ const handleRemoveItem = async (itemId: string) => {
 /**
  * Format date
  */
-const formatDate = (date: string | undefined): string => {
+const formatDate = (date: string | Date | undefined): string => {
   if (!date) return '-';
   return new Date(date).toLocaleString();
 };
