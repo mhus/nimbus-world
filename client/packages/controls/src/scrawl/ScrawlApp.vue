@@ -31,7 +31,7 @@
         <ScriptListView
           @select="openScript"
           @duplicate="duplicateScript"
-          @delete="(script) => deleteScript(script.id)"
+          @delete="deleteScript"
         />
       </div>
 
@@ -51,6 +51,7 @@
 import { ref, onMounted } from 'vue';
 import type { ScrawlScript } from '@nimbus/shared';
 import ScriptListView from './views/ScriptListView.vue';
+import type { ScriptAsset } from './views/ScriptListView.vue';
 import ScrawlAppEmbedded from './ScrawlAppEmbedded.vue';
 import WorldSelector from '@material/components/WorldSelector.vue';
 import { ApiService } from '../services/ApiService';
@@ -66,9 +67,27 @@ const apiService = new ApiService();
 const { currentWorldId } = useWorld();
 const urlScriptId = getIdFromUrl();
 const selectedScript = ref<ScrawlScript | null>(null);
+// Asset path of the open script, null while it is not stored yet. A script id cannot
+// be turned back into its path, so the path is carried from the list instead.
+const selectedScriptPath = ref<string | null>(null);
 const isNewScript = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
+
+/**
+ * Derive an asset path for a script that has no known path yet - new, duplicated, or
+ * opened through ?id=.
+ *
+ * The id may carry a collection prefix and path segments; neither belongs in the file
+ * name. The stored assets show the convention: id 'n:scripts/weather_fog' lives in
+ * 'scrawl/weather_fog.scrawl.json'.
+ */
+const assetPathFromId = (id: string): string => {
+  const withoutCollection = id.slice(id.indexOf(':') + 1);
+  const filename = (withoutCollection.split('/').pop() || withoutCollection)
+    .replace(/\.scrawl\.json$/i, '');
+  return `scrawl/${filename}.scrawl.json`;
+};
 
 // Load script from URL if provided
 if (urlScriptId) {
@@ -84,19 +103,23 @@ function createNewScript() {
       steps: [],
     },
   };
+  selectedScriptPath.value = null;
   isNewScript.value = true;
 }
 
-function openScript(script: ScrawlScript) {
-  selectedScript.value = { ...script };
+function openScript(asset: ScriptAsset) {
+  selectedScript.value = { ...asset.script };
+  selectedScriptPath.value = asset.path;
   isNewScript.value = false;
 }
 
-function duplicateScript(script: ScrawlScript) {
+function duplicateScript(asset: ScriptAsset) {
   selectedScript.value = {
-    ...script,
-    id: `${script.id}_copy`,
+    ...asset.script,
+    id: `${asset.script.id}_copy`,
   };
+  // A copy is a new file, so it gets its path from the new id
+  selectedScriptPath.value = null;
   isNewScript.value = true;
 }
 
@@ -115,17 +138,16 @@ async function saveScript(script: ScrawlScript) {
   error.value = null;
 
   try {
-    // Remove .scrawl.json if already present, then add it
-    let scriptId = script.id.replace(/\.scrawl\.json$/i, '');
-    const filename = `${scriptId}.scrawl.json`;
-    const assetPath = `scrawl/${filename}`;
+    // Overwrite the file the script was loaded from; only a script without a stored
+    // path derives one from its id
+    const assetPath = selectedScriptPath.value ?? assetPathFromId(script.id);
     const scriptJson = JSON.stringify(script, null, 2);
     const blob = new Blob([scriptJson], { type: 'application/json' });
 
     // Save as asset using PUT (creates if not exists, updates if exists)
     await apiService.updateBinary(`/control/worlds/${currentWorldId.value}/assets/${assetPath}`, blob, 'application/json');
 
-    console.log('Script saved:', scriptId);
+    console.log('Script saved:', script.id, '->', assetPath);
     selectedScript.value = null;
     isNewScript.value = false;
 
@@ -149,8 +171,8 @@ onMounted(() => {
   // Note: WorldSelector loads worlds with 'withCollections' filter
 });
 
-async function deleteScript(scriptId: string) {
-  if (!confirm(`Delete script "${scriptId}"?`)) {
+async function deleteScript(asset: ScriptAsset) {
+  if (!confirm(`Delete script "${asset.script.id}" (${asset.filename})?`)) {
     return;
   }
 
@@ -159,11 +181,10 @@ async function deleteScript(scriptId: string) {
   }
 
   try {
-    const assetPath = `scrawl/${scriptId}.scrawl.json`;
+    // Delete the file the list actually loaded, not one reconstructed from the id
+    await apiService.delete(`/control/worlds/${currentWorldId.value}/assets/${asset.path}`);
 
-    await apiService.delete(`/control/worlds/${currentWorldId.value}/assets/${assetPath}`);
-
-    console.log('Script deleted:', scriptId);
+    console.log('Script deleted:', asset.path);
     selectedScript.value = null;
 
     // Reload script list
