@@ -6707,11 +6707,11 @@
         "comment" : null
       }, {
         "name" : "thirdPersonModelModifiers",
-        "type" : "Map<string, string>",
+        "type" : "Record<string, string>",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
+        "javaTypeHint" : "Map<String,String>",
+        "comment" : "// javaType: Map<String,String>"
       }, {
         "name" : "portraitPath",
         "type" : "string",

@@ -4,7 +4,7 @@
 */
 
 export enum SectorRoles {
-  USER,
-  ADMIN,
-  PLAYER
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+  PLAYER = 'PLAYER'
 }

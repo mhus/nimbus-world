@@ -4,7 +4,7 @@
 */
 
 export enum ActorRoles {
-  PLAYER,
-  SUPPORT,
-  EDITOR
+  PLAYER = 'PLAYER',
+  SUPPORT = 'SUPPORT',
+  EDITOR = 'EDITOR'
 }

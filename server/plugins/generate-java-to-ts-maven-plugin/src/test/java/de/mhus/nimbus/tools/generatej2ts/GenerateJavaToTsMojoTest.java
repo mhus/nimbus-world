@@ -79,8 +79,10 @@ public class GenerateJavaToTsMojoTest {
 
         String status = Files.readString(statusTs, StandardCharsets.UTF_8);
         Assertions.assertTrue(status.contains("export enum Status"));
-        Assertions.assertTrue(status.contains("ACTIVE"));
-        Assertions.assertTrue(status.contains("INACTIVE"));
+        // String-Enums: Jackson serialisiert Java-Enums als Namen, also muss der
+        // TS-Wert der Name sein - ein numerisches Enum passt nicht zum JSON
+        Assertions.assertTrue(status.contains("ACTIVE = 'ACTIVE'"), "Enum-Wert ist kein String-Enum");
+        Assertions.assertTrue(status.contains("INACTIVE = 'INACTIVE'"), "Enum-Wert ist kein String-Enum");
 
         // Prüfe das Default-Type-Mapping: Instant -> Date
         String address = Files.readString(addressTs, StandardCharsets.UTF_8);

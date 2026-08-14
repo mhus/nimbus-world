@@ -738,13 +738,13 @@ const handleSave = async () => {
   }
 };
 
-const handleSectorRoleChange = (role: number, event: Event) => {
+const handleSectorRoleChange = (role: SectorRoles, event: Event) => {
   if (!user.value) return;
 
   const target = event.target as HTMLInputElement;
   const currentRoles = user.value.sectorRoles || [];
 
-  let updatedRoles: number[];
+  let updatedRoles: SectorRoles[];
   if (target.checked) {
     updatedRoles = [...currentRoles, role];
   } else {

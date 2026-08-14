@@ -4,7 +4,7 @@
 */
 
 export enum InstanceAccessType {
-  PRIVATE,
-  TEAM,
-  PUBLIC
+  PRIVATE = 'PRIVATE',
+  TEAM = 'TEAM',
+  PUBLIC = 'PUBLIC'
 }

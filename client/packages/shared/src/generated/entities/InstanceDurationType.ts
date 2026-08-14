@@ -4,7 +4,7 @@
 */
 
 export enum InstanceDurationType {
-  SHORT,
-  SEASONAL,
-  EVENT
+  SHORT = 'SHORT',
+  SEASONAL = 'SEASONAL',
+  EVENT = 'EVENT'
 }

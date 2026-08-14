@@ -4,8 +4,8 @@
 */
 
 export enum RegionRoles {
-  PLAYER,
-  SUPPORT,
-  EDITOR,
-  ADMIN
+  PLAYER = 'PLAYER',
+  SUPPORT = 'SUPPORT',
+  EDITOR = 'EDITOR',
+  ADMIN = 'ADMIN'
 }

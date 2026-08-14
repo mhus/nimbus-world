@@ -4,6 +4,6 @@
 */
 
 export enum LayerType {
-  GROUND,
-  MODEL
+  GROUND = 'GROUND',
+  MODEL = 'MODEL'
 }

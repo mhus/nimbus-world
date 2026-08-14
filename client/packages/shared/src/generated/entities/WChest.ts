@@ -6,13 +6,13 @@
 import { ItemRef } from '../../types/ItemRef';
 
 export enum ChestType {
-  REGION,
-  WORLD,
-  PLAYER,
-  BANK,
-  TRANSFER,
-  MERCHANT,
-  MERCHANT_POOL
+  REGION = 'REGION',
+  WORLD = 'WORLD',
+  PLAYER = 'PLAYER',
+  BANK = 'BANK',
+  TRANSFER = 'TRANSFER',
+  MERCHANT = 'MERCHANT',
+  MERCHANT_POOL = 'MERCHANT_POOL'
 }
 
 export interface WChest {

@@ -4,8 +4,8 @@
 */
 
 export enum WorldInstanceType {
-  NONE,
-  PUBLIC,
-  TEAM,
-  PRIVATE
+  NONE = 'NONE',
+  PUBLIC = 'PUBLIC',
+  TEAM = 'TEAM',
+  PRIVATE = 'PRIVATE'
 }

@@ -17,7 +17,9 @@ import java.util.List;
  * - Jeder Typ → eine Datei "Name.ts" (ggf. in Subfolder aus dem Model)
  * - Imports (falls vorhanden) werden an den Anfang geschrieben
  * - Klassen werden als "export interface Name { ... }" ausgegeben
- * - Enums als "export enum Name { A, B, C }"
+ * - Enums als "export enum Name { A = 'A', B = 'B' }" (String-Enums, weil Jackson
+ *   Java-Enums als Namen serialisiert - ein numerisches TS-Enum wuerde nicht zu den
+ *   Werten passen, die tatsaechlich ueber die Leitung gehen)
  * - optionale Felder mit ? (z.B. foo?: string;)
  */
 public class TypeScriptModelWriter {
@@ -120,7 +122,7 @@ public class TypeScriptModelWriter {
         w.write("export enum " + type.getName() + " {\n");
         for (int i = 0; i < type.getEnumValues().size(); i++) {
             String v = type.getEnumValues().get(i);
-            w.write("  " + v);
+            w.write("  " + v + " = '" + v + "'");
             if (i < type.getEnumValues().size() - 1) w.write(",");
             w.write("\n");
         }
@@ -131,7 +133,7 @@ public class TypeScriptModelWriter {
         w.write("export enum " + ne.getName() + " {\n");
         for (int i = 0; i < ne.getValues().size(); i++) {
             String v = ne.getValues().get(i);
-            w.write("  " + v);
+            w.write("  " + v + " = '" + v + "'");
             if (i < ne.getValues().size() - 1) w.write(",");
             w.write("\n");
         }
