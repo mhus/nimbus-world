@@ -8236,68 +8236,68 @@
       "values" : [ "HEAD", "BODY", "LEGS", "FEET", "NECK", "LEFT_RING", "RIGHT_RING", "LEFT_HAND_1", "RIGHT_HAND_1", "LEFT_HAND_2", "RIGHT_HAND_2", "ARMS" ],
       "enumValues" : [ {
         "name" : "HEAD",
-        "value" : "0"
+        "value" : "HEAD"
       }, {
         "name" : "BODY",
-        "value" : "1"
+        "value" : "BODY"
       }, {
         "name" : "LEGS",
-        "value" : "2"
+        "value" : "LEGS"
       }, {
         "name" : "FEET",
-        "value" : "3"
+        "value" : "FEET"
       }, {
         "name" : "NECK",
-        "value" : "4"
+        "value" : "NECK"
       }, {
         "name" : "LEFT_RING",
-        "value" : "5"
+        "value" : "LEFT_RING"
       }, {
         "name" : "RIGHT_RING",
-        "value" : "6"
+        "value" : "RIGHT_RING"
       }, {
         "name" : "LEFT_HAND_1",
-        "value" : "7"
+        "value" : "LEFT_HAND_1"
       }, {
         "name" : "RIGHT_HAND_1",
-        "value" : "8"
+        "value" : "RIGHT_HAND_1"
       }, {
         "name" : "LEFT_HAND_2",
-        "value" : "9"
+        "value" : "LEFT_HAND_2"
       }, {
         "name" : "RIGHT_HAND_2",
-        "value" : "10"
+        "value" : "RIGHT_HAND_2"
       }, {
         "name" : "ARMS",
-        "value" : "11"
+        "value" : "ARMS"
       } ]
     }, {
       "name" : "WEARABLE_GROUP",
       "values" : [ "HEAD", "BODY", "LEGS", "FEET", "NECK", "RING", "HAND", "ARMS" ],
       "enumValues" : [ {
         "name" : "HEAD",
-        "value" : "0"
+        "value" : "HEAD"
       }, {
         "name" : "BODY",
-        "value" : "1"
+        "value" : "BODY"
       }, {
         "name" : "LEGS",
-        "value" : "2"
+        "value" : "LEGS"
       }, {
         "name" : "FEET",
-        "value" : "3"
+        "value" : "FEET"
       }, {
         "name" : "NECK",
-        "value" : "4"
+        "value" : "NECK"
       }, {
         "name" : "RING",
-        "value" : "5"
+        "value" : "RING"
       }, {
         "name" : "HAND",
-        "value" : "6"
+        "value" : "HAND"
       }, {
         "name" : "ARMS",
-        "value" : "7"
+        "value" : "ARMS"
       } ]
     } ],
     "classes" : [ ],

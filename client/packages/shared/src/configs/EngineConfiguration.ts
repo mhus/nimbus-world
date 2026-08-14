@@ -1,29 +1,29 @@
 import {PlayerInfo, WorldInfo} from "../types";
 
 export enum WEARABLE_SLOT {
-    HEAD = 0,
-    BODY = 1,
-    LEGS = 2,
-    FEET = 3,
-    NECK = 4,
-    LEFT_RING = 5,
-    RIGHT_RING = 6,
-    LEFT_HAND_1 = 7,
-    RIGHT_HAND_1 = 8,
-    LEFT_HAND_2 = 9,
-    RIGHT_HAND_2 = 10,
-    ARMS = 11,
+    HEAD = 'HEAD',
+    BODY = 'BODY',
+    LEGS = 'LEGS',
+    FEET = 'FEET',
+    NECK = 'NECK',
+    LEFT_RING = 'LEFT_RING',
+    RIGHT_RING = 'RIGHT_RING',
+    LEFT_HAND_1 = 'LEFT_HAND_1',
+    RIGHT_HAND_1 = 'RIGHT_HAND_1',
+    LEFT_HAND_2 = 'LEFT_HAND_2',
+    RIGHT_HAND_2 = 'RIGHT_HAND_2',
+    ARMS = 'ARMS',
 }
 
 export enum WEARABLE_GROUP {
-    HEAD = 0,
-    BODY = 1,
-    LEGS = 2,
-    FEET = 3,
-    NECK = 4,
-    RING = 5,
-    HAND = 6,
-    ARMS = 7,
+    HEAD = 'HEAD',
+    BODY = 'BODY',
+    LEGS = 'LEGS',
+    FEET = 'FEET',
+    NECK = 'NECK',
+    RING = 'RING',
+    HAND = 'HAND',
+    ARMS = 'ARMS',
 }
 
 export interface PlayerBackpack {
