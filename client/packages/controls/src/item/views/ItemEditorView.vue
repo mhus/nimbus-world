@@ -216,23 +216,23 @@
             v-model="localItem.onUseEffect"
           />
 
-          <!-- Wearable Slots -->
-          <div class="divider">Wearable Slots</div>
+          <!-- Wearing Group -->
+          <div class="divider">Wearing Group</div>
           <div class="space-y-2">
             <label class="label">
-              <span class="label-text font-semibold">Allowed wearing slots</span>
+              <span class="label-text font-semibold">Wearing group</span>
               <span class="label-text-alt text-xs">None selected = not wearable</span>
             </label>
             <div class="flex flex-wrap gap-2">
               <button
-                v-for="slot in ALL_WEARABLE_SLOTS"
-                :key="slot"
+                v-for="group in ALL_WEARABLE_GROUPS"
+                :key="group"
                 type="button"
                 class="btn btn-sm"
-                :class="isWearableSlotActive(slot) ? 'btn-primary' : 'btn-outline'"
-                @click="toggleWearableSlot(slot)"
+                :class="isWearingGroupActive(group) ? 'btn-primary' : 'btn-outline'"
+                @click="toggleWearingGroup(group)"
               >
-                {{ slot }}
+                {{ group }}
               </button>
             </div>
           </div>
@@ -315,7 +315,7 @@
               </button>
             </div>
             <div v-if="publicParamEntries.length === 0" class="text-sm text-base-content/50 py-1">
-              No public parameters (except wearableSlots above)
+              No public parameters (except the wearing group above)
             </div>
             <div v-else class="space-y-2">
               <div
@@ -404,6 +404,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import type { Item } from '@nimbus/shared';
+import { WEARABLE_GROUP } from '@nimbus/shared';
 import { ItemApiService } from '../services/itemApiService';
 import ScriptActionEditor from '../components/ScriptActionEditor.vue';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
@@ -427,7 +428,7 @@ const error = ref<string | null>(null);
 const localItem = ref<Item | null>(null);
 const showJsonEditor = ref(false);
 
-// Key-value entries for publicData.parameters (excluding wearableSlots which has its own UI)
+// Key-value entries for publicData.parameters (excluding the wearing group, which has its own UI)
 const publicParamEntries = ref<{ key: string; value: string }[]>([]);
 // Key-value entries for WItem.server
 const serverParamEntries = ref<{ key: string; value: string }[]>([]);
@@ -472,34 +473,48 @@ const mapToEntries = (map: Record<string, any> | null | undefined, excludeKeys: 
     .map(([key, value]) => ({ key, value: String(value ?? '') }));
 };
 
-const ALL_WEARABLE_SLOTS = ['HEAD', 'NECK', 'BODY', 'ARMS', 'LEGS', 'FEET', 'RING', 'HAND'] as const;
+// What an item declares it needs is a WEARABLE_GROUP (HAND, RING, ...), not a
+// concrete WEARABLE_SLOT - a HAND item fits any of the four hand slots. The value
+// is stored as a single string in parameters.wearingSlot; PlayerWearingController
+// reads exactly that key and wraps it in a one-element list for the client.
+const ALL_WEARABLE_GROUPS = Object.keys(WEARABLE_GROUP) as WearableGroup[];
+type WearableGroup = keyof typeof WEARABLE_GROUP;
 
-const isWearableSlotActive = (slot: string): boolean => {
-  const slots = localItem.value?.parameters?.wearableSlots;
-  if (!Array.isArray(slots)) return false;
-  return slots.includes(slot);
+/**
+ * Read the wearing group, tolerating the legacy parameter.
+ *
+ * Migration 002 moved parameters.wearableSlots to parameters.wearingSlot, but a
+ * database that has not run it yet still carries the old key. Saving always writes
+ * the current one and drops the legacy value.
+ */
+const currentWearingGroup = (): string | undefined => {
+  const params = localItem.value?.parameters as Record<string, unknown> | undefined;
+  if (!params) return undefined;
+
+  const current = params.wearingSlot;
+  if (typeof current === 'string' && current) return current;
+
+  const legacy = params.wearableSlots;
+  if (typeof legacy === 'string' && legacy) return legacy;
+  if (Array.isArray(legacy) && typeof legacy[0] === 'string') return legacy[0];
+
+  return undefined;
 };
 
-const toggleWearableSlot = (slot: string) => {
+const isWearingGroupActive = (group: string): boolean => currentWearingGroup() === group;
+
+const toggleWearingGroup = (group: string) => {
   if (!localItem.value) return;
   if (!localItem.value.parameters) localItem.value.parameters = {};
-  const slots: string[] = Array.isArray(localItem.value.parameters.wearableSlots)
-    ? [...localItem.value.parameters.wearableSlots]
-    : [];
-  const idx = slots.indexOf(slot);
-  if (idx >= 0) {
-    slots.splice(idx, 1);
+  const params = localItem.value.parameters as Record<string, unknown>;
+
+  // A single group per item, so clicking the active one clears it
+  if (currentWearingGroup() === group) {
+    delete params.wearingSlot;
   } else {
-    slots.push(slot);
+    params.wearingSlot = group;
   }
-  // Item.parameters is Record<string, string> in the contract, but wearableSlots is
-  // handled as an array everywhere in this editor (Array.isArray/splice/spread).
-  // Kept as-is; unifying the parameter value type belongs with the contract task.
-  if (slots.length > 0) {
-    (localItem.value.parameters as Record<string, unknown>).wearableSlots = slots;
-  } else {
-    delete localItem.value.parameters.wearableSlots;
-  }
+  delete params.wearableSlots;
 };
 
 async function loadItem() {
@@ -539,8 +554,8 @@ async function loadItem() {
     const itemData = (serverItem as any).publicData || serverItem;
     localItem.value = itemData;
 
-    // Load publicData.parameters (exclude wearableSlots - it has its own UI)
-    publicParamEntries.value = mapToEntries(itemData.parameters, ['wearableSlots']);
+    // Load publicData.parameters (exclude the wearing group - it has its own UI)
+    publicParamEntries.value = mapToEntries(itemData.parameters, ['wearingSlot', 'wearableSlots']);
     // Load WItem.server parameters
     serverParamEntries.value = mapToEntries((serverItem as any).server);
     // Load trading/price fields from WItem wrapper
@@ -571,13 +586,15 @@ async function save() {
   error.value = null;
 
   try {
-    // Merge publicParamEntries back into localItem.parameters (preserve wearableSlots)
+    // Merge publicParamEntries back into localItem.parameters (preserve the wearing
+    // group, which has its own UI and is excluded from the key-value entries).
+    // A legacy wearableSlots value is written back as wearingSlot, so saving an
+    // unmigrated item migrates it.
     const pubParams = entriesToMap(publicParamEntries.value);
     if (!localItem.value.parameters) localItem.value.parameters = {};
-    // Remove old non-wearableSlots keys, then merge new ones
-    const wearableSlots = localItem.value.parameters.wearableSlots;
+    const wearingGroup = currentWearingGroup();
     const mergedParams: Record<string, any> = { ...pubParams };
-    if (wearableSlots !== undefined) mergedParams.wearableSlots = wearableSlots;
+    if (wearingGroup !== undefined) mergedParams.wearingSlot = wearingGroup;
     localItem.value.parameters = mergedParams;
 
     const serverMap = entriesToMap(serverParamEntries.value);
