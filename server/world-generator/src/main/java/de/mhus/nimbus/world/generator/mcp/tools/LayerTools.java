@@ -74,11 +74,11 @@ public class LayerTools implements McpToolBean {
         return toLayerDto(layerOpt.get());
     }
 
-    @Tool(name = "create_layer", description = "Create a new layer in a world. layerType must be TERRAIN or MODEL.")
+    @Tool(name = "create_layer", description = "Create a new layer in a world. layerType must be GROUND or MODEL.")
     public Map<String, Object> createLayer(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer name (must be unique per world)") String name,
-            @ToolParam(description = "Layer type: TERRAIN or MODEL") String layerType,
+            @ToolParam(description = "Layer type: GROUND or MODEL") String layerType,
             @ToolParam(description = "Layer order (lower renders first)", required = false) Integer order,
             @ToolParam(description = "Whether the layer is enabled", required = false) Boolean enabled,
             @ToolParam(description = "Whether this layer defines ground level", required = false) Boolean baseGround,
@@ -94,14 +94,14 @@ public class LayerTools implements McpToolBean {
         }
 
         if (Strings.isBlank(layerType)) {
-            throw new McpToolException("layerType required (TERRAIN or MODEL)");
+            throw new McpToolException("layerType required (GROUND or MODEL)");
         }
 
         de.mhus.nimbus.world.shared.layer.LayerType type;
         try {
             type = de.mhus.nimbus.world.shared.layer.LayerType.valueOf(layerType.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid layerType: " + layerType + " (must be TERRAIN or MODEL)");
+            throw new McpToolException("Invalid layerType: " + layerType + " (must be GROUND or MODEL)");
         }
 
         if (layerService.findByWorldIdAndName(worldId, name).isPresent()) {

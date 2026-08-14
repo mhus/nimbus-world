@@ -5,7 +5,8 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 /**
  * Layer type enumeration.
  *
- * TERRAIN: Chunk-based layers with external storage (like WChunk)
+ * GROUND: Chunk-based terrain layers with external storage (like WChunk).
+ *         Set baseGround on the layer that defines the ground level.
  * MODEL: Entity-based layers with blocks stored in document
  */
 public enum LayerType {
