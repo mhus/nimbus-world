@@ -116,6 +116,20 @@ function mergeVisibility(target: any, source: any): any {
     result.effect = normalizeEffect(result.effect);
   }
 
+  // Same for texture-level effects, and unconditionally: a block type may carry an
+  // effect on a texture without one on the visibility level, and that case must not
+  // depend on the defaults loop below. An unnormalized name would reach
+  // MaterialService.getMaterialKey as Number('WIND') = NaN, which yields the material
+  // key 'eff:NaN' - no wind attributes, no shader, silently a plain material.
+  if (result.textures) {
+    for (const key in result.textures) {
+      const texture = result.textures[key];
+      if (typeof texture === 'object' && texture !== null && texture.effect !== undefined) {
+        texture.effect = normalizeEffect(texture.effect);
+      }
+    }
+  }
+
   // Apply VisibilityModifier.effect and effectParameters to textures
   if (result.textures && (result.effect !== undefined || result.effectParameters !== undefined)) {
     const defaultEffect = result.effect;
@@ -123,11 +137,6 @@ function mergeVisibility(target: any, source: any): any {
 
     for (const key in result.textures) {
       let texture = result.textures[key];
-
-      // Normalize texture-level effect too
-      if (typeof texture === 'object' && texture !== null && texture.effect !== undefined) {
-        texture.effect = normalizeEffect(texture.effect);
-      }
 
       // If texture is a string and we have default effect/effectParameters, convert to object
       if (typeof texture === 'string' && (defaultEffect !== undefined || defaultEffectParameters !== undefined)) {
