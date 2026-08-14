@@ -108,23 +108,12 @@ const loadEntityFromUrl = async () => {
   if (!urlEntityId || !currentWorldId.value) return;
 
   try {
-    const publicData = await entityService.getEntity(currentWorldId.value, urlEntityId);
+    const entity = await entityService.getEntity(currentWorldId.value, urlEntityId);
     selectedEntity.value = {
-      entityId: urlEntityId,
-      publicData,
-      worldId: currentWorldId.value,
+      ...entity,
+      modelId: entity.modelId ?? '',
+      // chunk is part of the list response only, not of the single-entity DTO
       chunk: '',
-      modelId: publicData.model || '',
-      enabled: true,
-      // getEntity only returns publicData; the remaining EntityData fields are
-      // server-side metadata that is not available here
-      type: null,
-      portraitPath: null,
-      server: null,
-      epoches: [],
-      schedule: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
   } catch (e) {
     console.error('[EntityApp] Failed to load entity from URL:', e);

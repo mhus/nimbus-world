@@ -67,8 +67,14 @@ class EntityService {
     return apiService.get<EntityListResponse>(`/control/worlds/${worldId}/entities`, params);
   }
 
-  async getEntity(worldId: string, entityId: string): Promise<any> {
-    return apiService.get<any>(`/control/worlds/${worldId}/entities/${entityId}`);
+  /**
+   * Get a single entity.
+   *
+   * Returns the full EntityDto, not just publicData: everything EntityData holds
+   * except `chunk`, which the server only reports in the list response.
+   */
+  async getEntity(worldId: string, entityId: string): Promise<Omit<EntityData, 'chunk'>> {
+    return apiService.get<Omit<EntityData, 'chunk'>>(`/control/worlds/${worldId}/entities/${entityId}`);
   }
 
   async createEntity(worldId: string, request: CreateEntityRequest): Promise<any> {
