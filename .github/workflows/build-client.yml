@@ -51,7 +51,7 @@ jobs:
       - name: Build controls
         run: pnpm --filter @nimbus/controls... build
         working-directory: ./client
-      - name: Type-check (incl. .vue templates)
+      - name: Type-check (all packages, incl. .vue templates)
         run: pnpm typecheck
         working-directory: ./client
       - name: Run unit tests

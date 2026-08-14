@@ -19,6 +19,7 @@
     "dev": "vite --mode viewer --port 3000",
     "dev:editor": "vite --mode editor",
     "build": "pnpm build:viewer && pnpm build:editor && tsc",
+    "typecheck": "tsc --noEmit",
     "build:viewer": "vite build --mode viewer",
     "build:editor": "vite build --mode editor",
     "preview": "vite preview",
