@@ -871,7 +871,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { DEFAULT_STATE_VALUES } from '@nimbus/shared';
+import { DEFAULT_STATE_VALUES, WEARABLE_SLOT } from '@nimbus/shared';
 import { useRegion } from '@/composables/useRegion';
 import { characterService, type RCharacter, type PlayerInfo } from '../services/CharacterService';
 import type { PlayerBackpack } from '@nimbus/shared';
@@ -957,9 +957,14 @@ const newItemId = ref('');
 const newItemCount = ref(1);
 
 // Backpack Wearing Items
-const wearableSlots = ['HEAD', 'BODY', 'LEGS', 'FEET', 'HANDS', 'NECK', 'LEFT_RING', 'RIGHT_RING', 'LEFT_WEAPON_1', 'RIGHT_WEAPON_1', 'LEFT_WEAPON_2', 'RIGHT_WEAPON_2'] as const;
-type WearableSlot = typeof wearableSlots[number];
-const wearingItems = ref<Record<WearableSlot, string>>({} as any);
+// The concrete wearing places, matching WEARABLE_SLOT - these are the keys of
+// backpack.wearingItemIds as it is stored (e.g. { "LEFT_HAND_1": "wooden_sword" }).
+// Not to be confused with WEARABLE_GROUP (HEAD, BODY, LEGS, FEET, NECK, RING, HAND,
+// ARMS), which is what an item declares it needs: a HAND item fits any of the four
+// hand slots. ItemEditorView works with those groups.
+const wearableSlots = Object.keys(WEARABLE_SLOT).filter(k => isNaN(Number(k))) as WearableSlot[];
+type WearableSlot = keyof typeof WEARABLE_SLOT;
+const wearingItems = ref<Record<string, string>>({});
 
 const formatSlotName = (slot: string): string => {
   return slot
@@ -998,7 +1003,7 @@ const loadCharacter = () => {
     thirdPersonModelModifiers.value = {};
     stateValues.value = {} as any;
     backpackItems.value = {};
-    wearingItems.value = {} as any;
+    wearingItems.value = {};
     return;
   }
 
@@ -1025,7 +1030,7 @@ const loadCharacter = () => {
   backpackItems.value = character.value.backpack?.itemIds || {};
 
   // Initialize wearing items
-  wearingItems.value = character.value.backpack?.wearingItemIds || {} as any;
+  wearingItems.value = { ...(character.value.backpack?.wearingItemIds ?? {}) };
 };
 
 const handleSave = async () => {

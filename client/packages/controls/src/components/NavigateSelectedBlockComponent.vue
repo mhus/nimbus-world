@@ -184,7 +184,7 @@
 import { computed } from 'vue';
 
 // Props
-interface Props {
+export interface Props {
   selectedBlock: { x: number; y: number; z: number } | null;
   step?: number;
   size?: number;
