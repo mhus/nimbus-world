@@ -17,7 +17,7 @@
         <!-- Keep all langchain4j artifacts on one version; mixing them breaks at runtime.
              The agentic extension is still beta and carries its own suffix. -->
         <langchain4j.version>1.18.1</langchain4j.version>
-        <langchain4j.agentic.version>1.18.1-beta28</langchain4j.agentic.version>
+        <langchain4j.agentic.version>1.19.0-beta29</langchain4j.agentic.version>
     </properties>
 
     <dependencies>
