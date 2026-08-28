@@ -29,7 +29,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.41.2",
+    "@babylonjs/core": "^9.22.2",
     "@babylonjs/gui": "^8.41.2",
     "@babylonjs/loaders": "^8.43.0",
     "@babylonjs/materials": "^8.45.3",
