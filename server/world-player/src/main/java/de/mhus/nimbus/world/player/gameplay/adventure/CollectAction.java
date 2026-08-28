@@ -13,8 +13,29 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * GameplayAction for collecting rewards from blocks and entities.
+ *
+ * Server parameters (from block metadata / serverInfo):
+ * - action=collect
+ * - collectReward=probability:itemId:quantity[,...] (required), e.g. 100:wood:1,10:_gold_:5
+ * - collectCooldown=&lt;seconds&gt; regrow time of the collected element (default: 0 = unlimited)
+ * - collectStatus=&lt;status&gt; block status while the element is exhausted (default: empty)
+ *
+ * Cooldown handling for blocks: the collected block switches to the collect status and is
+ * blocked for everybody in this world instance until world-life resets it. Additionally a
+ * short per-player cooldown prevents click spamming.
+ *
+ * Entities have no block status, they keep the per-player cooldown of collectCooldown.
+ */
 @Slf4j
 public class CollectAction implements GameplayAction {
+
+    /** Block status used while a collected element is exhausted */
+    private static final String DEFAULT_COLLECT_STATUS = "empty";
+
+    /** Per-player cooldown between two collect actions, prevents click spamming */
+    private static final long PLAYER_COLLECT_COOLDOWN_MS = 1000;
 
     private final AdventureGameplay adventure;
     private final Random random = new Random();
@@ -26,14 +47,14 @@ public class CollectAction implements GameplayAction {
     @Override
     public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
         if (shortcutKey != null) return false;
-        return collect(session, serverInfo);
+        return collect(session, serverInfo, new int[]{x, y, z});
     }
 
     @Override
     public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         if (shortcutKey != null) return false;
         if (entity == null || entity.getServer() == null) return false;
-        return collect(session, entity.getServer());
+        return collect(session, entity.getServer(), null);
     }
 
     @Override
@@ -48,7 +69,12 @@ public class CollectAction implements GameplayAction {
         return false;
     }
 
-    private boolean collect(PlayerSession session, Map<String, String> serverInfo) {
+    /**
+     * Collect the configured rewards.
+     *
+     * @param position block world coordinates, or null for entities (no per-element cooldown)
+     */
+    private boolean collect(PlayerSession session, Map<String, String> serverInfo, int[] position) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         long now = System.currentTimeMillis();
@@ -71,6 +97,32 @@ public class CollectAction implements GameplayAction {
                 cooldownSeconds = Integer.parseInt(cooldownStr.trim());
             } catch (NumberFormatException e) {
                 log.warn("Invalid collectCooldown value: {}", cooldownStr);
+            }
+        }
+
+        // Resolve the per-element cooldown target (blocks only)
+        String collectStatus = resolveCollectStatus(serverInfo);
+        String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+        String chunkKey = null;
+        String blockKey = null;
+        if (position != null && cooldownSeconds > 0 && worldId != null) {
+            var world = adventure.getWorldService().getByWorldId(worldId).orElse(null);
+            if (world == null) {
+                log.warn("World not found: {}", worldId);
+                return false;
+            }
+            chunkKey = world.getChunkKey(position[0], position[2]);
+            blockKey = position[0] + "," + position[1] + "," + position[2];
+
+            // Claim the element atomically, so two players never collect the same block twice
+            if (!adventure.getProgressService().claimBlockStatus(worldId, chunkKey, blockKey, collectStatus)) {
+                // Element is in cooldown, throttle further attempts of this player
+                data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
+                adventure.getClientService().sendNotification(session, 3, "",
+                        "Hier gibt es nichts mehr zu ernten", null);
+                log.debug("Collect blocked, element exhausted: worldId={}, chunk={}, block={}",
+                        worldId, chunkKey, blockKey);
+                return true;
             }
         }
 
@@ -111,8 +163,26 @@ public class CollectAction implements GameplayAction {
             }
         }
 
-        data.setNextCollectAllowed(now + cooldownSeconds * 1000L);
+        if (chunkKey != null) {
+            // The element is already marked as exhausted, world-life resets it when expired
+            adventure.getProgressService().setBlockCooldown(worldId, chunkKey, blockKey,
+                    now + cooldownSeconds * 1000L);
+            data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
+            log.debug("Element exhausted for {}s: worldId={}, chunk={}, block={}, status={}",
+                    cooldownSeconds, worldId, chunkKey, blockKey, collectStatus);
+        } else {
+            // Entities have no block status, keep the cooldown on the player
+            data.setNextCollectAllowed(now + Math.max(cooldownSeconds * 1000L, PLAYER_COLLECT_COOLDOWN_MS));
+        }
         return true;
+    }
+
+    /**
+     * Block status of an exhausted element, may be overridden per block via collectStatus.
+     */
+    private String resolveCollectStatus(Map<String, String> serverInfo) {
+        String status = serverInfo.get("collectStatus");
+        return status != null && !status.isBlank() ? status.trim() : DEFAULT_COLLECT_STATUS;
     }
 
     private boolean handleSyntheticReward(PlayerSession session, AdventureData data, String itemId, int quantity) {
