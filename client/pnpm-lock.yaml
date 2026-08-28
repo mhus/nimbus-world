@@ -18,11 +18,11 @@ importers:
   packages/controls:
     dependencies:
       '@babylonjs/core':
-        specifier: ^8.41.2
-        version: 8.41.2
+        specifier: ^9.22.2
+        version: 9.23.0
       '@babylonjs/loaders':
-        specifier: ^8.43.0
-        version: 8.43.0(@babylonjs/core@8.41.2)(babylonjs-gltf2interface@8.41.2)
+        specifier: ^9.22.2
+        version: 9.23.0(@babylonjs/core@9.23.0)(babylonjs-gltf2interface@9.23.0)
       '@headlessui/vue':
         specifier: ^1.7.0
         version: 1.7.23(vue@3.5.26(typescript@6.0.3))
@@ -51,6 +51,9 @@ importers:
       '@vue/eslint-config-typescript':
         specifier: ^14.9.0
         version: 14.9.0(eslint-plugin-vue@10.10.0(@typescript-eslint/parser@8.67.0(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.2(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@9.39.2(jiti@2.7.0))))(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
+      babylonjs-gltf2interface:
+        specifier: ^9.22.2
+        version: 9.23.0
       daisyui:
         specifier: ^5.7.4
         version: 5.7.4
@@ -79,17 +82,17 @@ importers:
   packages/engine:
     dependencies:
       '@babylonjs/core':
-        specifier: ^8.41.2
-        version: 8.41.2
+        specifier: ^9.22.2
+        version: 9.23.0
       '@babylonjs/gui':
-        specifier: ^8.41.2
-        version: 8.41.2(@babylonjs/core@8.41.2)
+        specifier: ^9.22.2
+        version: 9.23.0(@babylonjs/core@9.23.0)
       '@babylonjs/loaders':
-        specifier: ^8.43.0
-        version: 8.43.0(@babylonjs/core@8.41.2)(babylonjs-gltf2interface@8.41.2)
+        specifier: ^9.22.2
+        version: 9.23.0(@babylonjs/core@9.23.0)(babylonjs-gltf2interface@9.23.0)
       '@babylonjs/materials':
-        specifier: ^8.45.3
-        version: 8.45.3(@babylonjs/core@8.41.2)
+        specifier: ^9.22.2
+        version: 9.23.0(@babylonjs/core@9.23.0)
       '@nimbus/shared':
         specifier: workspace:*
         version: link:../shared
@@ -106,6 +109,9 @@ importers:
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
+      babylonjs-gltf2interface:
+        specifier: ^9.22.2
+        version: 9.23.0
       jest:
         specifier: ^30.4.2
         version: 30.4.2(@types/node@24.13.3)
@@ -322,24 +328,24 @@ packages:
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
 
-  '@babylonjs/core@8.41.2':
-    resolution: {integrity: sha512-q+7OmfMqNdlRa5WJteQxPKNt/YXMx8U+bylou0lb8P9JxA+YKSxvsOl5c0cSg5myIc4KD0sHMIZquJBYP1sEqw==}
+  '@babylonjs/core@9.23.0':
+    resolution: {integrity: sha512-FpDaTPx485J1H0AEJpoJ785Z1CwCkEPNnZFu7WzHTy0ByGCy75bkZZILh4QFU4LLnzK1iuHwUfecCguATIeKSA==}
 
-  '@babylonjs/gui@8.41.2':
-    resolution: {integrity: sha512-BijwXvRYs+Rom4i7AwfKVZ+ejsGK6IMSJa/LtBQD/vyW0S0n5ZvW2w/DGht9nrOiH0c1j7nTkixv9jfQIYXcgg==}
+  '@babylonjs/gui@9.23.0':
+    resolution: {integrity: sha512-/f1Il9XFROomr+j6FGnqjYy6gYwu9I/MGVYH1FP6lQgzxHhvUWQPOWS5FbgZaube86bwMmtzPW98Uq7jYHKxOQ==}
     peerDependencies:
-      '@babylonjs/core': ^8.0.0
+      '@babylonjs/core': ^9.0.0
 
-  '@babylonjs/loaders@8.43.0':
-    resolution: {integrity: sha512-UaDlekqxohhz0ZPjQXleeUfH+Irur2sfgdQZqXKJjQJzMSfZFzeyMYAPImHwHPsgRcBUzJfKUzamji2v+YMKeA==}
+  '@babylonjs/loaders@9.23.0':
+    resolution: {integrity: sha512-4qNxiHmi2udyZmTsVL3iUUfVF4BKecgmFpp1//wBoZ6RhTWlkbBT4CIJLVPeibXZeJliZ5vII8rvZqDPgGiotw==}
     peerDependencies:
-      '@babylonjs/core': ^8.0.0
-      babylonjs-gltf2interface: ^8.0.0
+      '@babylonjs/core': ^9.0.0
+      babylonjs-gltf2interface: ^9.0.0
 
-  '@babylonjs/materials@8.45.3':
-    resolution: {integrity: sha512-/+FTxiGN3of+rtkLzV5hRohkyyrmLoe40EmLde4TPoGky1f7gTn8We/kBjkaSoD2btg/RuzsU9VAdnIzb/QIFQ==}
+  '@babylonjs/materials@9.23.0':
+    resolution: {integrity: sha512-Iye09X2iTqxz/oq3xA0+C3SDHmPN9IUid7R5FEeCBikVGLeIqdNNK68otX/Q3nxbtzDEzDO20a+e8SZYNriYjg==}
     peerDependencies:
-      '@babylonjs/core': ^8.6.0
+      '@babylonjs/core': ^9.0.0
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
@@ -1150,8 +1156,8 @@ packages:
     peerDependencies:
       '@babel/core': ^7.11.0 || ^8.0.0-beta.1
 
-  babylonjs-gltf2interface@8.41.2:
-    resolution: {integrity: sha512-rw3tv3VZ96peflAJZQhYcsBLKvv8FbdilKBneAilg6rUyhx0zfV6qlhDZQe/+xDS4kcha/k19Tf0gfica5oorw==}
+  babylonjs-gltf2interface@9.23.0:
+    resolution: {integrity: sha512-oD9rkfCafvGACikVWhVVl1Iy9bDuBVlI7zmeiDXI8y5gw7UOmQMffpvrl/ujoiw5agcsEAaQuF6Dbjfb+Cpaiw==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -2877,20 +2883,20 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@babylonjs/core@8.41.2': {}
+  '@babylonjs/core@9.23.0': {}
 
-  '@babylonjs/gui@8.41.2(@babylonjs/core@8.41.2)':
+  '@babylonjs/gui@9.23.0(@babylonjs/core@9.23.0)':
     dependencies:
-      '@babylonjs/core': 8.41.2
+      '@babylonjs/core': 9.23.0
 
-  '@babylonjs/loaders@8.43.0(@babylonjs/core@8.41.2)(babylonjs-gltf2interface@8.41.2)':
+  '@babylonjs/loaders@9.23.0(@babylonjs/core@9.23.0)(babylonjs-gltf2interface@9.23.0)':
     dependencies:
-      '@babylonjs/core': 8.41.2
-      babylonjs-gltf2interface: 8.41.2
+      '@babylonjs/core': 9.23.0
+      babylonjs-gltf2interface: 9.23.0
 
-  '@babylonjs/materials@8.45.3(@babylonjs/core@8.41.2)':
+  '@babylonjs/materials@9.23.0(@babylonjs/core@9.23.0)':
     dependencies:
-      '@babylonjs/core': 8.41.2
+      '@babylonjs/core': 9.23.0
 
   '@bcoe/v8-coverage@0.2.3': {}
 
@@ -3807,7 +3813,7 @@ snapshots:
       babel-plugin-jest-hoist: 30.4.0
       babel-preset-current-node-syntax: 1.2.0(@babel/core@7.28.5)
 
-  babylonjs-gltf2interface@8.41.2: {}
+  babylonjs-gltf2interface@9.23.0: {}
 
   balanced-match@1.0.2: {}
 

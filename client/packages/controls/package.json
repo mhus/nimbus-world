@@ -18,14 +18,15 @@
     "axios": "^1.6.0",
     "dompurify": "^3.4.13",
     "marked": "^17.0.4",
-    "@babylonjs/core": "^8.41.2",
-    "@babylonjs/loaders": "^8.43.0",
+    "@babylonjs/core": "^9.22.2",
+    "@babylonjs/loaders": "^9.22.2",
     "vue": "^3.5.26"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/eslint-config-typescript": "^14.9.0",
+    "babylonjs-gltf2interface": "^9.22.2",
     "daisyui": "^5.7.4",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.10.0",

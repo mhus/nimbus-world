@@ -29,10 +29,10 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.41.2",
-    "@babylonjs/gui": "^8.41.2",
-    "@babylonjs/loaders": "^8.43.0",
-    "@babylonjs/materials": "^8.45.3",
+    "@babylonjs/core": "^9.22.2",
+    "@babylonjs/gui": "^9.22.2",
+    "@babylonjs/loaders": "^9.22.2",
+    "@babylonjs/materials": "^9.22.2",
     "@nimbus/shared": "workspace:*",
     "dotenv": "^17.2.3",
     "fflate": "^0.8.3"
@@ -40,6 +40,7 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.13.3",
+    "babylonjs-gltf2interface": "^9.22.2",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.12",
     "typescript": "6.0.3",
