@@ -171,10 +171,13 @@ export class SunService {
       return;
     }
 
-    // Create lens flare system with sun mesh as emitter
-    this.lensFlareSystem = new LensFlareSystem('sunLensFlare', this.sunMesh, this.scene);
-
-    // Get lens flare texture URL from asset server with credentials
+    // Get lens flare texture URL from asset server with credentials.
+    // This has to happen before the system exists: LensFlare registers its draw
+    // wrapper via system._onShadersLoaded.addOnce(), so every flare must be
+    // constructed in the same synchronous block as the system. An await in between
+    // lets the shaders finish loading first, and addOnce on an observable that
+    // already fired never runs - the flares would keep a missing draw wrapper and
+    // LensFlareSystem.render() would throw on every visible frame.
     let flareTextureUrl: string;
     if (this.networkService) {
       const textureUrl = this.networkService.getAssetUrl(this.lensFlareTexture);
@@ -185,6 +188,9 @@ export class SunService {
       flareTextureUrl = this.createLensFlareTextureDataUrl();
       logger.warn('NetworkService not available, using fallback lens flare texture');
     }
+
+    // Create lens flare system with sun mesh as emitter
+    this.lensFlareSystem = new LensFlareSystem('sunLensFlare', this.sunMesh, this.scene);
 
     // Add multiple flares at different positions along the flare axis
     // Position 0 = at emitter, 1 = opposite side, 0.5 = middle
