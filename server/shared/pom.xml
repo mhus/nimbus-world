@@ -86,13 +86,13 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.18.11</version>
+            <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.15.10</version>
+            <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- Mockito with explicit version -->
