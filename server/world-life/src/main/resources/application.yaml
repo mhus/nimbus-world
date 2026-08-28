@@ -5,6 +5,12 @@ spring:
   mongodb:
     uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
     database: world
+  task:
+    scheduling:
+      pool:
+        # All @Scheduled tasks share this pool. With the default of 1 the simulation loop, the
+        # cooldown sweep and every heartbeat would run one after another on a single thread.
+        size: ${SCHEDULING_POOL_SIZE:8}
 
 nimbus:
   services:

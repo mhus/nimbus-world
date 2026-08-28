@@ -22,6 +22,10 @@ import java.util.UUID;
 /**
  * MongoDB Entity for player progress tracking.
  * Stores quest progress, achievements, and other player-specific progression data.
+ *
+ * <p>The indexes declared here are only created when {@code spring.data.mongodb.auto-index-creation}
+ * is enabled, which it is not. The unique index the shared chunk documents (playerId="world") depend
+ * on is therefore created explicitly by {@link WProgressIndexInitializer}.</p>
  */
 @Document(collection = "w_progress")
 @ActualSchemaVersion("1.0.0")

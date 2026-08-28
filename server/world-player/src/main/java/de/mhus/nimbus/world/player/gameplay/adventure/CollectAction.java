@@ -24,7 +24,9 @@ import java.util.Random;
  *
  * Cooldown handling for blocks: the collected block switches to the collect status and is
  * blocked for everybody in this world instance until world-life resets it. Additionally a
- * short per-player cooldown prevents click spamming.
+ * short per-player cooldown prevents click spamming. The claim and the cooldown entry are
+ * written before the rewards, so a failing reward can never leave a block exhausted forever.
+ * If nothing reached the player because the backpack was full, the claim is rolled back.
  *
  * Entities have no block status, they keep the per-player cooldown of collectCooldown.
  */
@@ -124,10 +126,52 @@ public class CollectAction implements GameplayAction {
                         worldId, chunkKey, blockKey);
                 return true;
             }
+
+            // Store the cooldown before handing out any reward: from here on the block carries the
+            // collect status, and without this entry world-life would never reset it again
+            adventure.getProgressService().setBlockCooldown(worldId, chunkKey, blockKey,
+                    now + cooldownSeconds * 1000L, collectStatus);
+            data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
+            log.debug("Element exhausted for {}s: worldId={}, chunk={}, block={}, status={}",
+                    cooldownSeconds, worldId, chunkKey, blockKey, collectStatus);
+        } else {
+            // Entities have no block status, keep the cooldown on the player
+            data.setNextCollectAllowed(now + Math.max(cooldownSeconds * 1000L, PLAYER_COLLECT_COOLDOWN_MS));
         }
 
-        String[] rewards = rewardStr.split(",");
-        for (String reward : rewards) {
+        RewardResult result = handOutRewards(session, data, rewardStr);
+
+        // Nothing arrived because the backpack was full: give the element back instead of
+        // exhausting it for everybody. A reward the player simply did not roll keeps it exhausted.
+        if (chunkKey != null && result.blockedByFullBackpack() && !result.granted()) {
+            adventure.getProgressService().removeBlockCooldown(worldId, chunkKey, blockKey);
+            adventure.getProgressService().claimRemoveBlockStatus(worldId, chunkKey, blockKey, collectStatus);
+            adventure.getClientService().sendNotification(session, 3, "",
+                    "Dein Rucksack ist voll", null);
+            log.debug("Collect rolled back, backpack full: worldId={}, chunk={}, block={}",
+                    worldId, chunkKey, blockKey);
+        }
+        return true;
+    }
+
+    /**
+     * Outcome of handing out the configured rewards.
+     *
+     * @param granted               at least one reward reached the player
+     * @param blockedByFullBackpack at least one rolled reward was lost because the backpack was full
+     */
+    private record RewardResult(boolean granted, boolean blockedByFullBackpack) {
+    }
+
+    /**
+     * Roll and hand out the configured rewards. Never throws - a reward that fails must not abort
+     * the collect, the element is already claimed at this point.
+     */
+    private RewardResult handOutRewards(PlayerSession session, AdventureData data, String rewardStr) {
+        boolean granted = false;
+        boolean blockedByFullBackpack = false;
+
+        for (String reward : rewardStr.split(",")) {
             String trimmed = reward.trim();
             if (trimmed.isEmpty()) continue;
 
@@ -142,39 +186,31 @@ public class CollectAction implements GameplayAction {
                 String itemId = parts[1].trim();
                 int quantity = Integer.parseInt(parts[2].trim());
 
-                if (random.nextInt(100) < probability) {
-                    if (handleSyntheticReward(session, data, itemId, quantity)) {
-                        log.info("Player {} collected synthetic {} x{} (probability {}%)",
-                                session.getEntityId(), itemId, quantity, probability);
-                    } else {
-                        boolean added = adventure.getGameplayService().putIntoBackpack(session, itemId, quantity);
-                        if (added) {
-                            sendCollectNotification(session, itemId, quantity);
-                            log.info("Player {} collected {} x{} (probability {}%)",
-                                    session.getEntityId(), itemId, quantity, probability);
-                        } else {
-                            log.debug("Player {} backpack full, could not add {} x{}",
-                                    session.getEntityId(), itemId, quantity);
-                        }
-                    }
+                if (random.nextInt(100) >= probability) continue;
+
+                if (handleSyntheticReward(session, data, itemId, quantity)) {
+                    granted = true;
+                    log.info("Player {} collected synthetic {} x{} (probability {}%)",
+                            session.getEntityId(), itemId, quantity, probability);
+                } else if (adventure.getGameplayService().putIntoBackpack(session, itemId, quantity)) {
+                    granted = true;
+                    sendCollectNotification(session, itemId, quantity);
+                    log.info("Player {} collected {} x{} (probability {}%)",
+                            session.getEntityId(), itemId, quantity, probability);
+                } else {
+                    blockedByFullBackpack = true;
+                    log.debug("Player {} backpack full, could not add {} x{}",
+                            session.getEntityId(), itemId, quantity);
                 }
             } catch (NumberFormatException e) {
                 log.warn("Invalid number in collectReward entry '{}': {}", trimmed, e.getMessage());
+            } catch (Exception e) {
+                log.error("Failed to hand out collectReward entry '{}' to player {}",
+                        trimmed, session.getEntityId(), e);
             }
         }
 
-        if (chunkKey != null) {
-            // The element is already marked as exhausted, world-life resets it when expired
-            adventure.getProgressService().setBlockCooldown(worldId, chunkKey, blockKey,
-                    now + cooldownSeconds * 1000L);
-            data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
-            log.debug("Element exhausted for {}s: worldId={}, chunk={}, block={}, status={}",
-                    cooldownSeconds, worldId, chunkKey, blockKey, collectStatus);
-        } else {
-            // Entities have no block status, keep the cooldown on the player
-            data.setNextCollectAllowed(now + Math.max(cooldownSeconds * 1000L, PLAYER_COLLECT_COOLDOWN_MS));
-        }
-        return true;
+        return new RewardResult(granted, blockedByFullBackpack);
     }
 
     /**

@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.world.shared.redis.BlockStatusPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -11,9 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for managing WProgress entities.
@@ -282,33 +286,55 @@ public class WProgressService {
      * @param status   Status value (e.g. "open", "closed")
      */
     public void setBlockStatus(String worldId, String chunkKey, String blockKey, String status) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_STATUS_TYPE)
-                .and("quest").is(chunkKey));
-        Update update = new Update()
+        Update update = chunkDocumentInsert(worldId, chunkKey, BLOCK_STATUS_TYPE)
                 .set("progressData." + blockKey, status)
-                .set("updatedAt", Instant.now())
-                .setOnInsert("worldId", worldId)
-                .setOnInsert("playerId", BLOCK_STATUS_PLAYER)
-                .setOnInsert("type", BLOCK_STATUS_TYPE)
-                .setOnInsert("quest", chunkKey)
-                .setOnInsert("progressId", java.util.UUID.randomUUID().toString())
-                .setOnInsert("createdAt", Instant.now());
+                .set("updatedAt", Instant.now());
 
-        mongoTemplate.upsert(query, update, WProgress.class);
+        upsertChunkDocument(worldId, chunkKey, BLOCK_STATUS_TYPE, update);
         blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, status);
         log.debug("Set block status: worldId={}, chunk={}, block={}, status={}", worldId, chunkKey, blockKey, status);
     }
 
     /**
-     * Criteria selecting the block status document of one chunk.
+     * Criteria selecting the shared chunk document of one chunk and type.
+     * Shared documents carry {@link #BLOCK_STATUS_PLAYER} as playerId and the chunk key as quest.
      */
-    private Criteria blockStatusChunkCriteria(String worldId, String chunkKey) {
+    private Criteria chunkCriteria(String worldId, String chunkKey, String type) {
         return Criteria.where("worldId").is(worldId)
                 .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_STATUS_TYPE)
+                .and("type").is(type)
                 .and("quest").is(chunkKey);
+    }
+
+    /**
+     * The setOnInsert part shared by all upserts creating a shared chunk document.
+     */
+    private Update chunkDocumentInsert(String worldId, String chunkKey, String type) {
+        return new Update()
+                .setOnInsert("worldId", worldId)
+                .setOnInsert("playerId", BLOCK_STATUS_PLAYER)
+                .setOnInsert("type", type)
+                .setOnInsert("quest", chunkKey)
+                .setOnInsert("progressId", UUID.randomUUID().toString())
+                .setOnInsert("createdAt", Instant.now());
+    }
+
+    /**
+     * Upsert a shared chunk document.
+     *
+     * The unique index created by {@link WProgressIndexInitializer} makes a concurrent insert of
+     * the same chunk document fail instead of producing a second one. The retry then sees the
+     * document the winner inserted and turns the upsert into a plain update.
+     */
+    private void upsertChunkDocument(String worldId, String chunkKey, String type, Update update) {
+        Query query = new Query(chunkCriteria(worldId, chunkKey, type));
+        try {
+            mongoTemplate.upsert(query, update, WProgress.class);
+        } catch (DuplicateKeyException e) {
+            log.debug("Chunk document inserted concurrently, retrying as update: worldId={}, chunk={}, type={}",
+                    worldId, chunkKey, type);
+            mongoTemplate.upsert(query, update, WProgress.class);
+        }
     }
 
     /**
@@ -324,19 +350,14 @@ public class WProgressService {
      * @return true if this caller set the status, false if the block already carried it
      */
     public boolean claimBlockStatus(String worldId, String chunkKey, String blockKey, String status) {
-        // Ensure the chunk document exists, so the claim below never inserts a second one
-        Update createUpdate = new Update()
-                .setOnInsert("worldId", worldId)
-                .setOnInsert("playerId", BLOCK_STATUS_PLAYER)
-                .setOnInsert("type", BLOCK_STATUS_TYPE)
-                .setOnInsert("quest", chunkKey)
-                .setOnInsert("progressId", java.util.UUID.randomUUID().toString())
-                .setOnInsert("createdAt", Instant.now())
-                .setOnInsert("updatedAt", Instant.now());
-        mongoTemplate.upsert(new Query(blockStatusChunkCriteria(worldId, chunkKey)), createUpdate, WProgress.class);
+        // Ensure the chunk document exists, so the conditional claim below can never insert one:
+        // an upsert always inserts when its condition doesn't match and would hand the claim to
+        // every caller at once.
+        upsertChunkDocument(worldId, chunkKey, BLOCK_STATUS_TYPE,
+                chunkDocumentInsert(worldId, chunkKey, BLOCK_STATUS_TYPE).setOnInsert("updatedAt", Instant.now()));
 
         // "ne" also matches a missing key, so the first claimer wins and later ones fail
-        Query claimQuery = new Query(blockStatusChunkCriteria(worldId, chunkKey)
+        Query claimQuery = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
                 .and("progressData." + blockKey).ne(status));
         Update claimUpdate = new Update()
                 .set("progressData." + blockKey, status)
@@ -363,10 +384,7 @@ public class WProgressService {
      * @param blockKey Block identifier (block id or world coordinates "x,y,z")
      */
     public void removeBlockStatus(String worldId, String chunkKey, String blockKey) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_STATUS_TYPE)
-                .and("quest").is(chunkKey)
+        Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
                 .and("progressData." + blockKey).exists(true));
         Update update = new Update()
                 .unset("progressData." + blockKey)
@@ -377,55 +395,137 @@ public class WProgressService {
         log.debug("Removed block status: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
     }
 
+    /**
+     * Atomically remove a block status entry, but only if the block still carries the expected
+     * status. Protects a status somebody else set in the meantime from being wiped by a late
+     * reset, and publishes the removal only when it actually happened.
+     *
+     * @param worldId        World identifier
+     * @param chunkKey       Chunk key (e.g. "1:2"), stored as quest
+     * @param blockKey       Block identifier (block id or world coordinates "x,y,z")
+     * @param expectedStatus Status the block must still carry
+     * @return true if the status was removed
+     */
+    public boolean claimRemoveBlockStatus(String worldId, String chunkKey, String blockKey, String expectedStatus) {
+        Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
+                .and("progressData." + blockKey).is(expectedStatus));
+        Update update = new Update()
+                .unset("progressData." + blockKey)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() == 0) {
+            log.debug("Block status changed before the reset, keeping it: worldId={}, chunk={}, block={}, expected={}",
+                    worldId, chunkKey, blockKey, expectedStatus);
+            return false;
+        }
+
+        blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, null);
+        log.debug("Removed claimed block status: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
+        return true;
+    }
+
+    /**
+     * Delete block status documents of a world that no longer hold any entry.
+     *
+     * @param worldId World identifier
+     * @return number of deleted documents
+     */
+    public int deleteEmptyBlockStatuses(String worldId) {
+        return deleteEmptyChunkDocuments(worldId, BLOCK_STATUS_TYPE);
+    }
+
     // --- Block cooldown operations (type="block-cooldown", quest=chunkKey) ---
 
     private static final String BLOCK_COOLDOWN_TYPE = "block-cooldown";
+    private static final String COOLDOWN_EXPIRES_AT = "expiresAt";
+    private static final String COOLDOWN_STATUS = "status";
 
     /**
-     * Set or refresh the cooldown expiry of a single block.
+     * Set or refresh the cooldown of a single block.
      * Creates the WProgress document if it doesn't exist (upsert).
      *
      * The entry is a pending marker for world-life: once expired, world-life resets the
      * block status and removes the entry. It does not change the block status by itself.
+     * The status is stored alongside the expiry so the reset can verify that the block still
+     * carries the status this cooldown belongs to.
      *
      * @param worldId   World identifier
      * @param chunkKey  Chunk key (e.g. "1:2"), stored as quest
      * @param blockKey  Block identifier (block id or world coordinates "x,y,z")
      * @param expiresAt Epoch millis after which the cooldown is over
+     * @param status    Block status set for this cooldown (e.g. "empty")
      */
-    public void setBlockCooldown(String worldId, String chunkKey, String blockKey, long expiresAt) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_COOLDOWN_TYPE)
-                .and("quest").is(chunkKey));
-        Update update = new Update()
-                .set("progressData." + blockKey, expiresAt)
-                .set("updatedAt", Instant.now())
-                .setOnInsert("worldId", worldId)
-                .setOnInsert("playerId", BLOCK_STATUS_PLAYER)
-                .setOnInsert("type", BLOCK_COOLDOWN_TYPE)
-                .setOnInsert("quest", chunkKey)
-                .setOnInsert("progressId", java.util.UUID.randomUUID().toString())
-                .setOnInsert("createdAt", Instant.now());
+    public void setBlockCooldown(String worldId, String chunkKey, String blockKey, long expiresAt, String status) {
+        Document value = new Document(COOLDOWN_EXPIRES_AT, expiresAt).append(COOLDOWN_STATUS, status);
+        Update update = chunkDocumentInsert(worldId, chunkKey, BLOCK_COOLDOWN_TYPE)
+                .set("progressData." + blockKey, value)
+                .set("updatedAt", Instant.now());
 
-        mongoTemplate.upsert(query, update, WProgress.class);
-        log.debug("Set block cooldown: worldId={}, chunk={}, block={}, expiresAt={}", worldId, chunkKey, blockKey, expiresAt);
+        upsertChunkDocument(worldId, chunkKey, BLOCK_COOLDOWN_TYPE, update);
+        log.debug("Set block cooldown: worldId={}, chunk={}, block={}, expiresAt={}, status={}",
+                worldId, chunkKey, blockKey, expiresAt, status);
     }
 
     /**
-     * Find all pending block cooldowns of a world.
-     * Returns a map: chunkKey -> (blockKey -> expiresAt epoch millis).
+     * Remove a pending block cooldown without resetting the block status.
+     * Used to roll back a collect that claimed the block but could not hand out its reward.
+     *
+     * @param worldId  World identifier
+     * @param chunkKey Chunk key (e.g. "1:2"), stored as quest
+     * @param blockKey Block identifier (block id or world coordinates "x,y,z")
+     */
+    public void removeBlockCooldown(String worldId, String chunkKey, String blockKey) {
+        Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_COOLDOWN_TYPE)
+                .and("progressData." + blockKey).exists(true));
+        Update update = new Update()
+                .unset("progressData." + blockKey)
+                .set("updatedAt", Instant.now());
+
+        mongoTemplate.updateFirst(query, update, WProgress.class);
+        log.debug("Removed block cooldown: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
+    }
+
+    /**
+     * Find the block cooldowns of a world that expired at or before the given point in time.
+     *
+     * Entries that carry no readable expiry are reported as expired (expiresAt 0), so a broken
+     * value is cleaned up by the next sweep instead of piling up forever.
+     *
+     * @param worldId World identifier
+     * @param now     Epoch millis to compare the expiry against
+     * @return expired cooldowns, may be empty
      */
     @Transactional(readOnly = true)
-    public Map<String, Map<String, Object>> findBlockCooldowns(String worldId) {
+    public List<WBlockCooldown> findExpiredBlockCooldowns(String worldId, long now) {
         List<WProgress> entries = repository.findByWorldIdAndPlayerIdAndType(worldId, BLOCK_STATUS_PLAYER, BLOCK_COOLDOWN_TYPE);
-        Map<String, Map<String, Object>> result = new java.util.HashMap<>();
+        List<WBlockCooldown> expired = new ArrayList<>();
         for (WProgress entry : entries) {
-            if (entry.getProgressData() != null && !entry.getProgressData().isEmpty()) {
-                result.put(entry.getQuest(), entry.getProgressData());
+            if (entry.getProgressData() == null) continue;
+            for (var blockEntry : entry.getProgressData().entrySet()) {
+                WBlockCooldown cooldown = toBlockCooldown(entry.getQuest(), blockEntry.getKey(), blockEntry.getValue());
+                if (cooldown.expiresAt() <= now) expired.add(cooldown);
             }
         }
-        return result;
+        return expired;
+    }
+
+    /**
+     * Read one stored cooldown value. Accepts the documented {expiresAt, status} form as well as
+     * a bare expiry number, which is what entries written before the status was stored look like.
+     */
+    private WBlockCooldown toBlockCooldown(String chunkKey, String blockKey, Object value) {
+        if (value instanceof Map<?, ?> map) {
+            long expiresAt = map.get(COOLDOWN_EXPIRES_AT) instanceof Number number ? number.longValue() : 0L;
+            String status = map.get(COOLDOWN_STATUS) instanceof String s ? s : null;
+            return new WBlockCooldown(chunkKey, blockKey, expiresAt, status);
+        }
+        if (value instanceof Number number) {
+            return new WBlockCooldown(chunkKey, blockKey, number.longValue(), null);
+        }
+        log.warn("Unreadable block cooldown value, treating it as expired: chunk={}, block={}, value={}",
+                chunkKey, blockKey, value);
+        return new WBlockCooldown(chunkKey, blockKey, 0L, null);
     }
 
     /**
@@ -441,12 +541,12 @@ public class WProgressService {
      * @param expiresAt Expiry value the caller has read
      * @return true if this caller removed the entry and is responsible for resetting the block
      */
-    public boolean claimExpiredBlockCooldown(String worldId, String chunkKey, String blockKey, Object expiresAt) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_COOLDOWN_TYPE)
-                .and("quest").is(chunkKey)
-                .and("progressData." + blockKey).is(expiresAt));
+    public boolean claimExpiredBlockCooldown(String worldId, String chunkKey, String blockKey, long expiresAt) {
+        // The second branch matches entries written before the status was stored alongside the expiry
+        Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_COOLDOWN_TYPE)
+                .andOperator(new Criteria().orOperator(
+                        Criteria.where("progressData." + blockKey + "." + COOLDOWN_EXPIRES_AT).is(expiresAt),
+                        Criteria.where("progressData." + blockKey).is(expiresAt))));
         Update update = new Update()
                 .unset("progressData." + blockKey)
                 .set("updatedAt", Instant.now());
@@ -462,10 +562,18 @@ public class WProgressService {
      * @return number of deleted documents
      */
     public int deleteEmptyBlockCooldowns(String worldId) {
+        return deleteEmptyChunkDocuments(worldId, BLOCK_COOLDOWN_TYPE);
+    }
+
+    /**
+     * Delete shared chunk documents of a world whose progressData ran empty. Both block statuses
+     * and block cooldowns leave an empty document behind once their last entry was removed.
+     */
+    private int deleteEmptyChunkDocuments(String worldId, String type) {
         Query query = new Query(Criteria.where("worldId").is(worldId)
                 .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(BLOCK_COOLDOWN_TYPE)
-                .and("progressData").is(new org.bson.Document()));
+                .and("type").is(type)
+                .and("progressData").is(new Document()));
 
         var result = mongoTemplate.remove(query, WProgress.class);
         return (int) result.getDeletedCount();
