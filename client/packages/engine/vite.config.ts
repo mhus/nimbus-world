@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, __dirname, '');
+  const env = loadEnv(mode, import.meta.dirname, '');
   const isEditor = mode === 'editor';
   const isViewer = mode === 'viewer' || mode === 'development';
 
@@ -17,12 +17,16 @@ export default defineConfig(({ mode }) => {
       minify: mode !== 'development',
       rollupOptions: {
         input: {
-          main: resolve(__dirname, 'index.html'),
+          main: resolve(import.meta.dirname, 'index.html'),
         },
         output: {
-          manualChunks: {
-            'babylon-core': ['@babylonjs/core'],
-            'babylon-loaders': ['@babylonjs/loaders'],
+          // Rolldown replaced manualChunks with codeSplitting groups; loaders is
+          // listed first so its modules do not get pulled into babylon-core.
+          codeSplitting: {
+            groups: [
+              { name: 'babylon-loaders', test: /[\\/]@babylonjs[\\/]loaders[\\/]/ },
+              { name: 'babylon-core', test: /[\\/]@babylonjs[\\/]core[\\/]/ },
+            ],
           },
         },
       },
@@ -38,8 +42,8 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        '@': resolve(__dirname, './src'),
-        '@nimbus/shared': resolve(__dirname, '../shared/src'),
+        '@': resolve(import.meta.dirname, './src'),
+        '@nimbus/shared': resolve(import.meta.dirname, '../shared/src'),
       },
     },
     server: {
@@ -60,11 +64,6 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       // Force re-optimization on startup
       force: false,
-      // Increase esbuild memory and threads
-      esbuildOptions: {
-        // More memory for large dependencies
-        logLevel: 'info',
-      },
       // Include dependencies that need pre-bundling
       // Also include @nimbus/shared to prevent issues with dynamic/static imports
       include: [
