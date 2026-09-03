@@ -13,7 +13,12 @@ updates:
     directory: "/server" # Location of package manifests
     schedule:
       interval: "weekly"
-  - package-ecosystem: "docker" # See documentation for possible values
-    directory: "/deployment" # Location of package manifests
+  # Dockerfiles sit one level below /deployment (docker-jvm, docker-ts,
+  # docker-installer), and the docker ecosystem does not descend on its own.
+  # Pointing it at /deployment aborted every run with "No Dockerfiles nor
+  # Kubernetes YAML found in /deployment". The glob picks up each subfolder.
+  - package-ecosystem: "docker"
+    directories:
+      - "/deployment/*"
     schedule:
       interval: "weekly"
