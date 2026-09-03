@@ -1,5 +1,5 @@
 # Build stage - builds all packages once
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 
 WORKDIR /build
 
