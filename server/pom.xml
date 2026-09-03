@@ -31,7 +31,9 @@
         <lombok.version>1.18.42</lombok.version>
         <spring.boot.version>4.1.0</spring.boot.version>
         <java.version>25</java.version>
-        <junit-jupiter.version>5.11.3</junit-jupiter.version>
+        <!-- JUnit is not pinned here on purpose: overriding junit-jupiter.version alone
+             leaves Boot's junit-platform.version untouched and the two drift apart.
+             Jupiter and platform both come from spring-boot-dependencies. -->
         <!-- byte-buddy and byte-buddy-agent must stay on the same version -->
         <byte-buddy.version>1.18.11</byte-buddy.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
