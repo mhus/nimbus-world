@@ -20,7 +20,7 @@
     "marked": "^18.0.11",
     "@babylonjs/core": "^9.22.2",
     "@babylonjs/loaders": "^9.22.2",
-    "vue": "^3.5.26"
+    "vue": "^3.5.42"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
