@@ -22,3 +22,15 @@ updates:
       - "/deployment/*"
     schedule:
       interval: "weekly"
+  # Watches the `uses:` pins in .github/workflows. The directory is always "/"
+  # for this ecosystem — it is the repository root, not the workflow folder.
+  # Grouped into one pull request: these are all major-tag pins, so separate
+  # PRs would only mean more review for the same one-line changes.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
