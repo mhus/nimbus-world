@@ -75,12 +75,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mockito</groupId>
-                    <artifactId>mockito-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- ByteBuddy compatible with Java 25 -->
         <dependency>
@@ -95,17 +89,16 @@
             <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Mockito with explicit version -->
+        <!-- Mockito versions come from spring-boot-dependencies so core and the
+             jupiter integration cannot drift apart -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.23.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.21.0</version>
             <scope>test</scope>
         </dependency>
         <!-- Testcontainers for integration tests -->
