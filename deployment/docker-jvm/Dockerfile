@@ -1,5 +1,5 @@
 # Build stage - compiles everything once
-FROM maven:3.9-eclipse-temurin-25 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 
 WORKDIR /build
 
