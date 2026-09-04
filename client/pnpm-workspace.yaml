@@ -3,7 +3,7 @@ packages:
 
 # pnpm 10+ requires build scripts to be approved explicitly. Both packages need
 # theirs: esbuild and unrs-resolver download their native binary in postinstall,
-# without which vite cannot build. pnpm 9 (used by CI) ignores this block.
+# without which vite cannot build. Local dev and CI run pnpm 11, Docker too.
 # @parcel/watcher comes in via jest-haste-map and ships prebuilt platform
 # binaries, so it does not need to compile from source.
 allowBuilds:

@@ -3,9 +3,10 @@ FROM node:26-alpine AS build
 
 WORKDIR /build
 
-# Install pnpm. Pin to v9 (matches pnpm-lock.yaml lockfileVersion 9.0).
-# Node 26 no longer bundles corepack, so install pnpm via npm instead.
-RUN npm install -g pnpm@9
+# Install pnpm. Match the local dev toolchain (pnpm 11); it still reads and
+# writes the lockfileVersion 9.0 format. Node 26 no longer bundles corepack,
+# so install pnpm via npm instead.
+RUN npm install -g pnpm@11
 
 # Copy workspace files
 COPY client/package.json client/pnpm-lock.yaml client/pnpm-workspace.yaml ./
