@@ -112,10 +112,10 @@ export class WorldId {
         if (!id || id.trim() === '') return false;
         if (id.length < 3) return false;
         if (id.startsWith('@')) {
-            return /^@[a-zA-Z0-9_\-]{1,64}:[a-zA-Z0-9_\-]{1,64}$/.test(id);
+            return /^@[a-zA-Z0-9_-]{1,64}:[a-zA-Z0-9_-]{1,64}$/.test(id);
         }
         // format: regionId:worldName[:zone[:instance]] where zone can be empty
-        return /^[a-zA-Z0-9_\-]{1,64}:[a-zA-Z0-9_\-]{1,64}(:[a-zA-Z0-9_\-]{0,64}(:[a-zA-Z0-9_\-]{0,64})?)?$/.test(id);
+        return /^[a-zA-Z0-9_-]{1,64}:[a-zA-Z0-9_-]{1,64}(:[a-zA-Z0-9_-]{0,64}(:[a-zA-Z0-9_-]{0,64})?)?$/.test(id);
     }
 
     isMain(): boolean {

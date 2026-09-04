@@ -21,10 +21,8 @@ import type { ScriptActionDefinition } from '../scrawl/ScriptActionDefinition';
  */
 export type ActionTargetingMode = 'ENTITY' | 'BLOCK' | 'BOTH' | 'GROUND' | 'ALL';
 
-/** This is a marker interface for full Item with all properties loaded from ItemType */
-export interface FullItem extends Item {
-
-}
+/** Full Item with all properties loaded from ItemType */
+export type FullItem = Item;
 
 /**
  * Item definition in the world

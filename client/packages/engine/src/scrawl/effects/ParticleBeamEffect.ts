@@ -646,16 +646,18 @@ export class ParticleBeamEffect extends ScrawlEffectHandler<ParticleBeamOptions>
       case 'pulsing':
         return 0.5 + 0.5 * Math.sin(currentTime * pulseFrequency * Math.PI * 2);
 
-      case 'flickering':
+      case 'flickering': {
         // Random flicker with some smoothness
         const flickerBase = Math.sin(currentTime * 30 + randomOffset * 10);
         return Math.random() > 0.7 ? 0.3 : (0.7 + 0.3 * flickerBase);
+      }
 
-      case 'lightning':
+      case 'lightning': {
         // Combination of flicker and pulse
         const lightningFlicker = Math.random() > 0.8 ? Math.random() * 0.5 : 1.0;
         const lightningPulse = 0.7 + 0.3 * Math.sin(currentTime * 10);
         return lightningFlicker * lightningPulse;
+      }
 
       case 'continuous':
       default:

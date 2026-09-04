@@ -210,7 +210,7 @@ export class CylinderRenderer extends BlockRenderer {
     }
 
     // Add bottom cap (only if visible)
-    let bottomCapStartVertex = -1;
+    let bottomCapStartVertex: number;
     if (isBottomVisible) {
       bottomCapStartVertex = vertices.length;
       vertices.push(new Vector3(bottomCenterX, bottomCenterY, bottomCenterZ)); // Center vertex
@@ -245,7 +245,7 @@ export class CylinderRenderer extends BlockRenderer {
     }
 
     // Add top cap (only if visible)
-    let topCapStartVertex = -1;
+    let topCapStartVertex: number;
     if (isTopVisible) {
       topCapStartVertex = vertices.length;
       vertices.push(new Vector3(topCenterX, topCenterY, topCenterZ)); // Center vertex

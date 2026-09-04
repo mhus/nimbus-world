@@ -237,11 +237,12 @@ export class MaterialService {
         case 'c':
           props.color = value;
           break;
-        case 'illum':
+        case 'illum': {
           const [_, illumColor, illumStrength] = part.split(':');
           props.illuminationColor = illumColor;
           props.illuminationStrength = parseFloat(illumStrength);
           break;
+        }
       }
     }
 
@@ -736,7 +737,7 @@ export class MaterialService {
     const material = new StandardMaterial(name, this.scene);
 
     // Parse color (supports #RRGGBB or #RRGGBBAA format)
-    let parsedColor = Color3.FromHexString(color.substring(0, 7)); // Take first 6 chars for RGB
+    const parsedColor = Color3.FromHexString(color.substring(0, 7)); // Take first 6 chars for RGB
     let parsedAlpha = opacity;
 
     // Check if alpha is included in hex color (#RRGGBBAA)

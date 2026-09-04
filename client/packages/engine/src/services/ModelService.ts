@@ -158,7 +158,8 @@ export class ModelService {
           `- The file does not exist on the server\n` +
           `- The URL is incorrect\n` +
           `- The file format is invalid or corrupted\n` +
-          `- CORS is blocking the request`
+          `- CORS is blocking the request`,
+          { cause: loadError }
         );
       }
 
@@ -257,7 +258,8 @@ export class ModelService {
           `This usually means:\n` +
           `- The file does not exist on the server\n` +
           `- The URL is incorrect\n` +
-          `- The file format is invalid or corrupted`
+          `- The file format is invalid or corrupted`,
+          { cause: loadError }
         );
       }
 

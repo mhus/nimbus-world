@@ -394,15 +394,16 @@ export class ParticleWandFlashSteadyEffect extends ScrawlEffectHandler<ParticleW
           }
           break;
 
-        case 'wave':
+        case 'wave': {
           const waveFrequency = 2;
           const waveAmplitude = curvature * distance * 0.1;
           const perpendicular = Vector3.Cross(direction, Vector3.Up()).normalize();
           const waveOffset = Math.sin(t * Math.PI * waveFrequency) * waveAmplitude;
           point = point.add(perpendicular.scale(waveOffset));
           break;
+        }
 
-        case 'spiral':
+        case 'spiral': {
           const spiralFrequency = 3;
           const spiralRadius = curvature * distance * 0.1;
           const perp1 = Vector3.Cross(direction, Vector3.Up()).normalize();
@@ -412,6 +413,7 @@ export class ParticleWandFlashSteadyEffect extends ScrawlEffectHandler<ParticleW
             .add(perp2.scale(Math.sin(angle) * spiralRadius));
           point = point.add(spiralOffset);
           break;
+        }
 
         case 'straight':
         default:

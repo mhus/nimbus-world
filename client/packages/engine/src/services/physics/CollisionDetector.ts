@@ -591,7 +591,7 @@ export class CollisionDetector {
         }>
     ): { position: Vector3; collidedEntities: string[] } {
         const collidedEntities: string[] = [];
-        let correctedPosition = playerPosition.clone();
+        const correctedPosition = playerPosition.clone();
 
         for (const entity of entities) {
             // Check 2D circle collision (X, Z plane)

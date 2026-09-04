@@ -196,8 +196,8 @@ export class CircleMarkerEffect extends ScrawlEffectHandler<CircleMarkerOptions>
     }
 
     // Calculate animation progress
-    let currentRadius = 0;
-    let fadeProgress = 1.0;
+    let currentRadius: number;
+    let fadeProgress: number;
 
     if (elapsed < spreadDuration) {
       // Spreading phase

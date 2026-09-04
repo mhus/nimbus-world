@@ -68,7 +68,7 @@ describe('ClientService', () => {
     it('should return empty string if navigator not available', () => {
       // Remove navigator
       const originalNavigator = global.navigator;
-      // @ts-ignore
+      // @ts-expect-error - navigator is required on globalThis but deleted here to test the fallback
       delete global.navigator;
 
       service = new ClientService(mockConfig);
@@ -99,7 +99,7 @@ describe('ClientService', () => {
     it('should return empty string if navigator not available', () => {
       // Remove navigator
       const originalNavigator = global.navigator;
-      // @ts-ignore
+      // @ts-expect-error - navigator is required on globalThis but deleted here to test the fallback
       delete global.navigator;
 
       service = new ClientService(mockConfig);

@@ -1,6 +1,6 @@
 <template>
   <div class="w-full flex flex-col items-center gap-3">
-    <!-- SVG Axis Navigator -->
+    <!-- SVG AxisLine Navigator -->
     <svg
       :width="size"
       :height="size"
@@ -34,24 +34,24 @@
         />
       </g>
 
-      <!-- X-Axis (Red, Horizontal) -->
-      <Axis
+      <!-- X-AxisLine (Red, Horizontal) -->
+      <AxisLine
         :from="points.xNeg"
         :to="points.xPos"
         color="#ef4444"
         label="X"
       />
 
-      <!-- Y-Axis (Green, Vertical) -->
-      <Axis
+      <!-- Y-AxisLine (Green, Vertical) -->
+      <AxisLine
         :from="points.yNeg"
         :to="points.yPos"
         color="#22c55e"
         label="Y"
       />
 
-      <!-- Z-Axis (Blue, Diagonal) -->
-      <Axis
+      <!-- Z-AxisLine (Blue, Diagonal) -->
+      <AxisLine
         :from="points.zNeg"
         :to="points.zPos"
         color="#3b82f6"
@@ -99,7 +99,7 @@
         <title>Execute action</title>
       </g>
 
-      <!-- X-Axis Buttons -->
+      <!-- X-AxisLine Buttons -->
       <NodeButton
         :x="points.xNeg.x"
         :y="points.xNeg.y"
@@ -119,7 +119,7 @@
         @click="bump('x', 1)"
       />
 
-      <!-- Y-Axis Buttons -->
+      <!-- Y-AxisLine Buttons -->
       <NodeButton
         :x="points.yNeg.x"
         :y="points.yNeg.y"
@@ -139,7 +139,7 @@
         @click="bump('y', 1)"
       />
 
-      <!-- Z-Axis Buttons -->
+      <!-- Z-AxisLine Buttons -->
       <NodeButton
         :x="points.zNeg.x"
         :y="points.zNeg.y"
@@ -255,9 +255,9 @@ function executeAction() {
 <script lang="ts">
 import { defineComponent, h } from 'vue';
 
-// Axis Line Component
-const Axis = defineComponent({
-  name: 'Axis',
+// AxisLine Line Component
+const AxisLine = defineComponent({
+  name: 'AxisLine',
   props: {
     from: { type: Object as () => { x: number; y: number }, required: true },
     to: { type: Object as () => { x: number; y: number }, required: true },
@@ -266,7 +266,7 @@ const Axis = defineComponent({
   },
   setup(props) {
     return () => [
-      // Axis line
+      // AxisLine line
       h('line', {
         x1: props.from.x,
         y1: props.from.y,
@@ -276,7 +276,7 @@ const Axis = defineComponent({
         'stroke-width': 4,
         'stroke-linecap': 'round',
       }),
-      // Axis label
+      // AxisLine label
       h(
         'text',
         {
@@ -364,5 +364,5 @@ const NodeButton = defineComponent({
   },
 });
 
-export { Axis, NodeButton };
+export { AxisLine, NodeButton };
 </script>

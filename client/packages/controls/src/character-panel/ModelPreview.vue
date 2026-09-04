@@ -51,7 +51,7 @@ let currentBlobUrl: string | null = null;
 let loadedMeshes: AbstractMesh[] = [];
 let loadedSkeletons: Skeleton[] = [];
 let loadedAnimationGroups: AnimationGroup[] = [];
-let originalMaterials = new Map<AbstractMesh, any>();
+const originalMaterials = new Map<AbstractMesh, any>();
 
 function setupScene() {
   if (!canvasRef.value) return;

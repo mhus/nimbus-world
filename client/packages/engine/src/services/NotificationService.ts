@@ -2295,7 +2295,7 @@ export class NotificationService {
     // First page: 9 slots for smileys (slot 10 = nav), middle pages: 8, last page: 9
     const firstPageSize = 9;
     const middlePageSize = 8;
-    let remaining = allSmileys.length - firstPageSize;
+    const remaining = allSmileys.length - firstPageSize;
     let totalPages = 1;
     if (remaining > 0) {
       // Calculate how many middle + last pages we need

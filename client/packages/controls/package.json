@@ -10,7 +10,7 @@
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "lint": "eslint src --ext .ts,.vue"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.0",
@@ -25,11 +25,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@vitejs/plugin-vue": "^6.0.8",
-    "@vue/eslint-config-typescript": "^14.9.0",
     "babylonjs-gltf2interface": "^9.22.2",
     "daisyui": "^5.7.22",
-    "eslint": "^10.9.1",
-    "eslint-plugin-vue": "^10.10.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.2.1",
     "typescript": "6.0.3",

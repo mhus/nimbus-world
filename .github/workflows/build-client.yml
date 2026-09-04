@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: ./client
+      - name: Lint all packages
+        run: pnpm -r lint
+        working-directory: ./client
       - name: Build shared package
         run: pnpm --filter @nimbus/shared... build
         working-directory: ./client

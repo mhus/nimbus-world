@@ -35,7 +35,7 @@ class LogoutService {
       };
     } catch (error) {
       logger.error('Failed to get logout URLs', {}, error instanceof Error ? error : undefined);
-      throw new Error('Failed to get logout URLs: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      throw new Error('Failed to get logout URLs: ' + (error instanceof Error ? error.message : 'Unknown error'), { cause: error });
     }
   }
 
@@ -65,7 +65,7 @@ class LogoutService {
       logger.info('All logout requests completed');
     } catch (error) {
       logger.error('Logout failed', {error});
-      throw new Error('Logout failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      throw new Error('Logout failed: ' + (error instanceof Error ? error.message : 'Unknown error'), { cause: error });
     }
   }
 }

@@ -457,10 +457,11 @@ export class ParticleExplosionEffect extends ScrawlEffectHandler<ParticleExplosi
         particleSystem.createHemisphericEmitter(1, Math.PI);
         break;
 
-      case 'cone':
+      case 'cone': {
         const radius = Math.tan((coneAngle * Math.PI) / 360) * 1.0;
         particleSystem.createConeEmitter(radius, coneAngle * (Math.PI / 180));
         break;
+      }
 
       case 'ring':
         // Ring emitter (particles emit in a ring/torus shape)

@@ -32,18 +32,18 @@ export class WorldCollection {
                 default:
                     type = WorldCollectionType.SHARED;
             }
-            let pos = path.indexOf(':');
+            const pos = path.indexOf(':');
             if (pos >= 0) path = path.substring(pos + 1);
             return new WorldCollection(type, worldId, path);
         }
-        let pos = path.indexOf(':');
+        const pos = path.indexOf(':');
         if (pos < 0) {
             if (path.startsWith('w/')) {
                 path = path.substring(2);
             }
             return new WorldCollection(WorldCollectionType.WORLD, worldId, path);
         }
-        let group = path.substring(0, pos).toLowerCase();
+        const group = path.substring(0, pos).toLowerCase();
         path = path.substring(pos + 1);
         switch (group) {
             case 'w':

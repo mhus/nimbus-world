@@ -1267,7 +1267,6 @@ export class EnvironmentService {
    * @returns Executor ID or null if in EDITOR mode or if script execution failed
    */
   private async startEnvironmentScriptIfNotEditor(name: string): Promise<string | null> {
-    // @ts-ignore - __EDITOR__ is defined by Vite
     if (typeof __EDITOR__ !== 'undefined' && __EDITOR__) {
       logger.info('Skipping environment script in EDITOR mode', { name });
       return null;
@@ -1509,9 +1508,9 @@ export class EnvironmentService {
 
     // Determine current season
     // seasonMonths = [winterStart, springStart, summerStart, autumnStart]
-    let seasonStatus = SeasonStatus.WINTER; // Default
-    let seasonStartMonth = seasonMonths[0];
-    let seasonEndMonth = seasonMonths[1];
+    let seasonStatus: SeasonStatus;
+    let seasonStartMonth: number;
+    let seasonEndMonth: number;
 
     if (currentMonth >= seasonMonths[3]) {
       // Autumn (wraps to next year)

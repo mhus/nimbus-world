@@ -493,7 +493,7 @@ export class PrecipitationService {
     side.normalize();
 
     // Second, to have a "lateral plane"
-    let side2 = Vector3.Cross(dir, side).normalize();
+    const side2 = Vector3.Cross(dir, side).normalize();
 
     // Random combination of both side directions
     const a = (Math.random() * 2 - 1); // -1..1

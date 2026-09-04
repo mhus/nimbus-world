@@ -139,7 +139,6 @@ export class CompassService {
     this.compassBar.appendChild(this.markersContainer);
 
     // Create time display with season (only in EDITOR mode, left side)
-    // @ts-ignore - __EDITOR__ is defined by Vite
     if (typeof __EDITOR__ !== 'undefined' && __EDITOR__) {
       this.timeDisplay = document.createElement('div');
       this.timeDisplay.className = 'compass-time-display';
@@ -150,7 +149,6 @@ export class CompassService {
     this.compassContainer.appendChild(this.compassBar);
 
     // Create position display (only in EDITOR mode, right side)
-    // @ts-ignore - __EDITOR__ is defined by Vite
     if (typeof __EDITOR__ !== 'undefined' && __EDITOR__) {
       this.positionDisplay = document.createElement('div');
       this.positionDisplay.className = 'compass-position-display';
@@ -198,7 +196,6 @@ export class CompassService {
       this.updateCustomMarkers(yaw, playerPosition);
 
       // Update time display with season (only in EDITOR mode)
-      // @ts-ignore - __EDITOR__ is defined by Vite
       if (typeof __EDITOR__ !== 'undefined' && __EDITOR__ && this.timeDisplay) {
         const environmentService = this.appContext.services.environment;
         if (environmentService) {
@@ -209,7 +206,6 @@ export class CompassService {
       }
 
       // Update position display (only in EDITOR mode)
-      // @ts-ignore - __EDITOR__ is defined by Vite
       if (typeof __EDITOR__ !== 'undefined' && __EDITOR__ && this.positionDisplay) {
         const x = Math.round(playerPosition.x);
         const y = Math.round(playerPosition.y);
@@ -282,7 +278,7 @@ export class CompassService {
 
       // Calculate angle to marker (0 = North = Z+)
       // In the coordinate system: North = Z+, East = X+
-      let angleToMarker = Math.atan2(dx, dz);
+      const angleToMarker = Math.atan2(dx, dz);
       const angleToMarkerDeg = (angleToMarker * 180) / Math.PI;
       const cameraAngleDeg = (cameraYaw * 180) / Math.PI;
 

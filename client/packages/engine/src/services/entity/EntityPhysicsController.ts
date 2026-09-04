@@ -187,7 +187,7 @@ export class EntityPhysicsController {
    * Used when receiving physics pathways from server
    */
   applyServerVelocity(clientEntity: ClientEntity, velocity: Vector3): void {
-    let state = this.physicsStates.get(clientEntity.entity.name);
+    const state = this.physicsStates.get(clientEntity.entity.name);
     if (!state) {
       this.initializePhysics(clientEntity, velocity);
     } else {

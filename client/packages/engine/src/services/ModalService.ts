@@ -1663,7 +1663,7 @@ export class ModalService {
 
       // Handle different component types
       switch (component.toLowerCase()) {
-        case 'block_editor':
+        case 'block_editor': {
           // Expect attributes: [x, y, z]
           if (attributes.length < 3) {
             throw new Error('block_editor requires 3 attributes: x, y, z');
@@ -1677,6 +1677,7 @@ export class ModalService {
           }
 
           return this.openBlockEditor(x, y, z);
+        }
 
         case 'edit_config':
           // No attributes required

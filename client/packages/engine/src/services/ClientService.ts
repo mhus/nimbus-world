@@ -90,7 +90,6 @@ export class ClientService {
    * @returns True if editor build
    */
   isEditor(): boolean {
-    // @ts-ignore - __EDITOR__ is defined by Vite
     return typeof __EDITOR__ !== 'undefined' && __EDITOR__;
   }
 
@@ -102,8 +101,7 @@ export class ClientService {
     // Check Vite environment
     try {
       // Use eval to defer import.meta parsing (not available in Jest/Node)
-      // @ts-ignore
-      const importMeta = eval('import.meta');
+      const importMeta = eval('import.meta') as { env?: { PROD?: boolean } } | undefined;
       if (importMeta && importMeta.env) {
         return !importMeta.env.PROD;
       }

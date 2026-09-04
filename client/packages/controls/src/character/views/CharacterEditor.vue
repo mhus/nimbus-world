@@ -354,7 +354,7 @@
           </div>
 
           <!-- Existing Attributes -->
-          <div v-if="character?.attributes && Object.keys(character.attributes).length > 0" class="overflow-x-auto">
+          <div v-if="characterData?.attributes && Object.keys(characterData.attributes).length > 0" class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
                 <tr>
@@ -364,7 +364,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(value, key) in character.attributes" :key="key">
+                <tr v-for="(value, key) in characterData.attributes" :key="key">
                   <td class="font-mono">{{ key }}</td>
                   <td>
                     <input
@@ -427,9 +427,9 @@
           </div>
 
           <!-- Existing Skills -->
-          <div v-if="character?.skills && Object.keys(character.skills).length > 0" class="space-y-2">
+          <div v-if="characterData?.skills && Object.keys(characterData.skills).length > 0" class="space-y-2">
             <div
-              v-for="(level, skillName) in character.skills"
+              v-for="(level, skillName) in characterData.skills"
               :key="skillName"
               class="flex items-center gap-4 p-3 border border-base-300 rounded-lg"
             >
@@ -503,9 +503,9 @@
           </div>
 
           <!-- Existing Spell Words -->
-          <div v-if="character?.spellWords && Object.keys(character.spellWords).length > 0" class="space-y-2">
+          <div v-if="characterData?.spellWords && Object.keys(characterData.spellWords).length > 0" class="space-y-2">
             <div
-              v-for="(xp, wordName) in character.spellWords"
+              v-for="(xp, wordName) in characterData.spellWords"
               :key="wordName"
               class="flex items-center gap-4 p-3 border border-base-300 rounded-lg"
             >
@@ -895,7 +895,7 @@ const assetWorldId = computed(() => currentRegionId.value ? `@region:${currentRe
 
 const isNew = computed(() => props.character === 'new');
 
-const character = ref<RCharacter | null>(null);
+const characterData = ref<RCharacter | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
@@ -991,7 +991,7 @@ const loadUsers = async () => {
 
 const loadCharacter = () => {
   if (isNew.value) {
-    character.value = null;
+    characterData.value = null;
     formData.value = {
       userId: '',
       name: '',
@@ -1008,29 +1008,29 @@ const loadCharacter = () => {
   }
 
   // Load from props
-  character.value = props.character as RCharacter;
+  characterData.value = props.character as RCharacter;
   formData.value = {
-    userId: character.value.userId,
-    name: character.value.name,
-    title: character.value.publicData?.title || character.value.name,
+    userId: characterData.value.userId,
+    name: characterData.value.name,
+    title: characterData.value.publicData?.title || characterData.value.name,
   };
 
   // Initialize JSON strings for shortcuts
-  shortcutsJson.value = JSON.stringify(character.value.publicData?.shortcuts || {}, null, 2);
-  editorShortcutsJson.value = JSON.stringify(character.value.publicData?.editorShortcuts || {}, null, 2);
+  shortcutsJson.value = JSON.stringify(characterData.value.publicData?.shortcuts || {}, null, 2);
+  editorShortcutsJson.value = JSON.stringify(characterData.value.publicData?.editorShortcuts || {}, null, 2);
 
   // Initialize third person model
-  thirdPersonModelId.value = character.value.publicData?.thirdPersonModelId || '';
-  thirdPersonModelModifiers.value = character.value.publicData?.thirdPersonModelModifiers || {};
+  thirdPersonModelId.value = characterData.value.publicData?.thirdPersonModelId || '';
+  thirdPersonModelModifiers.value = characterData.value.publicData?.thirdPersonModelModifiers || {};
 
   // Initialize movement state values
-  stateValues.value = character.value.publicData?.stateValues || {} as any;
+  stateValues.value = characterData.value.publicData?.stateValues || {} as any;
 
   // Initialize backpack items
-  backpackItems.value = character.value.backpack?.itemIds || {};
+  backpackItems.value = characterData.value.backpack?.itemIds || {};
 
   // Initialize wearing items
-  wearingItems.value = { ...(character.value.backpack?.wearingItemIds ?? {}) };
+  wearingItems.value = { ...(characterData.value.backpack?.wearingItemIds ?? {}) };
 };
 
 const handleSave = async () => {
@@ -1051,10 +1051,10 @@ const handleSave = async () => {
         publicData: { title: formData.value.title } as PlayerInfo,
       });
       successMessage.value = 'Character created successfully';
-    } else if (character.value) {
+    } else if (characterData.value) {
       // Update publicData with current thirdPersonModelId, modifiers, and stateValues
       const updatedPublicData = {
-        ...character.value.publicData,
+        ...characterData.value.publicData,
         title: formData.value.title,
         thirdPersonModelId: thirdPersonModelId.value || undefined,
         thirdPersonModelModifiers: Object.keys(thirdPersonModelModifiers.value).length > 0
@@ -1067,7 +1067,7 @@ const handleSave = async () => {
       // Object.fromEntries widens the enum-keyed Records to plain string keys, and
       // the UI only sends the slots it actually has - the server merges the rest.
       const updatedBackpack = {
-        ...character.value.backpack,
+        ...characterData.value.backpack,
         itemIds: Object.fromEntries(
           Object.entries(backpackItems.value).filter(([_, count]) => count > 0)
         ),
@@ -1079,21 +1079,21 @@ const handleSave = async () => {
       // Update existing character with full DTO
       const updatedChar = await characterService.updateCharacter(
         currentRegionId.value,
-        character.value.id,
-        character.value.userId,
-        character.value.name,
+        characterData.value.id,
+        characterData.value.userId,
+        characterData.value.name,
         {
-          userId: character.value.userId,
-          name: character.value.name,
+          userId: characterData.value.userId,
+          name: characterData.value.name,
           publicData: updatedPublicData,
           backpack: updatedBackpack,
-          skills: character.value.skills,
-          attributes: character.value.attributes,
+          skills: characterData.value.skills,
+          attributes: characterData.value.attributes,
         }
       );
       successMessage.value = 'Character updated successfully';
       // Update local character with response
-      character.value = updatedChar;
+      characterData.value = updatedChar;
     }
 
     setTimeout(() => {
@@ -1108,7 +1108,7 @@ const handleSave = async () => {
 };
 
 const handleAddSkill = async () => {
-  if (!newSkillName.value.trim() || !currentRegionId.value || !character.value) {
+  if (!newSkillName.value.trim() || !currentRegionId.value || !characterData.value) {
     return;
   }
 
@@ -1117,11 +1117,11 @@ const handleAddSkill = async () => {
   successMessage.value = null;
 
   try {
-    character.value = await characterService.setSkill(
+    characterData.value = await characterService.setSkill(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       newSkillName.value.trim(),
       newSkillLevel.value
     );
@@ -1137,7 +1137,7 @@ const handleAddSkill = async () => {
 };
 
 const handleSetSkillLevel = async (skillName: string, level: number) => {
-  if (!currentRegionId.value || !character.value) {
+  if (!currentRegionId.value || !characterData.value) {
     return;
   }
 
@@ -1146,11 +1146,11 @@ const handleSetSkillLevel = async (skillName: string, level: number) => {
   successMessage.value = null;
 
   try {
-    character.value = await characterService.setSkill(
+    characterData.value = await characterService.setSkill(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       skillName,
       level
     );
@@ -1168,7 +1168,7 @@ const handleSetSkillLevel = async (skillName: string, level: number) => {
 };
 
 const handleIncrementSkill = async (skillName: string, delta: number) => {
-  if (!currentRegionId.value || !character.value) {
+  if (!currentRegionId.value || !characterData.value) {
     return;
   }
 
@@ -1177,11 +1177,11 @@ const handleIncrementSkill = async (skillName: string, delta: number) => {
   successMessage.value = null;
 
   try {
-    character.value = await characterService.incrementSkill(
+    characterData.value = await characterService.incrementSkill(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       skillName,
       delta
     );
@@ -1206,7 +1206,7 @@ const calculateSpellWordLevel = (xp: number): number => {
 };
 
 const handleAddSpellWord = async () => {
-  if (!newSpellWord.value.trim() || !currentRegionId.value || !character.value) {
+  if (!newSpellWord.value.trim() || !currentRegionId.value || !characterData.value) {
     return;
   }
 
@@ -1215,11 +1215,11 @@ const handleAddSpellWord = async () => {
   successMessage.value = null;
 
   try {
-    character.value = await characterService.setSpellWord(
+    characterData.value = await characterService.setSpellWord(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       newSpellWord.value.trim(),
       newSpellWordXp.value
     );
@@ -1235,18 +1235,18 @@ const handleAddSpellWord = async () => {
 };
 
 const handleSetSpellWordXp = async (word: string, xp: number) => {
-  if (!currentRegionId.value || !character.value) return;
+  if (!currentRegionId.value || !characterData.value) return;
 
   saving.value = true;
   error.value = null;
   successMessage.value = null;
 
   try {
-    character.value = await characterService.setSpellWord(
+    characterData.value = await characterService.setSpellWord(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       word,
       xp
     );
@@ -1260,18 +1260,18 @@ const handleSetSpellWordXp = async (word: string, xp: number) => {
 };
 
 const handleRemoveSpellWord = async (word: string) => {
-  if (!currentRegionId.value || !character.value) return;
+  if (!currentRegionId.value || !characterData.value) return;
 
   saving.value = true;
   error.value = null;
   successMessage.value = null;
 
   try {
-    character.value = await characterService.removeSpellWord(
+    characterData.value = await characterService.removeSpellWord(
       currentRegionId.value,
-      character.value.id,
-      character.value.userId,
-      character.value.name,
+      characterData.value.id,
+      characterData.value.userId,
+      characterData.value.name,
       word
     );
     successMessage.value = `Spell word "${word}" removed`;
@@ -1284,23 +1284,23 @@ const handleRemoveSpellWord = async (word: string) => {
 };
 
 const handleAddAttribute = () => {
-  if (!newAttributeKey.value.trim() || !newAttributeValue.value.trim() || !character.value) {
+  if (!newAttributeKey.value.trim() || !newAttributeValue.value.trim() || !characterData.value) {
     return;
   }
 
   // Initialize attributes if not present
-  if (!character.value.attributes) {
-    character.value = {
-      ...character.value,
+  if (!characterData.value.attributes) {
+    characterData.value = {
+      ...characterData.value,
       attributes: {},
     };
   }
 
   // Update local character object
-  character.value = {
-    ...character.value,
+  characterData.value = {
+    ...characterData.value,
     attributes: {
-      ...character.value.attributes,
+      ...characterData.value.attributes,
       [newAttributeKey.value]: newAttributeValue.value,
     },
   };
@@ -1310,33 +1310,33 @@ const handleAddAttribute = () => {
 };
 
 const handleAttributeChange = (key: string, event: Event) => {
-  if (!character.value) return;
+  if (!characterData.value) return;
 
   const target = event.target as HTMLInputElement;
 
   // Update local character object
-  character.value = {
-    ...character.value,
+  characterData.value = {
+    ...characterData.value,
     attributes: {
-      ...character.value.attributes,
+      ...characterData.value.attributes,
       [key]: target.value,
     },
   };
 };
 
 const handleRemoveAttribute = (key: string) => {
-  if (!character.value) return;
+  if (!characterData.value) return;
 
   // Update local character object
-  const { [key]: removed, ...remainingAttributes } = character.value.attributes || {};
-  character.value = {
-    ...character.value,
+  const { [key]: removed, ...remainingAttributes } = characterData.value.attributes || {};
+  characterData.value = {
+    ...characterData.value,
     attributes: remainingAttributes,
   };
 };
 
 const handleSaveShortcuts = () => {
-  if (!character.value) return;
+  if (!characterData.value) return;
 
   shortcutsError.value = null;
 
@@ -1345,21 +1345,21 @@ const handleSaveShortcuts = () => {
     const parsed = JSON.parse(shortcutsJson.value);
 
     // Update character
-    if (!character.value.publicData) {
-      character.value = {
-        ...character.value,
+    if (!characterData.value.publicData) {
+      characterData.value = {
+        ...characterData.value,
         publicData: {
-          playerId: character.value.userId,
-          title: character.value.name,
+          playerId: characterData.value.userId,
+          title: characterData.value.name,
           shortcuts: parsed,
           stateValues: DEFAULT_STATE_VALUES,
         },
       };
     } else {
-      character.value = {
-        ...character.value,
+      characterData.value = {
+        ...characterData.value,
         publicData: {
-          ...character.value.publicData,
+          ...characterData.value.publicData,
           shortcuts: parsed,
         },
       };
@@ -1372,13 +1372,13 @@ const handleSaveShortcuts = () => {
 };
 
 const handleResetShortcuts = () => {
-  if (!character.value) return;
-  shortcutsJson.value = JSON.stringify(character.value.publicData?.shortcuts || {}, null, 2);
+  if (!characterData.value) return;
+  shortcutsJson.value = JSON.stringify(characterData.value.publicData?.shortcuts || {}, null, 2);
   shortcutsError.value = null;
 };
 
 const handleSaveEditorShortcuts = () => {
-  if (!character.value) return;
+  if (!characterData.value) return;
 
   editorShortcutsError.value = null;
 
@@ -1387,21 +1387,21 @@ const handleSaveEditorShortcuts = () => {
     const parsed = JSON.parse(editorShortcutsJson.value);
 
     // Update character
-    if (!character.value.publicData) {
-      character.value = {
-        ...character.value,
+    if (!characterData.value.publicData) {
+      characterData.value = {
+        ...characterData.value,
         publicData: {
-          playerId: character.value.userId,
-          title: character.value.name,
+          playerId: characterData.value.userId,
+          title: characterData.value.name,
           editorShortcuts: parsed,
           stateValues: DEFAULT_STATE_VALUES,
         },
       };
     } else {
-      character.value = {
-        ...character.value,
+      characterData.value = {
+        ...characterData.value,
         publicData: {
-          ...character.value.publicData,
+          ...characterData.value.publicData,
           editorShortcuts: parsed,
         },
       };
@@ -1414,18 +1414,18 @@ const handleSaveEditorShortcuts = () => {
 };
 
 const handleResetEditorShortcuts = () => {
-  if (!character.value) return;
-  editorShortcutsJson.value = JSON.stringify(character.value.publicData?.editorShortcuts || {}, null, 2);
+  if (!characterData.value) return;
+  editorShortcutsJson.value = JSON.stringify(characterData.value.publicData?.editorShortcuts || {}, null, 2);
   editorShortcutsError.value = null;
 };
 
 const handleModelIdChange = () => {
   // Update character immediately for local state
-  if (character.value && character.value.publicData) {
-    character.value = {
-      ...character.value,
+  if (characterData.value && characterData.value.publicData) {
+    characterData.value = {
+      ...characterData.value,
       publicData: {
-        ...character.value.publicData,
+        ...characterData.value.publicData,
         thirdPersonModelId: thirdPersonModelId.value || undefined,
       },
     };

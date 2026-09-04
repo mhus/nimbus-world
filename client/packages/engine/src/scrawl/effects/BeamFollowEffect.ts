@@ -46,7 +46,7 @@ export class BeamFollowEffect extends ScrawlEffectHandler<BeamFollowOptions> {
     const source = ctx.vars?.source;
     if (source) {
       // Try different position properties
-      let pos = source.currentPosition || source.position || source.block?.position || source.entity?.position;
+      const pos = source.currentPosition || source.position || source.block?.position || source.entity?.position;
       if (pos) {
         this.sourcePos = new Vector3(pos.x, pos.y, pos.z);
       } else {

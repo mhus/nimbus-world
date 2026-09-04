@@ -20,8 +20,13 @@
     "clean": "pnpm -r clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.0",
-    "typescript": "6.0.3"
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-vue": "^10.10.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.69.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",

@@ -58,7 +58,7 @@ export async function loadImageWithCredentials(url: string): Promise<HTMLImageEl
     });
   } catch (error) {
     logger.error('Failed to load image with credentials', { url }, error as Error);
-    throw new Error(`Failed to load image: ${url}`);
+    throw new Error(`Failed to load image: ${url}`, { cause: error });
   }
 }
 
@@ -92,7 +92,7 @@ export async function loadTextureUrlWithCredentials(url: string): Promise<string
     return URL.createObjectURL(blob);
   } catch (error) {
     logger.error('Failed to load texture URL with credentials', { url }, error as Error);
-    throw new Error(`Failed to load texture: ${url}`);
+    throw new Error(`Failed to load texture: ${url}`, { cause: error });
   }
 }
 
@@ -161,6 +161,6 @@ export async function loadAudioUrlWithCredentials(url: string): Promise<string> 
     return URL.createObjectURL(blob);
   } catch (error) {
     logger.error('Failed to load audio URL with credentials', { url }, error as Error);
-    throw new Error(`Failed to load audio: ${url}`);
+    throw new Error(`Failed to load audio: ${url}`, { cause: error });
   }
 }

@@ -133,8 +133,7 @@ class LoggerFactoryImpl {
       if (!envLevel && typeof process === 'undefined') {
         try {
           // Use eval to defer import.meta parsing (not available in Jest/Node)
-          // @ts-ignore
-          const meta = eval('import.meta');
+          const meta = eval('import.meta') as { env?: Record<string, string | undefined> } | undefined;
           if (meta && meta.env) {
             envLevel = meta.env.VITE_LOG_LEVEL;
           }
@@ -160,8 +159,7 @@ class LoggerFactoryImpl {
       if (!envLoggers && typeof process === 'undefined') {
         try {
           // Use eval to defer import.meta parsing (not available in Jest/Node)
-          // @ts-ignore
-          const meta = eval('import.meta');
+          const meta = eval('import.meta') as { env?: Record<string, string | undefined> } | undefined;
           if (meta && meta.env) {
             envLoggers = meta.env.VITE_LOG_LOGGERS;
           }

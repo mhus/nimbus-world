@@ -73,6 +73,11 @@ onMounted(() => {
 });
 
 // Cycle through states: undefined -> true -> false -> undefined
+// The component is an in-place editor for the parent's object: it mutates
+// fields of the passed modelObject and also emits update events. Converting
+// this to a pure emit-based flow would change the parent integration, so the
+// intentional prop mutation is documented here instead.
+/* eslint-disable vue/no-mutating-props -- intentional in-place object editing, see above */
 const cycle = () => {
   // Read current state
   const currentDefined = props.modelObject[definedKey.value] === true;
@@ -92,6 +97,7 @@ const cycle = () => {
     props.modelObject[props.propertyName] = false;
   }
 };
+/* eslint-enable vue/no-mutating-props */
 </script>
 
 <style scoped>

@@ -208,7 +208,7 @@
                     <span class="label-text font-semibold">Items ({{ chest.items?.length || 0 }})</span>
                   </label>
                   <div v-if="chest.items && chest.items.length > 0" class="max-h-48 overflow-y-auto border rounded p-2">
-                    <div v-for="(itemRef, _index) in chest.items" :key="itemRef.itemId" class="p-2 border-b last:border-0">
+                    <div v-for="itemRef in chest.items" :key="itemRef.itemId" class="p-2 border-b last:border-0">
                       <div class="flex justify-between items-start">
                         <div class="flex-1">
                           <div class="font-mono text-sm">{{ itemRef.itemId }}</div>

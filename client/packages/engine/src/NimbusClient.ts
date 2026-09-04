@@ -195,7 +195,7 @@ async function initializeCoreServices(appContext: AppContext): Promise<void> {
       logger.debug('Configuration loaded successfully');
     } catch (error) {
       logger.error('Failed to load configuration from REST API', undefined, error as Error);
-      throw new Error('Failed to load configuration. Please check server connection.');
+      throw new Error('Failed to load configuration. Please check server connection.', { cause: error });
     }
 
     // Initialize NetworkService
@@ -433,49 +433,45 @@ appContextPromise
     // Show loading message
     showLoadingMessage(canvas, 'Connecting to server...');
 
-    try {
-      // Initialize core services (Network, BlockType, Chunk)
-      await initializeCoreServices(appContext);
+    // Initialize core services (Network, BlockType, Chunk)
+    await initializeCoreServices(appContext);
 
-      await postCoreServiceInitialization(appContext);
+    await postCoreServiceInitialization(appContext);
 
-      // Show progress
-      showLoadingMessage(canvas, 'Initializing 3D engine...');
+    // Show progress
+    showLoadingMessage(canvas, 'Initializing 3D engine...');
 
-      // Clear canvas and prepare for WebGL
-      // BabylonJS needs a fresh canvas without existing 2D context
-      const parent = canvas.parentElement;
-      if (parent) {
-        const newCanvas = document.createElement('canvas');
-        newCanvas.id = 'renderCanvas';
-        newCanvas.width = window.innerWidth;
-        newCanvas.height = window.innerHeight;
-        newCanvas.style.width = '100%';
-        newCanvas.style.height = '100%';
-        parent.replaceChild(newCanvas, canvas);
+    // Clear canvas and prepare for WebGL
+    // BabylonJS needs a fresh canvas without existing 2D context
+    const parent = canvas.parentElement;
+    if (parent) {
+      const newCanvas = document.createElement('canvas');
+      newCanvas.id = 'renderCanvas';
+      newCanvas.width = window.innerWidth;
+      newCanvas.height = window.innerHeight;
+      newCanvas.style.width = '100%';
+      newCanvas.style.height = '100%';
+      parent.replaceChild(newCanvas, canvas);
 
-        logger.debug('Canvas replaced for WebGL initialization');
+      logger.debug('Canvas replaced for WebGL initialization');
 
-        // Initialize 3D engine with new canvas
-        await initializeEngine(appContext, newCanvas);
-      } else {
-        throw new Error('Canvas has no parent element');
-      }
-
-      await postEngineInitialization(appContext);
-
-      await startEngineAtPlayerPosition(appContext);
-
-      // Hide loading screen
-      const loadingElement = document.getElementById('loading');
-      if (loadingElement) {
-        loadingElement.classList.add('hidden');
-      }
-
-      logger.debug('Nimbus Client ready!');
-    } catch (error) {
-      throw error; // Re-throw to outer catch
+      // Initialize 3D engine with new canvas
+      await initializeEngine(appContext, newCanvas);
+    } else {
+      throw new Error('Canvas has no parent element');
     }
+
+    await postEngineInitialization(appContext);
+
+    await startEngineAtPlayerPosition(appContext);
+
+    // Hide loading screen
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+      loadingElement.classList.add('hidden');
+    }
+
+    logger.debug('Nimbus Client ready!');
 
     // Editor-specific initialization (tree-shaken in viewer build)
     if (__EDITOR__ || __DEBUG_COMMANDS__) {

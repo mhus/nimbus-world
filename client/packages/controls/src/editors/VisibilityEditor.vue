@@ -966,58 +966,49 @@ const loadTextureImage = async (texturePath: string): Promise<HTMLImageElement> 
   }
 
   // Load image using fetch with credentials, then convert to Image
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Use AssetService to construct correct URL
-      if (!props.worldId) {
-        const error = new Error('World ID not provided');
-        textureErrorCache.value.set(texturePath, error);
-        reject(error);
-        return;
-      }
-      const assetUrl = assetService.getAssetUrl(props.worldId, texturePath);
+  try {
+    // Use AssetService to construct correct URL
+    if (!props.worldId) {
+      throw new Error('World ID not provided');
+    }
+    const assetUrl = assetService.getAssetUrl(props.worldId, texturePath);
 
-      // Fetch with credentials
-      const response = await fetch(assetUrl, {
-        credentials: 'include',
-        mode: 'cors'
+    // Fetch with credentials
+    const response = await fetch(assetUrl, {
+      credentials: 'include',
+      mode: 'cors'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Convert to blob and create object URL
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    try {
+      // Create image from blob URL
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error(`Failed to create image from blob: ${texturePath}`));
+        image.src = objectUrl;
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Convert to blob and create object URL
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-
-      // Create image from blob URL
-      const img = new Image();
-
-      img.onload = () => {
-        // Cache successful load
-        textureImageCache.value.set(texturePath, img);
-        resolve(img);
-        // Clean up object URL after image is loaded
-        URL.revokeObjectURL(objectUrl);
-      };
-
-      img.onerror = () => {
-        const error = new Error(`Failed to create image from blob: ${texturePath}`);
-        textureErrorCache.value.set(texturePath, error);
-        URL.revokeObjectURL(objectUrl);
-        reject(error);
-      };
-
-      img.src = objectUrl;
-
-    } catch (error) {
-      // Cache error to prevent retry loops
-      const err = error instanceof Error ? error : new Error(`Failed to load texture: ${texturePath}`);
-      textureErrorCache.value.set(texturePath, err);
-      reject(err);
+      // Cache successful load
+      textureImageCache.value.set(texturePath, img);
+      return img;
+    } finally {
+      // Clean up object URL after image is loaded
+      URL.revokeObjectURL(objectUrl);
     }
-  });
+  } catch (error) {
+    // Cache error to prevent retry loops
+    const err = error instanceof Error ? error : new Error(`Failed to load texture: ${texturePath}`);
+    textureErrorCache.value.set(texturePath, err);
+    throw err;
+  }
 };
 
 const renderTexturePreview = async (key: number) => {

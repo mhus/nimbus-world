@@ -66,7 +66,9 @@ export class NodeFileLogTransport {
 
       // Lazy load Node.js modules (won't exist in browser)
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- intentional lazy loading, the modules do not exist in browser builds
         this.fs = require('fs');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- intentional lazy loading, the modules do not exist in browser builds
         this.path = require('path');
       } catch {
         throw new Error(
