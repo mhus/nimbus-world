@@ -30,8 +30,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       axios:
-        specifier: ^1.20.0
-        version: 1.20.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+        specifier: ^1.6.0
+        version: 1.13.2(debug@4.4.3(supports-color@8.1.1))
       dompurify:
         specifier: ^3.4.13
         version: 3.4.14
@@ -55,8 +55,8 @@ importers:
         specifier: ^9.22.2
         version: 9.23.0
       daisyui:
-        specifier: ^5.7.4
-        version: 5.7.4
+        specifier: ^5.7.22
+        version: 5.7.22
       eslint:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.7.0)(supports-color@8.1.1)
@@ -1208,10 +1208,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  agent-base@6.0.2:
-    resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
-    engines: {node: '>= 6.0.0'}
-
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
 
@@ -1255,8 +1251,8 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
-  axios@1.20.0:
-    resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
+  axios@1.13.2:
+    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
 
   babel-jest@30.5.0:
     resolution: {integrity: sha512-PrhPHlKC+MsLnuNzgIH/y1dkz1f6cSfKWaQeaG8WxLMuG44dYWQ8E9uRrsBbAGCU/3+BEFYPN4d6G3Zc5Y+waA==}
@@ -1406,8 +1402,8 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
-  daisyui@5.7.4:
-    resolution: {integrity: sha512-zKzFIwvEvn2QvE1TbUUtDnYFOqWoxeZh+j4QXfhkZKYAT++pO2ijyT9rkFm0GIPDWR1/oo9hHZzd96AsTK0iZg==}
+  daisyui@5.7.22:
+    resolution: {integrity: sha512-pYii+2NCN0+OIL6Lpuc054LK0QJeNv+GRK9UzN1GRmjdYhYO6WFl0QLoj5oPcitPD7o+okiiI0SKFkn641TxmA==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1657,8 +1653,8 @@ packages:
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
 
-  follow-redirects@1.16.0:
-    resolution: {integrity: sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==}
+  follow-redirects@1.15.11:
+    resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -1670,8 +1666,8 @@ packages:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
 
-  form-data@4.0.6:
-    resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
+  form-data@4.0.5:
+    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
     engines: {node: '>= 6'}
 
   fsevents@2.3.3:
@@ -1751,16 +1747,12 @@ packages:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
 
-  hasown@2.0.4:
-    resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
+  hasown@2.0.2:
+    resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
-
-  https-proxy-agent@5.0.1:
-    resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
-    engines: {node: '>= 6'}
 
   human-signals@2.1.0:
     resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
@@ -2417,9 +2409,8 @@ packages:
     resolution: {integrity: sha512-mzNzBErpHwM0zpmWS7ExOv62yhQhvd546nUuFqVR0dmnJB59tfrw9sjDF0DJknwsr59OXP0buwJ7PaKguczHSg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  proxy-from-env@2.1.0:
-    resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
-    engines: {node: '>=10'}
+  proxy-from-env@1.1.0:
+    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -3201,7 +3192,7 @@ snapshots:
 
   '@jest/pattern@30.5.0':
     dependencies:
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
       jest-regex-util: 30.5.0
 
   '@jest/reporters@30.5.0(supports-color@8.1.1)':
@@ -3333,7 +3324,7 @@ snapshots:
       '@jest/schemas': 30.5.0
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
       '@types/yargs': 17.0.35
       chalk: 4.1.2
     optional: true
@@ -3922,12 +3913,6 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  agent-base@6.0.2(supports-color@8.1.1):
-    dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - supports-color
-
   ajv@6.12.6:
     dependencies:
       fast-deep-equal: 3.1.3
@@ -3966,15 +3951,13 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  axios@1.20.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1):
+  axios@1.13.2(debug@4.4.3(supports-color@8.1.1)):
     dependencies:
-      follow-redirects: 1.16.0(debug@4.4.3(supports-color@8.1.1))
-      form-data: 4.0.6
-      https-proxy-agent: 5.0.1(supports-color@8.1.1)
-      proxy-from-env: 2.1.0
+      follow-redirects: 1.15.11(debug@4.4.3(supports-color@8.1.1))
+      form-data: 4.0.5
+      proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-      - supports-color
 
   babel-jest@30.5.0(@babel/core@7.28.5(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
@@ -4143,7 +4126,7 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  daisyui@5.7.4: {}
+  daisyui@5.7.22: {}
 
   debug@4.4.3(supports-color@8.1.1):
     dependencies:
@@ -4213,7 +4196,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.4
+      hasown: 2.0.2
 
   escalade@3.2.0: {}
 
@@ -4393,7 +4376,7 @@ snapshots:
 
   flatted@3.3.3: {}
 
-  follow-redirects@1.16.0(debug@4.4.3(supports-color@8.1.1)):
+  follow-redirects@1.15.11(debug@4.4.3(supports-color@8.1.1)):
     optionalDependencies:
       debug: 4.4.3(supports-color@8.1.1)
 
@@ -4402,12 +4385,12 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  form-data@4.0.6:
+  form-data@4.0.5:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.4
+      hasown: 2.0.2
       mime-types: 2.1.35
 
   fsevents@2.3.3:
@@ -4429,7 +4412,7 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.4
+      hasown: 2.0.2
       math-intrinsics: 1.1.0
 
   get-package-type@0.1.0: {}
@@ -4487,18 +4470,11 @@ snapshots:
     dependencies:
       has-symbols: 1.1.0
 
-  hasown@2.0.4:
+  hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
 
   html-escaper@2.0.2: {}
-
-  https-proxy-agent@5.0.1(supports-color@8.1.1):
-    dependencies:
-      agent-base: 6.0.2(supports-color@8.1.1)
-      debug: 4.4.3(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - supports-color
 
   human-signals@2.1.0: {}
 
@@ -4740,7 +4716,7 @@ snapshots:
     dependencies:
       '@jest/types': 30.5.1
       '@parcel/watcher': 2.6.0
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       fdir: 6.5.0(picomatch@4.0.5)
@@ -4931,7 +4907,7 @@ snapshots:
   jest-util@30.5.1:
     dependencies:
       '@jest/types': 30.5.1
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
       chalk: 4.1.2
       ci-info: 4.3.1
       graceful-fs: 4.2.11
@@ -4968,7 +4944,7 @@ snapshots:
 
   jest-worker@30.5.1:
     dependencies:
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
       '@ungap/structured-clone': 1.3.0
       jest-util: 30.5.1
       merge-stream: 2.0.0
@@ -5317,7 +5293,7 @@ snapshots:
       '@jest/schemas': 30.5.0
       ansi-styles: 5.2.0
 
-  proxy-from-env@2.1.0: {}
+  proxy-from-env@1.1.0: {}
 
   punycode@2.3.1: {}
 
