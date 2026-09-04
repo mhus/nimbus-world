@@ -3,9 +3,9 @@ FROM node:26-alpine AS build
 
 WORKDIR /build
 
-# Install pnpm. Pin to v9 (matches pnpm-lock.yaml lockfileVersion 9.0);
-# pnpm@latest (v10+) requires Node 22+ (node:sqlite) and breaks on node:20.
-RUN corepack enable && corepack prepare pnpm@9 --activate
+# Install pnpm. Pin to v9 (matches pnpm-lock.yaml lockfileVersion 9.0).
+# Node 26 no longer bundles corepack, so install pnpm via npm instead.
+RUN npm install -g pnpm@9
 
 # Copy workspace files
 COPY client/package.json client/pnpm-lock.yaml client/pnpm-workspace.yaml ./
