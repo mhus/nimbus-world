@@ -13,7 +13,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <graaljs.version>25.2.4</graaljs.version>
+        <graaljs.version>25.3.4.1</graaljs.version>
         <!-- Keep all langchain4j artifacts on one version; mixing them breaks at runtime. -->
         <langchain4j.version>1.19.0</langchain4j.version>
     </properties>
