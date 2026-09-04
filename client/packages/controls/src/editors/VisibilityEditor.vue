@@ -691,7 +691,7 @@
 
   <!-- Texture Asset Picker Dialog -->
   <AssetPickerDialog
-    v-if="isAssetPickerOpen"
+    v-if="isAssetPickerOpen && worldId"
     :world-id="worldId"
     :current-path="getTexturePathValue(selectedTextureKey)"
     :extensions="['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']"
@@ -701,7 +701,7 @@
 
   <!-- Model Asset Picker Dialog -->
   <AssetPickerDialog
-    v-if="isModelAssetPickerOpen"
+    v-if="isModelAssetPickerOpen && worldId"
     :world-id="worldId"
     :current-path="localValue.path"
     :extensions="['glb', 'gltf', 'babylon', 'obj', 'fbx']"

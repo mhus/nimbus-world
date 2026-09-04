@@ -64,17 +64,18 @@ export class NodeFileLogTransport {
         flushIntervalMs: options.flushIntervalMs || 1000,
       };
 
-      // Lazy load Node.js modules (won't exist in browser)
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports -- intentional lazy loading, the modules do not exist in browser builds
-        this.fs = require('fs');
-        // eslint-disable-next-line @typescript-eslint/no-require-imports -- intentional lazy loading, the modules do not exist in browser builds
-        this.path = require('path');
-      } catch {
+      // Lazy load Node.js modules (won't exist in browser). The indirection
+      // through `nodeRequire` keeps this a plain property read instead of
+      // CommonJS import calls, and the guard handles browser builds where no
+      // require implementation exists at all.
+      const nodeRequire = typeof require === 'function' ? require : undefined;
+      if (!nodeRequire) {
         throw new Error(
           'NodeFileLogTransport requires Node.js environment'
         );
       }
+      this.fs = nodeRequire('fs');
+      this.path = nodeRequire('path');
 
       this.fullPath = this.path.join(
         this.options.directory,

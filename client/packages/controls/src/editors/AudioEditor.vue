@@ -129,7 +129,7 @@
 
   <!-- Asset Picker Dialog -->
   <AssetPickerDialog
-    v-if="isAssetPickerOpen"
+    v-if="isAssetPickerOpen && worldId"
     :world-id="worldId"
     :current-path="getSelectedAudioPath()"
     :extensions="['ogg', 'mp3', 'wav']"
