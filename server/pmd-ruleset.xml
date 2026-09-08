@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<ruleset name="nimbus"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        Nimbus PMD ruleset: errorprone, bestpractices, multithreading, performance
+        and security categories, excluding rules that produce mostly noise for
+        this codebase (SLF4J parameterized logging, string builder micro
+        optimizations, J2EE compliance, weak concurrency heuristics).
+        Add rules back step by step once the findings are cleaned up.
+    </description>
+
+    <rule ref="category/java/errorprone.xml">
+        <!-- duplicate literal threshold noise -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- literals in if conditions are an accepted style here -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+    </rule>
+    <rule ref="category/java/bestpractices.xml">
+        <!-- SLF4J parameterized logging does not need isDebugEnabled guards -->
+        <exclude name="GuardLogStatement"/>
+    </rule>
+    <rule ref="category/java/multithreading.xml">
+        <!-- J2EE rule: threads are fine in Spring Boot / Kubernetes pods -->
+        <exclude name="DoNotUseThreads"/>
+        <!-- heuristic produces too many false positives -->
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+    <rule ref="category/java/performance.xml">
+        <!-- string builder micro optimizations, not relevant for this codebase -->
+        <exclude name="AppendCharacterWithChar"/>
+        <exclude name="ConsecutiveAppendsShouldReuse"/>
+        <exclude name="ConsecutiveLiteralAppends"/>
+        <exclude name="InsufficientStringBufferDeclaration"/>
+        <!-- too many false positives for builder-style code -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    </rule>
+    <rule ref="category/java/security.xml"/>
+</ruleset>
+

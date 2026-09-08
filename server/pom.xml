@@ -43,6 +43,8 @@
         <!-- code formatting -->
         <spotless.version>3.10.2</spotless.version>
         <palantir-java-format.version>2.97.0</palantir-java-format.version>
+        <!-- static code analysis -->
+        <pmd-plugin.version>3.28.0</pmd-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -122,6 +124,33 @@
                             <goal>check</goal>
                         </goals>
                         <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${pmd-plugin.version}</version>
+                <configuration>
+                    <!-- Stepwise introduction: report-only for now, the build does not
+                         fail on violations yet. Tighten the ruleset and enable
+                         failOnViolation once the findings are reviewed. -->
+                    <failOnViolation>false</failOnViolation>
+                    <printFailingErrors>false</printFailingErrors>
+                    <rulesets>
+                        <!-- resolved via the reactor root (nearest ancestor with a .mvn
+                             directory) so every aggregator repo carries its own copy -->
+                        <ruleset>${maven.multiModuleProjectDirectory}/pmd-ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-check</id>
+                        <goals>
+                            <goal>pmd</goal>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
                     </execution>
                 </executions>
             </plugin>

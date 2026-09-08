@@ -15,6 +15,8 @@
     <properties>
         <!-- Generated code is the contract to the frontend and must not be reformatted -->
         <spotless.skip>true</spotless.skip>
+        <!-- nor statically analyzed, it is regenerated from the TS contract -->
+        <pmd.skip>true</pmd.skip>
     </properties>
 
     <dependencies>
