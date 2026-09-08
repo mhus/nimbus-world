@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "^9.22.2",
-    "@babylonjs/gui": "^9.22.2",
+    "@babylonjs/gui": "^9.25.0",
     "@babylonjs/loaders": "^9.22.2",
     "@babylonjs/materials": "^9.22.2",
     "@nimbus/shared": "workspace:*",
