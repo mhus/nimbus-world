@@ -6,6 +6,7 @@ import de.mhus.nimbus.shared.types.StorageEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -91,14 +92,14 @@ public class WChunk implements Identifiable, EpochEntity, StorageEntity {
      * @param x Block x coordinate
      * @param y Block y coordinate
      * @param z Block z coordinate
-     * @return Server metadata map for the block, or null if not found
+     * @return Server metadata map for the block, empty if not found
      */
-    public Map<String, String> getServerInfoForBlock(int x, int y, int z) {
+    public Optional<Map<String, String>> getServerInfoForBlock(int x, int y, int z) {
         if (infoServer == null) {
-            return null;
+            return Optional.empty();
         }
 
         String coordinate = x + "," + y + "," + z;
-        return infoServer.get(coordinate);
+        return Optional.ofNullable(infoServer.get(coordinate));
     }
 }

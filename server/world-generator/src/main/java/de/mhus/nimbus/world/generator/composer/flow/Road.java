@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.ToIntFunction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,7 +53,7 @@ public class Road extends Flow {
      * - No monotonic constraint — roads can go uphill and downhill
      */
     @Override
-    public List<Integer> calculateRouteLevels(
+    public Optional<List<Integer>> calculateRouteLevels(
             List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
         int minLevel = seaLevel + 1;
         List<Integer> levels = new ArrayList<>(route.size());
@@ -71,7 +72,7 @@ public class Road extends Flow {
             levels.add(Math.max(minLevel, lvl));
         }
 
-        return levels;
+        return Optional.of(levels);
     }
 
     /**

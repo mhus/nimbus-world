@@ -5,8 +5,10 @@ import de.mhus.nimbus.tools.generatets.java.JavaModel;
 import de.mhus.nimbus.tools.generatets.java.JavaProperty;
 import de.mhus.nimbus.tools.generatets.java.JavaType;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 /**
@@ -107,7 +109,7 @@ public class JavaModelWriter {
             }
 
             File javaFile = new File(pkgDir, name + ".java");
-            try (FileWriter w = new FileWriter(javaFile, false)) {
+            try (Writer w = Files.newBufferedWriter(javaFile.toPath(), StandardCharsets.UTF_8)) {
                 w.write(renderType(t));
             }
         }

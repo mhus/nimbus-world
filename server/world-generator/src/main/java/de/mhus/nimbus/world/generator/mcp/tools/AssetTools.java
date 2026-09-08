@@ -6,7 +6,6 @@ import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetService;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -118,7 +117,7 @@ public class AssetTools implements McpToolBean {
         var metadata =
                 AssetMetadata.builder().mimeType(mimeType).category("models").build();
 
-        try (var stream = new FileInputStream(filePath.toFile())) {
+        try (var stream = Files.newInputStream(filePath)) {
             // Check if asset already exists and delete it first
             var existing = assetService.findByPath(wid, assetPath);
             if (existing.isPresent()) {

@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import lombok.AllArgsConstructor;
@@ -331,11 +332,11 @@ public abstract class Flow extends Feature {
      * @param route Ordered list of coordinates for the flow route
      * @param rawLevelAt Returns the raw (unconstrained) level at a coordinate
      * @param seaLevel Minimum allowed level (sea level floor)
-     * @return List of levels (one per route coordinate), or null to use per-segment calculation
+     * @return Levels (one per route coordinate), empty to use per-segment calculation
      */
-    public List<Integer> calculateRouteLevels(
+    public Optional<List<Integer>> calculateRouteLevels(
             List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
-        return null; // Default: use per-segment calculation
+        return Optional.empty(); // Default: use per-segment calculation
     }
 
     /**

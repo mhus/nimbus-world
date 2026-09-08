@@ -418,15 +418,16 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             }
 
             // Convert HexLocal position to absolute world coordinates
-            int[] worldCoords = getPointWorldCoordinates(
+            Optional<int[]> worldCoords = getPointWorldCoordinates(
                     composed, flat.getSizeX(), flat.getSizeZ(), hexGridSize, gridCoord, hexGridSize);
-            if (worldCoords == null) {
+            if (worldCoords.isEmpty()) {
                 log.warn("Could not calculate world coordinates for point '{}'", point.getName());
                 continue;
             }
 
-            int worldX = worldCoords[0];
-            int worldZ = worldCoords[1];
+            int[] coords = worldCoords.get();
+            int worldX = coords[0];
+            int worldZ = coords[1];
 
             // Add CrossOverlay at point position (red color, size 20, thickness 3)
             creator.addOverlay(new CrossOverlay(worldX, worldZ, 20, Color.RED, 3.0f));
@@ -444,7 +445,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     /**
      * Calculates world coordinates for a point from its HexLocal position.
      */
-    private int[] getPointWorldCoordinates(
+    private Optional<int[]> getPointWorldCoordinates(
             Point.PointComposed composed,
             int flatSizeX,
             int flatSizeZ,
@@ -461,7 +462,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         }
 
         if (positionString == null || positionString.isBlank()) {
-            return null;
+            return Optional.empty();
         }
 
         // Convert to relative coordinates
@@ -480,7 +481,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         int worldX = mountX + lx;
         int worldZ = mountZ + lz;
 
-        return new int[] {worldX, worldZ};
+        return Optional.of(new int[] {worldX, worldZ});
     }
 
     /**

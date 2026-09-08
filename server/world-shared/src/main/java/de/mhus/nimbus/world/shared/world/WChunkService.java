@@ -952,9 +952,9 @@ public class WChunkService implements StorageProvider {
      * @param x Block x coordinate (world coordinates)
      * @param y Block y coordinate (world coordinates)
      * @param z Block z coordinate (world coordinates)
-     * @return Server metadata map for the block, or null if not found
+     * @return Server metadata map for the block, empty if not found
      */
-    public Map<String, String> getServerInfo(WorldId worldId, int x, int y, int z) {
+    public Optional<Map<String, String>> getServerInfo(WorldId worldId, int x, int y, int z) {
         // Load world to get chunkSize
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
@@ -963,7 +963,7 @@ public class WChunkService implements StorageProvider {
         Optional<WWorld> worldOpt = worldService.getByWorldId(lookupWorldId.getId());
         if (worldOpt.isEmpty()) {
             log.warn("World not found for server info lookup: worldId={}", worldId);
-            return null;
+            return Optional.empty();
         }
 
         WWorld world = worldOpt.get();
@@ -975,7 +975,7 @@ public class WChunkService implements StorageProvider {
         Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey);
         if (chunkOpt.isEmpty()) {
             log.trace("Chunk not found for server info lookup: worldId={}, chunkKey={}", worldId, chunkKey);
-            return null;
+            return Optional.empty();
         }
 
         // Get server info for block
@@ -986,7 +986,7 @@ public class WChunkService implements StorageProvider {
     /**
      * Get server info for a block at world coordinates, filtered by epoch.
      */
-    public Map<String, String> getServerInfo(WorldId worldId, int x, int y, int z, int epoch) {
+    public Optional<Map<String, String>> getServerInfo(WorldId worldId, int x, int y, int z, int epoch) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
@@ -994,7 +994,7 @@ public class WChunkService implements StorageProvider {
         Optional<WWorld> worldOpt = worldService.getByWorldId(lookupWorldId.getId());
         if (worldOpt.isEmpty()) {
             log.warn("World not found for server info lookup: worldId={}", worldId);
-            return null;
+            return Optional.empty();
         }
 
         WWorld world = worldOpt.get();
@@ -1002,7 +1002,7 @@ public class WChunkService implements StorageProvider {
 
         Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey, epoch);
         if (chunkOpt.isEmpty()) {
-            return null;
+            return Optional.empty();
         }
 
         return chunkOpt.get().getServerInfoForBlock(x, y, z);

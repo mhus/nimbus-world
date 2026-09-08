@@ -1,8 +1,8 @@
 package de.mhus.nimbus.tools.generatej2ts;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.maven.plugin.logging.Log;
@@ -29,7 +29,7 @@ public class Configuration {
             if (log != null) log.info("Keine Konfiguration gefunden (optional): " + yamlFile.getAbsolutePath());
             return null;
         }
-        try (FileInputStream fis = new FileInputStream(yamlFile)) {
+        try (var fis = Files.newInputStream(yamlFile.toPath())) {
             Yaml yaml = new Yaml();
             Object data = yaml.load(fis);
             Map<String, Object> map = (data instanceof Map) ? (Map<String, Object>) data : Collections.emptyMap();

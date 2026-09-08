@@ -283,13 +283,13 @@ public class RoadBuilder extends HexGridBuilder {
             TerrainPathFinder terrainFinder = new TerrainPathFinder(flat, maxSlopePerBlock, maxDriftRatio);
             path = terrainFinder.findPath(startX, startZ, startLevel, centerX, centerZ, endLevel);
 
-            if (path == null) {
+            if (path == null || path.isEmpty()) {
                 log.debug("TerrainPathFinder failed, falling back to StraightPathFinder");
             }
         }
 
         // Fall back to straight pathfinding if terrain pathfinder not used or failed
-        if (path == null) {
+        if (path == null || path.isEmpty()) {
             log.debug("Using StraightPathFinder (road elevated/deep or terrain path blocked)");
             long seed = flat.getFlatId().hashCode(); // Deterministic seed
             StraightPathFinder straightFinder =

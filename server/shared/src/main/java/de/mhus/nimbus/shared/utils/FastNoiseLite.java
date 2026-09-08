@@ -168,7 +168,7 @@ public class FastNoiseLite {
     /// <remarks>
     /// Default: 1337
     /// </remarks>
-    public void SetSeed(int seed) {
+    public final void SetSeed(int seed) {
         mSeed = seed;
     }
 

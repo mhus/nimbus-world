@@ -8,8 +8,8 @@ import de.mhus.nimbus.tools.generatets.java.JavaType;
 import de.mhus.nimbus.tools.generatets.ts.TsModel;
 import de.mhus.nimbus.tools.generatets.ts.TsParser;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -624,7 +624,7 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
             getLog().warn("Config file not found: " + configFile.getAbsolutePath() + "; using defaults.");
             return c;
         }
-        try (FileInputStream in = new FileInputStream(configFile)) {
+        try (var in = Files.newInputStream(configFile.toPath())) {
             Yaml yaml = new Yaml();
             Configuration loaded = yaml.loadAs(in, Configuration.class);
             if (loaded != null) {

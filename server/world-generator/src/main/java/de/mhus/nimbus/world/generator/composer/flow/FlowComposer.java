@@ -864,7 +864,8 @@ public class FlowComposer {
             int offset = landOffset != null ? landOffset : 0;
             return land + offset / 2; // terrain mean height
         };
-        List<Integer> routeLevels = flow.calculateRouteLevels(route, rawLevelAt, SEA_LEVEL);
+        List<Integer> routeLevels =
+                flow.calculateRouteLevels(route, rawLevelAt, SEA_LEVEL).orElse(null);
 
         // Pre-compute random edge numerators (1, 2, or 3) for each grid-to-grid transition.
         // Seeded from flow name so results are deterministic.

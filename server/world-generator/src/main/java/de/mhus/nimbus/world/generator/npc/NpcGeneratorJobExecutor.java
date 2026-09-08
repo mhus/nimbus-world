@@ -104,21 +104,21 @@ public class NpcGeneratorJobExecutor implements JobExecutor {
     }
 
     private List<Integer> parseIntList(String json) {
-        if (json == null || json.isBlank()) return null;
+        if (json == null || json.isBlank()) return List.of();
         try {
             return MAPPER.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            return null;
+            return List.of();
         }
     }
 
     private List<ScheduleEntry> parseSchedule(String json) {
-        if (json == null || json.isBlank()) return null;
+        if (json == null || json.isBlank()) return List.of();
         try {
             return MAPPER.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             log.warn("Failed to parse schedule JSON: {}", e.getMessage());
-            return null;
+            return List.of();
         }
     }
 

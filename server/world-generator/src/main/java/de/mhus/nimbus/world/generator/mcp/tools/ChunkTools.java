@@ -239,17 +239,13 @@ public class ChunkTools implements McpToolBean {
 
         var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
-        var info = chunkService.getServerInfo(wid, x, y, z);
+        Optional<Map<String, String>> info = chunkService.getServerInfo(wid, x, y, z);
         Map<String, Object> result = new HashMap<>();
         result.put("x", x);
         result.put("y", y);
         result.put("z", z);
-        if (info != null) {
-            result.put("found", true);
-            result.put("serverInfo", info);
-        } else {
-            result.put("found", false);
-        }
+        result.put("found", info.isPresent());
+        info.ifPresent(map -> result.put("serverInfo", map));
         return result;
     }
 

@@ -25,8 +25,8 @@ import de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaFieldModel;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaKind;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Optional;
 
 public class JavaAstParser {
@@ -38,7 +38,7 @@ public class JavaAstParser {
         if (cfg.getLanguageLevel() != wanted) {
             cfg.setLanguageLevel(wanted);
         }
-        try (FileInputStream fis = new FileInputStream(file)) {
+        try (var fis = Files.newInputStream(file.toPath())) {
             return StaticJavaParser.parse(fis);
         }
     }

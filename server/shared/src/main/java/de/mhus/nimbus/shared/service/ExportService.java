@@ -1,8 +1,8 @@
 package de.mhus.nimbus.shared.service;
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -78,7 +78,7 @@ public class ExportService {
         int successCount = 0;
         int errorCount = 0;
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
             // Fetch documents directly from MongoDB to preserve all fields including _schema
             List<Document> documents;
             if (worldId == null || "*".equals(worldId)) {

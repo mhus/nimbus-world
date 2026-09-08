@@ -25,11 +25,11 @@ public class SettingOptions implements SettingValue {
         get(); // touch to create
     }
 
-    public String get() {
+    public final String get() {
         if (service == null || key == null) {
             return defaultValue;
         }
-        if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
+        if (value != null && System.currentTimeMillis() - lastAccess < SettingValue.getCacheTimeout()) {
             return value;
         }
         value = service.getStringValue(key, defaultValue);

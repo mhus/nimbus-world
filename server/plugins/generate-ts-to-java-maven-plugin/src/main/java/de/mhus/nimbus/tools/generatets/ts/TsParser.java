@@ -2,10 +2,9 @@ package de.mhus.nimbus.tools.generatets.ts;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -78,8 +77,7 @@ public class TsParser {
 
     private String readFile(File f) throws IOException {
         StringBuilder sb = new StringBuilder();
-        try (BufferedReader r =
-                new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+        try (BufferedReader r = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8)) {
             String line;
             while ((line = r.readLine()) != null) {
                 sb.append(line).append('\n');

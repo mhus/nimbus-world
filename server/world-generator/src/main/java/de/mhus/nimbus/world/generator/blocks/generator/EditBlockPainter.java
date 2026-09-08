@@ -11,9 +11,26 @@ import lombok.Setter;
  */
 public class EditBlockPainter {
 
+    public EditBlockPainter() {}
+
+    /**
+     * Constructor injection of the write target for subclasses that know their
+     * target at construction time.
+     */
+    protected EditBlockPainter(BlockWriteTarget writeTarget) {
+        this.writeTarget = writeTarget;
+    }
+
     @Getter
-    @Setter
     private BlockWriteTarget writeTarget;
+
+    /**
+     * The setter is final so subclasses may call it from their constructor
+     * (e.g. EditCachePainter injects itself as write target).
+     */
+    public final void setWriteTarget(BlockWriteTarget writeTarget) {
+        this.writeTarget = writeTarget;
+    }
 
     @Getter
     @Setter

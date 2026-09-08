@@ -256,10 +256,8 @@ public class BasicGameplay implements Gameplay {
         var worldId = session.getWorldId();
 
         // Always load block serverInfo
-        Map<String, String> serverInfo = chunkService.getServerInfo(worldId, x, y, z, session.getEpoch());
-        if (serverInfo == null) {
-            serverInfo = Map.of();
-        }
+        Map<String, String> serverInfo =
+                chunkService.getServerInfo(worldId, x, y, z, session.getEpoch()).orElse(Map.of());
 
         if (!Strings.isBlank(shortcutKey)) {
             // Check if block forces its own action (overrides item action)

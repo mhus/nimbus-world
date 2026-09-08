@@ -17,11 +17,11 @@ public class SettingInteger implements SettingValue {
         get(); // touch to create
     }
 
-    public int get() {
+    public final int get() {
         if (service == null || key == null) {
             return defaultValue;
         }
-        if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
+        if (value != null && System.currentTimeMillis() - lastAccess < SettingValue.getCacheTimeout()) {
             return value;
         }
         value = service.getOrCreateIntValue(key, defaultValue);

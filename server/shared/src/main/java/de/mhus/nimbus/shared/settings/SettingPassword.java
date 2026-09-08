@@ -20,11 +20,11 @@ public class SettingPassword implements SettingValue {
     /**
      * Get the decrypted password value
      */
-    public String get() {
+    public final String get() {
         if (service == null || key == null) {
             return defaultValue;
         }
-        if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
+        if (value != null && System.currentTimeMillis() - lastAccess < SettingValue.getCacheTimeout()) {
             return value;
         }
         String decrypted = service.getDecryptedPassword(key);

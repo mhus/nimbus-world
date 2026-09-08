@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
         String worldId = context.getWorldId();
 
         // Parse block coordinates from blockKey "x,y,z"
-        int[] coords = parseBlockKey(blockKey);
+        int[] coords = parseBlockKey(blockKey).orElse(null);
         if (coords == null) return Set.of();
 
         int x = coords[0], y = coords[1], z = coords[2];
@@ -190,19 +191,19 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
         };
     }
 
-    private int[] parseBlockKey(String blockKey) {
+    private Optional<int[]> parseBlockKey(String blockKey) {
         String[] parts = blockKey.split(",");
         if (parts.length != 3) {
             log.error("block_status: invalid blockKey format '{}', expected 'x,y,z'", blockKey);
-            return null;
+            return Optional.empty();
         }
         try {
-            return new int[] {
+            return Optional.of(new int[] {
                 Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())
-            };
+            });
         } catch (NumberFormatException e) {
             log.error("block_status: invalid coordinates in blockKey '{}'", blockKey);
-            return null;
+            return Optional.empty();
         }
     }
 

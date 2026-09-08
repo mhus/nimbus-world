@@ -1,8 +1,8 @@
 package de.mhus.nimbus.shared.service;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
@@ -104,7 +104,7 @@ public class ImportService {
 
         boolean filterByWorldId = worldId != null && !"*".equals(worldId);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile.toFile()))) {
+        try (BufferedReader reader = Files.newBufferedReader(inputFile, StandardCharsets.UTF_8)) {
             String line;
             int lineNumber = 0;
 

@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +82,7 @@ public class TerrainPathFinder {
             if (bestStep == null) {
                 // No valid step found - path blocked
                 log.debug("TerrainPathFinder: Path blocked at ({}, {})", currentX, currentZ);
-                return null;
+                return Collections.emptyList();
             }
 
             // Calculate movement vector
@@ -103,14 +104,14 @@ public class TerrainPathFinder {
             // Safety check: prevent infinite loops
             if (path.size() > maxPathLength * 2) {
                 log.warn("TerrainPathFinder: Path too long, aborting");
-                return null;
+                return Collections.emptyList();
             }
         }
 
         // Verify we reached the end level (within tolerance)
         if (Math.abs(currentLevel - endLevel) > maxSlopePerBlock) {
             log.debug("TerrainPathFinder: Cannot reach end level (current={}, target={})", currentLevel, endLevel);
-            return null;
+            return Collections.emptyList();
         }
 
         // Adjust final level to match exactly

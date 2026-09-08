@@ -1,11 +1,10 @@
 package de.mhus.nimbus.tools.generatej2ts.ts;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import org.apache.maven.plugin.logging.Log;
 
@@ -57,7 +56,7 @@ public class TypeScriptModelWriter {
     }
 
     private void writeTypeFile(TypeScriptType type, File out) throws IOException {
-        try (Writer w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.UTF_8)) {
+        try (Writer w = Files.newBufferedWriter(out.toPath(), StandardCharsets.UTF_8)) {
             // Header-Kommentar inkl. Java-Quellklasse (Package + Name)
             String src = type.getSourceFqn();
             if (src == null || src.isBlank()) src = type.getName();

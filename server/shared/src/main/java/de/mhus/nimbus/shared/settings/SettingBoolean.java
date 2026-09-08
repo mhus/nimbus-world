@@ -21,11 +21,11 @@ public class SettingBoolean implements SettingValue {
         get(); // touch to create
     }
 
-    public boolean get() {
+    public final boolean get() {
         if (service == null || key == null) {
             return defaultValue;
         }
-        if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
+        if (value != null && System.currentTimeMillis() - lastAccess < SettingValue.getCacheTimeout()) {
             return value;
         }
         value = service.getOrCreateBooleanValue(key, defaultValue);

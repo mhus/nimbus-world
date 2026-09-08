@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -325,12 +326,12 @@ public class WHexGrid implements Identifiable, EpochEntity {
     // --- Area methods using TypeUtil for key parsing/formatting ---
 
     /**
-     * Returns the parameter map for the given area, or null if not present.
+     * Returns the parameter map for the given area, empty if not present.
      */
-    public Map<String, String> getAreaData(Area area) {
-        if (area == null) return null;
+    public Optional<Map<String, String>> getAreaData(Area area) {
+        if (area == null) return Optional.empty();
         String key = TypeUtil.toStringArea(area);
-        return areas.get(key);
+        return Optional.ofNullable(areas.get(key));
     }
 
     /**
@@ -436,9 +437,9 @@ public class WHexGrid implements Identifiable, EpochEntity {
 
     /**
      * Returns the parameter map for the smallest matching area containing the given x,z point (flat world coordinates).
-     * Returns null if no area contains the point.
+     * Empty if no area contains the point.
      */
-    public Map<String, String> getAreaData(int x, int z) {
+    public Optional<Map<String, String>> getAreaData(int x, int z) {
         Area pointArea = Area.builder()
                 .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
                         .x(x)
@@ -452,7 +453,6 @@ public class WHexGrid implements Identifiable, EpochEntity {
                         .build())
                 .build();
         Area match = getSmallestMatchingArea(pointArea);
-        if (match == null) return null;
         return getAreaData(match);
     }
 

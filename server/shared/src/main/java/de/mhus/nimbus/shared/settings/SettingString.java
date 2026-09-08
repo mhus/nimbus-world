@@ -20,12 +20,12 @@ public class SettingString implements SettingValue {
         get(); // touch to create
     }
 
-    public String get() {
+    public final String get() {
         if (Strings.isNotBlank(overwriteValue)) return overwriteValue;
         if (service == null || key == null) {
             return defaultValue;
         }
-        if (System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
+        if (System.currentTimeMillis() - lastAccess < SettingValue.getCacheTimeout()) {
             return value;
         }
         value = service.getOrCreateStringValue(key, defaultValue);

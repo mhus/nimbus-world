@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import lombok.AllArgsConstructor;
@@ -132,7 +133,7 @@ public class River extends Flow {
      * All levels are absolute (not relative to biome).
      */
     @Override
-    public List<Integer> calculateRouteLevels(
+    public Optional<List<Integer>> calculateRouteLevels(
             List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
         List<Integer> levels = new ArrayList<>(route.size());
 
@@ -155,7 +156,7 @@ public class River extends Flow {
             }
         }
 
-        return levels;
+        return Optional.of(levels);
     }
 
     /**

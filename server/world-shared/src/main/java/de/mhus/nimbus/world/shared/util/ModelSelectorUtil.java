@@ -33,11 +33,11 @@ public class ModelSelectorUtil {
      * This is used when serializing to Redis/WSession.
      *
      * @param modelSelector the ModelSelector to serialize
-     * @return serialized data (first entry is config, rest are blocks), or null if modelSelector is null
+     * @return serialized data (first entry is config, rest are blocks), empty if modelSelector is null
      */
     public static List<String> toStringList(ModelSelector modelSelector) {
         if (modelSelector == null) {
-            return null;
+            return List.of();
         }
 
         return modelSelector.toStringList();
