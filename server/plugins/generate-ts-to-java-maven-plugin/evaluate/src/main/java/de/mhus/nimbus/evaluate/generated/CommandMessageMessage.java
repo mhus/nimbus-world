@@ -7,6 +7,7 @@ package de.mhus.nimbus.evaluate.generated;
 @lombok.Data
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
+@lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class CommandMessageMessage {
-    private String value;
+    private BaseMessage<CommandMessageData> value;
 }

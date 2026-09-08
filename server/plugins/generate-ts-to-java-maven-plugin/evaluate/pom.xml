@@ -13,6 +13,13 @@
     <name>evaluate</name>
     <packaging>jar</packaging>
 
+    <properties>
+        <!-- The evaluate module generates Java sources during the build, so
+             spotless and pmd must not touch them -->
+        <spotless.skip>true</spotless.skip>
+        <pmd.skip>true</pmd.skip>
+    </properties>
+
     <dependencies>
         <!-- Depend on the Maven plugin under test -->
         <dependency>
