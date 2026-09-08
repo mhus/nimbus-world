@@ -25,7 +25,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@vitejs/plugin-vue": "^6.0.8",
-    "babylonjs-gltf2interface": "^9.22.2",
+    "babylonjs-gltf2interface": "^9.25.0",
     "daisyui": "^5.7.22",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.2.1",
