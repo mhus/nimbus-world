@@ -26,7 +26,12 @@ public class PlayerAccessFilter extends AccessFilterBase {
 
     private final AccessSettings accessProperties;
 
-    public PlayerAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, MetricService metricService) {
+    public PlayerAccessFilter(
+            JwtService jwtService,
+            WSessionService sessionService,
+            AccessSettings accessProperties,
+            RegionSettings regionProperties,
+            MetricService metricService) {
         super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
     }
@@ -47,8 +52,10 @@ public class PlayerAccessFilter extends AccessFilterBase {
         // Player service only accepts SESSION tokens (agent=false)
         // Agent tokens are not allowed
         if (claims.agent()) {
-            log.warn("Agent token not allowed in player service - userId={}, worldId={}",
-                    claims.userId(), claims.worldId());
+            log.warn(
+                    "Agent token not allowed in player service - userId={}, worldId={}",
+                    claims.userId(),
+                    claims.worldId());
             return false;
         }
         return true;

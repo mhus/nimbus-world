@@ -10,5 +10,8 @@ package de.mhus.nimbus.world.generator.fauna;
  * </ul>
  */
 public enum FaunaGroupType {
-    HERD, HAREM, MIXED, LONER
+    HERD,
+    HAREM,
+    MIXED,
+    LONER
 }

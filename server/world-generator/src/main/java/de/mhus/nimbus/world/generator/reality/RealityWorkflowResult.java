@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of an end-to-end {@link RealityWorkflow} run.
@@ -60,6 +59,7 @@ public class RealityWorkflowResult {
 
     @Builder.Default
     private List<String> errors = new ArrayList<>();
+
     @Builder.Default
     private List<String> log = new ArrayList<>();
 

@@ -5,16 +5,15 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.town.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * VillagePoint represents a village positioned at a specific point.
@@ -121,8 +120,12 @@ public class VillagePoint extends Point {
      * @param context The composition context
      */
     public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
-        log.debug("Configuring HexGrid for VillagePoint '{}' at [{},{}] with hexGridSize: {}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
+        log.debug(
+                "Configuring HexGrid for VillagePoint '{}' at [{},{}] with hexGridSize: {}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                hexGridSize);
 
         // Use default style if not set
         if (style == null || style.isBlank()) {
@@ -136,9 +139,12 @@ public class VillagePoint extends Point {
         }
 
         // Get StructuresIndex from context (loaded from region collection)
-        StructuresIndex buildingIndex = context.getStructuresIndex() != null
-                ? context.getStructuresIndex() : new StructuresIndex();
-        log.debug("Using StructuresIndex for VillagePoint '{}' with {} buildings", getName(), buildingIndex.getTotalBuildingCount());
+        StructuresIndex buildingIndex =
+                context.getStructuresIndex() != null ? context.getStructuresIndex() : new StructuresIndex();
+        log.debug(
+                "Using StructuresIndex for VillagePoint '{}' with {} buildings",
+                getName(),
+                buildingIndex.getTotalBuildingCount());
 
         // Design the village using TownDesigner
         TownDesigner designer = new TownDesigner(buildingIndex);
@@ -150,22 +156,22 @@ public class VillagePoint extends Point {
             // Create a temporary Town object with single district for the designer
             // The district is positioned at (0,0) since it's on the same grid as the point
             District districtWithPosition = District.builder()
-                .name(district.getName())
-                .title(district.getTitle())
-                .slots(district.getSlots())
-                .places(district.getPlaces())
-                .build();
+                    .name(district.getName())
+                    .title(district.getTitle())
+                    .slots(district.getSlots())
+                    .places(district.getPlaces())
+                    .build();
 
             Town tempTown = Town.builder()
-                .style(style)
-                .districts(List.of(districtWithPosition))
-                .baseLevel(baseLevel)
-                .fillEmptySlots(fillEmptySlots)
-                .buildingTendency(buildingTendency)
-                .fillRate(fillRate)
-                .debug(debug)
-                .parameters(parameters)
-                .build();
+                    .style(style)
+                    .districts(List.of(districtWithPosition))
+                    .baseLevel(baseLevel)
+                    .fillEmptySlots(fillEmptySlots)
+                    .buildingTendency(buildingTendency)
+                    .fillRate(fillRate)
+                    .debug(debug)
+                    .parameters(parameters)
+                    .build();
 
             tempTown.setName(getName());
             tempTown.setTitle(getTitle());
@@ -177,8 +183,7 @@ public class VillagePoint extends Point {
                 return;
             }
 
-            log.debug("Village design successful: {} places",
-                designResult.getTotalPlaceCount());
+            log.debug("Village design successful: {} places", designResult.getTotalPlaceCount());
 
         } catch (Exception e) {
             log.error("Exception during village design for '{}'", getName(), e);
@@ -201,17 +206,23 @@ public class VillagePoint extends Point {
         FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
         if (grid == null) {
-            log.error("VillagePoint '{}' cannot configure grid [{},{}] - registry access failed",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error(
+                    "VillagePoint '{}' cannot configure grid [{},{}] - registry access failed",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
         // Add g_village parameter as aspect (with collision check)
         String existingVillage = grid.getParameters().get("g_village");
         if (existingVillage != null && !existingVillage.isBlank()) {
-            log.warn("VillagePoint '{}' - grid [{},{}] already has g_village parameter! " +
-                "Another aspect already defined a village here. Skipping this VillagePoint.",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.warn(
+                    "VillagePoint '{}' - grid [{},{}] already has g_village parameter! "
+                            + "Another aspect already defined a village here. Skipping this VillagePoint.",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
@@ -227,9 +238,13 @@ public class VillagePoint extends Point {
             grid.getParameters().putAll(parameters);
         }
 
-        log.debug("VillagePoint '{}' configured on grid [{},{}] with {} places, {} streets",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(),
-            gridConfig.getPlaces().size(), gridConfig.getStreets().size());
+        log.debug(
+                "VillagePoint '{}' configured on grid [{},{}] with {} places, {} streets",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                gridConfig.getPlaces().size(),
+                gridConfig.getStreets().size());
     }
 
     /**
@@ -241,23 +256,23 @@ public class VillagePoint extends Point {
     private TownGridConfig createGridConfigFromDistrict(DistrictGrid districtGrid) {
         // Convert PlacedPlaces to config
         List<TownGridConfig.PlacedPlaceConfig> placesConfig = districtGrid.getPlacedPlaces().stream()
-            .map(this::convertPlacedPlace)
-            .toList();
+                .map(this::convertPlacedPlace)
+                .toList();
 
         // Convert Streets to config
         List<TownGridConfig.StreetSegmentConfig> streetsConfig = districtGrid.getStreets().stream()
-            .map(this::convertStreetSegment)
-            .toList();
+                .map(this::convertStreetSegment)
+                .toList();
 
         return TownGridConfig.builder()
-            .villageName(getName())
-            .style(style)
-            .districtName(districtGrid.getName())
-            .districtTitle(districtGrid.getTitle())
-            .baseLevel(baseLevel)
-            .places(placesConfig)
-            .streets(streetsConfig)
-            .build();
+                .villageName(getName())
+                .style(style)
+                .districtName(districtGrid.getName())
+                .districtTitle(districtGrid.getTitle())
+                .baseLevel(baseLevel)
+                .places(placesConfig)
+                .streets(streetsConfig)
+                .build();
     }
 
     /**
@@ -274,39 +289,43 @@ public class VillagePoint extends Point {
             kind = ((BuildingPlace) place).getKind();
         } else if (place instanceof FreePlace) {
             type = "free";
-            kind = ((FreePlace) place).getKind() != null ?
-                ((FreePlace) place).getKind().name() : null;
+            kind = ((FreePlace) place).getKind() != null
+                    ? ((FreePlace) place).getKind().name()
+                    : null;
         } else if (place instanceof RoadPlace) {
             type = "road";
-            kind = ((RoadPlace) place).getKind() != null ?
-                ((RoadPlace) place).getKind().name() : null;
+            kind = ((RoadPlace) place).getKind() != null
+                    ? ((RoadPlace) place).getKind().name()
+                    : null;
         } else if (place instanceof RiverPlace) {
             type = "river";
-            kind = ((RiverPlace) place).getKind() != null ?
-                ((RiverPlace) place).getKind().name() : "STREAM";
+            kind = ((RiverPlace) place).getKind() != null
+                    ? ((RiverPlace) place).getKind().name()
+                    : "STREAM";
         } else if (place instanceof WallPlace) {
             type = "wall";
-            kind = ((WallPlace) place).getKind() != null ?
-                ((WallPlace) place).getKind().name() : null;
+            kind = ((WallPlace) place).getKind() != null
+                    ? ((WallPlace) place).getKind().name()
+                    : null;
         } else {
             type = "unknown";
         }
 
         return TownGridConfig.PlacedPlaceConfig.builder()
-            .name(place.getName())
-            .type(type)
-            .hexQ(placedPlace.getHexQ())
-            .hexR(placedPlace.getHexR())
-            .localX(placedPlace.getLocalX())
-            .localZ(placedPlace.getLocalZ())
-            .relativePos(placedPlace.getRelativePos())
-            .rotation(placedPlace.getRotation())
-            .divider(placedPlace.getDivider())
-            .buildingId(placedPlace.getBuildingId())
-            .kind(kind)
-            .oversized(placedPlace.isOversized())
-            .connectionPoint(place.isConnectionPoint())
-            .build();
+                .name(place.getName())
+                .type(type)
+                .hexQ(placedPlace.getHexQ())
+                .hexR(placedPlace.getHexR())
+                .localX(placedPlace.getLocalX())
+                .localZ(placedPlace.getLocalZ())
+                .relativePos(placedPlace.getRelativePos())
+                .rotation(placedPlace.getRotation())
+                .divider(placedPlace.getDivider())
+                .buildingId(placedPlace.getBuildingId())
+                .kind(kind)
+                .oversized(placedPlace.isOversized())
+                .connectionPoint(place.isConnectionPoint())
+                .build();
     }
 
     /**
@@ -315,14 +334,14 @@ public class VillagePoint extends Point {
     private TownGridConfig.StreetSegmentConfig convertStreetSegment(
             de.mhus.nimbus.world.generator.composer.flow.StreetSegment segment) {
         return TownGridConfig.StreetSegmentConfig.builder()
-            .fromX(segment.getFromX())
-            .fromZ(segment.getFromZ())
-            .toX(segment.getToX())
-            .toZ(segment.getToZ())
-            .width(segment.getWidth())
-            .type(segment.getType())
-            .level(segment.getLevel())
-            .build();
+                .fromX(segment.getFromX())
+                .fromZ(segment.getFromZ())
+                .toX(segment.getToX())
+                .toZ(segment.getToZ())
+                .width(segment.getWidth())
+                .type(segment.getType())
+                .level(segment.getLevel())
+                .build();
     }
 
     /**
@@ -330,8 +349,7 @@ public class VillagePoint extends Point {
      */
     private String serializeToJson(TownGridConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize TownGridConfig to JSON", e);
@@ -350,16 +368,18 @@ public class VillagePoint extends Point {
      */
     private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.error("VillagePoint '{}' has no composition context - cannot access grid registry",
-                getName());
+            log.error("VillagePoint '{}' has no composition context - cannot access grid registry", getName());
             return null;
         }
 
         // Get grid from central registry (will be created if not exists)
         FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.debug("VillagePoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        log.debug(
+                "VillagePoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR());
 
         return grid;
     }

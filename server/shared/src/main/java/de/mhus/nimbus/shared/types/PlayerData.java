@@ -6,11 +6,11 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 
 @GenerateTypeScript("entities")
 public record PlayerData(
-        @TypeScript(import_ = "PlayerUser",importPath = "./PlayerUser")
+        @TypeScript(import_ = "PlayerUser", importPath = "./PlayerUser")
         PlayerUser user,
-        @TypeScript(import_ = "PlayerCharacter",importPath = "./PlayerCharacter")
+
+        @TypeScript(import_ = "PlayerCharacter", importPath = "./PlayerCharacter")
         PlayerCharacter character,
-        @TypeScript(import_ = "Settings",importPath = "../../configs/EngineConfiguration")
-        Settings settings
-) {
-}
+
+        @TypeScript(import_ = "Settings", importPath = "../../configs/EngineConfiguration")
+        Settings settings) {}

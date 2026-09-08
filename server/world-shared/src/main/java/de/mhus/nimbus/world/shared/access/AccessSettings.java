@@ -5,18 +5,17 @@ import de.mhus.nimbus.shared.settings.SettingBoolean;
 import de.mhus.nimbus.shared.settings.SettingInteger;
 import de.mhus.nimbus.shared.settings.SettingString;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * Configuration properties for AccessService.
@@ -39,25 +38,34 @@ public class AccessSettings {
     /** Key read from (or generated into) the key file; only used when nothing is configured explicitly. */
     private String devLoginAccessKeyFromFile;
 
-    @Value( "${nimbus.access.accessUrls:}")
+    @Value("${nimbus.access.accessUrls:}")
     private String accessUrls;
-    @Value( "${nimbus.access.jumpUrlAgent:}")
+
+    @Value("${nimbus.access.jumpUrlAgent:}")
     private String jumpUrlAgent;
-    @Value( "${nimbus.access.jumpUrlEditor:}")
+
+    @Value("${nimbus.access.jumpUrlEditor:}")
     private String jumpUrlEditor;
-    @Value( "${nimbus.access.jumpUrlViewer:}")
+
+    @Value("${nimbus.access.jumpUrlViewer:}")
     private String jumpUrlViewer;
-    @Value( "${nimbus.access.controlsBaseUrl:}")
+
+    @Value("${nimbus.access.controlsBaseUrl:}")
     private String controlsBaseUrl;
-    @Value( "${nimbus.access.loginUrl:}")
+
+    @Value("${nimbus.access.loginUrl:}")
     private String loginUrl;
-    @Value( "${nimbus.access.logoutUrl:}")
+
+    @Value("${nimbus.access.logoutUrl:}")
     private String logoutUrl;
-    @Value( "${nimbus.access.teleportUrl:}")
+
+    @Value("${nimbus.access.teleportUrl:}")
     private String teleportUrl;
-    @Value( "${nimbus.access.cookieDomain:}")
+
+    @Value("${nimbus.access.cookieDomain:}")
     private String cookieDomain;
-    @Value( "${nimbus.access.editorUrl:}")
+
+    @Value("${nimbus.access.editorUrl:}")
     private String editorUrl;
 
     /**
@@ -79,34 +87,13 @@ public class AccessSettings {
 
     @PostConstruct
     private void init() {
-        tokenExpirationSeconds = settingsService.getInteger(
-                "access.tokenExpirationSeconds",
-                300
-        );
-        sessionTokenTtlSeconds = settingsService.getInteger(
-                "access.sessionTokenTtlSeconds",
-                86400
-        );
-        agentTokenTtlSeconds = settingsService.getInteger(
-                "access.agentTokenTtlSeconds",
-                3600
-        );
-        secureCookies = settingsService.getBoolean(
-                "access.secureCookies",
-                false
-        );
-        closeSessionTimeoutSeconds = settingsService.getInteger(
-                "access.closeSessionTimeoutSeconds",
-                10
-        );
-        devLoginEnabled = settingsService.getBoolean(
-                "access.devLoginEnabled",
-                true
-        );
-        devLoginAccessKeySetting = settingsService.getString(
-                "access.devLoginAccessKey",
-                ""
-        );
+        tokenExpirationSeconds = settingsService.getInteger("access.tokenExpirationSeconds", 300);
+        sessionTokenTtlSeconds = settingsService.getInteger("access.sessionTokenTtlSeconds", 86400);
+        agentTokenTtlSeconds = settingsService.getInteger("access.agentTokenTtlSeconds", 3600);
+        secureCookies = settingsService.getBoolean("access.secureCookies", false);
+        closeSessionTimeoutSeconds = settingsService.getInteger("access.closeSessionTimeoutSeconds", 10);
+        devLoginEnabled = settingsService.getBoolean("access.devLoginEnabled", true);
+        devLoginAccessKeySetting = settingsService.getString("access.devLoginAccessKey", "");
         // Only fall back to the key file when dev-login is enabled for this process AND no key is
         // configured explicitly. In production (dev-login off) we must not touch the filesystem at
         // all: a read-only container FS would otherwise fail bean init and crash-loop the pod for a
@@ -116,7 +103,8 @@ public class AccessSettings {
             // Warn instead of failing: an explicitly configured key is a deliberate operator choice,
             // and a hard failure here would take the whole service down over a dev-only feature.
             if (configured.length() < DEV_LOGIN_KEY_MIN_LENGTH) {
-                log.warn("SECURITY: configured dev-login access key is shorter than {} characters",
+                log.warn(
+                        "SECURITY: configured dev-login access key is shorter than {} characters",
                         DEV_LOGIN_KEY_MIN_LENGTH);
             }
             log.info("Using explicitly configured dev-login access key (key file not used)");
@@ -128,6 +116,7 @@ public class AccessSettings {
 
     /** Confidential file holding the dev-login access key (git-ignored, written in the process CWD). */
     private static final Path DEV_LOGIN_KEY_FILE = Path.of("confidential", "dev-login-key.txt");
+
     private static final int DEV_LOGIN_KEY_MIN_LENGTH = 16;
 
     /**
@@ -175,8 +164,8 @@ public class AccessSettings {
             log.warn("Generated new dev-login access key -> {}", DEV_LOGIN_KEY_FILE.toAbsolutePath());
             return key;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to access dev-login key file "
-                    + DEV_LOGIN_KEY_FILE.toAbsolutePath(), e);
+            throw new IllegalStateException(
+                    "Failed to access dev-login key file " + DEV_LOGIN_KEY_FILE.toAbsolutePath(), e);
         }
     }
 
@@ -192,10 +181,9 @@ public class AccessSettings {
      * Cookie URLs for multi-domain cookie setup.
      */
     public List<String> getAccessUrls() {
-        String urls = Strings.isBlank(accessUrls) ?
-                "http://localhost:9042/player/aaa/authorize,http://localhost:9043/control/aaa/authorize"
-                :
-                accessUrls;
+        String urls = Strings.isBlank(accessUrls)
+                ? "http://localhost:9042/player/aaa/authorize,http://localhost:9043/control/aaa/authorize"
+                : accessUrls;
         if (urls == null || urls.isBlank()) {
             return List.of();
         }
@@ -210,10 +198,7 @@ public class AccessSettings {
      * {worldId} placeholder will be replaced with actual worldId.
      */
     public String getJumpUrlAgent() {
-        return Strings.isBlank(jumpUrlAgent) ?
-                "http://localhost:3002?worldId={worldId}"
-                :
-                jumpUrlAgent;
+        return Strings.isBlank(jumpUrlAgent) ? "http://localhost:3002?worldId={worldId}" : jumpUrlAgent;
     }
 
     /**
@@ -221,10 +206,9 @@ public class AccessSettings {
      * {worldId} and {session} placeholders will be replaced.
      */
     public String getJumpUrlEditor() {
-        return Strings.isBlank(jumpUrlEditor) ?
-            "http://localhost:3001?worldId={worldId}&session={session}"
-                :
-            jumpUrlEditor;
+        return Strings.isBlank(jumpUrlEditor)
+                ? "http://localhost:3001?worldId={worldId}&session={session}"
+                : jumpUrlEditor;
     }
 
     /**
@@ -232,10 +216,9 @@ public class AccessSettings {
      * {worldId} and {session} placeholders will be replaced.
      */
     public String getJumpUrlViewer() {
-        return Strings.isBlank(jumpUrlViewer) ?
-            "http://localhost:3000?worldId={worldId}&session={session}"
-                :
-            jumpUrlViewer;
+        return Strings.isBlank(jumpUrlViewer)
+                ? "http://localhost:3000?worldId={worldId}&session={session}"
+                : jumpUrlViewer;
     }
 
     /**
@@ -269,10 +252,7 @@ public class AccessSettings {
      * Example: ".example.com" for *.example.com
      */
     public String getCookieDomain() {
-        return Strings.isBlank(cookieDomain) ?
-            null
-                :
-            cookieDomain;
+        return Strings.isBlank(cookieDomain) ? null : cookieDomain;
     }
 
     private String getControlsBase() {
@@ -280,24 +260,15 @@ public class AccessSettings {
     }
 
     public String getLoginUrl() {
-        return Strings.isBlank(loginUrl) ?
-            getControlsBase() + "/dev-login.html"
-                :
-            loginUrl;
+        return Strings.isBlank(loginUrl) ? getControlsBase() + "/dev-login.html" : loginUrl;
     }
 
     public String getLogoutUrl() {
-        return Strings.isBlank(logoutUrl) ?
-            getControlsBase() + "/login-forward.html"
-                :
-            logoutUrl;
+        return Strings.isBlank(logoutUrl) ? getControlsBase() + "/login-forward.html" : logoutUrl;
     }
 
     public String getTeleportUrl() {
-        return Strings.isBlank(teleportUrl) ?
-            getControlsBase() + "/teleport-login.html"
-                :
-            teleportUrl;
+        return Strings.isBlank(teleportUrl) ? getControlsBase() + "/teleport-login.html" : teleportUrl;
     }
 
     /**

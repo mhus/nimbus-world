@@ -3,13 +3,12 @@ package de.mhus.nimbus.world.control.service.delete.impl;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
 import de.mhus.nimbus.world.shared.world.WEntityService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service to delete entities for a given world.
@@ -38,8 +37,7 @@ public class DeleteEntitiesService implements DeleteWorldResources {
         // Delete entity models
         int modelCount = entityModelService.deleteAllByWorldId(worldId);
 
-        log.info("Deleted {} entity models and {} entity instances for world {}",
-                modelCount, entityCount, worldId);
+        log.info("Deleted {} entity models and {} entity instances for world {}", modelCount, entityCount, worldId);
     }
 
     @Override

@@ -2,14 +2,13 @@ package de.mhus.nimbus.world.life.service;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service that manages ChunkAliveService and ChunkTTLTracker instances per world.
@@ -24,6 +23,7 @@ public class MultiWorldChunkService {
      */
     public interface WorldChunkChangeListener {
         void onChunksActivated(WorldId worldId, Set<ChunkCoordinate> added);
+
         void onChunksDeactivated(WorldId worldId, Set<ChunkCoordinate> removed);
     }
 
@@ -82,7 +82,8 @@ public class MultiWorldChunkService {
                         try {
                             l.onChunksDeactivated(worldId, removed);
                         } catch (Exception e) {
-                            log.error("Error notifying WorldChunkChangeListener (deactivated) for world {}", worldId, e);
+                            log.error(
+                                    "Error notifying WorldChunkChangeListener (deactivated) for world {}", worldId, e);
                         }
                     }
                 }

@@ -53,9 +53,8 @@ public class JacksonConfig {
                 .build();
 
         // Create JsonFactory with custom constraints (Jackson 3: factory is immutable, use builder)
-        JsonFactory jsonFactory = JsonFactory.builder()
-                .streamReadConstraints(constraints)
-                .build();
+        JsonFactory jsonFactory =
+                JsonFactory.builder().streamReadConstraints(constraints).build();
 
         // Custom TsEnum serializer (Jackson 3: ValueSerializer replaces JsonSerializer)
         SimpleModule enumModule = new SimpleModule();

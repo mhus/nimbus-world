@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * GameplayAction for toggling a single block through a list of states.
@@ -36,9 +35,18 @@ public class ToggleAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId,
-                                     String blockAction, JsonNode params, String userAction, String shortcutKey,
-                                     Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (session.getWorldId() == null) return false;
         if (!basic.canUseBlock(session, x, y, z, serverInfo)) return false;
 
@@ -77,10 +85,11 @@ public class ToggleAction implements GameplayAction {
             type = "cycle";
         }
 
-        String newStatus = switch (type.toLowerCase()) {
-            case "random" -> resolveRandom(states, currentStatus);
-            default -> resolveCycle(states, currentStatus);
-        };
+        String newStatus =
+                switch (type.toLowerCase()) {
+                    case "random" -> resolveRandom(states, currentStatus);
+                    default -> resolveCycle(states, currentStatus);
+                };
 
         // Apply status
         var sender = basic.getBlockStatusSenderService();
@@ -95,19 +104,22 @@ public class ToggleAction implements GameplayAction {
         // Play sound
         String soundValue = serverInfo != null ? serverInfo.get("sound") : null;
         String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_TOGGLE);
-        basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
-                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
+        basic.getBasicClientService()
+                .sendCommand(
+                        session,
+                        "playSoundAtPosition",
+                        List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
         // Fire logic effect with status variables for placeholder replacement
         // {status} = raw state, {index} = state index (0-based)
         int stateIndex = 0;
         for (int i = 0; i < states.length; i++) {
-            if (states[i].equals(newStatus)) { stateIndex = i; break; }
+            if (states[i].equals(newStatus)) {
+                stateIndex = i;
+                break;
+            }
         }
-        basic.fireLogicEffect(session, serverInfo, Map.of(
-                "status", newStatus,
-                "index", String.valueOf(stateIndex)
-        ));
+        basic.fireLogicEffect(session, serverInfo, Map.of("status", newStatus, "index", String.valueOf(stateIndex)));
 
         log.debug("Toggle action: worldId={}, block=({},{},{}), {} -> {}", worldId, x, y, z, currentStatus, newStatus);
         return true;
@@ -137,8 +149,13 @@ public class ToggleAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction,
-                                      String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         return false;
     }
 
@@ -148,8 +165,13 @@ public class ToggleAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey,
-                                      Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 }

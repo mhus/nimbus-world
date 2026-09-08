@@ -1,8 +1,8 @@
 package de.mhus.nimbus.evaluate;
 
-import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class EvaluateTypesOnlyTest {
 
@@ -51,13 +50,16 @@ public class EvaluateTypesOnlyTest {
         // assertions
         assertTrue(outJavaDir.exists(), "Output dir not created: " + outJavaDir);
         List<File> javaFiles = collectJavaFiles(outJavaDir);
-        assertFalse(javaFiles.isEmpty(), "Expected Java files to be generated from types, but none were found in: " + outJavaDir);
+        assertFalse(
+                javaFiles.isEmpty(),
+                "Expected Java files to be generated from types, but none were found in: " + outJavaDir);
         String expectedPkgPath = "de.mhus.nimbus.evaluate.generated.types".replace('.', File.separatorChar);
         boolean foundInPkg = javaFiles.stream().anyMatch(f -> f.getPath().contains(expectedPkgPath));
         assertTrue(foundInPkg, "Expected generated Java under package 'de.mhus.nimbus.evaluate.generated.types'");
 
         // verify that additionalClassAnnotations were emitted on at least one generated class
-        File anyGenerated = javaFiles.stream().filter(f -> f.getPath().contains(expectedPkgPath))
+        File anyGenerated = javaFiles.stream()
+                .filter(f -> f.getPath().contains(expectedPkgPath))
                 .filter(f -> {
                     try {
                         String content = Files.readString(f.toPath());
@@ -66,57 +68,72 @@ public class EvaluateTypesOnlyTest {
                         return false;
                     }
                 })
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElse(null);
         assertNotNull(anyGenerated, "No generated file found in expected package");
         System.out.println("Checking additionalClassAnnotations in file: " + anyGenerated);
         String content = Files.readString(anyGenerated.toPath());
         System.out.println("Content:\n" + content + "\n---");
-        assertTrue(content.contains("@Deprecated"),
+        assertTrue(
+                content.contains("@Deprecated"),
                 "Expected additional annotation @Deprecated to be present in generated class");
 
         // verify TYPE_ALIAS generation creates a value field (ColorHex = string -> private String value;)
         File colorHexFile = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("ColorHex.java"))
-                .findFirst().orElse(null);
-        assertNotNull(colorHexFile, "Expected generated ColorHex.java in types package to test type alias field generation");
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("ColorHex.java"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(
+                colorHexFile, "Expected generated ColorHex.java in types package to test type alias field generation");
         String colorHexSrc = Files.readString(colorHexFile.toPath());
-        assertTrue(colorHexSrc.contains("private String value;"),
+        assertTrue(
+                colorHexSrc.contains("private String value;"),
                 "Type alias 'ColorHex = string' should generate a field 'private String value;' in ColorHex.java");
 
         // verify field-level annotations configuration
         // Choose the Item class which has required (id, itemType) and optional (name, description, ...) fields
         File itemFile = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("Item.java"))
-                .findFirst().orElse(null);
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("Item.java"))
+                .findFirst()
+                .orElse(null);
         assertNotNull(itemFile, "Expected generated Item.java in types package to test field annotations");
         String itemSrc = Files.readString(itemFile.toPath());
         // Common field annotation should be present before fields
-        assertTrue(itemSrc.contains("@Deprecated"),
-                "Expected common field annotation @Deprecated on fields");
+        assertTrue(itemSrc.contains("@Deprecated"), "Expected common field annotation @Deprecated on fields");
         // Optional field annotations: expect optional-specific annotation for a field such as 'name'
-        assertTrue(itemSrc.contains("@SuppressWarnings(\"optional\")"),
+        assertTrue(
+                itemSrc.contains("@SuppressWarnings(\"optional\")"),
                 "Expected optional field annotation @SuppressWarnings(\"optional\") on optional fields");
         // @JsonInclude(NON_NULL) is no longer hardcoded; it can be configured via additionalOptionalFieldAnnotations
         // Non-optional field annotation should be present for required fields such as 'id' or 'itemType'
-        assertTrue(itemSrc.contains("@SuppressWarnings(\"required\")"),
+        assertTrue(
+                itemSrc.contains("@SuppressWarnings(\"required\")"),
                 "Expected non-optional field annotation @SuppressWarnings(\"required\") on required fields");
 
         // verify union-of-string mapping -> String
         File plainReqFile = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("PlainReq.java"))
-                .findFirst().orElse(null);
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("PlainReq.java"))
+                .findFirst()
+                .orElse(null);
         assertNotNull(plainReqFile, "Expected generated PlainReq.java in types package");
         String plainReqSrc = Files.readString(plainReqFile.toPath());
-        assertTrue(plainReqSrc.contains("private String kind;"),
+        assertTrue(
+                plainReqSrc.contains("private String kind;"),
                 "Union type '" + "'public'|'private'|'symmetric'|string" + "' should map to String for field 'kind'");
 
         // verify fieldTypeMappings override: Req.kind -> ColorHex
         File reqFile = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("Req.java"))
-                .findFirst().orElse(null);
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("Req.java"))
+                .findFirst()
+                .orElse(null);
         assertNotNull(reqFile, "Expected generated Req.java in types package");
         String reqSrc = Files.readString(reqFile.toPath());
-        assertTrue(reqSrc.contains("private de.mhus.nimbus.evaluate.generated.types.ColorHex kind;")
+        assertTrue(
+                reqSrc.contains("private de.mhus.nimbus.evaluate.generated.types.ColorHex kind;")
                         || reqSrc.contains("private ColorHex kind;"),
                 "fieldTypeMappings should override Req.kind to ColorHex");
 
@@ -154,30 +171,41 @@ public class EvaluateTypesOnlyTest {
 
         // WithBackdrop.java should contain field of type WithBackdropBackdrop named backdrop
         File withBackdrop = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("WithBackdrop.java"))
-                .findFirst().orElse(null);
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("WithBackdrop.java"))
+                .findFirst()
+                .orElse(null);
         assertNotNull(withBackdrop, "Expected generated WithBackdrop.java");
         String withBackdropSrc = Files.readString(withBackdrop.toPath());
-//        assertTrue(withBackdropSrc.contains("private WithBackdropBackdrop backdrop;") ||
-//                        withBackdropSrc.contains("private de.mhus.nimbus.evaluate.generated.types.WithBackdropBackdrop backdrop;"),
-//                "WithBackdrop.backdrop should be of type WithBackdropBackdrop");
+        //        assertTrue(withBackdropSrc.contains("private WithBackdropBackdrop backdrop;") ||
+        //                        withBackdropSrc.contains("private
+        // de.mhus.nimbus.evaluate.generated.types.WithBackdropBackdrop backdrop;"),
+        //                "WithBackdrop.backdrop should be of type WithBackdropBackdrop");
 
         // Helper class should now be nested inside WithBackdrop.java as a public static class
         File helper = javaFiles.stream()
-                .filter(f -> f.getPath().contains(expectedPkgPath) && f.getName().equals("WithBackdropBackdrop.java"))
-                .findFirst().orElse(null);
-        assertNull(helper, "Standalone WithBackdropBackdrop.java should not be generated; helper is nested inside WithBackdrop");
+                .filter(f ->
+                        f.getPath().contains(expectedPkgPath) && f.getName().equals("WithBackdropBackdrop.java"))
+                .findFirst()
+                .orElse(null);
+        assertNull(
+                helper,
+                "Standalone WithBackdropBackdrop.java should not be generated; helper is nested inside WithBackdrop");
         // Validate nested class content in WithBackdrop.java
-//        assertTrue(withBackdropSrc.contains("public static class WithBackdropBackdrop"),
-//                "WithBackdrop.java should contain nested public static class WithBackdropBackdrop");
-//        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> n;") || withBackdropSrc.contains("private List<Backdrop> n;"),
-//                "Nested helper should contain field n as List<Backdrop>");
-//        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> e;") || withBackdropSrc.contains("private List<Backdrop> e;"),
-//                "Nested helper should contain field e as List<Backdrop>");
-//        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> s;") || withBackdropSrc.contains("private List<Backdrop> s;"),
-//                "Nested helper should contain field s as List<Backdrop>");
-//        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> w;") || withBackdropSrc.contains("private List<Backdrop> w;"),
-//                "Nested helper should contain field w as List<Backdrop>");
+        //        assertTrue(withBackdropSrc.contains("public static class WithBackdropBackdrop"),
+        //                "WithBackdrop.java should contain nested public static class WithBackdropBackdrop");
+        //        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> n;") ||
+        // withBackdropSrc.contains("private List<Backdrop> n;"),
+        //                "Nested helper should contain field n as List<Backdrop>");
+        //        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> e;") ||
+        // withBackdropSrc.contains("private List<Backdrop> e;"),
+        //                "Nested helper should contain field e as List<Backdrop>");
+        //        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> s;") ||
+        // withBackdropSrc.contains("private List<Backdrop> s;"),
+        //                "Nested helper should contain field s as List<Backdrop>");
+        //        assertTrue(withBackdropSrc.contains("private java.util.List<Backdrop> w;") ||
+        // withBackdropSrc.contains("private List<Backdrop> w;"),
+        //                "Nested helper should contain field w as List<Backdrop>");
 
         // Build evaluate via maven
         int exit = runMaven(moduleBase, "clean", "package", "-DskipTests", "-Dmaven.compiler.release=21");
@@ -201,10 +229,7 @@ public class EvaluateTypesOnlyTest {
     private static List<File> listFilesDepthFirst(File dir) throws IOException {
         if (dir == null || !dir.exists()) return java.util.Collections.emptyList();
         try (var stream = Files.walk(dir.toPath())) {
-            return stream
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .collect(Collectors.toList());
+            return stream.sorted(Comparator.reverseOrder()).map(Path::toFile).collect(Collectors.toList());
         }
     }
 
@@ -234,7 +259,8 @@ public class EvaluateTypesOnlyTest {
         Process p = pb.start();
 
         StringBuilder out = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader br =
+                new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = br.readLine()) != null) {
                 out.append(line).append(System.lineSeparator());

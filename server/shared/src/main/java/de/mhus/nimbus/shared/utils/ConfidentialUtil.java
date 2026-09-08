@@ -1,11 +1,11 @@
 package de.mhus.nimbus.shared.utils;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
-import java.nio.file.Files;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.io.IOException;
 
 public class ConfidentialUtil {
     private static Path ROOT_DIR = Path.of("./confidential");

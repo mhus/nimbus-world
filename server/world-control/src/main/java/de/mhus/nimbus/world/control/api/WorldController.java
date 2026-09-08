@@ -1,8 +1,9 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.control.service.BlockInfoService;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.control.service.BlockInfoService;
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,17 +12,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.world.shared.world.WEpochMeta;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for World operations.
@@ -41,14 +39,7 @@ public class WorldController extends BaseEditorController {
     private final AccessValidator accessValidator;
 
     // DTOs
-    public record WorldListDto(
-            String worldId,
-            String title,
-            String description,
-            Integer chunkSize,
-            String status
-    ) {
-    }
+    public record WorldListDto(String worldId, String title, String description, Integer chunkSize, String status) {}
 
     public record WorldDetailDto(
             String worldId,
@@ -61,9 +52,7 @@ public class WorldController extends BaseEditorController {
             Boolean publicFlag,
             Set<String> editor,
             Set<String> player,
-            List<WEpochMeta> epoches
-    ) {
-    }
+            List<WEpochMeta> epoches) {}
 
     /**
      * List all worlds with optional filtering.
@@ -82,9 +71,7 @@ public class WorldController extends BaseEditorController {
      */
     @GetMapping
     @Operation(summary = "List all worlds")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success")
-    })
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Success")})
     public ResponseEntity<?> list(
             @Parameter(description = "Filter type for world selection") @RequestParam(required = false) String filter,
             HttpServletRequest request) {
@@ -126,7 +113,7 @@ public class WorldController extends BaseEditorController {
                 List<WorldListDto> zones = worldService.findAll().stream()
                         .filter(world -> {
                             de.mhus.nimbus.shared.types.WorldId worldId =
-                                de.mhus.nimbus.shared.types.WorldId.unchecked(world.getWorldId());
+                                    de.mhus.nimbus.shared.types.WorldId.unchecked(world.getWorldId());
                             return worldId.isZone();
                         })
                         .filter(world -> accessValidator.isWorldAccessible(request, world))
@@ -167,14 +154,13 @@ public class WorldController extends BaseEditorController {
     @GetMapping("/{worldId}")
     @Operation(summary = "Get world by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "World found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "403", description = "Access denied"),
-            @ApiResponse(responseCode = "404", description = "World not found")
+        @ApiResponse(responseCode = "200", description = "World found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "403", description = "Access denied"),
+        @ApiResponse(responseCode = "404", description = "World not found")
     })
     public ResponseEntity<?> get(
-            @Parameter(description = "World identifier") @PathVariable String worldId,
-            HttpServletRequest request) {
+            @Parameter(description = "World identifier") @PathVariable String worldId, HttpServletRequest request) {
 
         log.debug("GET world: worldId={}", worldId);
 
@@ -203,9 +189,9 @@ public class WorldController extends BaseEditorController {
     @GetMapping("/{worldId}/session/{sessionId}/block/{x}/{y}/{z}")
     @Operation(summary = "Get block info with layer metadata")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Block info loaded"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Block/Chunk not found")
+        @ApiResponse(responseCode = "200", description = "Block info loaded"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Block/Chunk not found")
     })
     public ResponseEntity<?> getBlock(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -231,14 +217,20 @@ public class WorldController extends BaseEditorController {
         try {
             var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
 
-            log.debug("Block info loaded: pos=({},{},{}) layer={} readOnly={}",
-                    x, y, z, blockInfo.layer(), blockInfo.readOnly());
+            log.debug(
+                    "Block info loaded: pos=({},{},{}) layer={} readOnly={}",
+                    x,
+                    y,
+                    z,
+                    blockInfo.layer(),
+                    blockInfo.readOnly());
 
             return ResponseEntity.ok(blockInfo);
 
         } catch (Exception e) {
             log.error("Failed to load block info: worldId={} pos=({},{},{})", worldId, x, y, z, e);
-            return ResponseEntity.status(500).body(java.util.Map.of("error", "Failed to load block: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(java.util.Map.of("error", "Failed to load block: " + e.getMessage()));
         }
     }
 
@@ -256,8 +248,7 @@ public class WorldController extends BaseEditorController {
                 displayName,
                 world.getPublicData() != null ? world.getPublicData().getDescription() : null,
                 16, // Default chunk size
-                world.isEnabled() ? "active" : "inactive"
-        );
+                world.isEnabled() ? "active" : "inactive");
     }
 
     private WorldDetailDto toDetailDto(WWorld world) {
@@ -272,8 +263,7 @@ public class WorldController extends BaseEditorController {
                 world.isPublicFlag(),
                 world.getEditor(),
                 world.getPlayer(),
-                world.getEpoches()
-        );
+                world.getEpoches());
     }
 
     private WorldListDto toListDtoFromWorldId(de.mhus.nimbus.shared.types.WorldId worldId) {
@@ -289,8 +279,7 @@ public class WorldController extends BaseEditorController {
                 displayName,
                 "World Collection: " + worldId.getId(),
                 16, // Default chunk size
-                "active"
-        );
+                "active");
     }
 
     /**
@@ -322,13 +311,15 @@ public class WorldController extends BaseEditorController {
 
             case "regionCollections" ->
                 // Only @region + shared collections
-                worldId.isCollection() &&
-                (world.getWorldId().startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_REGION) ||
-                 world.getWorldId().startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_SHARED));
+                worldId.isCollection()
+                        && (world.getWorldId().startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_REGION)
+                                || world.getWorldId()
+                                        .startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_SHARED));
 
             case "regionOnly" ->
                 // Only @region collection
-                worldId.isCollection() && world.getWorldId().startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_REGION);
+                worldId.isCollection()
+                        && world.getWorldId().startsWith(de.mhus.nimbus.shared.types.WorldId.COLLECTION_REGION);
 
             default -> true; // Unknown filter = show all
         };

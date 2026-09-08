@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Wall Block Manipulator - creates a vertical wall.
@@ -65,9 +65,9 @@ public class WallBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a vertical wall extending in the specified direction. " +
-                "Parameters: position {x,y,z}, width, height, direction (N/E/S/W/X/Z), blockType (optional). " +
-                "Example: {\"wall\": {\"transform\": \"position\", \"width\": 10, \"height\": 5, \"direction\": \"N\"}}";
+        return "Creates a vertical wall extending in the specified direction. "
+                + "Parameters: position {x,y,z}, width, height, direction (N/E/S/W/X/Z), blockType (optional). "
+                + "Example: {\"wall\": {\"transform\": \"position\", \"width\": 10, \"height\": 5, \"direction\": \"N\"}}";
     }
 
     @Override
@@ -144,8 +144,15 @@ public class WallBlockManipulator implements BlockManipulator {
         }
 
         // Generate wall
-        log.info("Generating wall: pos=({},{},{}), width={}, height={}, direction={}, blockType={}",
-                x, y, z, width, height, direction, blockType);
+        log.info(
+                "Generating wall: pos=({},{},{}), width={}, height={}, direction={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                height,
+                direction,
+                blockType);
 
         if (alongX) {
             // Wall extends along X-axis (E-W)
@@ -159,8 +166,8 @@ public class WallBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated wall: %d blocks (%dx%d, %s) at (%d,%d,%d)",
-                blockCount, width, height, direction, x, y, z);
+        String message = String.format(
+                "Generated wall: %d blocks (%dx%d, %s) at (%d,%d,%d)", blockCount, width, height, direction, x, y, z);
 
         log.info(message);
 

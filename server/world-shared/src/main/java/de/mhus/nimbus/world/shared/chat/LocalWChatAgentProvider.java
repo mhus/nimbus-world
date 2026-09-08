@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 /**
  * Local provider for chat agents.
@@ -21,6 +20,7 @@ public class LocalWChatAgentProvider implements WChatAgentProvider {
     @Autowired(required = false)
     @Lazy
     private List<WChatAgent> localAgents;
+
     private Map<String, WChatAgent> agentMap;
 
     @Override
@@ -51,8 +51,7 @@ public class LocalWChatAgentProvider implements WChatAgentProvider {
                 agentMap = Collections.emptyMap();
                 log.debug("No local chat agents found");
             } else {
-                agentMap = localAgents.stream()
-                        .collect(Collectors.toMap(WChatAgent::getName, agent -> agent));
+                agentMap = localAgents.stream().collect(Collectors.toMap(WChatAgent::getName, agent -> agent));
                 log.debug("Initialized agent map with {} agents: {}", agentMap.size(), agentMap.keySet());
             }
         }

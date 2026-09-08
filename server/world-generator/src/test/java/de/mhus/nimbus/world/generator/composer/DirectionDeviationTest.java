@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
-import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for direction deviation in LINE-shaped biomes.
@@ -35,31 +34,31 @@ public class DirectionDeviationTest {
         mountain.setShape(AreaShape.LINE);
         mountain.setSizeFrom(8);
         mountain.setSizeTo(10);
-        mountain.setDirectionDeviation(0.0);  // No deviation
+        mountain.setDirectionDeviation(0.0); // No deviation
         mountain.setPositions(java.util.List.of(createOriginPosition()));
 
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("straight-line-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("straight-line-test")
+                .features(new ArrayList<>())
+                .build();
         composition.getFeatures().add(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(12345L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(12345L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess(), "Composition should succeed");
 
         // Verify mountain was placed
         PlacedBiome placedMountain = result.getBiomePlacementResult().getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome().getName().equals("straight-mountains"))
-            .findFirst()
-            .orElseThrow();
+                .filter(pb -> pb.getBiome().getName().equals("straight-mountains"))
+                .findFirst()
+                .orElseThrow();
 
         log.info("Placed straight mountain with {} hexes", placedMountain.getActualSize());
         assertTrue(placedMountain.getActualSize() >= 8, "Should have at least 8 hexes");
@@ -81,30 +80,30 @@ public class DirectionDeviationTest {
         mountain.setShape(AreaShape.LINE);
         mountain.setSizeFrom(8);
         mountain.setSizeTo(10);
-        mountain.setDirectionDeviation(0.4);  // 40% chance to deviate at each step
+        mountain.setDirectionDeviation(0.4); // 40% chance to deviate at each step
         mountain.setPositions(java.util.List.of(createOriginPosition()));
 
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("organic-line-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("organic-line-test")
+                .features(new ArrayList<>())
+                .build();
         composition.getFeatures().add(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(54321L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(54321L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess(), "Composition should succeed");
 
         PlacedBiome placedMountain = result.getBiomePlacementResult().getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome().getName().equals("organic-mountains"))
-            .findFirst()
-            .orElseThrow();
+                .filter(pb -> pb.getBiome().getName().equals("organic-mountains"))
+                .findFirst()
+                .orElseThrow();
 
         log.info("Placed organic mountain with {} hexes", placedMountain.getActualSize());
         assertTrue(placedMountain.getActualSize() >= 8, "Should have at least 8 hexes");
@@ -125,31 +124,31 @@ public class DirectionDeviationTest {
         mountain.setShape(AreaShape.LINE);
         mountain.setSizeFrom(10);
         mountain.setSizeTo(12);
-        mountain.setDeviationLeft(0.5);   // 50% chance to turn left
-        mountain.setDeviationRight(0.1);  // 10% chance to turn right
+        mountain.setDeviationLeft(0.5); // 50% chance to turn left
+        mountain.setDeviationRight(0.1); // 10% chance to turn right
         mountain.setPositions(java.util.List.of(createOriginPosition()));
 
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("asymmetric-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("asymmetric-test")
+                .features(new ArrayList<>())
+                .build();
         composition.getFeatures().add(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(99999L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(99999L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess(), "Composition should succeed");
 
         PlacedBiome placedMountain = result.getBiomePlacementResult().getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome().getName().equals("left-turning-mountains"))
-            .findFirst()
-            .orElseThrow();
+                .filter(pb -> pb.getBiome().getName().equals("left-turning-mountains"))
+                .findFirst()
+                .orElseThrow();
 
         log.info("Placed left-turning mountain with {} hexes", placedMountain.getActualSize());
         log.info("Coordinates: {}", placedMountain.getCoordinates());
@@ -168,30 +167,30 @@ public class DirectionDeviationTest {
         mountain.setShape(AreaShape.LINE);
         mountain.setSizeFrom(12);
         mountain.setSizeTo(15);
-        mountain.setDirectionDeviation(0.8);  // 80% chance to deviate
+        mountain.setDirectionDeviation(0.8); // 80% chance to deviate
         mountain.setPositions(java.util.List.of(createOriginPosition()));
 
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("wiggly-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("wiggly-test")
+                .features(new ArrayList<>())
+                .build();
         composition.getFeatures().add(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(77777L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(77777L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess(), "Composition should succeed");
 
         PlacedBiome placedMountain = result.getBiomePlacementResult().getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome().getName().equals("wiggly-mountains"))
-            .findFirst()
-            .orElseThrow();
+                .filter(pb -> pb.getBiome().getName().equals("wiggly-mountains"))
+                .findFirst()
+                .orElseThrow();
 
         log.info("Placed wiggly mountain with {} hexes", placedMountain.getActualSize());
         log.info("Coordinates: {}", placedMountain.getCoordinates());

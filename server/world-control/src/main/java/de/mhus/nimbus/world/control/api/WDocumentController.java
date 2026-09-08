@@ -12,19 +12,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for Document CRUD operations.
@@ -61,9 +60,7 @@ public class WDocumentController extends BaseEditorController {
             String childType,
             String worldId,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
     public record DocumentMetadataDto(
             String documentId,
@@ -82,9 +79,7 @@ public class WDocumentController extends BaseEditorController {
             String childType,
             String worldId,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
     public record CreateDocumentRequest(
             String name,
@@ -98,14 +93,12 @@ public class WDocumentController extends BaseEditorController {
             String parentDocumentId,
             Boolean isMain,
             String type,
-            String childType
-    ) {
-    }
+            String childType) {}
 
     public record UpdateDocumentRequest(
             String name,
             String title,
-            String collection,  // Included for JSON parsing, but value from path parameter is used
+            String collection, // Included for JSON parsing, but value from path parameter is used
             String language,
             String format,
             String content,
@@ -115,9 +108,7 @@ public class WDocumentController extends BaseEditorController {
             Boolean isMain,
             String hash,
             String type,
-            String childType
-    ) {
-    }
+            String childType) {}
 
     /**
      * Get single Document by ID.
@@ -126,9 +117,9 @@ public class WDocumentController extends BaseEditorController {
     @GetMapping("/{collection}/{documentId}")
     @Operation(summary = "Get Document by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Document found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+        @ApiResponse(responseCode = "200", description = "Document found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Document not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -137,9 +128,7 @@ public class WDocumentController extends BaseEditorController {
 
         log.debug("GET document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(collection, "collection");
         if (validation != null) return validation;
         validation = validateId(documentId, "documentId");
@@ -162,8 +151,8 @@ public class WDocumentController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Documents")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -172,12 +161,15 @@ public class WDocumentController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST documents: worldId={}, collection={}, type={}, offset={}, limit={}",
-                worldId, collection, type, offset, limit);
+        log.debug(
+                "LIST documents: worldId={}, collection={}, type={}, offset={}, limit={}",
+                worldId,
+                collection,
+                type,
+                offset,
+                limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         log.debug("Parsed WorldId: wid='{}', wid.getId()='{}'", wid, wid.getId());
 
         var validation = validatePagination(offset, limit);
@@ -205,21 +197,21 @@ public class WDocumentController extends BaseEditorController {
         int totalCount = all.size();
 
         // Apply pagination
-        List<DocumentMetadataDto> dtoList = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toMetadataDto)
-                .collect(Collectors.toList());
+        List<DocumentMetadataDto> dtoList =
+                all.stream().skip(offset).limit(limit).map(this::toMetadataDto).collect(Collectors.toList());
 
-        log.debug("Returning {} document metadata (total: {}) for worldId='{}', collection='{}'",
-                dtoList.size(), totalCount, worldId, collection);
+        log.debug(
+                "Returning {} document metadata (total: {}) for worldId='{}', collection='{}'",
+                dtoList.size(),
+                totalCount,
+                worldId,
+                collection);
 
         return ResponseEntity.ok(Map.of(
                 "documents", dtoList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -230,8 +222,8 @@ public class WDocumentController extends BaseEditorController {
     @GetMapping("/lookup/{collection}")
     @Operation(summary = "Lookup documents metadata from multiple sources")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> lookup(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -239,23 +231,17 @@ public class WDocumentController extends BaseEditorController {
 
         log.debug("LOOKUP documents metadata: worldId={}, collection={}", worldId, collection);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(collection, "collection");
         if (validation != null) return validation;
 
         List<WDocumentMetadata> documents = documentService.lookupDocumentsMetadata(wid, collection);
-        List<DocumentMetadataDto> dtoList = documents.stream()
-                .map(this::toMetadataDto)
-                .collect(Collectors.toList());
+        List<DocumentMetadataDto> dtoList =
+                documents.stream().map(this::toMetadataDto).collect(Collectors.toList());
 
         log.debug("Returning {} document metadata from lookup", dtoList.size());
 
-        return ResponseEntity.ok(Map.of(
-                "documents", dtoList,
-                "count", dtoList.size()
-        ));
+        return ResponseEntity.ok(Map.of("documents", dtoList, "count", dtoList.size()));
     }
 
     /**
@@ -265,9 +251,9 @@ public class WDocumentController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Document")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Document created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Document already exists")
+        @ApiResponse(responseCode = "201", description = "Document created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Document already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -275,9 +261,7 @@ public class WDocumentController extends BaseEditorController {
 
         log.debug("CREATE document: worldId={}, collection={}", worldId, request.collection());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(request.collection())) {
             return bad("collection required");
         }
@@ -301,10 +285,8 @@ public class WDocumentController extends BaseEditorController {
             });
 
             log.info("Created document: collection={}, documentId={}", request.collection(), documentId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "documentId", saved.getDocumentId(),
-                    "message", "Document created successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("documentId", saved.getDocumentId(), "message", "Document created successfully"));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating document: {}", e.getMessage());
             return bad(e.getMessage());
@@ -322,10 +304,10 @@ public class WDocumentController extends BaseEditorController {
     @PutMapping("/{collection}/{documentId}")
     @Operation(summary = "Update Document")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Document updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "403", description = "Document is read-only"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+        @ApiResponse(responseCode = "200", description = "Document updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "403", description = "Document is read-only"),
+        @ApiResponse(responseCode = "404", description = "Document not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -335,9 +317,7 @@ public class WDocumentController extends BaseEditorController {
 
         log.debug("UPDATE document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(collection, "collection");
         if (validation != null) return validation;
         validation = validateId(documentId, "documentId");
@@ -387,10 +367,10 @@ public class WDocumentController extends BaseEditorController {
     @DeleteMapping("/{collection}/{documentId}")
     @Operation(summary = "Delete Document")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Document deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "403", description = "Document is read-only"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+        @ApiResponse(responseCode = "204", description = "Document deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "403", description = "Document is read-only"),
+        @ApiResponse(responseCode = "404", description = "Document not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -399,9 +379,7 @@ public class WDocumentController extends BaseEditorController {
 
         log.debug("DELETE document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(collection, "collection");
         if (validation != null) return validation;
         validation = validateId(documentId, "documentId");
@@ -450,8 +428,7 @@ public class WDocumentController extends BaseEditorController {
                 entity.getChildType(),
                 entity.getWorldId(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 
     private DocumentMetadataDto toMetadataDto(WDocumentMetadata entity) {
@@ -472,7 +449,6 @@ public class WDocumentController extends BaseEditorController {
                 entity.getChildType(),
                 entity.getWorldId(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.control.dialog;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +16,7 @@ public final class DialogDtos {
     // --- Playbook structure (stored in WAnything collection="dialogs") ---
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Playbook(
-            String npcEntityId,
-            int version,
-            Map<String, Situation> situations
-    ) {}
+    public record Playbook(String npcEntityId, int version, Map<String, Situation> situations) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Situation(
@@ -32,8 +27,7 @@ public final class DialogDtos {
             String moodOverride,
             Map<String, DialogNode> nodes,
             List<Effect> onEnter,
-            List<Effect> onExit
-    ) {
+            List<Effect> onExit) {
         public Situation {
             if (conditions == null) conditions = List.of();
             if (availableTopics == null) availableTopics = List.of();
@@ -50,8 +44,7 @@ public final class DialogDtos {
             Boolean freeTextAllowed,
             List<DialogOption> options,
             List<Effect> effects,
-            List<Condition> conditions
-    ) {
+            List<Condition> conditions) {
         public DialogNode {
             if (cacheKeys == null) cacheKeys = List.of();
             if (options == null) options = List.of();
@@ -61,13 +54,7 @@ public final class DialogDtos {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record DialogOption(
-            String text,
-            String textKey,
-            String next,
-            String intent,
-            List<Condition> conditions
-    ) {
+    public record DialogOption(String text, String textKey, String next, String intent, List<Condition> conditions) {
         public DialogOption {
             if (conditions == null) conditions = List.of();
         }
@@ -95,8 +82,7 @@ public final class DialogDtos {
             // npcFact
             String contains,
             // general
-            Boolean negate
-    ) {}
+            Boolean negate) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Effect(
@@ -122,8 +108,7 @@ public final class DialogDtos {
             String script,
             String sequence,
             // navigate
-            String path
-    ) {}
+            String path) {}
 
     // --- NPC Profile (stored in WAnything collection="npc-profiles") ---
 
@@ -138,8 +123,7 @@ public final class DialogDtos {
             List<String> knowledgeTopics,
             String aiModel,
             CacheConfig cacheConfig,
-            FreeTextConfig freeText
-    ) {
+            FreeTextConfig freeText) {
         public NpcProfile {
             if (secrets == null) secrets = List.of();
             if (knowledgeTopics == null) knowledgeTopics = List.of();
@@ -147,11 +131,7 @@ public final class DialogDtos {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record CacheConfig(
-            int maxVersions,
-            int warmUpCount,
-            Map<String, Object> buckets
-    ) {
+    public record CacheConfig(int maxVersions, int warmUpCount, Map<String, Object> buckets) {
         public CacheConfig {
             if (maxVersions <= 0) maxVersions = 10;
             if (warmUpCount <= 0) warmUpCount = 3;
@@ -166,8 +146,7 @@ public final class DialogDtos {
             Integer maxTokens,
             List<String> boundaries,
             List<String> forbiddenTopics,
-            List<String> allowedEffects
-    ) {
+            List<String> allowedEffects) {
         public FreeTextConfig {
             if (boundaries == null) boundaries = List.of();
             if (forbiddenTopics == null) forbiddenTopics = List.of();
@@ -183,8 +162,7 @@ public final class DialogDtos {
             String freeTextAiModel,
             int freeTextMaxTokens,
             int freeTextMaxHistory,
-            RateLimitConfig freeTextRateLimit
-    ) {
+            RateLimitConfig freeTextRateLimit) {
         public DialogSettings {
             if (freeTextMaxTokens <= 0) freeTextMaxTokens = 200;
             if (freeTextMaxHistory <= 0) freeTextMaxHistory = 10;
@@ -192,10 +170,7 @@ public final class DialogDtos {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record RateLimitConfig(
-            int maxRequestsPerMinute,
-            int maxRequestsPerDialog
-    ) {
+    public record RateLimitConfig(int maxRequestsPerMinute, int maxRequestsPerDialog) {
         public RateLimitConfig {
             if (maxRequestsPerMinute <= 0) maxRequestsPerMinute = 10;
             if (maxRequestsPerDialog <= 0) maxRequestsPerDialog = 50;
@@ -214,26 +189,12 @@ public final class DialogDtos {
             boolean freeTextEnabled,
             boolean finished,
             VoiceInfo voice,
-            String navigate
-    ) {}
+            String navigate) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record VoiceInfo(
-            String lang,
-            String gender,
-            int voiceIndex,
-            double rate,
-            double pitch
-    ) {}
+    public record VoiceInfo(String lang, String gender, int voiceIndex, double rate, double pitch) {}
 
-    public record OptionView(
-            int index,
-            String text
-    ) {}
+    public record OptionView(int index, String text) {}
 
-    public record DialogRequest(
-            String progressId,
-            Integer optionIndex,
-            String freeText
-    ) {}
+    public record DialogRequest(String progressId, Integer optionIndex, String freeText) {}
 }

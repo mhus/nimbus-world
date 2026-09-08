@@ -38,7 +38,8 @@ public final class I18nUtil {
      */
     public static String encode(String... pairs) {
         if (pairs.length == 0) return "";
-        if (pairs.length % 2 != 0) throw new IllegalArgumentException("Pairs must be even: lang, value, lang, value, ...");
+        if (pairs.length % 2 != 0)
+            throw new IllegalArgumentException("Pairs must be even: lang, value, lang, value, ...");
 
         var sb = new StringBuilder(pairs.length * 16);
         sb.append(PREFIX);
@@ -171,16 +172,45 @@ public final class I18nUtil {
             return this;
         }
 
-        public Builder en(String value) { return put("en", value); }
-        public Builder de(String value) { return put("de", value); }
-        public Builder fr(String value) { return put("fr", value); }
-        public Builder es(String value) { return put("es", value); }
-        public Builder it(String value) { return put("it", value); }
-        public Builder pt(String value) { return put("pt", value); }
-        public Builder ja(String value) { return put("ja", value); }
-        public Builder zh(String value) { return put("zh", value); }
-        public Builder ko(String value) { return put("ko", value); }
-        public Builder ru(String value) { return put("ru", value); }
+        public Builder en(String value) {
+            return put("en", value);
+        }
+
+        public Builder de(String value) {
+            return put("de", value);
+        }
+
+        public Builder fr(String value) {
+            return put("fr", value);
+        }
+
+        public Builder es(String value) {
+            return put("es", value);
+        }
+
+        public Builder it(String value) {
+            return put("it", value);
+        }
+
+        public Builder pt(String value) {
+            return put("pt", value);
+        }
+
+        public Builder ja(String value) {
+            return put("ja", value);
+        }
+
+        public Builder zh(String value) {
+            return put("zh", value);
+        }
+
+        public Builder ko(String value) {
+            return put("ko", value);
+        }
+
+        public Builder ru(String value) {
+            return put("ru", value);
+        }
 
         public String build() {
             return hasEntry ? sb.toString() : "";

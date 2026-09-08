@@ -9,9 +9,9 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
  */
 @GenerateTypeScript("dto")
 public record ImportLayerTerrainRequest(
-    String jsonData,              // Required: JSON from .model.json file
-    @TypeScript(optional = true) Integer mountX,   // Required: mount point X
-    @TypeScript(optional = true) Integer mountY,   // Required: mount point Y
-    @TypeScript(optional = true) Integer mountZ,   // Required: mount point Z
-    @TypeScript(optional = true) Boolean markChunksDirty  // Optional: default true
-) {}
+        String jsonData, // Required: JSON from .model.json file
+        @TypeScript(optional = true) Integer mountX, // Required: mount point X
+        @TypeScript(optional = true) Integer mountY, // Required: mount point Y
+        @TypeScript(optional = true) Integer mountZ, // Required: mount point Z
+        @TypeScript(optional = true) Boolean markChunksDirty // Optional: default true
+        ) {}

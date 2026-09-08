@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.generator.reality;
 
 import de.mhus.nimbus.world.shared.world.ItemTier;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * C1 — mechanical validator of a {@link RealityPlan}. Deterministic and side-effect free (no DB, no
@@ -74,8 +73,10 @@ public class RealityValidator {
             if (c == null) {
                 continue;
             }
-            String name = Strings.isBlank(c.getName()) ? null : c.getName().trim().toLowerCase(Locale.ROOT);
-            String title = Strings.isBlank(c.getTitle()) ? null : c.getTitle().trim().toLowerCase(Locale.ROOT);
+            String name =
+                    Strings.isBlank(c.getName()) ? null : c.getName().trim().toLowerCase(Locale.ROOT);
+            String title =
+                    Strings.isBlank(c.getTitle()) ? null : c.getTitle().trim().toLowerCase(Locale.ROOT);
             String identity = name != null ? name : title;
             if (identity == null) {
                 report.error("class_no_name", "Item class without a name or title", null);
@@ -91,14 +92,18 @@ public class RealityValidator {
             reportKeyCollision(report, classes, title, identity, c);
 
             if (!Strings.isBlank(c.getTier()) && !isValidTier(c.getTier())) {
-                report.warning("bad_class_tier",
-                        "Item class '" + identity + "' has unknown tier '" + c.getTier() + "'", identity);
+                report.warning(
+                        "bad_class_tier",
+                        "Item class '" + identity + "' has unknown tier '" + c.getTier() + "'",
+                        identity);
             }
             if (c.getRank() != null) {
                 String prev = ranks.put(c.getRank(), identity);
                 if (prev != null) {
-                    report.warning("duplicate_class_rank",
-                            "Item classes '" + prev + "' and '" + identity + "' share rank " + c.getRank(), identity);
+                    report.warning(
+                            "duplicate_class_rank",
+                            "Item classes '" + prev + "' and '" + identity + "' share rank " + c.getRank(),
+                            identity);
                 }
             }
         }
@@ -111,14 +116,19 @@ public class RealityValidator {
      * keeps the first entry, so without this check the collision would be invisible here and only
      * surface later as a wrong tier on the materialized item.
      */
-    private void reportKeyCollision(ValidationReport report, Map<String, RealityPlan.ItemClass> classes,
-                                    String key, String identity, RealityPlan.ItemClass owner) {
+    private void reportKeyCollision(
+            ValidationReport report,
+            Map<String, RealityPlan.ItemClass> classes,
+            String key,
+            String identity,
+            RealityPlan.ItemClass owner) {
         if (key == null) {
             return;
         }
         RealityPlan.ItemClass resolved = classes.get(key);
         if (resolved != null && resolved != owner) {
-            report.error("item_class_key_collision",
+            report.error(
+                    "item_class_key_collision",
                     "Item class '" + identity + "' collides on '" + key + "' with item class '"
                             + (Strings.isBlank(resolved.getName()) ? resolved.getTitle() : resolved.getName()) + "'",
                     identity);
@@ -127,8 +137,11 @@ public class RealityValidator {
 
     // ---- items ----
 
-    private void validateItem(RealityPlan.ItemSpec it, Map<String, RealityPlan.ItemClass> classes,
-                              Set<String> slugs, ValidationReport report) {
+    private void validateItem(
+            RealityPlan.ItemSpec it,
+            Map<String, RealityPlan.ItemClass> classes,
+            Set<String> slugs,
+            ValidationReport report) {
         String slug = RealityItemGenerator.slug(it.getName());
         String type = it.getType() == null ? "" : it.getType().trim().toLowerCase(Locale.ROOT);
 
@@ -138,8 +151,10 @@ public class RealityValidator {
             String cn = it.getItemClass().trim().toLowerCase(Locale.ROOT);
             RealityPlan.ItemClass c = classes.get(cn);
             if (c == null) {
-                report.error("unknown_item_class",
-                        "Item '" + slug + "' references unknown item class '" + it.getItemClass() + "'", slug);
+                report.error(
+                        "unknown_item_class",
+                        "Item '" + slug + "' references unknown item class '" + it.getItemClass() + "'",
+                        slug);
             } else {
                 classResolves = !Strings.isBlank(c.getTier());
             }
@@ -149,13 +164,14 @@ public class RealityValidator {
         if (TIERED_CATEGORIES.contains(type)) {
             boolean hasTier = !Strings.isBlank(it.getTier()) || classResolves;
             if (!hasTier) {
-                report.warning("untiered_gear",
-                        "Tiered item '" + slug + "' (" + type + ") has neither tier nor a tier-bearing item class", slug);
+                report.warning(
+                        "untiered_gear",
+                        "Tiered item '" + slug + "' (" + type + ") has neither tier nor a tier-bearing item class",
+                        slug);
             }
         }
         if (!Strings.isBlank(it.getTier()) && !isValidTier(it.getTier())) {
-            report.warning("bad_item_tier",
-                    "Item '" + slug + "' has unknown tier '" + it.getTier() + "'", slug);
+            report.warning("bad_item_tier", "Item '" + slug + "' has unknown tier '" + it.getTier() + "'", slug);
         }
 
         // every material needs a source
@@ -168,8 +184,10 @@ public class RealityValidator {
             for (String ingredient : it.getRecipe()) {
                 String ingSlug = RealityItemGenerator.slug(ingredient);
                 if (!ingSlug.isEmpty() && !slugs.contains(ingSlug)) {
-                    report.warning("unknown_recipe_ref",
-                            "Item '" + slug + "' recipe references unknown item '" + ingredient + "'", slug);
+                    report.warning(
+                            "unknown_recipe_ref",
+                            "Item '" + slug + "' recipe references unknown item '" + ingredient + "'",
+                            slug);
                 }
             }
         }
@@ -178,23 +196,22 @@ public class RealityValidator {
         boolean persistent = Boolean.TRUE.equals(it.getPersistent());
         boolean consumable = Boolean.TRUE.equals(it.getConsumable());
         if (persistent && consumable) {
-            report.error("super_contradiction",
-                    "Item '" + slug + "' is both persistent and consumable", slug);
+            report.error("super_contradiction", "Item '" + slug + "' is both persistent and consumable", slug);
         }
         if ("super".equals(type)) {
             if (Strings.isBlank(it.getEffect())) {
                 report.warning("super_no_effect", "Super item '" + slug + "' has no effect", slug);
             }
             if (it.getPersistent() == null && it.getConsumable() == null) {
-                report.warning("super_no_mechanic",
-                        "Super item '" + slug + "' sets neither consumable nor persistent", slug);
+                report.warning(
+                        "super_no_mechanic", "Super item '" + slug + "' sets neither consumable nor persistent", slug);
             }
         }
 
         // price sanity
         if (it.getPriceHint() != null && it.getPriceHint() <= 0) {
-            report.warning("nonpositive_price",
-                    "Item '" + slug + "' has non-positive priceHint " + it.getPriceHint(), slug);
+            report.warning(
+                    "nonpositive_price", "Item '" + slug + "' has non-positive priceHint " + it.getPriceHint(), slug);
         }
     }
 
@@ -202,18 +219,22 @@ public class RealityValidator {
     private void validatePriceMonotonicity(List<RealityPlan.ItemSpec> items, ValidationReport report) {
         Map<String, List<RealityPlan.ItemSpec>> byType = new HashMap<>();
         for (RealityPlan.ItemSpec it : items) {
-            if (it == null || it.getPriceHint() == null || Strings.isBlank(it.getType())
+            if (it == null
+                    || it.getPriceHint() == null
+                    || Strings.isBlank(it.getType())
                     || rarityOrdinal(it.getRarity()) < 0) {
                 continue;
             }
-            byType.computeIfAbsent(it.getType().trim().toLowerCase(Locale.ROOT), k -> new java.util.ArrayList<>()).add(it);
+            byType.computeIfAbsent(it.getType().trim().toLowerCase(Locale.ROOT), k -> new java.util.ArrayList<>())
+                    .add(it);
         }
         for (List<RealityPlan.ItemSpec> group : byType.values()) {
             for (RealityPlan.ItemSpec low : group) {
                 for (RealityPlan.ItemSpec high : group) {
                     if (rarityOrdinal(low.getRarity()) < rarityOrdinal(high.getRarity())
                             && low.getPriceHint() > high.getPriceHint() * (1 + PRICE_INVERSION_TOLERANCE)) {
-                        report.warning("price_rarity_inversion",
+                        report.warning(
+                                "price_rarity_inversion",
                                 "Lower-rarity '" + RealityItemGenerator.slug(low.getName()) + "' (" + low.getRarity()
                                         + ", " + low.getPriceHint() + ") costs far more than higher-rarity '"
                                         + RealityItemGenerator.slug(high.getName()) + "' (" + high.getRarity()

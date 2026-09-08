@@ -20,8 +20,8 @@ public class RoadConfigPart {
      * Type of road part
      */
     public enum PartType {
-        CENTER,    // Center/plaza configuration (lx, lz, level, plazaSize, plazaMaterial)
-        ROUTE      // Route entry (side or lx/lz, width, level, type)
+        CENTER, // Center/plaza configuration (lx, lz, level, plazaSize, plazaMaterial)
+        ROUTE // Route entry (side or lx/lz, width, level, type)
     }
 
     private PartType partType;
@@ -30,20 +30,20 @@ public class RoadConfigPart {
     private Integer centerLx;
     private Integer centerLz;
     private Integer centerLevel;
-    private String centerPosition;  // HexLocal position string (e.g., "<-1;1>")
+    private String centerPosition; // HexLocal position string (e.g., "<-1;1>")
     private Integer plazaSize;
     private String plazaMaterial;
 
     // ROUTE fields - either side-based, position-string-based, OR coordinate-based
-    private EDGE side;           // Side-based route (NE, NW, etc.)
-    private String position;     // HexLocal position string (e.g., "<NE 2>" or "<0;0>")
-    private Integer routeLx;     // Coordinate-based route x (deprecated, use position)
-    private Integer routeLz;     // Coordinate-based route z (deprecated, use position)
+    private EDGE side; // Side-based route (NE, NW, etc.)
+    private String position; // HexLocal position string (e.g., "<NE 2>" or "<0;0>")
+    private Integer routeLx; // Coordinate-based route x (deprecated, use position)
+    private Integer routeLz; // Coordinate-based route z (deprecated, use position)
     private Integer width;
-    private Integer level;       // Deprecated: use fromLevel/toLevel instead
-    private Integer fromLevel;   // Level when entering this position
-    private Integer toLevel;     // Level when exiting this position
-    private String type;         // "street", "trail", etc.
+    private Integer level; // Deprecated: use fromLevel/toLevel instead
+    private Integer fromLevel; // Level when entering this position
+    private Integer toLevel; // Level when exiting this position
+    private String type; // "street", "trail", etc.
 
     // Group ID for road grouping (e.g., "road_mainstreet_a1b2c3d4")
     private String groupId;
@@ -51,30 +51,30 @@ public class RoadConfigPart {
     /**
      * Creates a CENTER part for plaza configuration
      */
-    public static RoadConfigPart createCenterPart(Integer lx, Integer lz, Integer level,
-                                                   Integer plazaSize, String plazaMaterial) {
+    public static RoadConfigPart createCenterPart(
+            Integer lx, Integer lz, Integer level, Integer plazaSize, String plazaMaterial) {
         return RoadConfigPart.builder()
-            .partType(PartType.CENTER)
-            .centerLx(lx)
-            .centerLz(lz)
-            .centerLevel(level)
-            .plazaSize(plazaSize)
-            .plazaMaterial(plazaMaterial)
-            .build();
+                .partType(PartType.CENTER)
+                .centerLx(lx)
+                .centerLz(lz)
+                .centerLevel(level)
+                .plazaSize(plazaSize)
+                .plazaMaterial(plazaMaterial)
+                .build();
     }
 
     /**
      * Creates a CENTER part with a HexLocal position string instead of lx/lz coordinates.
      */
-    public static RoadConfigPart createCenterPositionPart(String position, Integer level,
-                                                           Integer plazaSize, String plazaMaterial) {
+    public static RoadConfigPart createCenterPositionPart(
+            String position, Integer level, Integer plazaSize, String plazaMaterial) {
         return RoadConfigPart.builder()
-            .partType(PartType.CENTER)
-            .centerPosition(position)
-            .centerLevel(level)
-            .plazaSize(plazaSize)
-            .plazaMaterial(plazaMaterial)
-            .build();
+                .partType(PartType.CENTER)
+                .centerPosition(position)
+                .centerLevel(level)
+                .plazaSize(plazaSize)
+                .plazaMaterial(plazaMaterial)
+                .build();
     }
 
     /**
@@ -82,80 +82,80 @@ public class RoadConfigPart {
      */
     public static RoadConfigPart createRouteSidePart(EDGE side, Integer width, Integer level, String type) {
         return RoadConfigPart.builder()
-            .partType(PartType.ROUTE)
-            .side(side)
-            .width(width)
-            .level(level)
-            .fromLevel(level)  // Backward compatibility
-            .toLevel(level)
-            .type(type)
-            .build();
+                .partType(PartType.ROUTE)
+                .side(side)
+                .width(width)
+                .level(level)
+                .fromLevel(level) // Backward compatibility
+                .toLevel(level)
+                .type(type)
+                .build();
     }
 
     /**
      * Creates a ROUTE part for side-based routing with fromLevel/toLevel (from Flow)
      */
-    public static RoadConfigPart createRouteSidePartWithLevels(EDGE side, Integer width,
-                                                                Integer fromLevel, Integer toLevel, String type) {
+    public static RoadConfigPart createRouteSidePartWithLevels(
+            EDGE side, Integer width, Integer fromLevel, Integer toLevel, String type) {
         return RoadConfigPart.builder()
-            .partType(PartType.ROUTE)
-            .side(side)
-            .width(width)
-            .level(fromLevel)  // Backward compatibility: use fromLevel as default
-            .fromLevel(fromLevel)
-            .toLevel(toLevel)
-            .type(type)
-            .build();
+                .partType(PartType.ROUTE)
+                .side(side)
+                .width(width)
+                .level(fromLevel) // Backward compatibility: use fromLevel as default
+                .fromLevel(fromLevel)
+                .toLevel(toLevel)
+                .type(type)
+                .build();
     }
 
     /**
      * Creates a ROUTE part for position-based routing (from Village)
      */
-    public static RoadConfigPart createRoutePositionPart(Integer lx, Integer lz, Integer width,
-                                                          Integer level, String type) {
+    public static RoadConfigPart createRoutePositionPart(
+            Integer lx, Integer lz, Integer width, Integer level, String type) {
         return RoadConfigPart.builder()
-            .partType(PartType.ROUTE)
-            .routeLx(lx)
-            .routeLz(lz)
-            .width(width)
-            .level(level)
-            .fromLevel(level)  // Backward compatibility
-            .toLevel(level)
-            .type(type)
-            .build();
+                .partType(PartType.ROUTE)
+                .routeLx(lx)
+                .routeLz(lz)
+                .width(width)
+                .level(level)
+                .fromLevel(level) // Backward compatibility
+                .toLevel(level)
+                .type(type)
+                .build();
     }
 
     /**
      * Creates a ROUTE part for position-based routing with fromLevel/toLevel (from Flow)
      */
-    public static RoadConfigPart createRoutePositionPartWithLevels(Integer lx, Integer lz, Integer width,
-                                                                    Integer fromLevel, Integer toLevel, String type) {
+    public static RoadConfigPart createRoutePositionPartWithLevels(
+            Integer lx, Integer lz, Integer width, Integer fromLevel, Integer toLevel, String type) {
         return RoadConfigPart.builder()
-            .partType(PartType.ROUTE)
-            .routeLx(lx)
-            .routeLz(lz)
-            .width(width)
-            .level(fromLevel)  // Backward compatibility: use fromLevel as default
-            .fromLevel(fromLevel)
-            .toLevel(toLevel)
-            .type(type)
-            .build();
+                .partType(PartType.ROUTE)
+                .routeLx(lx)
+                .routeLz(lz)
+                .width(width)
+                .level(fromLevel) // Backward compatibility: use fromLevel as default
+                .fromLevel(fromLevel)
+                .toLevel(toLevel)
+                .type(type)
+                .build();
     }
 
     /**
      * Creates a ROUTE part using a HexLocal position string with fromLevel/toLevel.
      * Used for Point endpoints where the position is already in HexLocal format.
      */
-    public static RoadConfigPart createRoutePositionStringPartWithLevels(String position, Integer width,
-                                                                          Integer fromLevel, Integer toLevel, String type) {
+    public static RoadConfigPart createRoutePositionStringPartWithLevels(
+            String position, Integer width, Integer fromLevel, Integer toLevel, String type) {
         return RoadConfigPart.builder()
-            .partType(PartType.ROUTE)
-            .position(position)
-            .width(width)
-            .level(fromLevel)  // Backward compatibility
-            .fromLevel(fromLevel)
-            .toLevel(toLevel)
-            .type(type)
-            .build();
+                .partType(PartType.ROUTE)
+                .position(position)
+                .width(width)
+                .level(fromLevel) // Backward compatibility
+                .fromLevel(fromLevel)
+                .toLevel(toLevel)
+                .type(type)
+                .build();
     }
 }

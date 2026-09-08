@@ -4,6 +4,9 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,10 +17,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * MongoDB Entity for player progress tracking.
@@ -30,8 +29,8 @@ import java.util.UUID;
 @Document(collection = "w_progress")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_player_type_idx", def = "{ 'worldId': 1, 'playerId': 1, 'type': 1 }"),
-        @CompoundIndex(name = "world_player_quest_idx", def = "{ 'worldId': 1, 'playerId': 1, 'quest': 1 }")
+    @CompoundIndex(name = "world_player_type_idx", def = "{ 'worldId': 1, 'playerId': 1, 'type': 1 }"),
+    @CompoundIndex(name = "world_player_quest_idx", def = "{ 'worldId': 1, 'playerId': 1, 'quest': 1 }")
 })
 @Data
 @Builder

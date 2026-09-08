@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * RiverBuilder manipulator builder.
@@ -49,8 +48,10 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class RiverBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
-    private static final int DEFAULT_CURVATURE = 30;  // Default maximum lateral offset for curves
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
+    private static final int DEFAULT_CURVATURE = 30; // Default maximum lateral offset for curves
     /**
      * Extra pixels added to hexGridSize when computing edge endpoint coordinates.
      * Pushes endpoints slightly beyond the grid boundary so adjacent river segments
@@ -74,7 +75,8 @@ public class RiverBuilder extends HexGridBuilder {
         clearWaterExtraBlocks(flat);
 
         // Get river parameter from hex grid
-        String riverParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_river") : null;
+        String riverParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_river") : null;
         if (riverParam == null || riverParam.isBlank()) {
             log.debug("No river parameter found, skipping");
             return;
@@ -83,8 +85,11 @@ public class RiverBuilder extends HexGridBuilder {
         try {
             // Parse river definition
             RiverDefinition riverDef = parseRiverDefinition(riverParam);
-            log.debug("Parsed river definition: from={}, to={}, groupId={}",
-                    riverDef.getFrom(), riverDef.getTo(), riverDef.getGroupId());
+            log.debug(
+                    "Parsed river definition: from={}, to={}, groupId={}",
+                    riverDef.getFrom(),
+                    riverDef.getTo(),
+                    riverDef.getGroupId());
 
             // Build river for each from-to pair
             for (RiverEndpoint fromEndpoint : riverDef.getFrom()) {
@@ -138,7 +143,8 @@ public class RiverBuilder extends HexGridBuilder {
 
         // Parse position (required)
         if (!node.has("position")) {
-            throw new IllegalArgumentException("River endpoint must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
+            throw new IllegalArgumentException(
+                    "River endpoint must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
         }
         endpoint.setPosition(node.get("position").asText());
 
@@ -183,7 +189,7 @@ public class RiverBuilder extends HexGridBuilder {
         // Initialize noise generator for river curves
         FastNoiseLite noise = new FastNoiseLite((int) seed);
         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise.SetFrequency(0.05f);  // Lower frequency = smoother, wider curves
+        noise.SetFrequency(0.05f); // Lower frequency = smoother, wider curves
 
         // Calculate perpendicular direction for lateral offset
         double[] perpDir = calculatePerpendicularDirection(dx, dz);
@@ -233,9 +239,9 @@ public class RiverBuilder extends HexGridBuilder {
         // We choose (-dz, dx) for consistent direction
         double length = Math.sqrt(dx * dx + dz * dz);
         if (length == 0) {
-            return new double[]{0, 0};
+            return new double[] {0, 0};
         }
-        return new double[]{-dz / length, dx / length};
+        return new double[] {-dz / length, dx / length};
     }
 
     /**
@@ -273,14 +279,13 @@ public class RiverBuilder extends HexGridBuilder {
 
         // Parse position string and get relative coordinates
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
-            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
-                endpoint.getPosition(), hexGridSize);
+                de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(endpoint.getPosition(), hexGridSize);
 
         // Convert to absolute WFlat coordinates (center offset stays at actual sizeX/2)
         int lx = sizeX / 2 + relativePos.getX();
         int lz = sizeZ / 2 + relativePos.getZ();
 
-        return new int[]{lx, lz};
+        return new int[] {lx, lz};
     }
 
     /**
@@ -351,8 +356,8 @@ public class RiverBuilder extends HexGridBuilder {
      * - River bed: lowered terrain with SAND material
      * - Water surface: extra blocks at water level with WATER material
      */
-    private void drawRiverSegment(WFlat flat, int centerX, int centerZ, int width, int depth,
-                                   int level, String groupId) {
+    private void drawRiverSegment(
+            WFlat flat, int centerX, int centerZ, int width, int depth, int level, String groupId) {
         int halfWidth = width / 2;
 
         // Effective drawing radius: at least MIN_DRAW_RADIUS so thin rivers
@@ -381,9 +386,7 @@ public class RiverBuilder extends HexGridBuilder {
                 int bedLevel;
                 if (distanceFromCenter <= effectiveRadius) {
                     // Smooth depth gradient based on configured width (not effective radius)
-                    double depthFactor = halfWidth > 0
-                        ? Math.max(0.0, 1.0 - (distanceFromCenter / halfWidth))
-                        : 1.0;
+                    double depthFactor = halfWidth > 0 ? Math.max(0.0, 1.0 - (distanceFromCenter / halfWidth)) : 1.0;
                     bedLevel = level - (int) (depth * depthFactor);
                 } else {
                     // Outside drawing radius
@@ -425,7 +428,7 @@ public class RiverBuilder extends HexGridBuilder {
      * Draw river banks - slight terrain modification at river edges.
      */
     private void drawRiverBanks(WFlat flat, int centerX, int centerZ, int halfWidth) {
-        int bankWidth = 2;  // Width of bank area
+        int bankWidth = 2; // Width of bank area
 
         for (int dx = -(halfWidth + bankWidth); dx <= (halfWidth + bankWidth); dx++) {
             for (int dz = -(halfWidth + bankWidth); dz <= (halfWidth + bankWidth); dz++) {
@@ -518,7 +521,7 @@ public class RiverBuilder extends HexGridBuilder {
      */
     @Data
     private static class RiverEndpoint {
-        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
+        private String position; // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int width;
         private int depth;
         private int level;

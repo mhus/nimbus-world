@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.shared.session;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Publishes commands to player sessions via Redis.
@@ -139,7 +138,8 @@ public class SessionCommandService {
      * @param title notification title
      * @param text notification text
      */
-    public void sendNotification(SessionCommandTarget targetType, String target, int source, String title, String text) {
+    public void sendNotification(
+            SessionCommandTarget targetType, String target, int source, String title, String text) {
         sendCommand(targetType, target, "notification", List.of(String.valueOf(source), title, text));
     }
 }

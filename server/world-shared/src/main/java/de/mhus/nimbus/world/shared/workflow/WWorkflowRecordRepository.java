@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.shared.workflow;
 
+import java.util.List;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 /**
  * Repository for workflow journal entries.
@@ -28,7 +27,8 @@ public interface WWorkflowRecordRepository extends MongoRepository<WWorkflowJour
      * @param type Entry type
      * @return List of journal entries ordered by createdAt ascending
      */
-    List<WWorkflowJournalRecord> findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(String worldId, String workflowId, String type);
+    List<WWorkflowJournalRecord> findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(
+            String worldId, String workflowId, String type);
 
     /**
      * Find all journal entries for a world and type, ordered by creation time ascending.

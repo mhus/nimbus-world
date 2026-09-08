@@ -4,12 +4,11 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Orchestrator service for epoch operations on world resources.
@@ -32,12 +31,15 @@ public class ResourceEpochService {
     public List<ProcessResult> validate(String worldId) {
         List<WEpochMeta> epochMetas = loadEpochMetas(worldId);
         if (epochMetas.isEmpty()) {
-            return List.of(new ProcessResult("epoch-check", false,
-                    "No epochs defined in WWorld", System.currentTimeMillis()));
+            return List.of(
+                    new ProcessResult("epoch-check", false, "No epochs defined in WWorld", System.currentTimeMillis()));
         }
 
-        log.info("Validating epoch consistency for world {} with {} epochs and {} resource types",
-                worldId, epochMetas.size(), epochTypes.size());
+        log.info(
+                "Validating epoch consistency for world {} with {} epochs and {} resource types",
+                worldId,
+                epochMetas.size(),
+                epochTypes.size());
 
         List<ProcessResult> results = new ArrayList<>();
         for (ResourceEpochType type : epochTypes) {
@@ -45,8 +47,8 @@ public class ResourceEpochService {
                 results.add(type.validate(worldId, epochMetas));
             } catch (Exception e) {
                 log.error("Failed to validate epoch for type {}", type.name(), e);
-                results.add(new ProcessResult(type.name(), false,
-                        "Validation failed: " + e.getMessage(), System.currentTimeMillis()));
+                results.add(new ProcessResult(
+                        type.name(), false, "Validation failed: " + e.getMessage(), System.currentTimeMillis()));
             }
         }
         return results;
@@ -67,20 +69,29 @@ public class ResourceEpochService {
         // Verify source epoch exists
         boolean sourceExists = epochMetas.stream().anyMatch(e -> e.getEpoch() == sourceEpoch);
         if (!sourceExists) {
-            return List.of(new ProcessResult("epoch-check", false,
-                    "Source epoch " + sourceEpoch + " not defined in WWorld", System.currentTimeMillis()));
+            return List.of(new ProcessResult(
+                    "epoch-check",
+                    false,
+                    "Source epoch " + sourceEpoch + " not defined in WWorld",
+                    System.currentTimeMillis()));
         }
 
         // Verify new epoch is already defined in WWorld.epoches (should be added first)
         boolean newExists = epochMetas.stream().anyMatch(e -> e.getEpoch() == newEpoch);
         if (!newExists) {
-            return List.of(new ProcessResult("epoch-check", false,
+            return List.of(new ProcessResult(
+                    "epoch-check",
+                    false,
                     "New epoch " + newEpoch + " not defined in WWorld.epoches. Add it first via world editor.",
                     System.currentTimeMillis()));
         }
 
-        log.info("Creating epoch {} from source epoch {} for world {} across {} resource types",
-                newEpoch, sourceEpoch, worldId, epochTypes.size());
+        log.info(
+                "Creating epoch {} from source epoch {} for world {} across {} resource types",
+                newEpoch,
+                sourceEpoch,
+                worldId,
+                epochTypes.size());
 
         List<ProcessResult> results = new ArrayList<>();
         for (ResourceEpochType type : epochTypes) {
@@ -88,8 +99,8 @@ public class ResourceEpochService {
                 results.add(type.create(worldId, sourceEpoch, newEpoch));
             } catch (Exception e) {
                 log.error("Failed to create epoch for type {}", type.name(), e);
-                results.add(new ProcessResult(type.name(), false,
-                        "Create failed: " + e.getMessage(), System.currentTimeMillis()));
+                results.add(new ProcessResult(
+                        type.name(), false, "Create failed: " + e.getMessage(), System.currentTimeMillis()));
             }
         }
         return results;
@@ -103,8 +114,7 @@ public class ResourceEpochService {
      * @return List of results per resource type
      */
     public List<ProcessResult> delete(String worldId, int epoch) {
-        log.info("Deleting epoch {} for world {} across {} resource types",
-                epoch, worldId, epochTypes.size());
+        log.info("Deleting epoch {} for world {} across {} resource types", epoch, worldId, epochTypes.size());
 
         List<ProcessResult> results = new ArrayList<>();
         for (ResourceEpochType type : epochTypes) {
@@ -112,16 +122,16 @@ public class ResourceEpochService {
                 results.add(type.delete(worldId, epoch));
             } catch (Exception e) {
                 log.error("Failed to delete epoch for type {}", type.name(), e);
-                results.add(new ProcessResult(type.name(), false,
-                        "Delete failed: " + e.getMessage(), System.currentTimeMillis()));
+                results.add(new ProcessResult(
+                        type.name(), false, "Delete failed: " + e.getMessage(), System.currentTimeMillis()));
             }
         }
         return results;
     }
 
     private List<WEpochMeta> loadEpochMetas(String worldId) {
-        WorldId wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
         WWorld world = worldService.getByWorldId(wid.toBaseWorldId().getId()).orElse(null);
         if (world == null || world.getEpoches() == null) {
             return List.of();
@@ -129,10 +139,5 @@ public class ResourceEpochService {
         return world.getEpoches();
     }
 
-    public record ProcessResult(
-            String typeName,
-            boolean success,
-            String message,
-            long timestamp
-    ) {}
+    public record ProcessResult(String typeName, boolean success, String message, long timestamp) {}
 }

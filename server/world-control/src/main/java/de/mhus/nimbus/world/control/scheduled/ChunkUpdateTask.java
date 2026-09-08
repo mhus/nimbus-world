@@ -6,8 +6,6 @@ import de.mhus.nimbus.world.shared.edit.ChunkUpdateService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,11 +15,7 @@ import org.springframework.stereotype.Component;
  * Runs at fixed intervals to regenerate chunks affected by layer changes.
  */
 @Component
-@ConditionalOnProperty(
-        value = "nimbus.services.chunk-update",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.chunk-update", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class ChunkUpdateTask {
@@ -33,10 +27,7 @@ public class ChunkUpdateTask {
 
     @PostConstruct
     public void init() {
-        batchSize = settingsService.getInteger(
-                "control.chunk-update-batch-size",
-                50
-        );
+        batchSize = settingsService.getInteger("control.chunk-update-batch-size", 50);
         log.info("Chunk update task initialized");
     }
 

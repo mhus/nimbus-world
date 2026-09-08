@@ -1,13 +1,12 @@
 package de.mhus.nimbus.shared.types;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Unit tests for WorldId class.
@@ -103,10 +102,11 @@ class WorldIdTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {
-            "abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz123:world", // 65 chars
-            "region:abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz123" // 65 chars
-        })
+        @ValueSource(
+                strings = {
+                    "abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz123:world", // 65 chars
+                    "region:abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz123" // 65 chars
+                })
         void validate_TooLongParts_ShouldReturnFalse(String id) {
             assertFalse(WorldId.validate(id));
         }
@@ -463,7 +463,8 @@ class WorldIdTest {
 
         @Test
         void isEditorInstance_WithPlayerInstancePrefix_ShouldReturnFalse() {
-            WorldId worldId = WorldId.of("region1:world1::i-word-word-word-12345678").orElseThrow();
+            WorldId worldId =
+                    WorldId.of("region1:world1::i-word-word-word-12345678").orElseThrow();
             assertFalse(worldId.isEditorInstance());
         }
 

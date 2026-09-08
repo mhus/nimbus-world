@@ -12,12 +12,15 @@ import lombok.Data;
 public class ValidationIssue {
 
     public enum Severity {
-        ERROR, WARNING, INFO
+        ERROR,
+        WARNING,
+        INFO
     }
 
     private Severity severity;
     /** Machine-readable code, e.g. "unknown_item_class". */
     private String code;
+
     private String message;
     /** Item/class slug this issue relates to (nullable). */
     private String ref;

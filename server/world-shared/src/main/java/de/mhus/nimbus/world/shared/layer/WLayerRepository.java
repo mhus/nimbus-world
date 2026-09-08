@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Repository for WLayer entities.
@@ -62,7 +61,8 @@ public interface WLayerRepository extends MongoRepository<WLayer, String> {
     /**
      * Find layers affecting a specific chunk filtered by epoch.
      */
-    @Query("{ 'worldId': ?0, 'enabled': true, 'epoches': ?2, $or: [ { 'allChunks': true }, { 'affectedChunks': ?1 } ] }")
+    @Query(
+            "{ 'worldId': ?0, 'enabled': true, 'epoches': ?2, $or: [ { 'allChunks': true }, { 'affectedChunks': ?1 } ] }")
     List<WLayer> findLayersAffectingChunkAndEpoch(String worldId, String chunkKey, int epoch);
 
     /**

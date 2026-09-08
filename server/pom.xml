@@ -40,6 +40,9 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- JUnit tags excluded from normal builds; override with -DexcludedGroups= to include them -->
         <excludedGroups>manual</excludedGroups>
+        <!-- code formatting -->
+        <spotless.version>3.10.2</spotless.version>
+        <palantir-java-format.version>2.97.0</palantir-java-format.version>
     </properties>
 
     <dependencyManagement>
@@ -98,6 +101,29 @@
                         --add-opens java.base/sun.security.action=ALL-UNNAMED
                     </argLine>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                        </palantirJavaFormat>
+                        <importOrder/>
+                        <removeUnusedImports/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

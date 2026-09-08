@@ -15,11 +15,4 @@ package de.mhus.nimbus.world.shared.world;
  * @param removed   number of duplicate documents actually removed
  */
 public record DuplicateRepairResult(
-        String typeName,
-        boolean success,
-        String message,
-        long timestamp,
-        int found,
-        int removed
-) {
-}
+        String typeName, boolean success, String message, long timestamp, int found, int removed) {}

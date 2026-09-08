@@ -1,10 +1,9 @@
 package de.mhus.nimbus.test;
 
-import de.mhus.nimbus.tools.generatets.ts.TsParser;
-import de.mhus.nimbus.tools.generatets.ts.TsModel;
-import de.mhus.nimbus.tools.generatets.ts.TsSourceFile;
 import de.mhus.nimbus.tools.generatets.ts.TsDeclarations;
-
+import de.mhus.nimbus.tools.generatets.ts.TsModel;
+import de.mhus.nimbus.tools.generatets.ts.TsParser;
+import de.mhus.nimbus.tools.generatets.ts.TsSourceFile;
 import java.io.File;
 import java.util.Arrays;
 
@@ -19,7 +18,8 @@ public class DebugParser {
         System.out.println("File exists: " + scrawlStepFile.exists());
 
         if (scrawlStepFile.exists()) {
-            TsModel model = parser.parse(Arrays.asList(scrawlStepFile.getParentFile().getParentFile()));
+            TsModel model =
+                    parser.parse(Arrays.asList(scrawlStepFile.getParentFile().getParentFile()));
 
             System.out.println("Parsed " + model.getFiles().size() + " files");
 

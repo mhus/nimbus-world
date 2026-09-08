@@ -1,18 +1,16 @@
 package de.mhus.nimbus.world.shared.redis;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.listener.ChannelTopic;
-import org.springframework.stereotype.Service;
-
-import org.springframework.data.redis.connection.MessageListener;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +26,7 @@ public class WorldRedisMessagingService {
         redisTemplate.convertAndSend(t, message);
     }
 
-    public void subscribe(String worldId, String channel, BiConsumer<String,String> handler) {
+    public void subscribe(String worldId, String channel, BiConsumer<String, String> handler) {
         String t = topic(worldId, channel);
         MessageListener listener = (msg, pattern) -> {
             try {
@@ -59,7 +57,7 @@ public class WorldRedisMessagingService {
      * @param channel The channel name (e.g., "e.p", "u.m")
      * @param handler Handler that receives (topic, message)
      */
-    public void subscribeToAllWorlds(String channel, BiConsumer<String,String> handler) {
+    public void subscribeToAllWorlds(String channel, BiConsumer<String, String> handler) {
         String pattern = "world:*:" + channel;
 
         MessageListener listener = (msg, patternBytes) -> {
@@ -85,7 +83,8 @@ public class WorldRedisMessagingService {
         String pattern = "world:*:" + channel;
         MessageListener listener = listeners.remove(pattern);
         if (listener != null) {
-            container.removeMessageListener(listener, new org.springframework.data.redis.listener.PatternTopic(pattern));
+            container.removeMessageListener(
+                    listener, new org.springframework.data.redis.listener.PatternTopic(pattern));
         }
     }
 

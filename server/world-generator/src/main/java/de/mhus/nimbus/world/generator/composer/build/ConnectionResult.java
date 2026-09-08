@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Result of road and river connection process

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import static org.springframework.http.ResponseEntity.badRequest;
+
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
@@ -14,19 +16,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.springframework.http.ResponseEntity.badRequest;
 
 /**
  * REST Controller for Item CRUD operations.
@@ -50,14 +49,7 @@ public class EItemController extends BaseEditorController {
     private final WItemService itemService;
 
     // DTOs
-    public record ItemSearchResult(
-            String itemId,
-            String itemType,
-            String type,
-            String title,
-            String texture
-    ) {
-    }
+    public record ItemSearchResult(String itemId, String itemType, String type, String title, String texture) {}
 
     public record CreateItemRequest(
             String id,
@@ -72,9 +64,7 @@ public class EItemController extends BaseEditorController {
             Boolean exclusive,
             Boolean generic,
             java.util.Map<String, String> parameters,
-            java.util.Map<String, String> server
-    ) {
-    }
+            java.util.Map<String, String> server) {}
 
     public record UpdateItemRequest(
             String itemType,
@@ -96,9 +86,7 @@ public class EItemController extends BaseEditorController {
             Double materialPrice,
             Double craftingCost,
             Double usageBonus,
-            Double rarityBonus
-    ) {
-    }
+            Double rarityBonus) {}
 
     /**
      * Search items (max 100 results).
@@ -107,8 +95,8 @@ public class EItemController extends BaseEditorController {
     @GetMapping("/control/worlds/{worldId}/items")
     @Operation(summary = "Search items")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> search(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -116,18 +104,15 @@ public class EItemController extends BaseEditorController {
 
         log.debug("SEARCH items: worldId={}, query={}", worldId, query);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         final int maxResults = 100;
 
         List<WItem> all = itemService.findEnabledByWorldIdAndQuery(wid, query);
 
         List<WItem> limited = all.stream().limit(maxResults).collect(Collectors.toList());
 
-        List<ItemSearchResult> results = limited.stream()
-                .map(this::toSearchResult)
-                .collect(Collectors.toList());
+        List<ItemSearchResult> results =
+                limited.stream().map(this::toSearchResult).collect(Collectors.toList());
 
         log.debug("Returning {} items", results.size());
         return ResponseEntity.ok(Map.of("items", results));
@@ -140,8 +125,8 @@ public class EItemController extends BaseEditorController {
     @GetMapping("/control/worlds/{worldId}/item/{itemId}")
     @Operation(summary = "Get item by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item found"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "200", description = "Item found"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -149,9 +134,7 @@ public class EItemController extends BaseEditorController {
 
         log.debug("GET item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -174,9 +157,9 @@ public class EItemController extends BaseEditorController {
     @PostMapping("/control/worlds/{worldId}/items")
     @Operation(summary = "Create new item")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Item created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Item already exists")
+        @ApiResponse(responseCode = "201", description = "Item created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Item already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -184,9 +167,7 @@ public class EItemController extends BaseEditorController {
 
         log.debug("CREATE item: worldId={}, itemId={}", worldId, request.id());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         if (Strings.isBlank(request.name())) {
             return bad("title is required");
         }
@@ -238,9 +219,9 @@ public class EItemController extends BaseEditorController {
     @PutMapping("/control/worlds/{worldId}/item/{itemId}")
     @Operation(summary = "Update item")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "200", description = "Item updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -249,9 +230,7 @@ public class EItemController extends BaseEditorController {
 
         log.debug("UPDATE item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -292,18 +271,35 @@ public class EItemController extends BaseEditorController {
             }
             // Trading/price fields
             if (!Strings.isBlank(request.itemTier())) {
-                result.setItemTier(ItemTier.valueOf(request.itemTier().toUpperCase().trim()));
+                result.setItemTier(
+                        ItemTier.valueOf(request.itemTier().toUpperCase().trim()));
                 needsSave = true;
             }
             if (!Strings.isBlank(request.rarityCategory())) {
-                result.setRarityCategory(RarityCategory.valueOf(request.rarityCategory().toUpperCase().trim()));
+                result.setRarityCategory(RarityCategory.valueOf(
+                        request.rarityCategory().toUpperCase().trim()));
                 needsSave = true;
             }
-            if (request.basePrice() != null) { result.setBasePrice(request.basePrice()); needsSave = true; }
-            if (request.materialPrice() != null) { result.setMaterialPrice(request.materialPrice()); needsSave = true; }
-            if (request.craftingCost() != null) { result.setCraftingCost(request.craftingCost()); needsSave = true; }
-            if (request.usageBonus() != null) { result.setUsageBonus(request.usageBonus()); needsSave = true; }
-            if (request.rarityBonus() != null) { result.setRarityBonus(request.rarityBonus()); needsSave = true; }
+            if (request.basePrice() != null) {
+                result.setBasePrice(request.basePrice());
+                needsSave = true;
+            }
+            if (request.materialPrice() != null) {
+                result.setMaterialPrice(request.materialPrice());
+                needsSave = true;
+            }
+            if (request.craftingCost() != null) {
+                result.setCraftingCost(request.craftingCost());
+                needsSave = true;
+            }
+            if (request.usageBonus() != null) {
+                result.setUsageBonus(request.usageBonus());
+                needsSave = true;
+            }
+            if (request.rarityBonus() != null) {
+                result.setRarityBonus(request.rarityBonus());
+                needsSave = true;
+            }
             if (needsSave) {
                 result = itemService.saveEntity(result);
             }
@@ -325,15 +321,14 @@ public class EItemController extends BaseEditorController {
      * Duplicate an existing item.
      * POST /control/worlds/{worldId}/item/{itemId}/duplicate
      */
-    public record DuplicateItemRequest(String name) {
-    }
+    public record DuplicateItemRequest(String name) {}
 
     @PostMapping("/control/worlds/{worldId}/item/{itemId}/duplicate")
     @Operation(summary = "Duplicate item")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Item duplicated"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "201", description = "Item duplicated"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> duplicate(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -342,9 +337,7 @@ public class EItemController extends BaseEditorController {
 
         log.debug("DUPLICATE item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -370,9 +363,9 @@ public class EItemController extends BaseEditorController {
     @DeleteMapping("/control/worlds/{worldId}/item/{itemId}")
     @Operation(summary = "Delete item")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Item deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "204", description = "Item deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -380,9 +373,7 @@ public class EItemController extends BaseEditorController {
 
         log.debug("DELETE item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -408,7 +399,6 @@ public class EItemController extends BaseEditorController {
                 publicData.getItemType(),
                 publicData.getType(),
                 publicData.getTitle(),
-                publicData.getTexture()
-        );
+                publicData.getTexture());
     }
 }

@@ -1,15 +1,15 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Redis listener for effect parameter update events.
@@ -56,9 +56,10 @@ public class ScriptEffectUpdateBroadcastListener {
             }
 
             // Extract metadata
-            String originatingSessionId = data.has("sessionId") ? data.get("sessionId").asText() : null;
-            ArrayNode chunks = data.has("chunks") && data.get("chunks").isArray()
-                    ? (ArrayNode) data.get("chunks") : null;
+            String originatingSessionId =
+                    data.has("sessionId") ? data.get("sessionId").asText() : null;
+            ArrayNode chunks =
+                    data.has("chunks") && data.get("chunks").isArray() ? (ArrayNode) data.get("chunks") : null;
 
             if (originatingSessionId == null) {
                 log.warn("Effect update without sessionId, ignoring");
@@ -67,22 +68,24 @@ public class ScriptEffectUpdateBroadcastListener {
 
             // Build client message (without internal metadata)
             ObjectNode clientData = objectMapper.createObjectNode();
-            if (data.has("effectId")) clientData.put("effectId", data.get("effectId").asText());
-            if (data.has("paramName")) clientData.put("paramName", data.get("paramName").asText());
+            if (data.has("effectId"))
+                clientData.put("effectId", data.get("effectId").asText());
+            if (data.has("paramName"))
+                clientData.put("paramName", data.get("paramName").asText());
             if (data.has("value")) clientData.set("value", data.get("value"));
             if (data.has("targeting")) clientData.set("targeting", data.get("targeting"));
-//            if (data.has("chunks")) clientData.set("chunks", data.get("chunks"));
+            //            if (data.has("chunks")) clientData.set("chunks", data.get("chunks"));
 
             // Broadcast to all affected chunks (with deduplication across chunks)
             if (chunks != null && chunks.size() > 0) {
                 int totalSent = broadcastService.broadcastToWorldMultiChunk(
                         worldId, "s.u", clientData, originatingSessionId, chunks);
 
-                log.trace("Distributed effect update to {} unique sessions across {} chunks",
-                        totalSent, chunks.size());
+                log.trace("Distributed effect update to {} unique sessions across {} chunks", totalSent, chunks.size());
             } else {
                 // No chunks specified, broadcast to entire world
-                int sent = broadcastService.broadcastToWorld(worldId, "s.u", clientData, originatingSessionId, null, null);
+                int sent =
+                        broadcastService.broadcastToWorld(worldId, "s.u", clientData, originatingSessionId, null, null);
                 log.trace("Distributed effect update to {} sessions (world-wide)", sent);
             }
 
@@ -90,5 +93,4 @@ public class ScriptEffectUpdateBroadcastListener {
             log.error("Failed to handle effect update from Redis: {}", message, e);
         }
     }
-
 }

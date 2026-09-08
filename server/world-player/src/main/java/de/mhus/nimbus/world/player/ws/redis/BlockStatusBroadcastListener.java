@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.ws.BlockStatusSenderService;
 import de.mhus.nimbus.world.shared.redis.BlockStatusBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
@@ -8,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis listener for block status broadcasts.
@@ -35,19 +35,19 @@ public class BlockStatusBroadcastListener {
         try {
             BlockStatusBroadcastMessage broadcast = objectMapper.readValue(message, BlockStatusBroadcastMessage.class);
 
-            if (broadcast.getStatusEntries() == null || broadcast.getStatusEntries().isEmpty()) {
+            if (broadcast.getStatusEntries() == null
+                    || broadcast.getStatusEntries().isEmpty()) {
                 return;
             }
 
             blockStatusSenderService.broadcastStatusUpdate(
+                    broadcast.getWorldId(), broadcast.getCx(), broadcast.getCz(), broadcast.getStatusEntries());
+
+            log.debug(
+                    "Processed block status broadcast: worldId={}, chunk=({},{}), entries={}",
                     broadcast.getWorldId(),
                     broadcast.getCx(),
                     broadcast.getCz(),
-                    broadcast.getStatusEntries()
-            );
-
-            log.debug("Processed block status broadcast: worldId={}, chunk=({},{}), entries={}",
-                    broadcast.getWorldId(), broadcast.getCx(), broadcast.getCz(),
                     broadcast.getStatusEntries().size());
 
         } catch (Exception e) {

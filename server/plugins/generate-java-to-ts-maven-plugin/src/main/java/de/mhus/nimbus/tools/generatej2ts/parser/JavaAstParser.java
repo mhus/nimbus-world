@@ -10,9 +10,9 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.RecordDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ArrayInitializerExpr;
 import com.github.javaparser.ast.expr.Expression;
@@ -21,10 +21,9 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.type.Type;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaClassModel;
-import de.mhus.nimbus.tools.generatej2ts.model.JavaFieldModel;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel;
+import de.mhus.nimbus.tools.generatej2ts.model.JavaFieldModel;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaKind;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -45,12 +44,14 @@ public class JavaAstParser {
     }
 
     public static boolean hasGenerateTypeScriptAnnotation(TypeDeclaration<?> type) {
-        return type.getAnnotations().stream().anyMatch(a -> simpleName(a.getNameAsString()).equals("GenerateTypeScript"));
+        return type.getAnnotations().stream()
+                .anyMatch(a -> simpleName(a.getNameAsString()).equals("GenerateTypeScript"));
     }
 
     public static JavaClassModel toModel(CompilationUnit cu, TypeDeclaration<?> typeDecl) {
         JavaClassModel model = new JavaClassModel();
-        model.setPackageName(cu.getPackageDeclaration().map(pd -> pd.getName().toString()).orElse(null));
+        model.setPackageName(
+                cu.getPackageDeclaration().map(pd -> pd.getName().toString()).orElse(null));
         model.setName(typeDecl.getNameAsString());
 
         // @GenerateTypeScript("subfolder") or value may contain path and filename (ending with .ts)
@@ -58,8 +59,7 @@ public class JavaAstParser {
             if (val != null) {
                 String v = val.trim();
                 if (v.endsWith(".ts")) {
-                    int idx = v.lastIndexOf('/')
-                            ;
+                    int idx = v.lastIndexOf('/');
                     if (idx >= 0) {
                         String folder = v.substring(0, idx);
                         String file = v.substring(idx + 1);
@@ -143,7 +143,8 @@ public class JavaAstParser {
                         }
                     }
                     // try to collect referenced types from the raw java type (for follow)
-                    TypeNameExtractor.extractReferencedSimpleTypes(f.getJavaType()).forEach(rt -> f.getReferencedTypes().add(rt));
+                    TypeNameExtractor.extractReferencedSimpleTypes(f.getJavaType())
+                            .forEach(rt -> f.getReferencedTypes().add(rt));
                     model.getFields().add(f);
                 }
             }
@@ -197,7 +198,8 @@ public class JavaAstParser {
                             getStringAttribute(an, "description").ifPresent(f::setDescription);
                         }
                     }
-                    TypeNameExtractor.extractReferencedSimpleTypes(f.getJavaType()).forEach(rt -> f.getReferencedTypes().add(rt));
+                    TypeNameExtractor.extractReferencedSimpleTypes(f.getJavaType())
+                            .forEach(rt -> f.getReferencedTypes().add(rt));
                     model.getFields().add(f);
                 }
             }
@@ -205,7 +207,8 @@ public class JavaAstParser {
             // Collect inner enums in record body
             for (BodyDeclaration<?> bd : recordDecl.getMembers()) {
                 if (bd instanceof EnumDeclaration innerEnum) {
-                    de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel em = new de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel();
+                    de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel em =
+                            new de.mhus.nimbus.tools.generatej2ts.model.JavaEnumModel();
                     em.setName(innerEnum.getNameAsString());
                     for (EnumConstantDeclaration c : innerEnum.getEntries()) {
                         em.getConstants().add(c.getNameAsString());

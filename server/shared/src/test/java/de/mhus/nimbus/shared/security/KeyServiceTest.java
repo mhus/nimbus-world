@@ -1,20 +1,17 @@
 package de.mhus.nimbus.shared.security;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+
 import de.mhus.nimbus.shared.persistence.SKey;
 import de.mhus.nimbus.shared.persistence.SKeyRepository;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.mongodb.core.MongoTemplate;
-
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 
 class KeyServiceTest {
 
@@ -35,14 +32,20 @@ class KeyServiceTest {
         KeyService service = new KeyService(repo, Mockito.mock(MongoTemplate.class));
         SKey good = new SKey();
         good.setId("1");
-        good.setType(KeyType.UNIVERSE); good.setKind(KeyKind.PRIVATE); good.setOwner("system"); good.setIntent("auth"); good.setKeyId("kid");
+        good.setType(KeyType.UNIVERSE);
+        good.setKind(KeyKind.PRIVATE);
+        good.setOwner("system");
+        good.setIntent("auth");
+        good.setKeyId("kid");
         good.setAlgorithm("EC");
         good.setKey(""); // invalid base64
-        good.setCreatedAt(Instant.now()); good.setEnabled(true);
+        good.setCreatedAt(Instant.now());
+        good.setEnabled(true);
         good.setExpiresAt(Instant.now().plusSeconds(60));
-        Mockito.when(repo.findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(anyString(), anyString(), anyString(), anyString()))
+        Mockito.when(repo.findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Optional.of(good));
-        Optional<PrivateKey> opt = service.getLatestPrivateKey(KeyType.UNIVERSE, KeyIntent.of("system","auth"));
+        Optional<PrivateKey> opt = service.getLatestPrivateKey(KeyType.UNIVERSE, KeyIntent.of("system", "auth"));
         assertTrue(opt.isEmpty()); // invalid base64 prevents parsing
     }
 

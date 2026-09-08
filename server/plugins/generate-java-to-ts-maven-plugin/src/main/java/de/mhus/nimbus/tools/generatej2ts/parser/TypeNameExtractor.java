@@ -13,16 +13,29 @@ import java.util.regex.Pattern;
  */
 public class TypeNameExtractor {
 
-    private static final Set<String> JAVA_KEYWORDS = new LinkedHashSet<>(Arrays.asList(
-            "byte","short","int","long","float","double","boolean","char","void",
-            "var"
-    ));
+    private static final Set<String> JAVA_KEYWORDS = new LinkedHashSet<>(
+            Arrays.asList("byte", "short", "int", "long", "float", "double", "boolean", "char", "void", "var"));
 
     private static final Set<String> WELL_KNOWN = new LinkedHashSet<>(Arrays.asList(
-            "String","Integer","Long","Double","Float","Boolean","Character","Object",
-            "List","Set","Collection","Map","Optional","ArrayList","HashSet","HashMap",
-            "Record","BigDecimal","BigInteger"
-    ));
+            "String",
+            "Integer",
+            "Long",
+            "Double",
+            "Float",
+            "Boolean",
+            "Character",
+            "Object",
+            "List",
+            "Set",
+            "Collection",
+            "Map",
+            "Optional",
+            "ArrayList",
+            "HashSet",
+            "HashMap",
+            "Record",
+            "BigDecimal",
+            "BigInteger"));
 
     private static final Pattern IDENT = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
@@ -33,7 +46,7 @@ public class TypeNameExtractor {
         // Entferne Array-Klammern
         String s = typeString.replace("[]", "");
         // Ersetze Generics-Trenner durch Spaces
-        s = s.replace('<',' ').replace('>',' ').replace(',', ' ');
+        s = s.replace('<', ' ').replace('>', ' ').replace(',', ' ');
 
         Matcher m = IDENT.matcher(s);
         while (m.find()) {

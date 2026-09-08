@@ -114,7 +114,9 @@ public class PassiveStats {
             case "physical.defensePercent" -> physicalDefensePercent += value;
             case "magical.damagePercent" -> magicalDamagePercent += value;
             case "magical.defensePercent" -> magicalDefensePercent += value;
-            default -> { /* unknown stat, ignore */ }
+            default -> {
+                /* unknown stat, ignore */
+            }
         }
     }
 

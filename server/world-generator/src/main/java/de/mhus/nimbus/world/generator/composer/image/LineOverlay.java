@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.composer.image;
 
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
+import java.awt.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.awt.*;
 
 /**
  * Draws a line from p1 to p2 in world coordinates.

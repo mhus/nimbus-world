@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.player.scheduled;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Periodically publishes all registered chunks to world-life pods.
@@ -109,8 +108,11 @@ public class ChunkListPublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "c.full", json);
 
-            log.debug("Published chunk list: podId={}, unique chunks={}, sessions={}",
-                    podId, allChunkKeys.size(), authenticatedSessionCount);
+            log.debug(
+                    "Published chunk list: podId={}, unique chunks={}, sessions={}",
+                    podId,
+                    allChunkKeys.size(),
+                    authenticatedSessionCount);
 
         } catch (Exception e) {
             log.error("Failed to publish chunk list", e);

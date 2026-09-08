@@ -1,10 +1,9 @@
 package de.mhus.nimbus.shared.types;
 
-import lombok.Getter;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.Objects;
 import java.util.Optional;
+import lombok.Getter;
+import org.apache.logging.log4j.util.Strings;
 
 /**
  * SchemaVersion represents a version in the format "major[.minor[.patch]]".
@@ -41,14 +40,12 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
     public boolean equals(Object other) {
         if (other == null) return false;
         if (other instanceof SchemaVersion schemaVersion) {
-            return this.major == schemaVersion.major &&
-                    this.minor == schemaVersion.minor &&
-                    this.patch == schemaVersion.patch;
+            return this.major == schemaVersion.major
+                    && this.minor == schemaVersion.minor
+                    && this.patch == schemaVersion.patch;
         }
         var otherVersion = new SchemaVersion(other.toString());
-        return this.major == otherVersion.major &&
-                this.minor == otherVersion.minor &&
-                this.patch == otherVersion.patch;
+        return this.major == otherVersion.major && this.minor == otherVersion.minor && this.patch == otherVersion.patch;
     }
 
     @Override
@@ -67,14 +64,14 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
 
     public static boolean validate(String version) {
         if (Strings.isBlank(version)) return false;
-//        String[] parts = version.trim().split("\\.", 3);
-//        for (String part : parts) {
-//            try {
-//                if (Integer.parseInt(part) < 0) return false;
-//            } catch (NumberFormatException e) {
-//                return false;
-//            }
-//        }
+        //        String[] parts = version.trim().split("\\.", 3);
+        //        for (String part : parts) {
+        //            try {
+        //                if (Integer.parseInt(part) < 0) return false;
+        //            } catch (NumberFormatException e) {
+        //                return false;
+        //            }
+        //        }
         return version.matches("\\d+(\\.\\d+)?(\\.\\d+)?");
     }
 
@@ -92,5 +89,4 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
     public String toString() {
         return major + "." + minor + "." + patch;
     }
-
 }

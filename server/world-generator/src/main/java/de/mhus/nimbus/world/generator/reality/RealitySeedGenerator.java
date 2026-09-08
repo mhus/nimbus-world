@@ -6,14 +6,13 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * B0 (phase 1) — the creative SEED generator. Turns a short instruction into a distinctive seed
@@ -73,9 +72,12 @@ public class RealitySeedGenerator {
         RealityPlanResult result = parser.parseJson(RealityAiSupport.extractJson(response));
         if (result.isSuccessful()) {
             RealityPlan p = result.getPlan();
-            log.info("Seed generated: region={}, powers={}, outline chapters={}",
+            log.info(
+                    "Seed generated: region={}, powers={}, outline chapters={}",
                     p.getMeta() != null ? p.getMeta().getRegionId() : "?",
-                    p.getBackgroundPowers() == null ? 0 : p.getBackgroundPowers().size(),
+                    p.getBackgroundPowers() == null
+                            ? 0
+                            : p.getBackgroundPowers().size(),
                     p.getOutline() == null ? 0 : p.getOutline().size());
         }
         return result;

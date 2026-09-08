@@ -52,8 +52,7 @@ public class FlatUpdateBorderJobExecutor implements JobExecutor {
             // Build successful result
             String resultData = String.format(
                     "Successfully updated flat border: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d",
-                    flat.getId(), flatId, flat.getWorldId(), layerName, flat.getSizeX(), flat.getSizeZ()
-            );
+                    flat.getId(), flatId, flat.getWorldId(), layerName, flat.getSizeX(), flat.getSizeZ());
 
             log.info("Flat update-border completed successfully: flatId={}, id={}", flatId, flat.getId());
             return JobResult.success(resultData);

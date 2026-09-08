@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Represents a District that has been positioned as a grid in the world.

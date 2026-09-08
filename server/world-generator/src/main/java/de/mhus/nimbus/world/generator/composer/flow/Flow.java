@@ -4,20 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.area.AreaSize;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.point.Point;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 
 @Data
 @SuperBuilder
@@ -76,11 +74,11 @@ public abstract class Flow extends Feature {
     private DeviationTendency tendRight;
 
     // Closed loop configuration (when startPointId == endPointId)
-    private Boolean closedLoop;      // If true, creates a closed ring/loop around the point
-    private String shapeHint;        // Shape hint for closed loops: "RING", "CIRCLE", "SQUARE", etc.
-    private AreaSize size;           // Size of the closed loop (radius) - uses same enum as Biome
-    private Integer sizeFrom;        // Explicit radius min (overrides size enum)
-    private Integer sizeTo;          // Explicit radius max (overrides size enum)
+    private Boolean closedLoop; // If true, creates a closed ring/loop around the point
+    private String shapeHint; // Shape hint for closed loops: "RING", "CIRCLE", "SQUARE", etc.
+    private AreaSize size; // Size of the closed loop (radius) - uses same enum as Biome
+    private Integer sizeFrom; // Explicit radius min (overrides size enum)
+    private Integer sizeTo; // Explicit radius max (overrides size enum)
 
     /**
      * Composed data - calculated during composition phase at Flow level.
@@ -100,11 +98,11 @@ public abstract class Flow extends Feature {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class FlowComposed {
-        private Integer calculatedWidthBlocks;  // Resolved from width enum
-        private HexVector2 startPoint;          // Resolved coordinate
-        private HexVector2 endPoint;            // Resolved coordinate (Road/Wall) or merge point (River)
-        private List<HexVector2> waypoints;     // Resolved waypoints
-        private List<HexVector2> route;         // Calculated route from start to end
+        private Integer calculatedWidthBlocks; // Resolved from width enum
+        private HexVector2 startPoint; // Resolved coordinate
+        private HexVector2 endPoint; // Resolved coordinate (Road/Wall) or merge point (River)
+        private List<HexVector2> waypoints; // Resolved waypoints
+        private List<HexVector2> route; // Calculated route from start to end
 
         /**
          * Reference to actual Point feature if startPointId refers to a Point (not a Biome).
@@ -301,7 +299,9 @@ public abstract class Flow extends Feature {
      * @param terrainLevelAt Returns terrain level for a coordinate
      * @param isLowPriorityBiome Returns true for Ocean/Coast/Island biomes
      */
-    public HexVector2 selectNextStep(HexVector2 current, HexVector2 goal,
+    public HexVector2 selectNextStep(
+            HexVector2 current,
+            HexVector2 goal,
             List<HexVector2> neighbors,
             ToIntFunction<HexVector2> terrainLevelAt,
             Predicate<HexVector2> isLowPriorityBiome) {
@@ -310,13 +310,18 @@ public abstract class Flow extends Feature {
         int bestDist = Integer.MAX_VALUE;
         for (HexVector2 n : neighbors) {
             int dist = hexDistance(n, goal);
-            if (dist < bestDist) { bestDist = dist; best = n; }
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = n;
+            }
         }
         return best;
     }
 
     /** Maximum routing steps (segments) for this flow. */
-    public int getMaxRoutingSteps() { return 50; }
+    public int getMaxRoutingSteps() {
+        return 50;
+    }
 
     /**
      * Pre-calculates levels for the entire route (two-pass approach).
@@ -328,8 +333,8 @@ public abstract class Flow extends Feature {
      * @param seaLevel Minimum allowed level (sea level floor)
      * @return List of levels (one per route coordinate), or null to use per-segment calculation
      */
-    public List<Integer> calculateRouteLevels(List<HexVector2> route,
-            ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
+    public List<Integer> calculateRouteLevels(
+            List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
         return null; // Default: use per-segment calculation
     }
 
@@ -347,10 +352,7 @@ public abstract class Flow extends Feature {
         int bCubeR = b.getR();
         int bCubeS = -bCubeQ - bCubeR;
 
-        return Math.max(Math.max(
-            Math.abs(aCubeQ - bCubeQ),
-            Math.abs(aCubeR - bCubeR)),
-            Math.abs(aCubeS - bCubeS));
+        return Math.max(Math.max(Math.abs(aCubeQ - bCubeQ), Math.abs(aCubeR - bCubeR)), Math.abs(aCubeS - bCubeS));
     }
 
     /**
@@ -364,9 +366,13 @@ public abstract class Flow extends Feature {
      * @param fixedLevel fixed level value (used when levelMode=FIXED)
      * @return calculated level for this segment
      */
-    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
-                                      Integer gridBLandLevel, Integer gridBLandOffset,
-                                      Integer previousLevel, Integer fixedLevel) {
+    public int calculateSegmentLevel(
+            Integer gridALandLevel,
+            Integer gridALandOffset,
+            Integer gridBLandLevel,
+            Integer gridBLandOffset,
+            Integer previousLevel,
+            Integer fixedLevel) {
         // Default to FIXED mode if not specified
         LevelMode mode = levelMode != null ? levelMode : LevelMode.FIXED;
 

@@ -5,13 +5,12 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
 import de.mhus.nimbus.world.shared.world.StorageProvider;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Repair implementation for storage.
@@ -94,19 +93,20 @@ public class StorageResourceRepairer implements ResourceRepairer {
             }
         }
 
-        log.info("Storage repair completed: {} orphaned found, {} removed; {} non-final found, {} removed",
-                orphanedStorageFound, orphanedStorageRemoved,
-                nonFinalStorageFound, nonFinalStorageRemoved);
+        log.info(
+                "Storage repair completed: {} orphaned found, {} removed; {} non-final found, {} removed",
+                orphanedStorageFound,
+                orphanedStorageRemoved,
+                nonFinalStorageFound,
+                nonFinalStorageRemoved);
 
         return new ResourceRepairService.ProcessResult(
                 name(),
                 true,
-                String.format("Orphaned storage found: %d, removed: %d; Non-final storage found: %d, removed: %d",
-                        orphanedStorageFound, orphanedStorageRemoved,
-                        nonFinalStorageFound, nonFinalStorageRemoved
-                ),
-                System.currentTimeMillis()
-        );
+                String.format(
+                        "Orphaned storage found: %d, removed: %d; Non-final storage found: %d, removed: %d",
+                        orphanedStorageFound, orphanedStorageRemoved, nonFinalStorageFound, nonFinalStorageRemoved),
+                System.currentTimeMillis());
     }
 
     /**
@@ -118,8 +118,8 @@ public class StorageResourceRepairer implements ResourceRepairer {
         // Get all final storage IDs for this world (older than 2 hours)
         List<String> allStorageIds = storageService.findFinalStorageUuids(worldId.getId(), minAgeDate);
 
-        log.debug("Found {} final storage entries older than {} for world {}",
-                allStorageIds.size(), minAgeDate, worldId);
+        log.debug(
+                "Found {} final storage entries older than {} for world {}", allStorageIds.size(), minAgeDate, worldId);
 
         // Get all referenced storage IDs from entities using services
         Set<String> referencedStorageIds = new HashSet<>();
@@ -128,9 +128,15 @@ public class StorageResourceRepairer implements ResourceRepairer {
             try {
                 List<String> providerStorageIds = provider.findDistinctStorageIds(worldId);
                 referencedStorageIds.addAll(providerStorageIds);
-                log.debug("Found {} storageIds referenced by provider {}", providerStorageIds.size(), provider.getClass().getSimpleName());
+                log.debug(
+                        "Found {} storageIds referenced by provider {}",
+                        providerStorageIds.size(),
+                        provider.getClass().getSimpleName());
             } catch (Exception e) {
-                log.warn("Failed to get storageIds from {}: {}", provider.getClass().getSimpleName(), e.getMessage());
+                log.warn(
+                        "Failed to get storageIds from {}: {}",
+                        provider.getClass().getSimpleName(),
+                        e.getMessage());
             }
         }
 
@@ -154,8 +160,8 @@ public class StorageResourceRepairer implements ResourceRepairer {
         // Get all storage IDs for this world (older than 2 hours)
         List<String> allStorageIds = storageService.findStorageUuids(worldId.getId(), minAgeDate);
 
-        log.debug("Found {} total storage entries older than {} for world {}",
-                allStorageIds.size(), minAgeDate, worldId);
+        log.debug(
+                "Found {} total storage entries older than {} for world {}", allStorageIds.size(), minAgeDate, worldId);
 
         // Get all final storage IDs
         Set<String> finalStorageIds = new HashSet<>(storageService.findFinalStorageUuids(worldId.getId(), minAgeDate));

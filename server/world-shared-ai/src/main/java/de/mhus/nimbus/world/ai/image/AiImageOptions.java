@@ -111,10 +111,7 @@ public class AiImageOptions {
      * @return Options for small images
      */
     public static AiImageOptions small() {
-        return AiImageOptions.builder()
-                .width(256)
-                .height(256)
-                .build();
+        return AiImageOptions.builder().width(256).height(256).build();
     }
 
     /**
@@ -123,10 +120,7 @@ public class AiImageOptions {
      * @return Options for medium images
      */
     public static AiImageOptions medium() {
-        return AiImageOptions.builder()
-                .width(512)
-                .height(512)
-                .build();
+        return AiImageOptions.builder().width(512).height(512).build();
     }
 
     /**
@@ -135,9 +129,6 @@ public class AiImageOptions {
      * @return Options for large images
      */
     public static AiImageOptions large() {
-        return AiImageOptions.builder()
-                .width(1024)
-                .height(1024)
-                .build();
+        return AiImageOptions.builder().width(1024).height(1024).build();
     }
 }

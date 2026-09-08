@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.shared.edit;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunk;
@@ -9,21 +7,22 @@ import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerOverlayService;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
-import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
+import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.time.Duration;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.util.*;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for regenerating chunks from layers.
@@ -74,14 +73,14 @@ public class ChunkUpdateService {
         try {
             log.debug("Regenerating chunk: world={} chunk={}", worldId, chunkKey);
 
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Load world for epoch definitions
-            WWorld world = worldService.getByWorldId(wid.toBaseWorldId().getId()).orElse(null);
-            List<WEpochMeta> epochMetas = (world != null && world.getEpoches() != null)
-                    ? world.getEpoches() : List.of();
+            WWorld world =
+                    worldService.getByWorldId(wid.toBaseWorldId().getId()).orElse(null);
+            List<WEpochMeta> epochMetas =
+                    (world != null && world.getEpoches() != null) ? world.getEpoches() : List.of();
 
             if (epochMetas.isEmpty()) {
                 log.warn("No epochs defined for world={}, deleting chunk={}", worldId, chunkKey);
@@ -102,8 +101,8 @@ public class ChunkUpdateService {
      * Epoch-aware chunk rendering.
      * Groups epochs by their active layer combination and renders one WChunk per group.
      */
-    private boolean regenerateChunkWithEpoches(String worldId, String chunkKey, WorldId wid,
-                                                List<WEpochMeta> epochMetas) {
+    private boolean regenerateChunkWithEpoches(
+            String worldId, String chunkKey, WorldId wid, List<WEpochMeta> epochMetas) {
         // 1. Load ALL enabled layers affecting this chunk (no epoch filter)
         List<WLayer> allLayers = layerService.getLayersAffectingChunk(worldId, chunkKey);
 
@@ -121,12 +120,12 @@ public class ChunkUpdateService {
                     .collect(Collectors.toList());
 
             // Create a key from the sorted layer IDs to identify identical combinations
-            String groupKey = activeLayers.stream()
-                    .map(WLayer::getLayerDataId)
-                    .sorted()
-                    .collect(Collectors.joining(","));
+            String groupKey =
+                    activeLayers.stream().map(WLayer::getLayerDataId).sorted().collect(Collectors.joining(","));
 
-            layerGroupToEpoches.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(epoch);
+            layerGroupToEpoches
+                    .computeIfAbsent(groupKey, k -> new ArrayList<>())
+                    .add(epoch);
             layerGroupToLayers.putIfAbsent(groupKey, activeLayers);
         }
 
@@ -144,18 +143,18 @@ public class ChunkUpdateService {
             List<WLayer> layers = layerGroupToLayers.get(groupKey);
 
             if (layers.isEmpty()) {
-                log.debug("No layers for epoch group {}, skipping chunk: world={} chunk={}",
-                        epoches, worldId, chunkKey);
+                log.debug(
+                        "No layers for epoch group {}, skipping chunk: world={} chunk={}", epoches, worldId, chunkKey);
                 continue;
             }
 
             // Generate chunk from specific layer subset with epoch for hex grid filtering
             Integer representativeEpoch = epoches.isEmpty() ? null : epoches.getFirst();
-            Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey, layers, representativeEpoch);
+            Optional<ChunkData> chunkDataOpt =
+                    overlayService.generateChunk(worldId, chunkKey, layers, representativeEpoch);
 
             if (chunkDataOpt.isEmpty()) {
-                log.debug("Empty chunk for epoch group {}: world={} chunk={}",
-                        epoches, worldId, chunkKey);
+                log.debug("Empty chunk for epoch group {}: world={} chunk={}", epoches, worldId, chunkKey);
                 continue;
             }
 
@@ -164,16 +163,27 @@ public class ChunkUpdateService {
             allRenderedEpoches.addAll(epoches);
             renderedGroups++;
 
-            log.debug("Rendered chunk for epochs {}: world={} chunk={} layers={} blocks={}",
-                    epoches, worldId, chunkKey, layers.size(),
-                    chunkDataOpt.get().getBlocks() != null ? chunkDataOpt.get().getBlocks().size() : 0);
+            log.debug(
+                    "Rendered chunk for epochs {}: world={} chunk={} layers={} blocks={}",
+                    epoches,
+                    worldId,
+                    chunkKey,
+                    layers.size(),
+                    chunkDataOpt.get().getBlocks() != null
+                            ? chunkDataOpt.get().getBlocks().size()
+                            : 0);
         }
 
         // Publish update event with affected epoches so listeners can filter by session epoch
         publishChunkUpdate(worldId, chunkKey, null, allRenderedEpoches);
 
-        log.info("Regenerated chunk with epochs: world={} chunk={} groups={}/{} epochs={}",
-                worldId, chunkKey, renderedGroups, totalGroups, epochMetas.size());
+        log.info(
+                "Regenerated chunk with epochs: world={} chunk={} groups={}/{} epochs={}",
+                worldId,
+                chunkKey,
+                renderedGroups,
+                totalGroups,
+                epochMetas.size());
 
         return true;
     }
@@ -213,8 +223,7 @@ public class ChunkUpdateService {
         }
 
         if (totalProcessed > 0) {
-            log.info("Processed dirty chunks across all worlds: total={} worlds={}",
-                    totalProcessed, worldIds.size());
+            log.info("Processed dirty chunks across all worlds: total={} worlds={}", totalProcessed, worldIds.size());
         }
 
         return totalProcessed;
@@ -254,13 +263,11 @@ public class ChunkUpdateService {
                     dirtyChunkService.clearDirtyChunk(worldId, dirtyChunk.getChunkKey());
                     successCount++;
                 } else {
-                    dirtyChunkService.markChunkDirty(worldId, dirtyChunk.getChunkKey(),
-                            "regeneration_failed_retry");
+                    dirtyChunkService.markChunkDirty(worldId, dirtyChunk.getChunkKey(), "regeneration_failed_retry");
                 }
             }
 
-            log.info("Processed dirty chunks: world={} successful={}/{}",
-                    worldId, successCount, dirtyChunks.size());
+            log.info("Processed dirty chunks: world={} successful={}/{}", worldId, successCount, dirtyChunks.size());
 
             return successCount;
 
@@ -279,8 +286,8 @@ public class ChunkUpdateService {
     public void updateChunkAsync(String worldId, String chunkKey, String reason) {
         if (lockService.isLocked(worldId)) {
             dirtyChunkService.markChunkDirty(worldId, chunkKey, reason);
-            log.debug("Chunk update lock held, marked as dirty: world={} chunk={} reason={}",
-                    worldId, chunkKey, reason);
+            log.debug(
+                    "Chunk update lock held, marked as dirty: world={} chunk={} reason={}", worldId, chunkKey, reason);
         } else {
             String lockToken = lockService.acquireLock(worldId, Duration.ofSeconds(30));
             if (lockToken != null) {
@@ -289,8 +296,8 @@ public class ChunkUpdateService {
                         log.debug("Chunk updated immediately: world={} chunk={}", worldId, chunkKey);
                     } else {
                         dirtyChunkService.markChunkDirty(worldId, chunkKey, reason + "_failed");
-                        log.warn("Immediate chunk update failed, marked as dirty: world={} chunk={}",
-                                worldId, chunkKey);
+                        log.warn(
+                                "Immediate chunk update failed, marked as dirty: world={} chunk={}", worldId, chunkKey);
                     }
                 } finally {
                     lockService.releaseLock(worldId, lockToken);
@@ -318,7 +325,9 @@ public class ChunkUpdateService {
             if (chunkData != null) {
                 message.put("cx", chunkData.getCx());
                 message.put("cz", chunkData.getCz());
-                message.put("blockCount", chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
+                message.put(
+                        "blockCount",
+                        chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
             } else {
                 // Parse cx/cz from chunkKey for epoch-aware updates without ChunkData
                 String[] parts = chunkKey.split(":");
@@ -337,8 +346,7 @@ public class ChunkUpdateService {
             log.trace("Published chunk update event: world={} chunk={} epoches={}", worldId, chunkKey, epoches);
 
         } catch (Exception e) {
-            log.error("Failed to publish chunk update event: world={} chunk={}",
-                    worldId, chunkKey, e);
+            log.error("Failed to publish chunk update event: world={} chunk={}", worldId, chunkKey, e);
         }
     }
 }

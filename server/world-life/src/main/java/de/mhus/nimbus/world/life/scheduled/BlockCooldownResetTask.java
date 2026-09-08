@@ -4,12 +4,11 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import de.mhus.nimbus.world.shared.world.WBlockCooldown;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Scheduled task that resets collected elements after their cooldown expired.
@@ -50,8 +49,8 @@ public class BlockCooldownResetTask {
         int resetCount = 0;
         for (WBlockCooldown cooldown : expired) {
             // Only the pod that removes the entry resets the block status
-            if (!progressService.claimExpiredBlockCooldown(worldId, cooldown.chunkKey(), cooldown.blockKey(),
-                    cooldown.expiresAt())) continue;
+            if (!progressService.claimExpiredBlockCooldown(
+                    worldId, cooldown.chunkKey(), cooldown.blockKey(), cooldown.expiresAt())) continue;
 
             resetBlockStatus(worldId, cooldown);
             resetCount++;
@@ -70,7 +69,8 @@ public class BlockCooldownResetTask {
      */
     private void resetBlockStatus(String worldId, WBlockCooldown cooldown) {
         if (cooldown.hasStatus()) {
-            progressService.claimRemoveBlockStatus(worldId, cooldown.chunkKey(), cooldown.blockKey(), cooldown.status());
+            progressService.claimRemoveBlockStatus(
+                    worldId, cooldown.chunkKey(), cooldown.blockKey(), cooldown.status());
         } else {
             progressService.removeBlockStatus(worldId, cooldown.chunkKey(), cooldown.blockKey());
         }

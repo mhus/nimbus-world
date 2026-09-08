@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Water soften manipulator.
@@ -37,8 +36,7 @@ public class WaterSoftenManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting water soften manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -81,8 +79,7 @@ public class WaterSoftenManipulator implements FlatManipulator {
                             int nzi = zi + dz;
 
                             // Bounds check
-                            if (nxi >= x && nxi < x + sizeX &&
-                                nzi >= z && nzi < z + sizeZ) {
+                            if (nxi >= x && nxi < x + sizeX && nzi >= z && nzi < z + sizeZ) {
                                 int neighborLevel = flat.getLevel(nxi, nzi);
                                 sum += neighborLevel;
                                 count++;
@@ -122,8 +119,11 @@ public class WaterSoftenManipulator implements FlatManipulator {
         FlatPainter painter = new FlatPainter(flat);
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
-        log.info("Water soften manipulation completed: passes={}, waterThreshold={}, probability={}",
-                passes, waterThreshold, probability);
+        log.info(
+                "Water soften manipulation completed: passes={}, waterThreshold={}, probability={}",
+                passes,
+                waterThreshold,
+                probability);
     }
 
     // Parameter parsing helper methods
@@ -135,8 +135,7 @@ public class WaterSoftenManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

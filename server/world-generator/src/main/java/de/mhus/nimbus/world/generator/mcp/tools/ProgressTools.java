@@ -4,14 +4,13 @@ import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -20,11 +19,16 @@ public class ProgressTools implements McpToolBean {
 
     private final WProgressService progressService;
 
-    @Tool(name = "list_progress", description = "List progress entries for a player in a world. Optionally filter by type or quest.")
+    @Tool(
+            name = "list_progress",
+            description = "List progress entries for a player in a world. Optionally filter by type or quest.")
     public Map<String, Object> listProgress(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
             @ToolParam(description = "Player ID") String playerId,
-            @ToolParam(description = "Optional progress type filter (e.g. 'quest', 'achievement', 'skill')", required = false) String type,
+            @ToolParam(
+                            description = "Optional progress type filter (e.g. 'quest', 'achievement', 'skill')",
+                            required = false)
+                    String type,
             @ToolParam(description = "Optional quest identifier filter", required = false) String quest) {
         log.debug("MCP: List progress: worldId={}, playerId={}, type={}, quest={}", worldId, playerId, type, quest);
 
@@ -41,24 +45,27 @@ public class ProgressTools implements McpToolBean {
             entries = progressService.findByWorldIdAndPlayerId(worldId, playerId);
         }
 
-        var dtos = entries.stream().map(e -> {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("id", e.getId());
-            map.put("type", e.getType());
-            map.put("quest", e.getQuest() != null ? e.getQuest() : "");
-            map.put("progressData", e.getProgressData());
-            return map;
-        }).toList();
+        var dtos = entries.stream()
+                .map(e -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("id", e.getId());
+                    map.put("type", e.getType());
+                    map.put("quest", e.getQuest() != null ? e.getQuest() : "");
+                    map.put("progressData", e.getProgressData());
+                    return map;
+                })
+                .toList();
 
         return Map.of(
                 "worldId", worldId,
                 "playerId", playerId,
                 "count", dtos.size(),
-                "entries", dtos
-        );
+                "entries", dtos);
     }
 
-    @Tool(name = "get_progress", description = "Get a specific progress entry by world, player, type, and optional quest.")
+    @Tool(
+            name = "get_progress",
+            description = "Get a specific progress entry by world, player, type, and optional quest.")
     public Map<String, Object> getProgress(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
             @ToolParam(description = "Player ID") String playerId,
@@ -70,7 +77,8 @@ public class ProgressTools implements McpToolBean {
             throw new McpToolException("worldId, playerId, and type are required");
         }
 
-        WProgress progress = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest)
+        WProgress progress = progressService
+                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest)
                 .orElseThrow(() -> new McpToolException("Progress not found for type=" + type + ", quest=" + quest));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -83,7 +91,10 @@ public class ProgressTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "save_progress", description = "Create or update a progress entry. If a matching entry (worldId + playerId + type + quest) exists, it is updated. Otherwise a new entry is created.")
+    @Tool(
+            name = "save_progress",
+            description =
+                    "Create or update a progress entry. If a matching entry (worldId + playerId + type + quest) exists, it is updated. Otherwise a new entry is created.")
     public Map<String, Object> saveProgress(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
             @ToolParam(description = "Player ID") String playerId,
@@ -103,16 +114,14 @@ public class ProgressTools implements McpToolBean {
                     "worldId", saved.getWorldId(),
                     "playerId", saved.getPlayerId(),
                     "type", saved.getType(),
-                    "status", "saved"
-            );
+                    "status", "saved");
         } catch (Exception e) {
             throw new McpToolException("Failed to save progress: " + e.getMessage());
         }
     }
 
     @Tool(name = "delete_progress", description = "Delete a specific progress entry by its ID.")
-    public Map<String, Object> deleteProgress(
-            @ToolParam(description = "Progress entry ID") String id) {
+    public Map<String, Object> deleteProgress(@ToolParam(description = "Progress entry ID") String id) {
         log.debug("MCP: Delete progress: id={}", id);
 
         if (Strings.isBlank(id)) {
@@ -124,10 +133,7 @@ public class ProgressTools implements McpToolBean {
             throw new McpToolException("Progress not found: " + id);
         }
 
-        return Map.of(
-                "deleted", true,
-                "id", id
-        );
+        return Map.of("deleted", true, "id", id);
     }
 
     @Tool(name = "delete_player_progress", description = "Delete all progress entries for a player in a world.")
@@ -145,7 +151,6 @@ public class ProgressTools implements McpToolBean {
         return Map.of(
                 "deleted", true,
                 "worldId", worldId,
-                "playerId", playerId
-        );
+                "playerId", playerId);
     }
 }

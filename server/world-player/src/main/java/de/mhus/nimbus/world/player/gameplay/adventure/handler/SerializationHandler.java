@@ -6,13 +6,12 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles serialization and deserialization of adventure gameplay data.
@@ -129,14 +128,14 @@ public class SerializationHandler {
      */
     public void restoreLegacyVitals(AdventureData data, Map<String, Object> saved) {
         var vitalsHandler = gameplay.getVitalsHandler();
-        vitalsHandler.setVitalCurrent(data, "health",  toDouble(saved.get("health"),  100));
-        vitalsHandler.setVitalCurrent(data, "hunger",  toDouble(saved.get("hunger"),  0));
-        vitalsHandler.setVitalCurrent(data, "thirst",  toDouble(saved.get("thirst"),  0));
+        vitalsHandler.setVitalCurrent(data, "health", toDouble(saved.get("health"), 100));
+        vitalsHandler.setVitalCurrent(data, "hunger", toDouble(saved.get("hunger"), 0));
+        vitalsHandler.setVitalCurrent(data, "thirst", toDouble(saved.get("thirst"), 0));
         vitalsHandler.setVitalCurrent(data, "stamina", toDouble(saved.get("stamina"), 100));
 
-        vitalsHandler.setVitalBase(data, "health",  toDouble(saved.get("maxHealth"),  100));
-        vitalsHandler.setVitalBase(data, "hunger",  toDouble(saved.get("maxHunger"),  100));
-        vitalsHandler.setVitalBase(data, "thirst",  toDouble(saved.get("maxThirst"),  100));
+        vitalsHandler.setVitalBase(data, "health", toDouble(saved.get("maxHealth"), 100));
+        vitalsHandler.setVitalBase(data, "hunger", toDouble(saved.get("maxHunger"), 100));
+        vitalsHandler.setVitalBase(data, "thirst", toDouble(saved.get("maxThirst"), 100));
         vitalsHandler.setVitalBase(data, "stamina", toDouble(saved.get("maxStamina"), 100));
     }
 

@@ -8,9 +8,8 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills "orphan" grids that are used by features (rivers, points, villages)
@@ -85,18 +84,21 @@ public class OrphanGridFiller {
 
         // Create Coast filler biome for coast orphans
         if (!coastOrphans.isEmpty()) {
-            filled += assignOrphansToFillerBiome(BiomeType.COAST, "orphan-coast",
-                coastOrphans, composition, placementResult);
+            filled += assignOrphansToFillerBiome(
+                    BiomeType.COAST, "orphan-coast", coastOrphans, composition, placementResult);
         }
 
         // Create Ocean filler biome for ocean orphans
         if (!oceanOrphans.isEmpty()) {
-            filled += assignOrphansToFillerBiome(BiomeType.OCEAN, "orphan-ocean",
-                oceanOrphans, composition, placementResult);
+            filled += assignOrphansToFillerBiome(
+                    BiomeType.OCEAN, "orphan-ocean", oceanOrphans, composition, placementResult);
         }
 
-        log.info("OrphanGridFiller: filled {} orphan grids (coast: {}, ocean: {})",
-            filled, coastOrphans.size(), oceanOrphans.size());
+        log.info(
+                "OrphanGridFiller: filled {} orphan grids (coast: {}, ocean: {})",
+                filled,
+                coastOrphans.size(),
+                oceanOrphans.size());
         return filled;
     }
 
@@ -106,7 +108,8 @@ public class OrphanGridFiller {
     private boolean hasLandNeighbor(HexVector2 coord, Map<String, Biome> gridToBiomeMap) {
         for (HexVector2 neighbor : getNeighbors(coord)) {
             Biome biome = gridToBiomeMap.get(coordKey(neighbor));
-            if (biome != null && biome.getType() != null
+            if (biome != null
+                    && biome.getType() != null
                     && biome.getType() != BiomeType.OCEAN
                     && biome.getType() != BiomeType.COAST) {
                 return true;
@@ -119,10 +122,12 @@ public class OrphanGridFiller {
      * Creates a filler biome and assigns orphan grids to it.
      * Updates existing FeatureHexGrids in the central registry with biome parameters.
      */
-    private int assignOrphansToFillerBiome(BiomeType type, String name,
-                                           List<HexVector2> coords,
-                                           HexComposition composition,
-                                           BiomePlacementResult placementResult) {
+    private int assignOrphansToFillerBiome(
+            BiomeType type,
+            String name,
+            List<HexVector2> coords,
+            HexComposition composition,
+            BiomePlacementResult placementResult) {
         // Create filler biome
         Biome biome = new Biome();
         biome.setName(name);
@@ -155,8 +160,12 @@ public class OrphanGridFiller {
             }
         }
 
-        log.debug("Created {} filler biome '{}' for {} grids ({} FeatureHexGrids updated)",
-            type, name, coords.size(), updated);
+        log.debug(
+                "Created {} filler biome '{}' for {} grids ({} FeatureHexGrids updated)",
+                type,
+                name,
+                coords.size(),
+                updated);
         return coords.size();
     }
 
@@ -172,9 +181,9 @@ public class OrphanGridFiller {
         }
 
         for (FeatureHexGrid hexGrid : registry.values()) {
-            if (hexGrid.getCoordinate() != null &&
-                hexGrid.getCoordinate().getQ() == coord.getQ() &&
-                hexGrid.getCoordinate().getR() == coord.getR()) {
+            if (hexGrid.getCoordinate() != null
+                    && hexGrid.getCoordinate().getQ() == coord.getQ()
+                    && hexGrid.getCoordinate().getR() == coord.getR()) {
                 result.add(hexGrid);
             }
         }
@@ -245,7 +254,8 @@ public class OrphanGridFiller {
      */
     private List<HexVector2> getNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
-        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
+        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge :
+                de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             neighbors.add(de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;

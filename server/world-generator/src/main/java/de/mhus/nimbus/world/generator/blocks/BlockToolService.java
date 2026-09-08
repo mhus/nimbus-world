@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import dev.langchain4j.agent.tool.Tool;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for block manipulation tool operations.
@@ -105,16 +104,17 @@ public class BlockToolService {
                 .name("manipulator")
                 .type("block-manipulator")
                 .title("Block Manipulator")
-                .description("Execute a block manipulator to generate or modify blocks in the world. " +
-                        "Supports various manipulator types (plateau, cube, sphere, line, pyramid, etc.). " +
-                        "Each manipulator has its own specific parameters. " +
-                        "Returns a ModelSelector highlighting the affected blocks.")
+                .description("Execute a block manipulator to generate or modify blocks in the world. "
+                        + "Supports various manipulator types (plateau, cube, sphere, line, pyramid, etc.). "
+                        + "Each manipulator has its own specific parameters. "
+                        + "Returns a ModelSelector highlighting the affected blocks.")
                 .parameters(List.of(
                         ParameterInfo.builder()
                                 .name("manipulatorName")
                                 .type("string")
                                 .required(true)
-                                .description("Name of the manipulator to execute (e.g., 'plateau', 'cube', 'sphere', 'line')")
+                                .description(
+                                        "Name of the manipulator to execute (e.g., 'plateau', 'cube', 'sphere', 'line')")
                                 .build(),
                         ParameterInfo.builder()
                                 .name("params")
@@ -126,7 +126,8 @@ public class BlockToolService {
                                 .name("sessionId")
                                 .type("string")
                                 .required(false)
-                                .description("Session ID for loading EditState context (layerDataId, layerName, modelName, groupId)")
+                                .description(
+                                        "Session ID for loading EditState context (layerDataId, layerName, modelName, groupId)")
                                 .build(),
                         ParameterInfo.builder()
                                 .name("worldId")
@@ -161,22 +162,20 @@ public class BlockToolService {
                                 .required(false)
                                 .defaultValue("0 or from EditState")
                                 .description("Group ID (can be loaded from EditState)")
-                                .build()
-                ))
-                .exampleJson("{\n" +
-                        "  \"plateau\": {\n" +
-                        "    \"transform\": \"position,forward\",\n" +
-                        "    \"width\": 10,\n" +
-                        "    \"depth\": 5,\n" +
-                        "    \"height\": 3\n" +
-                        "  }\n" +
-                        "}\n" +
-                        "or with defaults:\n" +
-                        "{\n" +
-                        "  \"defaults\": {\n" +
-                        "    \"blockType\": \"n:s\"\n" +
-                        "  }\n" +
-                        "}")
+                                .build()))
+                .exampleJson("{\n" + "  \"plateau\": {\n"
+                        + "    \"transform\": \"position,forward\",\n"
+                        + "    \"width\": 10,\n"
+                        + "    \"depth\": 5,\n"
+                        + "    \"height\": 3\n"
+                        + "  }\n"
+                        + "}\n"
+                        + "or with defaults:\n"
+                        + "{\n"
+                        + "  \"defaults\": {\n"
+                        + "    \"blockType\": \"n:s\"\n"
+                        + "  }\n"
+                        + "}")
                 .build());
 
         return tools;
@@ -202,8 +201,7 @@ public class BlockToolService {
      */
     public Optional<String> getToolDescription(String toolName) {
         return getToolInfo(toolName)
-                .map(tool -> String.format("%s (%s): %s",
-                        tool.getTitle(), tool.getName(), tool.getDescription()));
+                .map(tool -> String.format("%s (%s): %s", tool.getTitle(), tool.getName(), tool.getDescription()));
     }
 
     /**
@@ -214,9 +212,13 @@ public class BlockToolService {
      * @return Execution result with ModelSelector if successful
      */
     public BlockToolResult executeManipulator(String manipulatorName, ManipulatorContext context) {
-        log.info("Executing block manipulator '{}': worldId={}, sessionId={}, layerDataId={}, layerName={}",
-                manipulatorName, context.getWorldId(), context.getSessionId(),
-                context.getLayerDataId(), context.getLayerName());
+        log.info(
+                "Executing block manipulator '{}': worldId={}, sessionId={}, layerDataId={}, layerName={}",
+                manipulatorName,
+                context.getWorldId(),
+                context.getSessionId(),
+                context.getLayerDataId(),
+                context.getLayerName());
 
         // Execute manipulator
         ManipulatorResult result;
@@ -236,8 +238,7 @@ public class BlockToolService {
         ModelSelector modelSelector = result.getModelSelector();
         int blockCount = modelSelector != null ? modelSelector.getBlockCount() : 0;
 
-        log.info("Manipulator '{}' executed successfully: {} blocks generated",
-                manipulatorName, blockCount);
+        log.info("Manipulator '{}' executed successfully: {} blocks generated", manipulatorName, blockCount);
 
         return BlockToolResult.success(result.getMessage(), modelSelector);
     }
@@ -287,7 +288,8 @@ public class BlockToolService {
      *
      * @return Formatted list of available manipulators
      */
-    @Tool("Get list of all available block manipulators with their names, titles, and descriptions. Use this to discover what types of blocks can be generated.")
+    @Tool(
+            "Get list of all available block manipulators with their names, titles, and descriptions. Use this to discover what types of blocks can be generated.")
     public String getAvailableManipulatorsFormatted() {
         List<String> manipulatorNames = blockManipulatorService.getManipulatorNames();
 
@@ -325,7 +327,8 @@ public class BlockToolService {
      * @param modelName Model name for MODEL layers (optional, can be empty)
      * @return Execution result message
      */
-    @Tool("Execute a block manipulator to generate blocks. Provide the manipulator name, parameters as JSON, worldId, sessionId, and layer information. Returns successful message with block count.")
+    @Tool(
+            "Execute a block manipulator to generate blocks. Provide the manipulator name, parameters as JSON, worldId, sessionId, and layer information. Returns successful message with block count.")
     public String executeManipulator(
             String manipulatorName,
             String parametersJson,
@@ -335,8 +338,13 @@ public class BlockToolService {
             String layerName,
             String modelName) {
 
-        log.info("AI Tool: executeManipulator - manipulator={}, worldId={}, sessionId={}, layerDataId={}, layerName={}",
-                manipulatorName, worldId, sessionId, layerDataId, layerName);
+        log.info(
+                "AI Tool: executeManipulator - manipulator={}, worldId={}, sessionId={}, layerDataId={}, layerName={}",
+                manipulatorName,
+                worldId,
+                sessionId,
+                layerDataId,
+                layerName);
 
         // Parse parameters JSON
         ObjectNode params;

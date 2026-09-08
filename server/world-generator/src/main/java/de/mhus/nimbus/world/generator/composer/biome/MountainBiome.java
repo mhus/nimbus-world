@@ -1,20 +1,13 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.shared.util.HexMathUtil;
-import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Mountain biome with configurable height levels.
@@ -66,10 +59,10 @@ public class MountainBiome extends Biome {
      * (with oceanLevel typically = 50)
      */
     public enum MountainHeight {
-        HIGH_PEAKS(120, 40, 20, 0.8),    // max level: 150+50+40 = 240, ridge: 260
-        MEDIUM_PEAKS(100, 30, 15, 0.8),  // max level: 120+50+30 = 200, ridge: 215
-        LOW_PEAKS(80, 20, 10, 0.7),     // max level: 100+50+20 = 170, ridge: 180
-        MEADOW(60, 10, 5, 0.6);          // max level: 80+50+10 = 140, ridge: 145
+        HIGH_PEAKS(120, 40, 20, 0.8), // max level: 150+50+40 = 240, ridge: 260
+        MEDIUM_PEAKS(100, 30, 15, 0.8), // max level: 120+50+30 = 200, ridge: 215
+        LOW_PEAKS(80, 20, 10, 0.7), // max level: 100+50+20 = 170, ridge: 180
+        MEADOW(60, 10, 5, 0.6); // max level: 80+50+10 = 140, ridge: 145
 
         private final int landLevel;
         private final int landOffset;
@@ -130,8 +123,13 @@ public class MountainBiome extends Biome {
         }
         groundType.applyToParameters(getParameters());
 
-        log.debug("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}, groundType={}",
-            getName(), height, height.getAboveSeaLevel(), height.getLandOffset(), groundType);
+        log.debug(
+                "Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}, groundType={}",
+                getName(),
+                height,
+                height.getAboveSeaLevel(),
+                height.getLandOffset(),
+                groundType);
     }
 
     /**
@@ -160,8 +158,8 @@ public class MountainBiome extends Biome {
     private void configureRidgesOld(List<HexVector2> coordinates) {
         // Build coordinate set for fast neighbor lookups
         Set<String> coordSet = coordinates.stream()
-            .map(c -> TypeUtil.toStringHexCoord(c.getQ(), c.getR()))
-            .collect(Collectors.toSet());
+                .map(c -> TypeUtil.toStringHexCoord(c.getQ(), c.getR()))
+                .collect(Collectors.toSet());
 
         // Calculate ridge level: landLevel + landOffset + ridgeOffset (+ oceanLevel in builder)
         int ridgeLevel = height.getAboveSeaLevel() + height.getLandOffset() + height.getRidgeOffset();

@@ -13,10 +13,9 @@ import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.*;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.*;
 
 /**
  * Abstract base class for terrain generators.
@@ -37,12 +36,7 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
     @Autowired
     protected WDirtyChunkService dirtyChunkService;
 
-    protected record GeneratorContext(
-            String worldId,
-            String gridPosition,
-            String layerName,
-            String layerDataId
-    ) {}
+    protected record GeneratorContext(String worldId, String gridPosition, String layerName, String layerDataId) {}
 
     @Override
     public final JobResult execute(WJob job) throws JobExecutionException {
@@ -56,8 +50,12 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
 
             int blockCount = generateTerrain(world, hexGrid, context);
 
-            log.info("Generator {} completed: world={} grid={} blocks={}",
-                    getExecutorName(), context.worldId(), context.gridPosition(), blockCount);
+            log.info(
+                    "Generator {} completed: world={} grid={} blocks={}",
+                    getExecutorName(),
+                    context.worldId(),
+                    context.gridPosition(),
+                    blockCount);
 
             return JobResult.success("Generated " + blockCount + " blocks");
 
@@ -103,14 +101,16 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
     }
 
     protected WWorld loadWorld(String worldId) throws JobExecutionException {
-        return worldService.getByWorldId(worldId)
+        return worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
     }
 
     protected WHexGrid loadHexGrid(String worldId, String gridPosition) throws JobExecutionException {
         try {
             de.mhus.nimbus.generated.types.HexVector2 hexPos = TypeUtil.parseHexCoord(gridPosition);
-            return hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+            return hexGridService
+                    .findByWorldIdAndPosition(worldId, hexPos)
                     .orElseThrow(() -> new JobExecutionException(
                             "HexGrid not found: world=" + worldId + " position=" + gridPosition));
         } catch (IllegalArgumentException e) {
@@ -153,11 +153,8 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
         int cx = Integer.parseInt(parts[0]);
         int cz = Integer.parseInt(parts[1]);
 
-        LayerChunkData chunkData = LayerChunkData.builder()
-                .cx(cx)
-                .cz(cz)
-                .blocks(blocks)
-                .build();
+        LayerChunkData chunkData =
+                LayerChunkData.builder().cx(cx).cz(cz).blocks(blocks).build();
 
         layerService.saveTerrainChunk(worldId, layerDataId, chunkKey, chunkData);
         dirtyChunkService.markChunkDirty(worldId, chunkKey, getExecutorName());
@@ -174,10 +171,7 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
     }
 
     protected LayerBlock createLayerBlock(Block block) {
-        return LayerBlock.builder()
-                .block(block)
-                .group(null)
-                .build();
+        return LayerBlock.builder().block(block).group(null).build();
     }
 
     protected float clamp(float value) {

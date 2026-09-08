@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
@@ -9,11 +7,6 @@ import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.socket.BinaryMessage;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -21,6 +14,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.BinaryMessage;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis listener for chunk update events.
@@ -67,7 +66,9 @@ public class ChunkUpdateBroadcastListener {
      */
     public void subscribeToWorld(String worldId) {
         // Extract base worldId without instance
-        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId)
+                .toBaseWorldId()
+                .getId();
 
         // Check if already subscribed
         if (subscribedWorlds.contains(baseWorldId)) {
@@ -112,8 +113,7 @@ public class ChunkUpdateBroadcastListener {
                 }
             }
 
-            log.debug("Received chunk update: world={} chunk={} epoches={}",
-                    worldId, chunkKey, affectedEpoches);
+            log.debug("Received chunk update: world={} chunk={} epoches={}", worldId, chunkKey, affectedEpoches);
 
             // Load updated chunk from database
             WorldId wid = WorldId.of(worldId).orElse(null);
@@ -136,16 +136,18 @@ public class ChunkUpdateBroadcastListener {
 
                 // Check if session has registered the chunk
                 if (!session.isChunkRegistered(cx, cz)) {
-                    log.trace("Session {} has not registered chunk ({}, {}), skipping",
-                            session.getSessionId(), cx, cz);
+                    log.trace("Session {} has not registered chunk ({}, {}), skipping", session.getSessionId(), cx, cz);
                     continue;
                 }
 
                 // Skip if session's epoch is not in the affected epoches
                 int epoch = session.getEpoch();
                 if (affectedEpoches != null && !affectedEpoches.contains(epoch)) {
-                    log.trace("Session {} epoch {} not in affected epoches {}, skipping",
-                            session.getSessionId(), epoch, affectedEpoches);
+                    log.trace(
+                            "Session {} epoch {} not in affected epoches {}, skipping",
+                            session.getSessionId(),
+                            epoch,
+                            affectedEpoches);
                     continue;
                 }
 
@@ -165,19 +167,26 @@ public class ChunkUpdateBroadcastListener {
                     try {
                         sendCompressedChunkBinary(session, dto);
                         sent++;
-                        log.trace("Sent binary chunk update to session: cx={}, cz={}, epoch={}, compressed={} bytes",
-                                cx, cz, epoch, dto.getC().length);
+                        log.trace(
+                                "Sent binary chunk update to session: cx={}, cz={}, epoch={}, compressed={} bytes",
+                                cx,
+                                cz,
+                                epoch,
+                                dto.getC().length);
                     } catch (Exception e) {
-                        log.error("Failed to send binary chunk update to session: cx={}, cz={}",
-                                cx, cz, e);
+                        log.error("Failed to send binary chunk update to session: cx={}, cz={}", cx, cz, e);
                     }
                 } else {
                     log.warn("Chunk not compressed, cannot broadcast: cx={}, cz={}", cx, cz);
                 }
             }
 
-            log.info("Broadcast chunk update to {} sessions: world={} chunk={} epoches={}",
-                    sent, worldId, chunkKey, affectedEpoches);
+            log.info(
+                    "Broadcast chunk update to {} sessions: world={} chunk={} epoches={}",
+                    sent,
+                    worldId,
+                    chunkKey,
+                    affectedEpoches);
 
         } catch (Exception e) {
             log.error("Failed to handle chunk update from Redis: {}", message, e);
@@ -218,14 +227,19 @@ public class ChunkUpdateBroadcastListener {
 
         // 2. Build binary frame: [4 bytes length][header][compressed data]
         ByteBuffer buffer = ByteBuffer.allocate(4 + headerBytes.length + dto.getC().length);
-        buffer.putInt(headerBytes.length);  // Header length as int32 (big-endian)
-        buffer.put(headerBytes);             // Header JSON
-        buffer.put(dto.getC());              // GZIP compressed data
+        buffer.putInt(headerBytes.length); // Header length as int32 (big-endian)
+        buffer.put(headerBytes); // Header JSON
+        buffer.put(dto.getC()); // GZIP compressed data
 
         // 3. Send as binary WebSocket frame
         session.sendMessage(new BinaryMessage(buffer.array()));
 
-        log.debug("Sent binary chunk update: cx={}, cz={}, header={} bytes, compressed={} bytes, total={} bytes",
-                dto.getCx(), dto.getCz(), headerBytes.length, dto.getC().length, buffer.position());
+        log.debug(
+                "Sent binary chunk update: cx={}, cz={}, header={} bytes, compressed={} bytes, total={} bytes",
+                dto.getCx(),
+                dto.getCz(),
+                headerBytes.length,
+                dto.getC().length,
+                buffer.position());
     }
 }

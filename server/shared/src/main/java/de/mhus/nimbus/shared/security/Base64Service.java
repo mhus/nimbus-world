@@ -1,11 +1,10 @@
 package de.mhus.nimbus.shared.security;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 /**
  * Service for encoding and decoding strings to/from Base64.

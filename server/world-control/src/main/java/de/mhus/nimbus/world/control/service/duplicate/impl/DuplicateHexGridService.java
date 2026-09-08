@@ -28,7 +28,6 @@ public class DuplicateHexGridService implements DuplicateToWorld {
 
         int duplicatedCount = hexGridService.duplicateToWorld(sourceWorldId, targetWorldId);
 
-        log.info("Duplicated {} hex grids from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} hex grids from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

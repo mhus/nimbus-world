@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 public class ShowCoordinatesAction extends AbstractGamplayAction {
@@ -25,8 +24,7 @@ public class ShowCoordinatesAction extends AbstractGamplayAction {
         int y = (int) Math.round(pos.getY());
         int z = (int) Math.round(pos.getZ());
 
-        basic.getBasicClientService().sendNotification(session, 3, "",
-                "(" + x + ", " + y + ", " + z + ")", null);
+        basic.getBasicClientService().sendNotification(session, 3, "", "(" + x + ", " + y + ", " + z + ")", null);
         return true;
     }
 }

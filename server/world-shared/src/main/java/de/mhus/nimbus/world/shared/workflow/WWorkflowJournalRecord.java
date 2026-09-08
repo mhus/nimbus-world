@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.workflow;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +14,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * MongoDB Entity for workflow journal entries.
  * Journal entries are immutable records of workflow execution steps.
@@ -23,12 +22,11 @@ import java.time.Instant;
 @Document(collection = "w_workflow_record")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_workflow_created_idx",
-                def = "{ 'worldId': 1, 'workflowId': 1, 'createdAt': 1 }"),
-        @CompoundIndex(name = "world_workflow_type_idx",
-                def = "{ 'worldId': 1, 'workflowId': 1, 'type': 1, 'createdAt': 1 }"),
-        @CompoundIndex(name = "world_type_created_idx",
-                def = "{ 'worldId': 1, 'type': 1, 'createdAt': 1 }")
+    @CompoundIndex(name = "world_workflow_created_idx", def = "{ 'worldId': 1, 'workflowId': 1, 'createdAt': 1 }"),
+    @CompoundIndex(
+            name = "world_workflow_type_idx",
+            def = "{ 'worldId': 1, 'workflowId': 1, 'type': 1, 'createdAt': 1 }"),
+    @CompoundIndex(name = "world_type_created_idx", def = "{ 'worldId': 1, 'type': 1, 'createdAt': 1 }")
 })
 @Data
 @Builder
@@ -90,7 +88,8 @@ public class WWorkflowJournalRecord implements Identifiable {
             try {
                 Class<?> clazz = context.createJournalRecordClass(type);
                 if (JournalStringRecord.class.isAssignableFrom(clazz)) {
-                    JournalStringRecord record = (JournalStringRecord) clazz.getDeclaredConstructor().newInstance();
+                    JournalStringRecord record =
+                            (JournalStringRecord) clazz.getDeclaredConstructor().newInstance();
                     record.stringToRecord(data);
                     return record;
                 } else {

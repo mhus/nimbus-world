@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Publishes item block updates via Redis to all world-player pods.
@@ -39,7 +38,8 @@ public class ItemBlockUpdatePublisher {
      */
     public void publishItemAdded(WorldId worldId, ItemBlockRef itemBlockRef) {
         try {
-            WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+            WWorld world =
+                    worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
             if (world == null) {
                 log.warn("World not found for item broadcast: {}", worldId);
                 return;
@@ -58,11 +58,14 @@ public class ItemBlockUpdatePublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId.getId(), CHANNEL, json);
 
-            log.debug("Published item added: worldId={}, item={}, chunk=({},{})",
-                    worldId, itemBlockRef.getName(), cx, cz);
+            log.debug(
+                    "Published item added: worldId={}, item={}, chunk=({},{})",
+                    worldId,
+                    itemBlockRef.getName(),
+                    cx,
+                    cz);
         } catch (Exception e) {
-            log.error("Failed to publish item added: worldId={}, item={}",
-                    worldId, itemBlockRef.getName(), e);
+            log.error("Failed to publish item added: worldId={}, item={}", worldId, itemBlockRef.getName(), e);
         }
     }
 
@@ -78,7 +81,8 @@ public class ItemBlockUpdatePublisher {
      */
     public void publishItemRemoved(WorldId worldId, String itemName, int x, int y, int z) {
         try {
-            WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+            WWorld world =
+                    worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
             if (world == null) {
                 log.warn("World not found for item broadcast: {}", worldId);
                 return;
@@ -103,11 +107,9 @@ public class ItemBlockUpdatePublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId.getId(), CHANNEL, json);
 
-            log.debug("Published item removed: worldId={}, item={}, chunk=({},{})",
-                    worldId, itemName, cx, cz);
+            log.debug("Published item removed: worldId={}, item={}, chunk=({},{})", worldId, itemName, cx, cz);
         } catch (Exception e) {
-            log.error("Failed to publish item removed: worldId={}, item={}",
-                    worldId, itemName, e);
+            log.error("Failed to publish item removed: worldId={}, item={}", worldId, itemName, e);
         }
     }
 }

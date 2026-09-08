@@ -46,7 +46,7 @@ public record KeyId(String owner, String intent, String id) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(intent, "intent");
-        return new KeyId(owner.trim(), intent.trim() ,id.trim());
+        return new KeyId(owner.trim(), intent.trim(), id.trim());
     }
 
     public String toString() {
@@ -63,5 +63,4 @@ public record KeyId(String owner, String intent, String id) {
     public static KeyId newOf(KeyIntent intent) {
         return of(intent, java.util.UUID.randomUUID().toString());
     }
-
 }

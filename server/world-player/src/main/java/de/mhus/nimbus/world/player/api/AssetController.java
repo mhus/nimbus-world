@@ -2,14 +2,14 @@ package de.mhus.nimbus.world.player.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
-import de.mhus.nimbus.world.shared.world.SAssetService;
-import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
-import jakarta.servlet.http.HttpServletRequest;
+import de.mhus.nimbus.world.shared.world.SAssetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -17,10 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for Assets (read-only).
@@ -48,13 +44,11 @@ public class AssetController {
     @GetMapping("/{*assetPath}")
     @Operation(summary = "Get asset binary", description = "Returns asset binary content with proper content type")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Asset binary"),
-            @ApiResponse(responseCode = "404", description = "Asset not found")
+        @ApiResponse(responseCode = "200", description = "Asset binary"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     public ResponseEntity<?> getAssetByPath(
-            @PathVariable String worldId,
-            @PathVariable String assetPath,
-            HttpServletRequest request) {
+            @PathVariable String worldId, @PathVariable String assetPath, HttpServletRequest request) {
 
         // Remove leading slash if present (Spring path variable includes it)
         if (assetPath != null && assetPath.startsWith("/")) {
@@ -71,15 +65,13 @@ public class AssetController {
             return ResponseEntity.badRequest().build();
         }
         WorldId sessionWorldId = accessUtil.getWorldId(request).orElse(null);
-        if (sessionWorldId == null
-                || !sessionWorldId.toBaseWorldId().equals(pathWorldId.toBaseWorldId())) {
+        if (sessionWorldId == null || !sessionWorldId.toBaseWorldId().equals(pathWorldId.toBaseWorldId())) {
             log.debug("Denied cross-world asset access: session={} path={}", sessionWorldId, pathWorldId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         // Find asset in database
-        SAsset asset = assetService.findByPath(pathWorldId, finalAssetPath)
-                .orElse(null);
+        SAsset asset = assetService.findByPath(pathWorldId, finalAssetPath).orElse(null);
 
         if (asset == null) {
             log.debug("Asset not found: {} {}", worldId, finalAssetPath);
@@ -109,22 +101,26 @@ public class AssetController {
         if (asset.getSize() > 0) {
             headers.setContentLength(asset.getSize());
         }
-        //XXX
+        // XXX
         headers.setCacheControl("public, max-age=86400"); // 24 hours cache
 
         // Set filename for download (use asset name from DB)
         String filename = asset.getName() != null ? asset.getName() : "asset";
         headers.setContentDispositionFormData("inline", filename);
 
-        log.trace("Streaming asset: worldId={}, path={}, size={}, type={}, filename={}",
-                 worldId, finalAssetPath, asset.getSize(), contentType, filename);
+        log.trace(
+                "Streaming asset: worldId={}, path={}, size={}, type={}, filename={}",
+                worldId,
+                finalAssetPath,
+                asset.getSize(),
+                contentType,
+                filename);
 
         // Return InputStreamResource for direct streaming without memory loading
-        org.springframework.core.io.InputStreamResource resource = new org.springframework.core.io.InputStreamResource(contentStream);
+        org.springframework.core.io.InputStreamResource resource =
+                new org.springframework.core.io.InputStreamResource(contentStream);
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
+        return ResponseEntity.ok().headers(headers).body(resource);
     }
 
     /**
@@ -155,5 +151,4 @@ public class AssetController {
 
         return MediaType.APPLICATION_OCTET_STREAM_VALUE;
     }
-
 }

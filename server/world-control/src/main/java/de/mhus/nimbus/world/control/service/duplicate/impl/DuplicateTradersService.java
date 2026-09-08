@@ -22,7 +22,6 @@ public class DuplicateTradersService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating traders from world {} to {}", sourceWorldId, targetWorldId);
         int duplicatedCount = traderService.duplicateToWorld(sourceWorldId, targetWorldId);
-        log.info("Duplicated {} traders from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} traders from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

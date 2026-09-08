@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Spider pattern manipulator.
@@ -57,8 +56,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting spider pattern manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -100,9 +98,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
 
         // Choose painter based on height delta
         // Negative delta = carve (LOWER), Positive delta = raise (HIGHER)
-        FlatPainter.Painter linePainter = heightDelta < 0 ?
-                                         FlatPainter.LOWER :
-                                         FlatPainter.HIGHER;
+        FlatPainter.Painter linePainter = heightDelta < 0 ? FlatPainter.LOWER : FlatPainter.HIGHER;
 
         // Draw main branches radiating from center
         // Distribute evenly around 360 degrees
@@ -120,22 +116,35 @@ public class SpiderPatternManipulator implements FlatManipulator {
             int targetLevel = centerLevel + heightDelta;
 
             // Draw main branch
-            painter.line(absoluteCenterX, absoluteCenterZ, endX, endZ,
-                        targetLevel, linePainter);
+            painter.line(absoluteCenterX, absoluteCenterZ, endX, endZ, targetLevel, linePainter);
 
             // Recursive sub-branches
             if (depth > 1) {
-                drawSubBranches(painter, flat, endX, endZ, angle,
-                              targetLevel, length / 2, heightDelta / 2,
-                              subBranches, depth - 1, linePainter);
+                drawSubBranches(
+                        painter,
+                        flat,
+                        endX,
+                        endZ,
+                        angle,
+                        targetLevel,
+                        length / 2,
+                        heightDelta / 2,
+                        subBranches,
+                        depth - 1,
+                        linePainter);
             }
         }
 
         // Smooth pattern edges for natural appearance
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
-        log.info("Spider pattern manipulation completed: branches={}, length={}, heightDelta={}, subBranches={}, depth={}",
-                branches, length, heightDelta, subBranches, depth);
+        log.info(
+                "Spider pattern manipulation completed: branches={}, length={}, heightDelta={}, subBranches={}, depth={}",
+                branches,
+                length,
+                heightDelta,
+                subBranches,
+                depth);
     }
 
     /**
@@ -153,11 +162,18 @@ public class SpiderPatternManipulator implements FlatManipulator {
      * @param depth Remaining recursion depth
      * @param linePainter Painter to use (HIGHER or LOWER)
      */
-    private void drawSubBranches(FlatPainter painter, WFlat flat,
-                                int startX, int startZ, double baseAngle,
-                                int startLevel, int length, int heightDelta,
-                                int branchCount, int depth,
-                                FlatPainter.Painter linePainter) {
+    private void drawSubBranches(
+            FlatPainter painter,
+            WFlat flat,
+            int startX,
+            int startZ,
+            double baseAngle,
+            int startLevel,
+            int length,
+            int heightDelta,
+            int branchCount,
+            int depth,
+            FlatPainter.Painter linePainter) {
         // Termination conditions
         if (depth <= 0 || length < 5) {
             return;
@@ -180,10 +196,18 @@ public class SpiderPatternManipulator implements FlatManipulator {
             // Recursive call with reduced parameters
             // 30% chance to skip recursion for more varied appearance
             if (depth > 1 && random.nextDouble() > 0.3) {
-                drawSubBranches(painter, flat, endX, endZ, angle,
-                              targetLevel, length / 2, heightDelta / 2,
-                              Math.max(1, branchCount - 1), depth - 1,
-                              linePainter);
+                drawSubBranches(
+                        painter,
+                        flat,
+                        endX,
+                        endZ,
+                        angle,
+                        targetLevel,
+                        length / 2,
+                        heightDelta / 2,
+                        Math.max(1, branchCount - 1),
+                        depth - 1,
+                        linePainter);
             }
         }
     }
@@ -197,8 +221,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -210,8 +233,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -223,8 +245,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, ignoring",
-                    name, parameters.get(name));
+            log.warn("Invalid integer parameter '{}': {}, ignoring", name, parameters.get(name));
             return null;
         }
     }

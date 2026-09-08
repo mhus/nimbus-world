@@ -4,14 +4,13 @@ import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
 import de.mhus.nimbus.world.shared.world.WProgressService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -21,7 +20,9 @@ public class AddNpcFactEffectHandler implements DialogEffectHandler {
     private final WProgressService progressService;
 
     @Override
-    public String getEffectType() { return "addNpcFact"; }
+    public String getEffectType() {
+        return "addNpcFact";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {

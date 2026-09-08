@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 public class NavigateEffectHandler implements DialogEffectHandler {
 
     @Override
-    public String getEffectType() { return "navigate"; }
+    public String getEffectType() {
+        return "navigate";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {

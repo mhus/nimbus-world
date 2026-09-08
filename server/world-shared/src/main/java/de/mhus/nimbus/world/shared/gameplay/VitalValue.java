@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 /**
  * Represents a single vital value (health, hunger, thirst, stamina, mana, adrenaline).
@@ -120,7 +119,8 @@ public class VitalValue {
     /**
      * Create a standard vital value with defaults.
      */
-    public static VitalValue of(String type, double base, double baseRegenRate, String color, String displayName, int order) {
+    public static VitalValue of(
+            String type, double base, double baseRegenRate, String color, String displayName, int order) {
         return of(type, base, baseRegenRate, color, displayName, order, 0);
     }
 
@@ -128,7 +128,14 @@ public class VitalValue {
      * Create a standard vital value with send threshold.
      * @param sendThreshold Only send to client when percentage drops below this (0.0 = always send)
      */
-    public static VitalValue of(String type, double base, double baseRegenRate, String color, String displayName, int order, double sendThreshold) {
+    public static VitalValue of(
+            String type,
+            double base,
+            double baseRegenRate,
+            String color,
+            String displayName,
+            int order,
+            double sendThreshold) {
         var v = VitalValue.builder()
                 .type(type)
                 .base(base)
@@ -188,7 +195,11 @@ public class VitalValue {
     private static double doubleVal(Object v, double def) {
         if (v instanceof Number n) return n.doubleValue();
         if (v instanceof String s) {
-            try { return Double.parseDouble(s); } catch (NumberFormatException e) { return def; }
+            try {
+                return Double.parseDouble(s);
+            } catch (NumberFormatException e) {
+                return def;
+            }
         }
         return def;
     }

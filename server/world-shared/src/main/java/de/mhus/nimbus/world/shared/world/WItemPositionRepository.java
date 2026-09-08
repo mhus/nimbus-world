@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WItemPosition entities.
@@ -49,8 +48,7 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
      * @param enabled Enabled flag
      * @return List of item positions matching criteria
      */
-    List<WItemPosition> findByWorldIdAndChunkAndEnabled(
-            String worldId, String chunk, boolean enabled);
+    List<WItemPosition> findByWorldIdAndChunkAndEnabled(String worldId, String chunk, boolean enabled);
 
     List<WItemPosition> findByWorldIdAndChunkAndEnabledAndTombstone(
             String worldId, String chunk, boolean enabled, boolean tombstone);

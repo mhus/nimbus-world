@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import de.mhus.nimbus.world.generator.blocks.generator.EditBlockPainter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Builds a sphere of leaf blocks around the cursor position.

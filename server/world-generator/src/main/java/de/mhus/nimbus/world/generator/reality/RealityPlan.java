@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.reality;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Structured, typed representation of a Reality Instruction Document (see
@@ -35,10 +34,12 @@ public class RealityPlan {
     private List<Chapter> outline;
     /** Phase-2 elaborated deep lore (chapters) + any seed lore. */
     private List<LoreEntry> lore;
+
     private StyleGuide style;
     private List<BlockPaletteRef> blockPalette;
     /** Item classes / material tiers (e.g. leather, iron, steel...) — the progression ladder. */
     private List<ItemClass> itemClasses;
+
     private List<ItemSpec> items;
     private List<CreatureSpec> creatures;
     private List<NpcSpec> npcs;
@@ -96,6 +97,7 @@ public class RealityPlan {
     public static class Direction {
         /** One or two sentences: what is fundamentally at stake / where this is heading. */
         private String premise;
+
         private String tone;
     }
 
@@ -142,6 +144,7 @@ public class RealityPlan {
     public static class Chapter {
         /** Canonical key, e.g. "deep_history" (used as document name). */
         private String key;
+
         private String title;
         /** history | geography | faction | power | legend | other */
         private String kind;
@@ -158,6 +161,7 @@ public class RealityPlan {
         private String title;
         /** history | geography | faction | legend | quest | other */
         private String kind;
+
         private String content;
     }
 
@@ -195,6 +199,7 @@ public class RealityPlan {
         private Integer rank;
         /** Maps to the {@code ItemTier} enum (e.g. "IRON"); drives item tier. */
         private String tier;
+
         private String description;
         /** Categories this class applies to, e.g. ["weapon","armor","tool"]. */
         private List<String> appliesTo;
@@ -221,6 +226,7 @@ public class RealityPlan {
         private String name;
         /** material | tool | weapon | armor | food | potion | decoration | placeable | seed | super | ... */
         private String type;
+
         private String tier;
         private String rarity;
         private String description;
@@ -256,6 +262,7 @@ public class RealityPlan {
         private String name;
         /** animal | avatar | ... */
         private String type;
+
         private String modelPath;
         private String behavior;
         private Map<String, String> modifiers;
@@ -283,6 +290,7 @@ public class RealityPlan {
         private String kind;
         /** natural-language or SpEL condition */
         private String when;
+
         private List<String> effects;
         private String description;
     }

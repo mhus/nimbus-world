@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Cone Outline Block Manipulator - creates a hollow cone (shell).
@@ -57,9 +57,9 @@ public class ConeOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow cone (shell). " +
-                "Parameters: position {x,y,z}, radius, height, blockType (optional). " +
-                "Example: {\"cone-outline\": {\"transform\": \"position\", \"radius\": 5, \"height\": 10}}";
+        return "Creates a hollow cone (shell). "
+                + "Parameters: position {x,y,z}, radius, height, blockType (optional). "
+                + "Example: {\"cone-outline\": {\"transform\": \"position\", \"radius\": 5, \"height\": 10}}";
     }
 
     @Override
@@ -112,8 +112,14 @@ public class ConeOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate cone outline
-        log.info("Generating cone outline: pos=({},{},{}), radius={}, height={}, blockType={}",
-                x, y, z, radius, height, blockType);
+        log.info(
+                "Generating cone outline: pos=({},{},{}), radius={}, height={}, blockType={}",
+                x,
+                y,
+                z,
+                radius,
+                height,
+                blockType);
 
         painter.coneOutline(x, y, z, radius, height);
 
@@ -121,7 +127,8 @@ public class ConeOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated cone outline: %d blocks (radius %d, height %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated cone outline: %d blocks (radius %d, height %d) at (%d,%d,%d)",
                 blockCount, radius, height, x, y, z);
 
         log.info(message);

@@ -27,7 +27,6 @@ public class DuplicateAnythingsService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating anythings from world {} to {}", sourceWorldId, targetWorldId);
         int duplicated = anythingService.duplicateToWorld(sourceWorldId, targetWorldId);
-        log.info("Duplicated {} anythings from world {} to {}",
-                duplicated, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} anythings from world {} to {}", duplicated, sourceWorldId, targetWorldId);
     }
 }

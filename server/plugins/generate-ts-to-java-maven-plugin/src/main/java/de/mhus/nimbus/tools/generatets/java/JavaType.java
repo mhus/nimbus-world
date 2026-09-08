@@ -3,7 +3,6 @@ package de.mhus.nimbus.tools.generatets.java;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.tools.generatets.ts.TsDeclarations;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +34,10 @@ public class JavaType {
     // Resolved links (filled in second pass)
     @JsonIgnore
     private JavaType extendsType;
+
     @JsonIgnore
     private List<JavaType> implementsTypes = new ArrayList<>();
+
     @JsonIgnore
     private JavaType aliasTargetType;
 
@@ -48,47 +49,115 @@ public class JavaType {
         this.sourcePath = sourcePath;
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public JavaKind getKind() { return kind; }
-    public void setKind(JavaKind kind) { this.kind = kind; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getSourcePath() { return sourcePath; }
-    public void setSourcePath(String sourcePath) { this.sourcePath = sourcePath; }
+    public JavaKind getKind() {
+        return kind;
+    }
 
-    public String getPackageName() { return packageName; }
-    public void setPackageName(String packageName) { this.packageName = packageName; }
+    public void setKind(JavaKind kind) {
+        this.kind = kind;
+    }
 
-    public String getOriginalTsKind() { return originalTsKind; }
-    public void setOriginalTsKind(String originalTsKind) { this.originalTsKind = originalTsKind; }
+    public String getSourcePath() {
+        return sourcePath;
+    }
 
-    public List<JavaProperty> getProperties() { return properties; }
+    public void setSourcePath(String sourcePath) {
+        this.sourcePath = sourcePath;
+    }
 
-    public List<String> getEnumValues() { return enumValues; }
-    public void setEnumValues(List<String> enumValues) { this.enumValues = enumValues; }
+    public String getPackageName() {
+        return packageName;
+    }
 
-    public List<TsDeclarations.TsEnumValue> getEnumValuesWithAssignments() { return enumValuesWithAssignments; }
-    public void setEnumValuesWithAssignments(List<TsDeclarations.TsEnumValue> enumValuesWithAssignments) { this.enumValuesWithAssignments = enumValuesWithAssignments; }
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
+    }
 
-    public String getExtendsName() { return extendsName; }
-    public void setExtendsName(String extendsName) { this.extendsName = extendsName; }
+    public String getOriginalTsKind() {
+        return originalTsKind;
+    }
 
-    public List<String> getImplementsNames() { return implementsNames; }
+    public void setOriginalTsKind(String originalTsKind) {
+        this.originalTsKind = originalTsKind;
+    }
 
-    public String getAliasTargetName() { return aliasTargetName; }
-    public void setAliasTargetName(String aliasTargetName) { this.aliasTargetName = aliasTargetName; }
+    public List<JavaProperty> getProperties() {
+        return properties;
+    }
 
-    public List<String> getOriginalTsExtends() { return originalTsExtends; }
-    public void setOriginalTsExtends(List<String> originalTsExtends) { this.originalTsExtends = originalTsExtends; }
+    public List<String> getEnumValues() {
+        return enumValues;
+    }
 
-    public List<String> getUnresolvedTsExtends() { return unresolvedTsExtends; }
+    public void setEnumValues(List<String> enumValues) {
+        this.enumValues = enumValues;
+    }
 
-    public JavaType getExtendsType() { return extendsType; }
-    public void setExtendsType(JavaType extendsType) { this.extendsType = extendsType; }
+    public List<TsDeclarations.TsEnumValue> getEnumValuesWithAssignments() {
+        return enumValuesWithAssignments;
+    }
 
-    public List<JavaType> getImplementsTypes() { return implementsTypes; }
+    public void setEnumValuesWithAssignments(List<TsDeclarations.TsEnumValue> enumValuesWithAssignments) {
+        this.enumValuesWithAssignments = enumValuesWithAssignments;
+    }
 
-    public JavaType getAliasTargetType() { return aliasTargetType; }
-    public void setAliasTargetType(JavaType aliasTargetType) { this.aliasTargetType = aliasTargetType; }
+    public String getExtendsName() {
+        return extendsName;
+    }
+
+    public void setExtendsName(String extendsName) {
+        this.extendsName = extendsName;
+    }
+
+    public List<String> getImplementsNames() {
+        return implementsNames;
+    }
+
+    public String getAliasTargetName() {
+        return aliasTargetName;
+    }
+
+    public void setAliasTargetName(String aliasTargetName) {
+        this.aliasTargetName = aliasTargetName;
+    }
+
+    public List<String> getOriginalTsExtends() {
+        return originalTsExtends;
+    }
+
+    public void setOriginalTsExtends(List<String> originalTsExtends) {
+        this.originalTsExtends = originalTsExtends;
+    }
+
+    public List<String> getUnresolvedTsExtends() {
+        return unresolvedTsExtends;
+    }
+
+    public JavaType getExtendsType() {
+        return extendsType;
+    }
+
+    public void setExtendsType(JavaType extendsType) {
+        this.extendsType = extendsType;
+    }
+
+    public List<JavaType> getImplementsTypes() {
+        return implementsTypes;
+    }
+
+    public JavaType getAliasTargetType() {
+        return aliasTargetType;
+    }
+
+    public void setAliasTargetType(JavaType aliasTargetType) {
+        this.aliasTargetType = aliasTargetType;
+    }
 }

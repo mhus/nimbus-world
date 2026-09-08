@@ -1,14 +1,14 @@
 package de.mhus.nimbus.world.shared.world;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class HexMathUtilTest {
 
@@ -45,10 +45,10 @@ class HexMathUtilTest {
         // (0,1) -> (173, 300)
         // (1,0) -> (346, 0)
         int[][] testCases = {
-                {1, 11, 0, 1},  // cx=1, cz=11 -> world center (48, 368), nearest hex (0,1) at (173, 300)
-                {0, 0, 0, 0},   // cx=0, cz=0 -> world center (16, 16), nearest hex (0,0) at (0, 0)
-                {5, 5, 0, 1},   // cx=5, cz=5 -> world center (176, 176), inside hex (0,1) at (173, 300)
-                {10, 0, 1, 0},  // cx=10, cz=0 -> world center (336, 16), nearest hex (1,0) at (346, 0)
+            {1, 11, 0, 1}, // cx=1, cz=11 -> world center (48, 368), nearest hex (0,1) at (173, 300)
+            {0, 0, 0, 0}, // cx=0, cz=0 -> world center (16, 16), nearest hex (0,0) at (0, 0)
+            {5, 5, 0, 1}, // cx=5, cz=5 -> world center (176, 176), inside hex (0,1) at (173, 300)
+            {10, 0, 1, 0}, // cx=10, cz=0 -> world center (336, 16), nearest hex (1,0) at (346, 0)
         };
 
         for (int[] testCase : testCases) {
@@ -65,8 +65,12 @@ class HexMathUtilTest {
 
             HexVector2 result = HexMathUtil.getDominantHexForChunk(world, cx, cz);
 
-            assertThat(result.getQ()).as("Q coordinate for chunk (" + cx + "," + cz + ")").isEqualTo(expectedQ);
-            assertThat(result.getR()).as("R coordinate for chunk (" + cx + "," + cz + ")").isEqualTo(expectedR);
+            assertThat(result.getQ())
+                    .as("Q coordinate for chunk (" + cx + "," + cz + ")")
+                    .isEqualTo(expectedQ);
+            assertThat(result.getR())
+                    .as("R coordinate for chunk (" + cx + "," + cz + ")")
+                    .isEqualTo(expectedR);
         }
     }
 
@@ -79,19 +83,17 @@ class HexMathUtilTest {
 
         // Chunk corners in world coordinates
         int[][] corners = {
-                {cx * chunkSize, cz * chunkSize},
-                {(cx + 1) * chunkSize - 1, cz * chunkSize},
-                {cx * chunkSize, (cz + 1) * chunkSize - 1},
-                {(cx + 1) * chunkSize - 1, (cz + 1) * chunkSize - 1}
+            {cx * chunkSize, cz * chunkSize},
+            {(cx + 1) * chunkSize - 1, cz * chunkSize},
+            {cx * chunkSize, (cz + 1) * chunkSize - 1},
+            {(cx + 1) * chunkSize - 1, (cz + 1) * chunkSize - 1}
         };
 
         // All corners should map to the same hex using flatToHex
         HexVector2 firstHex = null;
         for (int[] corner : corners) {
             HexVector2 hex = HexMathUtil.flatToHex(
-                    Vector2Int.builder().x(corner[0]).z(corner[1]).build(),
-                    hexGridSize
-            );
+                    Vector2Int.builder().x(corner[0]).z(corner[1]).build(), hexGridSize);
             if (firstHex == null) {
                 firstHex = hex;
             }
@@ -109,9 +111,9 @@ class HexMathUtilTest {
         int gridSize = 400;
 
         HexVector2[] hexagons = {
-                HexVector2.builder().q(0).r(0).build(),
-                HexVector2.builder().q(1).r(0).build(),
-                HexVector2.builder().q(0).r(1).build()
+            HexVector2.builder().q(0).r(0).build(),
+            HexVector2.builder().q(1).r(0).build(),
+            HexVector2.builder().q(0).r(1).build()
         };
 
         int[][] centers = new int[3][];
@@ -166,17 +168,16 @@ class HexMathUtilTest {
         double x = -503.0;
         double z = 680.0;
 
-        HexVector2 expectedHex = HexMathUtil.flatToHex(
-                Vector2Int.builder().x((int) x).z((int) z).build(),
-                gridSize
-        );
+        HexVector2 expectedHex =
+                HexMathUtil.flatToHex(Vector2Int.builder().x((int) x).z((int) z).build(), gridSize);
 
         int[] hexCenter = HexMathUtil.hexToCartesian(expectedHex, gridSize);
         boolean isInHex = HexMathUtil.isPointInHex(x, z, hexCenter[0], hexCenter[1], gridSize);
 
         // flatToHex must return a hex that contains the point
         assertThat(isInHex)
-                .as("Point (" + x + ", " + z + ") should be in hex (" + expectedHex.getQ() + ", " + expectedHex.getR() + ")")
+                .as("Point (" + x + ", " + z + ") should be in hex (" + expectedHex.getQ() + ", " + expectedHex.getR()
+                        + ")")
                 .isTrue();
     }
 
@@ -194,8 +195,10 @@ class HexMathUtilTest {
                     int gridWidth = HexMathUtil.getGridWidth(gridSize);
                     long xLong = (long) q * gridWidth + (r % 2 != 0 ? gridWidth / 2 : 0);
                     long zLong = ((long) r * 3 * gridSize) / 4;
-                    if (xLong > Integer.MAX_VALUE || xLong < Integer.MIN_VALUE ||
-                        zLong > Integer.MAX_VALUE || zLong < Integer.MIN_VALUE) {
+                    if (xLong > Integer.MAX_VALUE
+                            || xLong < Integer.MIN_VALUE
+                            || zLong > Integer.MAX_VALUE
+                            || zLong < Integer.MIN_VALUE) {
                         continue; // Skip overflow cases
                     }
 
@@ -208,11 +211,11 @@ class HexMathUtilTest {
                     HexVector2 back = HexMathUtil.flatToHex(pos, gridSize);
 
                     assertThat(back.getQ())
-                        .as("q roundtrip for q=" + q + ", r=" + r + ", gridSize=" + gridSize)
-                        .isEqualTo(q);
+                            .as("q roundtrip for q=" + q + ", r=" + r + ", gridSize=" + gridSize)
+                            .isEqualTo(q);
                     assertThat(back.getR())
-                        .as("r roundtrip for q=" + q + ", r=" + r + ", gridSize=" + gridSize)
-                        .isEqualTo(r);
+                            .as("r roundtrip for q=" + q + ", r=" + r + ", gridSize=" + gridSize)
+                            .isEqualTo(r);
                 }
             }
         }
@@ -232,11 +235,11 @@ class HexMathUtilTest {
                         .build();
                 HexVector2 back = HexMathUtil.flatToHex(pos, gridSize);
                 assertThat(back.getQ())
-                    .as("q roundtrip for q=" + q + ", r=" + r)
-                    .isEqualTo(q);
+                        .as("q roundtrip for q=" + q + ", r=" + r)
+                        .isEqualTo(q);
                 assertThat(back.getR())
-                    .as("r roundtrip for q=" + q + ", r=" + r)
-                    .isEqualTo(r);
+                        .as("r roundtrip for q=" + q + ", r=" + r)
+                        .isEqualTo(r);
             }
         }
     }

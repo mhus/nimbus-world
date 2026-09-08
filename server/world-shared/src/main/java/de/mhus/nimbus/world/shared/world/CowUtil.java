@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  * Static utility for Copy-on-Write merging of world entities.
@@ -65,5 +64,4 @@ public final class CowUtil {
         }
         return baseEntry;
     }
-
 }

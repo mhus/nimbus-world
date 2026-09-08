@@ -20,7 +20,6 @@ public class StatusRecord implements JournalStringRecord {
     public static final String TERMINATED = "TERMINATED";
     public static final String CREATED = "CREATED";
 
-
     /**
      * Current status of the workflow.
      * Examples: "CREATED", "RUNNING", "COMPLETED", "FAILED", "PAUSED"

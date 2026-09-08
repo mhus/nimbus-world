@@ -1,21 +1,18 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import java.util.Arrays;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
-import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.BuffAction;
-import de.mhus.nimbus.world.player.gameplay.adventure.ReviveAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.DropItemAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseExpAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseSkillAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.RestoreConstitutionAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.ReviveAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.handler.CombatHandler;
 import de.mhus.nimbus.world.player.gameplay.adventure.handler.ConditionHandler;
 import de.mhus.nimbus.world.player.gameplay.adventure.handler.ExplorationHandler;
@@ -24,7 +21,9 @@ import de.mhus.nimbus.world.player.gameplay.adventure.handler.SerializationHandl
 import de.mhus.nimbus.world.player.gameplay.adventure.handler.StatsHandler;
 import de.mhus.nimbus.world.player.gameplay.adventure.handler.VitalsHandler;
 import de.mhus.nimbus.world.player.service.ClientService;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
 import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
@@ -32,19 +31,19 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
-import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.shared.world.WItem;
-import de.mhus.nimbus.world.player.ws.SessionManager;
 import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @Slf4j
@@ -88,16 +87,22 @@ public class AdventureGameplay extends BasicGameplay {
 
     @Getter
     private final VitalsHandler vitalsHandler = new VitalsHandler(this);
+
     @Getter
     private final CombatHandler combatHandler = new CombatHandler(this);
+
     @Getter
     private final InventoryHandler inventoryHandler = new InventoryHandler(this);
+
     @Getter
     private final ConditionHandler conditionHandler = new ConditionHandler(this);
+
     @Getter
     private final StatsHandler statsHandler = new StatsHandler(this);
+
     @Getter
     private final ExplorationHandler explorationHandler = new ExplorationHandler(this);
+
     @Getter
     private final SerializationHandler serializationHandler = new SerializationHandler(this);
 
@@ -131,8 +136,13 @@ public class AdventureGameplay extends BasicGameplay {
 
         if (savedGameplayData != null && !savedGameplayData.isEmpty()) {
             serializationHandler.restoreData(data, savedGameplayData);
-            log.info("Restored adventure data for session {}: health={}, hunger={}, thirst={}, stamina={}",
-                    session.getSessionId(), data.getHealth(), data.getHunger(), data.getThirst(), data.getStamina());
+            log.info(
+                    "Restored adventure data for session {}: health={}, hunger={}, thirst={}, stamina={}",
+                    session.getSessionId(),
+                    data.getHealth(),
+                    data.getHunger(),
+                    data.getThirst(),
+                    data.getStamina());
         } else {
             log.info("No saved adventure data for session {}, using defaults", session.getSessionId());
         }
@@ -204,8 +214,10 @@ public class AdventureGameplay extends BasicGameplay {
      * which checks deathTimestamp > 0 and deletes instead of saving.
      */
     private void handleDeathTimeout(PlayerSession session, AdventureData data) {
-        log.info("Death timeout reached for player {} in session {}, disconnecting",
-                session.getEntityId(), session.getSessionId());
+        log.info(
+                "Death timeout reached for player {} in session {}, disconnecting",
+                session.getEntityId(),
+                session.getSessionId());
 
         // Close WebSocket connection — triggers removeSession → onSessionClosed → delete session
         try {
@@ -299,12 +311,15 @@ public class AdventureGameplay extends BasicGameplay {
                 // Send timed effects to client for UI display
                 if (!effect.isPermanent() && !effect.isRemote() && texture != null) {
                     long durationMs = (long) (effect.getMaxDuration() * 1000);
-                    clientService.sendCommand(session, "effect",
-                            List.of("add", texture, String.valueOf(durationMs)));
+                    clientService.sendCommand(session, "effect", List.of("add", texture, String.valueOf(durationMs)));
                 }
 
-                log.debug("Applied effect {} to {} (source: {}, target: {})",
-                        def, session.getEntityId(), source, targetEntityId != null ? targetEntityId : "self");
+                log.debug(
+                        "Applied effect {} to {} (source: {}, target: {})",
+                        def,
+                        session.getEntityId(),
+                        source,
+                        targetEntityId != null ? targetEntityId : "self");
             } catch (Exception e) {
                 log.warn("Failed to parse effect definition '{}': {}", def, e.getMessage());
             }
@@ -321,7 +336,8 @@ public class AdventureGameplay extends BasicGameplay {
 
         switch (action) {
             case "movementState" -> {
-                String state = messageData.has("state") ? messageData.get("state").asText() : "WALK";
+                String state =
+                        messageData.has("state") ? messageData.get("state").asText() : "WALK";
                 data.setMovementState(state);
                 log.debug("Player {} movement state: {}", session.getEntityId(), state);
             }
@@ -337,7 +353,16 @@ public class AdventureGameplay extends BasicGameplay {
     // --- Item interaction ---
 
     @Override
-    public void onItemInteraction(PlayerSession session, int x, int y, int z, ItemBlockRef itemRef, String groupId, String userAction, String shortcutKey, JsonNode params) {
+    public void onItemInteraction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            ItemBlockRef itemRef,
+            String groupId,
+            String userAction,
+            String shortcutKey,
+            JsonNode params) {
         if (itemRef == null || itemRef.getName() == null) {
             log.warn("Item interaction without itemRef at ({},{},{})", x, y, z);
             return;
@@ -366,7 +391,9 @@ public class AdventureGameplay extends BasicGameplay {
             soundValue = wItem.getServer().get("sound_collect");
         }
         String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_ITEM_COLLECT);
-        clientService.sendCommand(session, "playSoundAtPosition",
+        clientService.sendCommand(
+                session,
+                "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
         // Notify player
@@ -443,8 +470,7 @@ public class AdventureGameplay extends BasicGameplay {
 
         // Send vitals update and notification to client
         vitalsHandler.sendVitalsUpdate(session, data);
-        clientService.sendSystemNotification(session, "Revived",
-                "You have been revived by " + msg.getSourceEntityId());
+        clientService.sendSystemNotification(session, "Revived", "You have been revived by " + msg.getSourceEntityId());
 
         // Tell client to exit dead mode
         clientService.sendCommand(session, "revived", List.of());
@@ -460,8 +486,8 @@ public class AdventureGameplay extends BasicGameplay {
     /**
      * Apply constitution wear after attack or defense.
      */
-    public void applyConstitutionWear(PlayerSession session, AdventureData data,
-                                       String category, double itemWear, Skill careSkill) {
+    public void applyConstitutionWear(
+            PlayerSession session, AdventureData data, String category, double itemWear, Skill careSkill) {
         combatHandler.applyConstitutionWear(session, data, category, itemWear, careSkill);
     }
 
@@ -500,8 +526,10 @@ public class AdventureGameplay extends BasicGameplay {
         HexVector2 hexPos = HexMathUtil.flatToHex(TypeUtil.vector2int(worldX, worldZ), hexGridSize);
 
         // Check cache: only query DB if hex position changed
-        if (session.getCachedHexQ() != null && session.getCachedHexR() != null
-                && session.getCachedHexQ() == hexPos.getQ() && session.getCachedHexR() == hexPos.getR()) {
+        if (session.getCachedHexQ() != null
+                && session.getCachedHexR() != null
+                && session.getCachedHexQ() == hexPos.getQ()
+                && session.getCachedHexR() == hexPos.getR()) {
             return session.getCachedGameMode() != null ? session.getCachedGameMode() : "";
         }
 
@@ -510,7 +538,8 @@ public class AdventureGameplay extends BasicGameplay {
         session.setCachedHexR(hexPos.getR());
 
         String worldId = session.getWorldId().getId();
-        String gameMode = hexGridService.findByWorldIdAndPosition(worldId, hexPos, session.getEpoch())
+        String gameMode = hexGridService
+                .findByWorldIdAndPosition(worldId, hexPos, session.getEpoch())
                 .map(WHexGrid::getParameters)
                 .map(params -> params.get("gameMode"))
                 .orElse("");

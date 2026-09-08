@@ -4,11 +4,10 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.world.control.service.EditService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -38,16 +37,9 @@ public class InsertBlockCommand implements Command {
             int z = Integer.parseInt(args.get(2));
             String blockTypeId = args.get(3);
 
-            Block block = Block.builder()
-                    .blockTypeId(blockTypeId)
-                    .build();
+            Block block = Block.builder().blockTypeId(blockTypeId).build();
 
-            editService.setBlock(
-                    worldId,
-                    sessionId,
-                    block,
-                    x, y, z
-            );
+            editService.setBlock(worldId, sessionId, block, x, y, z);
 
         } catch (Exception e) {
             log.error("InsertBlock failed", e);

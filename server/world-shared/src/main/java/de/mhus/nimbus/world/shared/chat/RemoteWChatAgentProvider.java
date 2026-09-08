@@ -1,13 +1,9 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.client.WorldClientService.CommandResponse;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -15,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Abstract base class for remote chat agent providers.
@@ -31,8 +30,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     private Instant lastRefresh;
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);
 
-    protected RemoteWChatAgentProvider(WorldClientService worldClientService,
-                                      ObjectMapper objectMapper) {
+    protected RemoteWChatAgentProvider(WorldClientService worldClientService, ObjectMapper objectMapper) {
         this.worldClientService = worldClientService;
         this.objectMapper = objectMapper;
     }
@@ -54,10 +52,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
      * @return CompletableFuture with CommandResponse
      */
     protected abstract CompletableFuture<CommandResponse> sendCommand(
-            String worldId,
-            String commandName,
-            List<String> args,
-            CommandContext context);
+            String worldId, String commandName, List<String> args, CommandContext context);
 
     @Override
     public abstract String getProviderName();
@@ -81,9 +76,9 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     }
 
     private synchronized void refreshCacheIfNeeded() {
-        if (cachedAgents == null ||
-            lastRefresh == null ||
-            Duration.between(lastRefresh, Instant.now()).compareTo(CACHE_TTL) > 0) {
+        if (cachedAgents == null
+                || lastRefresh == null
+                || Duration.between(lastRefresh, Instant.now()).compareTo(CACHE_TTL) > 0) {
 
             refreshCache();
         }
@@ -106,20 +101,16 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                     .worldId("00000000-0000-0000-0000-000000000000")
                     .build();
 
-            CompletableFuture<CommandResponse> future = sendCommand(
-                    context.getWorldId(),
-                    "chat-connector",
-                    List.of("agent-list"),
-                    context
-            );
+            CompletableFuture<CommandResponse> future =
+                    sendCommand(context.getWorldId(), "chat-connector", List.of("agent-list"), context);
 
             CommandResponse result = future.get(); // Blocking get
 
-            if (result.rc() == 0 && result.streamMessages() != null && !result.streamMessages().isEmpty()) {
+            if (result.rc() == 0
+                    && result.streamMessages() != null
+                    && !result.streamMessages().isEmpty()) {
                 List<Map<String, String>> agents = objectMapper.readValue(
-                        result.streamMessages().get(0),
-                        new TypeReference<List<Map<String, String>>>() {}
-                );
+                        result.streamMessages().get(0), new TypeReference<List<Map<String, String>>>() {});
 
                 for (Map<String, String> agentInfo : agents) {
                     String name = agentInfo.get("name");
@@ -128,15 +119,13 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                     WChatAgentScope scope = parseScope(scopeStr);
                     newCache.put(name, new RemoteWChatAgentWrapper(name, title, scope, this));
                 }
-                log.debug("Loaded {} agents from {} (provider: {})",
-                        newCache.size(), serverUrl, getProviderName());
+                log.debug("Loaded {} agents from {} (provider: {})", newCache.size(), serverUrl, getProviderName());
             } else {
-                log.error("Failed to fetch agents from {}: rc={}, message={}",
-                        serverUrl, result.rc(), result.message());
+                log.error(
+                        "Failed to fetch agents from {}: rc={}, message={}", serverUrl, result.rc(), result.message());
             }
         } catch (Exception e) {
-            log.error("Failed to fetch agents from {} (provider: {})",
-                    serverUrl, getProviderName(), e);
+            log.error("Failed to fetch agents from {} (provider: {})", serverUrl, getProviderName(), e);
         }
 
         cachedAgents = newCache;
@@ -159,8 +148,8 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
      * Execute remote chat via command.
      * Package-private for RemoteWChatAgentWrapper.
      */
-    List<WChatMessage> executeRemoteChat(String agentName, WorldId worldId,
-                                        String playerId, String chatId, String message, String sessionId) {
+    List<WChatMessage> executeRemoteChat(
+            String agentName, WorldId worldId, String playerId, String chatId, String message, String sessionId) {
         try {
             // Build context with metadata
             Map<String, Object> metadata = new HashMap<>();
@@ -177,26 +166,21 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                     .metadata(metadata)
                     .build();
 
-            CompletableFuture<CommandResponse> future = sendCommand(
-                    worldId.toString(),
-                    "chat-connector",
-                    List.of("chat", agentName, message),
-                    context
-            );
+            CompletableFuture<CommandResponse> future =
+                    sendCommand(worldId.toString(), "chat-connector", List.of("chat", agentName, message), context);
 
             CommandResponse result = future.get(); // Blocking get
 
-            if (result.rc() == 0 && result.streamMessages() != null && !result.streamMessages().isEmpty()) {
+            if (result.rc() == 0
+                    && result.streamMessages() != null
+                    && !result.streamMessages().isEmpty()) {
                 return objectMapper.readValue(
-                        result.streamMessages().get(0),
-                        new TypeReference<List<WChatMessage>>() {}
-                );
+                        result.streamMessages().get(0), new TypeReference<List<WChatMessage>>() {});
             } else {
                 throw new RuntimeException("Remote chat failed: " + result.message());
             }
         } catch (Exception e) {
-            log.error("Failed to execute remote chat with agent {} (provider: {})",
-                    agentName, getProviderName(), e);
+            log.error("Failed to execute remote chat with agent {} (provider: {})", agentName, getProviderName(), e);
             throw new RuntimeException("Remote agent communication failed", e);
         }
     }
@@ -205,8 +189,13 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
      * Execute remote command via command.
      * Package-private for RemoteWChatAgentWrapper.
      */
-    List<WChatMessage> executeRemoteCommand(String agentName, WorldId worldId, String playerId,
-                                           String chatId, String command, Map<String, Object> params) {
+    List<WChatMessage> executeRemoteCommand(
+            String agentName,
+            WorldId worldId,
+            String playerId,
+            String chatId,
+            String command,
+            Map<String, Object> params) {
         try {
             // Build context with metadata
             Map<String, Object> metadata = new HashMap<>();
@@ -227,22 +216,25 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                     worldId.toString(),
                     "chat-connector",
                     List.of("execute-command", agentName, command, paramsJson),
-                    context
-            );
+                    context);
 
             CommandResponse result = future.get(); // Blocking get
 
-            if (result.rc() == 0 && result.streamMessages() != null && !result.streamMessages().isEmpty()) {
+            if (result.rc() == 0
+                    && result.streamMessages() != null
+                    && !result.streamMessages().isEmpty()) {
                 return objectMapper.readValue(
-                        result.streamMessages().get(0),
-                        new TypeReference<List<WChatMessage>>() {}
-                );
+                        result.streamMessages().get(0), new TypeReference<List<WChatMessage>>() {});
             } else {
                 throw new RuntimeException("Remote command execution failed: " + result.message());
             }
         } catch (Exception e) {
-            log.error("Failed to execute remote command {} on agent {} (provider: {})",
-                    command, agentName, getProviderName(), e);
+            log.error(
+                    "Failed to execute remote command {} on agent {} (provider: {})",
+                    command,
+                    agentName,
+                    getProviderName(),
+                    e);
             throw new RuntimeException("Remote agent command execution failed", e);
         }
     }
@@ -254,9 +246,8 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     void routeEnqueue(WChatSessionMessage msg) {
         try {
             String json = objectMapper.writeValueAsString(msg);
-            CommandContext ctx = CommandContext.builder()
-                    .worldId(msg.getWorldId())
-                    .build();
+            CommandContext ctx =
+                    CommandContext.builder().worldId(msg.getWorldId()).build();
             sendCommand(msg.getWorldId(), "chat-connector", List.of("enqueue", json), ctx);
             log.debug("Routed enqueue to remote pod (provider: {}): chatId={}", getProviderName(), msg.getChatId());
         } catch (Exception e) {
@@ -273,7 +264,8 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
         private final WChatAgentScope scope;
         private final RemoteWChatAgentProvider provider;
 
-        public RemoteWChatAgentWrapper(String name, String title, WChatAgentScope scope, RemoteWChatAgentProvider provider) {
+        public RemoteWChatAgentWrapper(
+                String name, String title, WChatAgentScope scope, RemoteWChatAgentProvider provider) {
             this.name = name;
             this.title = title;
             this.scope = scope;
@@ -306,18 +298,25 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
         }
 
         @Override
-        public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+        public List<WChatMessage> chat(
+                WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, null);
         }
 
         @Override
-        public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
+        public List<WChatMessage> chatWithSession(
+                WorldId worldId,
+                String chatId,
+                String playerId,
+                String message,
+                String sessionId,
+                WChatContext context) {
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, sessionId);
         }
 
         @Override
-        public List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
-                                                String command, Map<String, Object> params) {
+        public List<WChatMessage> executeCommand(
+                WorldId worldId, String chatId, String playerId, String command, Map<String, Object> params) {
             return provider.executeRemoteCommand(name, worldId, playerId, chatId, command, params);
         }
     }

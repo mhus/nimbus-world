@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.world.ai.model.AiChat;
-import de.mhus.nimbus.world.ai.model.AiChatOptions;
-import de.mhus.nimbus.world.ai.model.AiModelService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiChatOptions;
+import de.mhus.nimbus.world.ai.model.AiModelService;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Offline test for the phase-1 seed generator (AI mocked). */
 class RealitySeedGeneratorTest {

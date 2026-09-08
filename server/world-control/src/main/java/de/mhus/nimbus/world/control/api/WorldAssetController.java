@@ -4,16 +4,22 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.SAssetService;
-import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.FolderInfo;
+import de.mhus.nimbus.world.shared.world.SAsset;
+import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.WorldCollection;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -22,13 +28,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for Asset list operations at /control/worlds/{worldId}/assets
@@ -47,14 +46,7 @@ public class WorldAssetController extends BaseEditorController {
 
     // DTOs
     public record AssetListItemDto(
-            String path,
-            long size,
-            String mimeType,
-            Instant lastModified,
-            String extension,
-            String category
-    ) {
-    }
+            String path, long size, String mimeType, Instant lastModified, String extension, String category) {}
 
     /**
      * List/search assets for a world with pagination and extension filter.
@@ -63,29 +55,29 @@ public class WorldAssetController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List assets for world")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "World not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "World not found")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Search query") @RequestParam(required = false) String query,
-            @Parameter(description = "Extension filter (comma-separated, e.g., 'png,jpg')") @RequestParam(required = false) String ext,
+            @Parameter(description = "Extension filter (comma-separated, e.g., 'png,jpg')")
+                    @RequestParam(required = false)
+                    String ext,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
         log.debug("LIST assets: worldId={}, query={}, ext={}, offset={}, limit={}", worldId, query, ext, offset, limit);
 
         // Get assets using database-level filtering and pagination
-        WorldId wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("invalid worldId")
-        );
+        WorldId wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("invalid worldId"));
         var pos = query == null ? -1 : query.indexOf(':');
         if (pos > 0) {
             String group = query.substring(0, pos).trim();
             WorldCollection wcol = WorldCollection.of(wid, group + ":dummy");
             wid = wcol != null ? wcol.worldId() : wid;
-            query = query.substring(pos+1).trim();
+            query = query.substring(pos + 1).trim();
         }
 
         var validation = validatePagination(offset, limit);
@@ -95,9 +87,8 @@ public class WorldAssetController extends BaseEditorController {
         SAssetService.AssetSearchResult searchResult = assetService.searchAssets(wid, query, ext, offset, limit);
 
         // Convert to DTOs
-        List<AssetListItemDto> dtos = searchResult.assets().stream()
-                .map(this::toListDto)
-                .collect(Collectors.toList());
+        List<AssetListItemDto> dtos =
+                searchResult.assets().stream().map(this::toListDto).collect(Collectors.toList());
 
         int totalCount = searchResult.totalCount();
         log.debug("Returning {} assets (total: {})", dtos.size(), totalCount);
@@ -107,8 +98,7 @@ public class WorldAssetController extends BaseEditorController {
                 "assets", dtos,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -119,8 +109,8 @@ public class WorldAssetController extends BaseEditorController {
     @GetMapping("/{*path}")
     @Operation(summary = "Get asset file content")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Asset found"),
-            @ApiResponse(responseCode = "404", description = "Asset not found")
+        @ApiResponse(responseCode = "200", description = "Asset found"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     public ResponseEntity<?> getAssetFile(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -133,9 +123,7 @@ public class WorldAssetController extends BaseEditorController {
 
         log.debug("GET asset file: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -168,7 +156,8 @@ public class WorldAssetController extends BaseEditorController {
         log.debug("Streaming asset: path={}, size={}, mimeType={}", path, asset.getSize(), mimeType);
 
         // Return InputStreamResource for streaming
-        org.springframework.core.io.InputStreamResource resource = new org.springframework.core.io.InputStreamResource(contentStream);
+        org.springframework.core.io.InputStreamResource resource =
+                new org.springframework.core.io.InputStreamResource(contentStream);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeType))
@@ -184,9 +173,9 @@ public class WorldAssetController extends BaseEditorController {
     @PostMapping("/{*path}")
     @Operation(summary = "Create new asset")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Asset created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Asset already exists")
+        @ApiResponse(responseCode = "201", description = "Asset created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Asset already exists")
     })
     public ResponseEntity<?> createAsset(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -200,9 +189,7 @@ public class WorldAssetController extends BaseEditorController {
 
         log.debug("CREATE asset: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -236,9 +223,9 @@ public class WorldAssetController extends BaseEditorController {
     @PutMapping("/{*path}")
     @Operation(summary = "Update asset content")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Asset updated"),
-            @ApiResponse(responseCode = "201", description = "Asset created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+        @ApiResponse(responseCode = "200", description = "Asset updated"),
+        @ApiResponse(responseCode = "201", description = "Asset created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> updateAsset(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -252,9 +239,7 @@ public class WorldAssetController extends BaseEditorController {
 
         log.debug("UPDATE asset content: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -296,9 +281,9 @@ public class WorldAssetController extends BaseEditorController {
     @DeleteMapping("/{*path}")
     @Operation(summary = "Delete asset")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Asset deleted"),
-            @ApiResponse(responseCode = "404", description = "Asset not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+        @ApiResponse(responseCode = "204", description = "Asset deleted"),
+        @ApiResponse(responseCode = "404", description = "Asset not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> deleteAsset(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -311,9 +296,7 @@ public class WorldAssetController extends BaseEditorController {
 
         log.debug("DELETE asset: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -329,29 +312,26 @@ public class WorldAssetController extends BaseEditorController {
         return ResponseEntity.noContent().build();
     }
 
-
     /**
      * Duplicate Asset with a new path (same world).
      * PATCH /control/worlds/{worldId}/assets/duplicate
      * Body: { "sourcePath": "...", "newPath": "..." }
      */
     @PatchMapping("/duplicate")
-    @Operation(summary = "Asset duplizieren",
-            description = "Erstellt eine Kopie eines Assets mit einem neuen Pfad")
+    @Operation(summary = "Asset duplizieren", description = "Erstellt eine Kopie eines Assets mit einem neuen Pfad")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Asset erfolgreich dupliziert"),
-            @ApiResponse(responseCode = "400", description = "Ungültige Parameter"),
-            @ApiResponse(responseCode = "404", description = "Quell-Asset nicht gefunden"),
-            @ApiResponse(responseCode = "409", description = "Ziel-Asset existiert bereits")
+        @ApiResponse(responseCode = "201", description = "Asset erfolgreich dupliziert"),
+        @ApiResponse(responseCode = "400", description = "Ungültige Parameter"),
+        @ApiResponse(responseCode = "404", description = "Quell-Asset nicht gefunden"),
+        @ApiResponse(responseCode = "409", description = "Ziel-Asset existiert bereits")
     })
     public ResponseEntity<?> duplicate(
-                                       @Parameter(description = "World identifier") @PathVariable String worldId,
-                                       @RequestBody Map<String, String> body) {
+            @Parameter(description = "World identifier") @PathVariable String worldId,
+            @RequestBody Map<String, String> body) {
         String sourcePath = normalizePath(body.get("sourcePath"));
         String newPath = normalizePath(body.get("newPath"));
 
-        log.debug("DUPLICATE asset: worldId={}, sourcePath={}, newPath={}",
-                worldId, sourcePath, newPath);
+        log.debug("DUPLICATE asset: worldId={}, sourcePath={}, newPath={}", worldId, sourcePath, newPath);
 
         if (Strings.isBlank(sourcePath)) return bad("sourcePath required");
         if (Strings.isBlank(newPath)) return bad("newPath required");
@@ -378,13 +358,10 @@ public class WorldAssetController extends BaseEditorController {
             // Duplicate the asset
             SAsset duplicate = assetService.duplicateAsset(source, newPath, "editor");
 
-            log.info("Duplicated asset: sourcePath={}, newPath={}, size={}",
-                    sourcePath, newPath, duplicate.getSize());
+            log.info("Duplicated asset: sourcePath={}, newPath={}, size={}", sourcePath, newPath, duplicate.getSize());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "path", duplicate.getPath(),
-                    "message", "Asset duplicated successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("path", duplicate.getPath(), "message", "Asset duplicated successfully"));
         } catch (Exception e) {
             log.error("Failed to duplicate asset", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -398,13 +375,15 @@ public class WorldAssetController extends BaseEditorController {
      * Body: { "sourceWorldId": "...", "sourcePath": "...", "newPath": "..." }
      */
     @PostMapping("/copy-from")
-    @Operation(summary = "Asset zwischen Welten kopieren",
-            description = "Kopiert ein Asset von einer Quell-Welt in diese Ziel-Welt. Erhält alle Metadaten (publicData).")
+    @Operation(
+            summary = "Asset zwischen Welten kopieren",
+            description =
+                    "Kopiert ein Asset von einer Quell-Welt in diese Ziel-Welt. Erhält alle Metadaten (publicData).")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Asset erfolgreich kopiert"),
-            @ApiResponse(responseCode = "400", description = "Ungültige Parameter"),
-            @ApiResponse(responseCode = "404", description = "Quell-Asset nicht gefunden"),
-            @ApiResponse(responseCode = "409", description = "Ziel-Asset existiert bereits")
+        @ApiResponse(responseCode = "201", description = "Asset erfolgreich kopiert"),
+        @ApiResponse(responseCode = "400", description = "Ungültige Parameter"),
+        @ApiResponse(responseCode = "404", description = "Quell-Asset nicht gefunden"),
+        @ApiResponse(responseCode = "409", description = "Ziel-Asset existiert bereits")
     })
     public ResponseEntity<?> copyFromWorld(
             @Parameter(description = "Target world identifier") @PathVariable String worldId,
@@ -413,8 +392,12 @@ public class WorldAssetController extends BaseEditorController {
         String sourcePath = normalizePath(body.get("sourcePath"));
         String newPath = normalizePath(body.get("newPath"));
 
-        log.debug("COPY asset cross-world: sourceWorldId={}, sourcePath={}, targetWorldId={}, newPath={}",
-                sourceWorldId, sourcePath, worldId, newPath);
+        log.debug(
+                "COPY asset cross-world: sourceWorldId={}, sourcePath={}, targetWorldId={}, newPath={}",
+                sourceWorldId,
+                sourcePath,
+                worldId,
+                newPath);
 
         if (Strings.isBlank(sourceWorldId)) return bad("sourceWorldId required");
         if (Strings.isBlank(sourcePath)) return bad("sourcePath required");
@@ -428,7 +411,10 @@ public class WorldAssetController extends BaseEditorController {
         // Check if source asset exists
         Optional<SAsset> sourceOpt = assetService.findByPath(sourceWid, sourcePath);
         if (sourceOpt.isEmpty()) {
-            log.warn("Source asset not found for cross-world copy: sourceWorldId={}, path={}", sourceWorldId, sourcePath);
+            log.warn(
+                    "Source asset not found for cross-world copy: sourceWorldId={}, path={}",
+                    sourceWorldId,
+                    sourcePath);
             return notFound("source asset not found");
         }
 
@@ -443,14 +429,19 @@ public class WorldAssetController extends BaseEditorController {
             // Copy asset to target world with all metadata
             SAsset copy = assetService.duplicateAssetToWorld(source, targetWid, newPath, "editor");
 
-            log.info("Copied asset cross-world: sourceWorldId={}, sourcePath={}, targetWorldId={}, newPath={}, size={}",
-                    sourceWorldId, sourcePath, worldId, newPath, copy.getSize());
+            log.info(
+                    "Copied asset cross-world: sourceWorldId={}, sourcePath={}, targetWorldId={}, newPath={}, size={}",
+                    sourceWorldId,
+                    sourcePath,
+                    worldId,
+                    newPath,
+                    copy.getSize());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "path", copy.getPath(),
-                    "worldId", copy.getWorldId(),
-                    "message", "Asset copied successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "path", copy.getPath(),
+                            "worldId", copy.getWorldId(),
+                            "message", "Asset copied successfully"));
         } catch (Exception e) {
             log.error("Failed to copy asset cross-world", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -468,40 +459,36 @@ public class WorldAssetController extends BaseEditorController {
     @GetMapping("/folders")
     @Operation(
             summary = "Get folder tree for world",
-            description = "Returns virtual folders derived from asset paths. Folders are computed from asset paths and don't exist as database entities."
-    )
+            description =
+                    "Returns virtual folders derived from asset paths. Folders are computed from asset paths and don't exist as database entities.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid worldId"),
-            @ApiResponse(responseCode = "404", description = "World not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid worldId"),
+        @ApiResponse(responseCode = "404", description = "World not found")
     })
     public ResponseEntity<?> getFolders(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Parent path filter (optional) - get only subfolders of this path")
-            @RequestParam(required = false) String parent) {
+                    @RequestParam(required = false)
+                    String parent) {
 
         log.debug("GET folders: worldId={}, parent={}", worldId, parent);
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Extract folders from asset paths
             List<FolderInfo> folders = assetService.extractFolders(wid, parent);
 
             log.debug("Returning {} folders", folders.size());
 
-            return ResponseEntity.ok(Map.of(
-                    "folders", folders,
-                    "count", folders.size(),
-                    "parent", parent != null ? parent : ""
-            ));
+            return ResponseEntity.ok(
+                    Map.of("folders", folders, "count", folders.size(), "parent", parent != null ? parent : ""));
 
         } catch (IllegalArgumentException e) {
             log.warn("Invalid request: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Failed to get folders for world {}", worldId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -520,23 +507,22 @@ public class WorldAssetController extends BaseEditorController {
     @PatchMapping("/folders/move")
     @Operation(
             summary = "Move or rename a folder",
-            description = "Updates all asset paths with the old prefix to the new prefix. " +
-                    "This affects all assets in the folder and its subfolders. " +
-                    "Validates for conflicts before proceeding."
-    )
+            description = "Updates all asset paths with the old prefix to the new prefix. "
+                    + "This affects all assets in the folder and its subfolders. "
+                    + "Validates for conflicts before proceeding.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Folder moved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request or validation error"),
-            @ApiResponse(responseCode = "409", description = "Conflict - target paths already exist"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
+        @ApiResponse(responseCode = "200", description = "Folder moved successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request or validation error"),
+        @ApiResponse(responseCode = "409", description = "Conflict - target paths already exist"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<?> moveFolder(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Folder move request with oldPath and newPath",
-                    required = true
-            )
-            @RequestBody Map<String, String> body) {
+                            description = "Folder move request with oldPath and newPath",
+                            required = true)
+                    @RequestBody
+                    Map<String, String> body) {
 
         log.debug("PATCH move folder: worldId={}, body={}", worldId, body);
 
@@ -546,13 +532,11 @@ public class WorldAssetController extends BaseEditorController {
 
             // Validation
             if (oldPath == null || oldPath.isBlank()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "oldPath is required"));
+                return ResponseEntity.badRequest().body(Map.of("error", "oldPath is required"));
             }
 
             if (newPath == null || newPath.isBlank()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "newPath is required"));
+                return ResponseEntity.badRequest().body(Map.of("error", "newPath is required"));
             }
 
             // Normalize paths
@@ -560,13 +544,11 @@ public class WorldAssetController extends BaseEditorController {
             newPath = normalizePath(newPath);
 
             if (oldPath.equals(newPath)) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "oldPath and newPath must be different"));
+                return ResponseEntity.badRequest().body(Map.of("error", "oldPath and newPath must be different"));
             }
 
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Perform bulk update
             int updatedCount = assetService.updatePathPrefix(wid, oldPath, newPath);
@@ -577,19 +559,16 @@ public class WorldAssetController extends BaseEditorController {
                     "message", "Folder moved successfully",
                     "oldPath", oldPath,
                     "newPath", newPath,
-                    "updatedAssets", updatedCount
-            ));
+                    "updatedAssets", updatedCount));
 
         } catch (IllegalArgumentException e) {
             log.warn("Invalid move folder request: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
 
         } catch (IllegalStateException e) {
             // Conflict detected
             log.warn("Conflict detected during folder move: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
             log.error("Failed to move folder", e);
@@ -597,7 +576,6 @@ public class WorldAssetController extends BaseEditorController {
                     .body(Map.of("error", "Failed to move folder: " + e.getMessage()));
         }
     }
-
 
     // Helper methods
 
@@ -617,10 +595,8 @@ public class WorldAssetController extends BaseEditorController {
                 determineMimeType(asset.getPath()),
                 asset.getCreatedAt(),
                 extractExtension(asset.getPath()),
-                extractCategory(asset.getPath())
-        );
+                extractCategory(asset.getPath()));
     }
-
 
     private String extractExtension(String path) {
         if (path == null || !path.contains(".")) {

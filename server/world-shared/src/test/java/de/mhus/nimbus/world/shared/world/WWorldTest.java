@@ -1,12 +1,8 @@
 package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.generated.types.Area;
-import de.mhus.nimbus.generated.types.Vector3;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 class WWorldTest {
 
@@ -19,5 +15,4 @@ class WWorldTest {
         assertEquals(WorldInstanceType.NONE, w.getInstanceType());
         assertEquals(0, w.getMaxPlayersPerInstance());
     }
-
 }

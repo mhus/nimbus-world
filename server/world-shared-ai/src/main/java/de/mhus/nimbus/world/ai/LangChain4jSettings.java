@@ -7,12 +7,11 @@ import de.mhus.nimbus.shared.settings.SettingString;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import jakarta.annotation.PostConstruct;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Duration;
 
 /**
  * Configuration for LangChain4j integration.
@@ -34,26 +33,11 @@ public class LangChain4jSettings {
 
     @PostConstruct
     private void init() {
-        apiKey = settingsService.getString(
-                "langchain4j.openai.apiKey",
-                null
-        );
-        modelName = settingsService.getString(
-                "langchain4j.openai.modelName",
-                "gpt-3.5-turbo"
-        );
-        timeoutSeconds = settingsService.getInteger(
-                "langchain4j.openai.timeoutSeconds",
-                60
-        );
-        temperature = settingsService.getDouble(
-                "langchain4j.openai.temperature",
-                0.7
-        );
-        maxTokens = settingsService.getInteger(
-                "langchain4j.openai.maxTokens",
-                1000
-        );
+        apiKey = settingsService.getString("langchain4j.openai.apiKey", null);
+        modelName = settingsService.getString("langchain4j.openai.modelName", "gpt-3.5-turbo");
+        timeoutSeconds = settingsService.getInteger("langchain4j.openai.timeoutSeconds", 60);
+        temperature = settingsService.getDouble("langchain4j.openai.temperature", 0.7);
+        maxTokens = settingsService.getInteger("langchain4j.openai.maxTokens", 1000);
     }
 
     @Bean
@@ -69,8 +53,7 @@ public class LangChain4jSettings {
         double temp = temperature.get();
         int tokens = maxTokens.get();
 
-        log.info("Initializing OpenAI ChatModel: model={}, timeout={}s, temperature={}",
-                model, timeout, temp);
+        log.info("Initializing OpenAI ChatModel: model={}, timeout={}s, temperature={}", model, timeout, temp);
 
         return OpenAiChatModel.builder()
                 .apiKey(key)

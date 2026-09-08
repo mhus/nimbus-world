@@ -2,16 +2,13 @@ package de.mhus.nimbus.world.shared.util;
 
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.generated.types.Vector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
-import de.mhus.nimbus.generated.types.Vector2Pair;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.experimental.UtilityClass;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import lombok.experimental.UtilityClass;
 
 /**
  * Utility class for hexagonal grid mathematics.
@@ -54,13 +51,13 @@ public class HexMathUtil {
         if (hex.getR() % 2 != 0) {
             x += gridWidth / 2; // Offset for odd rows
         }
-        int z =  (hex.getR() * 3 * gridHeight) / 4;
-        return new int[]{x, z};
+        int z = (hex.getR() * 3 * gridHeight) / 4;
+        return new int[] {x, z};
     }
 
     public static int getGridWidth(int gridHeight) {
         int radius = gridHeight / 2;
-        int width = (int)Math.floor(radius * SQRT_3);
+        int width = (int) Math.floor(radius * SQRT_3);
         if (width % 2 != 0) {
             width++; // Ensure width is even for proper staggering
         }
@@ -118,7 +115,7 @@ public class HexMathUtil {
         // Exclude points on "positive" side → they belong to the neighbor
         if (dx > 0) return false;
         if (dx == 0 && dz >= 0) return false;
-        return true;  // dx < 0, or (dx == 0 && dz < 0) → belongs to this hex
+        return true; // dx < 0, or (dx == 0 && dz < 0) → belongs to this hex
     }
 
     /**
@@ -201,17 +198,17 @@ public class HexMathUtil {
         // S=(0, -halfHeight), SW=(-halfWidth, -quarterHeight), NW=(-halfWidth, quarterHeight)
         switch (side) {
             case NORTH_EAST:
-                return new int[][]{{0, halfHeight}, {halfWidth, quarterHeight}};
+                return new int[][] {{0, halfHeight}, {halfWidth, quarterHeight}};
             case EAST:
-                return new int[][]{{halfWidth, quarterHeight}, {halfWidth, -quarterHeight}};
+                return new int[][] {{halfWidth, quarterHeight}, {halfWidth, -quarterHeight}};
             case SOUTH_EAST:
-                return new int[][]{{halfWidth, -quarterHeight}, {0, -halfHeight}};
+                return new int[][] {{halfWidth, -quarterHeight}, {0, -halfHeight}};
             case SOUTH_WEST:
-                return new int[][]{{-halfWidth, -quarterHeight}, {0, -halfHeight}};
+                return new int[][] {{-halfWidth, -quarterHeight}, {0, -halfHeight}};
             case WEST:
-                return new int[][]{{-halfWidth, quarterHeight}, {-halfWidth, -quarterHeight}};
+                return new int[][] {{-halfWidth, quarterHeight}, {-halfWidth, -quarterHeight}};
             case NORTH_WEST:
-                return new int[][]{{0, halfHeight}, {-halfWidth, quarterHeight}};
+                return new int[][] {{0, halfHeight}, {-halfWidth, quarterHeight}};
             default:
                 throw new IllegalArgumentException("Unknown edge: " + side);
         }
@@ -268,7 +265,6 @@ public class HexMathUtil {
 
         return best;
     }
-
 
     /**
      * Internal iterator implementation for lazy position generation.
@@ -358,11 +354,11 @@ public class HexMathUtil {
 
     public static HexVector2[] getHexesForChunk(int hexSize, int chunkSize, int cx, int cz) {
         // Weltkoordinaten der vier Ecken des Chunks
-        int[][] ecken = new int[][]{
-                {cx * chunkSize, cz * chunkSize}, // oben links
-                {(cx + 1) * chunkSize - 1, cz * chunkSize}, // oben rechts
-                {cx * chunkSize, (cz + 1) * chunkSize - 1}, // unten links
-                {(cx + 1) * chunkSize - 1, (cz + 1) * chunkSize - 1} // unten rechts
+        int[][] ecken = new int[][] {
+            {cx * chunkSize, cz * chunkSize}, // oben links
+            {(cx + 1) * chunkSize - 1, cz * chunkSize}, // oben rechts
+            {cx * chunkSize, (cz + 1) * chunkSize - 1}, // unten links
+            {(cx + 1) * chunkSize - 1, (cz + 1) * chunkSize - 1} // unten rechts
         };
         java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
         java.util.List<HexVector2> result = new java.util.ArrayList<>();
@@ -373,8 +369,7 @@ public class HexMathUtil {
                             .x(ecke[0])
                             .z(ecke[1])
                             .build(),
-                    hexSize
-            );
+                    hexSize);
             String key = hex.getQ() + ";" + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
@@ -391,11 +386,11 @@ public class HexMathUtil {
         int worldX2 = worldX1 + area.getSize().getX();
         int worldZ2 = worldZ1 + area.getSize().getZ();
         // Weltkoordinaten der vier Ecken der Area
-        int[][] ecken = new int[][]{
-                {worldX1, worldZ1}, // oben links
-                {worldX2 - 1, worldZ1}, // oben rechts
-                {worldX1, worldZ2 - 1}, // unten links
-                {worldX2 - 1, worldZ2 - 1} // unten rechts
+        int[][] ecken = new int[][] {
+            {worldX1, worldZ1}, // oben links
+            {worldX2 - 1, worldZ1}, // oben rechts
+            {worldX1, worldZ2 - 1}, // unten links
+            {worldX2 - 1, worldZ2 - 1} // unten rechts
         };
         java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
         java.util.List<HexVector2> result = new java.util.ArrayList<>();
@@ -406,8 +401,7 @@ public class HexMathUtil {
                             .x(ecke[0])
                             .z(ecke[1])
                             .build(),
-                    hexSize
-            );
+                    hexSize);
             String key = hex.getQ() + ";" + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
@@ -435,8 +429,8 @@ public class HexMathUtil {
         // Rectangle (chunk) bounds
         double minX = cx * chunkSize;
         double minZ = cz * chunkSize;
-        double maxX = (cx + 1) * chunkSize-1;
-        double maxZ = (cz + 1) * chunkSize-1;
+        double maxX = (cx + 1) * chunkSize - 1;
+        double maxZ = (cz + 1) * chunkSize - 1;
         // For each hex, estimate overlap area by sampling points in the chunk
         int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
         HexVector2 bestHex = hexes[0];
@@ -546,9 +540,9 @@ public class HexMathUtil {
                 }
 
                 // Check if our target hex is the dominant one
-                if (dominantHex != null &&
-                    dominantHex.getQ() == hexCoord.getQ() &&
-                    dominantHex.getR() == hexCoord.getR()) {
+                if (dominantHex != null
+                        && dominantHex.getQ() == hexCoord.getQ()
+                        && dominantHex.getR() == hexCoord.getR()) {
                     dominantChunks.add(cx + ":" + cz);
                 }
             }
@@ -600,5 +594,4 @@ public class HexMathUtil {
         }
         return bestHex;
     }
-
 }

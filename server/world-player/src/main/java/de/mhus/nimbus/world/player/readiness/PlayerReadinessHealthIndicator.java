@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.player.readiness;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
@@ -8,8 +9,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component("sessionLimitReadiness")
@@ -38,17 +37,21 @@ public class PlayerReadinessHealthIndicator implements HealthIndicator, Applicat
     @Override
     public Health health() {
         if (!baseReady.get()) {
-            return Health.down().withDetail("readiness", "NOT_READY (booting/shutdown)").build();
+            return Health.down()
+                    .withDetail("readiness", "NOT_READY (booting/shutdown)")
+                    .build();
         }
         int active = tracker.getActiveSessions();
         int max = props.maxActiveSessions();
         if (active > max) {
-            return Health.down().withDetail("readiness", "NOT_READY (too many sessions)" )
+            return Health.down()
+                    .withDetail("readiness", "NOT_READY (too many sessions)")
                     .withDetail("activeSessions", active)
                     .withDetail("maxActiveSessions", max)
                     .build();
         }
-        return Health.up().withDetail("readiness", "READY")
+        return Health.up()
+                .withDetail("readiness", "READY")
                 .withDetail("activeSessions", active)
                 .withDetail("maxActiveSessions", max)
                 .build();

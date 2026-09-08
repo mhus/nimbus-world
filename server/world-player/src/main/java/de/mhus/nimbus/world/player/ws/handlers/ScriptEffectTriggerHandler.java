@@ -1,14 +1,14 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles effect trigger messages from clients.
@@ -43,7 +43,8 @@ public class ScriptEffectTriggerHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Effect trigger from unauthenticated session: {}",
+            log.warn(
+                    "Effect trigger from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -67,8 +68,7 @@ public class ScriptEffectTriggerHandler implements MessageHandler {
         // Publish to Redis for multi-pod broadcasting
         publishToRedis(session, data);
 
-        log.debug("Effect trigger: effectId={}, entityId={}, session={}",
-                effectId, entityId, session.getSessionId());
+        log.debug("Effect trigger: effectId={}, entityId={}, session={}", effectId, entityId, session.getSessionId());
     }
 
     /**
@@ -84,16 +84,20 @@ public class ScriptEffectTriggerHandler implements MessageHandler {
             enriched.put("title", session.getTitle());
 
             // Copy original data
-            if (originalData.has("entityId")) enriched.put("entityId", originalData.get("entityId").asText());
-            if (originalData.has("effectId")) enriched.put("effectId", originalData.get("effectId").asText());
+            if (originalData.has("entityId"))
+                enriched.put("entityId", originalData.get("entityId").asText());
+            if (originalData.has("effectId"))
+                enriched.put("effectId", originalData.get("effectId").asText());
             if (originalData.has("chunks")) enriched.set("chunks", originalData.get("chunks"));
             if (originalData.has("effect")) enriched.set("effect", originalData.get("effect"));
 
             String json = objectMapper.writeValueAsString(enriched);
             redisMessaging.publish(session.getWorldId().getId(), "s.t", json);
 
-            log.trace("Published effect trigger to Redis: worldId={}, sessionId={}",
-                    session.getWorldId(), session.getSessionId());
+            log.trace(
+                    "Published effect trigger to Redis: worldId={}, sessionId={}",
+                    session.getWorldId(),
+                    session.getSessionId());
 
         } catch (Exception e) {
             log.error("Failed to publish effect trigger to Redis", e);

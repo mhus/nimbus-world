@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for managing and executing flat terrain manipulators.
@@ -35,13 +34,17 @@ public class FlatManipulatorService {
         for (FlatManipulator manipulator : manipulatorList) {
             String name = manipulator.getName();
             if (name == null || name.isBlank()) {
-                log.warn("Skipping manipulator with null/blank name: {}", manipulator.getClass().getName());
+                log.warn(
+                        "Skipping manipulator with null/blank name: {}",
+                        manipulator.getClass().getName());
                 continue;
             }
 
             if (manipulators.containsKey(name)) {
-                log.warn("Duplicate manipulator name '{}': {} (previous: {}), skipping",
-                        name, manipulator.getClass().getName(),
+                log.warn(
+                        "Duplicate manipulator name '{}': {} (previous: {}), skipping",
+                        name,
+                        manipulator.getClass().getName(),
                         manipulators.get(name).getClass().getName());
                 continue;
             }
@@ -65,10 +68,16 @@ public class FlatManipulatorService {
      * @param parameters Manipulator-specific parameters
      * @throws IllegalArgumentException if manipulator not found or parameters invalid
      */
-    public void executeManipulator(String name, WFlat flat, int x, int z, int sizeX, int sizeZ,
-                                    Map<String, String> parameters) {
-        log.debug("Executing manipulator: name={}, x={}, z={}, sizeX={}, sizeZ={}, parameters={}",
-                name, x, z, sizeX, sizeZ, parameters);
+    public void executeManipulator(
+            String name, WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
+        log.debug(
+                "Executing manipulator: name={}, x={}, z={}, sizeX={}, sizeZ={}, parameters={}",
+                name,
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                parameters);
 
         // Validate manipulator name
         if (name == null || name.isBlank()) {
@@ -78,8 +87,8 @@ public class FlatManipulatorService {
         // Find manipulator
         FlatManipulator manipulator = manipulators.get(name);
         if (manipulator == null) {
-            throw new IllegalArgumentException("Manipulator not found: " + name +
-                    ". Available manipulators: " + manipulators.keySet());
+            throw new IllegalArgumentException(
+                    "Manipulator not found: " + name + ". Available manipulators: " + manipulators.keySet());
         }
 
         // Validate flat
@@ -95,16 +104,15 @@ public class FlatManipulatorService {
             throw new IllegalArgumentException("Region size must be positive: sizeX=" + sizeX + ", sizeZ=" + sizeZ);
         }
         if (x + sizeX > flat.getSizeX() || z + sizeZ > flat.getSizeZ()) {
-            throw new IllegalArgumentException(
-                    String.format("Region out of bounds: region=(%d,%d,%d,%d), flat=(%d,%d)",
-                            x, z, sizeX, sizeZ, flat.getSizeX(), flat.getSizeZ()));
+            throw new IllegalArgumentException(String.format(
+                    "Region out of bounds: region=(%d,%d,%d,%d), flat=(%d,%d)",
+                    x, z, sizeX, sizeZ, flat.getSizeX(), flat.getSizeZ()));
         }
 
         // Execute manipulator
         try {
             manipulator.manipulate(flat, x, z, sizeX, sizeZ, parameters != null ? parameters : new HashMap<>());
-            log.debug("Manipulator executed successfully: name={}, region=({},{},{},{})",
-                    name, x, z, sizeX, sizeZ);
+            log.debug("Manipulator executed successfully: name={}, region=({},{},{},{})", name, x, z, sizeX, sizeZ);
         } catch (Exception e) {
             log.error("Manipulator execution failed: name={}", name, e);
             throw new IllegalArgumentException("Manipulator execution failed: " + e.getMessage(), e);

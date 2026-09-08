@@ -8,11 +8,10 @@ import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 /**
  * Show detailed info for a specific entity.
@@ -82,7 +81,8 @@ public class LifeDetailCommand implements Command {
             lines.add("--- Vitals ---");
             for (var v : cd.getVitals().entrySet()) {
                 VitalValue vv = v.getValue();
-                lines.add(String.format("  %-12s %.1f / %.1f (base=%.1f, regen=%.2f/s)",
+                lines.add(String.format(
+                        "  %-12s %.1f / %.1f (base=%.1f, regen=%.2f/s)",
                         v.getKey(), vv.getCurrent(), vv.getEffectiveMax(), vv.getBase(), vv.getEffectiveRegenRate()));
             }
 
@@ -90,7 +90,8 @@ public class LifeDetailCommand implements Command {
             lines.add("--- Combat Stats ---");
             for (var s : cd.getCombatStats().entrySet()) {
                 CombatStat cs = s.getValue();
-                lines.add(String.format("  %-22s effective=%.2f (base=%.2f, buff=%.2f)",
+                lines.add(String.format(
+                        "  %-22s effective=%.2f (base=%.2f, buff=%.2f)",
                         s.getKey(), cs.getEffective(), cs.getBase(), cs.getBuffFlat()));
             }
 
@@ -98,10 +99,14 @@ public class LifeDetailCommand implements Command {
                 lines.add("");
                 lines.add("--- Active Effects ---");
                 for (var e : cd.getActiveEffects()) {
-                    lines.add(String.format("  %s: %s %.2f (%.1f/%.1fs, src=%s)",
+                    lines.add(String.format(
+                            "  %s: %s %.2f (%.1f/%.1fs, src=%s)",
                             e.getId().substring(0, Math.min(8, e.getId().length())),
-                            e.getStat(), e.getValue(),
-                            e.getDuration(), e.getMaxDuration(), e.getSource()));
+                            e.getStat(),
+                            e.getValue(),
+                            e.getDuration(),
+                            e.getMaxDuration(),
+                            e.getSource()));
                 }
             }
         } else {
@@ -127,8 +132,7 @@ public class LifeDetailCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Show detailed info for a specific entity\n" +
-                "Usage: /life-detail <entityId>\n" +
-                "Shows: position, combat state, vitals, stats, effects, server properties";
+        return "Show detailed info for a specific entity\n" + "Usage: /life-detail <entityId>\n"
+                + "Shows: position, combat state, vitals, stats, effects, server properties";
     }
 }

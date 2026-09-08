@@ -16,10 +16,7 @@ public class RegionCharacterSettings {
 
     @PostConstruct
     private void init() {
-        maxPerRegion = settingsService.getInteger(
-                "region.character.maxPerRegion",
-                10
-        );
+        maxPerRegion = settingsService.getInteger("region.character.maxPerRegion", 10);
     }
 
     /**
@@ -30,4 +27,3 @@ public class RegionCharacterSettings {
         return maxPerRegion.get();
     }
 }
-

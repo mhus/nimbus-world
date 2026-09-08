@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.blocks.generator;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class EditCachePainterTest {
 
@@ -26,10 +25,12 @@ class EditCachePainterTest {
         paintedBlocks = new HashSet<>();
         // Custom Painter: markiere alle gesetzten Blöcke
         doAnswer(invocation -> {
-            Object block = invocation.getArgument(3);
-            if (block instanceof Block) paintedBlocks.add(block.toString());
-            return null;
-        }).when(editService).doSetAndSendBlock(any(), any(), any(), any(Block.class), nullable(String.class));
+                    Object block = invocation.getArgument(3);
+                    if (block instanceof Block) paintedBlocks.add(block.toString());
+                    return null;
+                })
+                .when(editService)
+                .doSetAndSendBlock(any(), any(), any(), any(Block.class), nullable(String.class));
         painter = new EditCachePainter(editService);
         painter.setContext(world, "layer", "model", null, blockDef);
     }

@@ -1,22 +1,20 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WWorldCollectionService;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.shared.user.SectorRoles;
-import de.mhus.nimbus.world.shared.access.RequireSectorRole;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing RRegion entities.
@@ -35,7 +33,9 @@ public class RRegionController extends BaseEditorController {
 
     // DTOs
     public record RegionRequest(String name, String maintainers) {}
+
     public record RegionResponse(String id, String name, boolean enabled, List<String> maintainers) {}
+
     public record MaintainerRequest(String userId) {}
 
     private RegionResponse toResponse(RRegion region) {
@@ -70,7 +70,8 @@ public class RRegionController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        return regionService.getById(regionId)
+        return regionService
+                .getById(regionId)
                 .<ResponseEntity<?>>map(r -> ResponseEntity.ok(toResponse(r)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Region not found: " + regionId)));
@@ -99,8 +100,7 @@ public class RRegionController extends BaseEditorController {
                 collectionService.create(
                         publicCollectionId,
                         "Public Collection - " + regionId,
-                        "Auto-created public collection for region " + regionId
-                );
+                        "Auto-created public collection for region " + regionId);
                 log.info("Created public collection for region {}: {}", regionId, publicCollectionId);
             } catch (IllegalStateException e) {
                 // Collection already exists, that's ok
@@ -113,8 +113,7 @@ public class RRegionController extends BaseEditorController {
                 collectionService.create(
                         regionCollectionId,
                         "Region Collection - " + regionId,
-                        "Auto-created region collection for region " + regionId
-                );
+                        "Auto-created region collection for region " + regionId);
                 log.info("Created region collection for region {}: {}", regionId, regionCollectionId);
             } catch (IllegalStateException e) {
                 // Collection already exists, that's ok
@@ -189,9 +188,9 @@ public class RRegionController extends BaseEditorController {
                     "Delete Region Collection: " + regionName,
                     "cleanup",
                     regionJobParams,
-                    5,  // priority
-                    0   // no retries
-            );
+                    5, // priority
+                    0 // no retries
+                    );
 
             // Start job for @public:<regionName> collection
             Map<String, String> publicJobParams = Map.of("worldId", publicCollectionId);
@@ -201,12 +200,15 @@ public class RRegionController extends BaseEditorController {
                     "Delete Public Collection: " + regionName,
                     "cleanup",
                     publicJobParams,
-                    5,  // priority
-                    0   // no retries
-            );
+                    5, // priority
+                    0 // no retries
+                    );
 
-            log.info("Region '{}' deleted, started cleanup jobs for collections {} and {}",
-                    regionName, regionCollectionId, publicCollectionId);
+            log.info(
+                    "Region '{}' deleted, started cleanup jobs for collections {} and {}",
+                    regionName,
+                    regionCollectionId,
+                    publicCollectionId);
 
             // Return the jobId of the first job for tracking
             return ResponseEntity.ok(Map.of("jobId", regionJob.getId()));
@@ -256,9 +258,7 @@ public class RRegionController extends BaseEditorController {
      * POST /control/region/{regionId}/maintainers
      */
     @PostMapping("/{regionId}/maintainers")
-    public ResponseEntity<?> addMaintainer(
-            @PathVariable String regionId,
-            @RequestBody MaintainerRequest request) {
+    public ResponseEntity<?> addMaintainer(@PathVariable String regionId, @RequestBody MaintainerRequest request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -268,7 +268,8 @@ public class RRegionController extends BaseEditorController {
         }
 
         try {
-            RRegion updated = regionService.addMaintainer(regionId, request.userId().trim());
+            RRegion updated =
+                    regionService.addMaintainer(regionId, request.userId().trim());
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
             return notFound(e.getMessage());
@@ -280,9 +281,7 @@ public class RRegionController extends BaseEditorController {
      * DELETE /control/region/{regionId}/maintainers/{userId}
      */
     @DeleteMapping("/{regionId}/maintainers/{userId}")
-    public ResponseEntity<?> removeMaintainer(
-            @PathVariable String regionId,
-            @PathVariable String userId) {
+    public ResponseEntity<?> removeMaintainer(@PathVariable String regionId, @PathVariable String userId) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -308,8 +307,10 @@ public class RRegionController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        return regionService.getById(regionId)
-                .<ResponseEntity<?>>map(r -> ResponseEntity.ok(r.getMaintainers().stream().toList()))
+        return regionService
+                .getById(regionId)
+                .<ResponseEntity<?>>map(
+                        r -> ResponseEntity.ok(r.getMaintainers().stream().toList()))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Region not found: " + regionId)));
     }

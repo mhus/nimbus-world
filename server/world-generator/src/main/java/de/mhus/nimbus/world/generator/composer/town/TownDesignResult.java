@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Result of village design process.
@@ -52,7 +51,7 @@ public class TownDesignResult {
             return 0;
         }
         return districtGrids.stream()
-            .mapToInt(d -> d.getPlacedPlaces() != null ? d.getPlacedPlaces().size() : 0)
-            .sum();
+                .mapToInt(d -> d.getPlacedPlaces() != null ? d.getPlacedPlaces().size() : 0)
+                .sum();
     }
 }

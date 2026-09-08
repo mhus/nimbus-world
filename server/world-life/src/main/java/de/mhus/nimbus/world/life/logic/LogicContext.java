@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.life.logic;
 
-import lombok.Builder;
-import lombok.Data;
-
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Execution context passed to LogicEffectHandlers during rule processing.

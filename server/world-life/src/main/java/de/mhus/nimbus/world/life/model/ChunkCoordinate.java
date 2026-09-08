@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.life.model;
 
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Objects;
 
 /**
  * Chunk coordinate wrapper.

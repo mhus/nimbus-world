@@ -17,7 +17,6 @@ import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
 import de.mhus.nimbus.world.shared.team.WTeamService;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import de.mhus.nimbus.world.shared.world.InstanceAccessType;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.world.WorldInstanceType;
@@ -26,20 +25,18 @@ import io.jsonwebtoken.Jws;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Service for world access management and development authentication.
@@ -110,7 +107,10 @@ public class AccessService {
     private WorldInfoDto mapToWorldInfoDto(WWorld world) {
         return WorldInfoDto.builder()
                 .worldId(world.getWorldId())
-                .title(world.getPublicData() == null ? "" : world.getPublicData().getTitle())
+                .title(
+                        world.getPublicData() == null
+                                ? ""
+                                : world.getPublicData().getTitle())
                 .description(world.getDescription())
                 .regionId(world.getRegionId())
                 .enabled(world.isEnabled())
@@ -162,8 +162,8 @@ public class AccessService {
         }
 
         var world = worldService.getByWorldId(worldId).orElse(null);
-        WorldInstanceType instanceType = world != null && world.getInstanceType() != null
-                ? world.getInstanceType() : WorldInstanceType.PRIVATE;
+        WorldInstanceType instanceType =
+                world != null && world.getInstanceType() != null ? world.getInstanceType() : WorldInstanceType.PRIVATE;
         int maxPlayers = world != null ? world.getMaxPlayersPerInstance() : 0;
 
         return all.stream()
@@ -175,8 +175,8 @@ public class AccessService {
      * Check if a player can access a specific instance based on the instance's own accessType
      * (if set) or the world's instance type as fallback.
      */
-    private boolean isInstanceAccessible(WWorldInstance instance, String playerId,
-                                         WorldInstanceType instanceType, int maxPlayers) {
+    private boolean isInstanceAccessible(
+            WWorldInstance instance, String playerId, WorldInstanceType instanceType, int maxPlayers) {
         // Creator or in players list → always allowed
         if (instance.isPlayerAllowed(playerId)) {
             return true;
@@ -218,19 +218,17 @@ public class AccessService {
         if (searchQuery != null && !searchQuery.isBlank()) {
             String queryLower = searchQuery.toLowerCase();
             users = users.stream()
-                    .filter(u -> (u.getName() != null && u.getName().toLowerCase().contains(queryLower)) ||
-                                 (u.getEmail() != null && u.getEmail().toLowerCase().contains(queryLower)))
+                    .filter(u ->
+                            (u.getName() != null && u.getName().toLowerCase().contains(queryLower))
+                                    || (u.getEmail() != null
+                                            && u.getEmail().toLowerCase().contains(queryLower)))
                     .collect(Collectors.toList());
         }
 
         // Always limit results (even without search)
-        users = users.stream()
-                .limit(limit)
-                .collect(Collectors.toList());
+        users = users.stream().limit(limit).collect(Collectors.toList());
 
-        return users.stream()
-                .map(this::mapToUserInfoDto)
-                .collect(Collectors.toList());
+        return users.stream().map(this::mapToUserInfoDto).collect(Collectors.toList());
     }
 
     /**
@@ -260,7 +258,8 @@ public class AccessService {
         log.debug("Fetching characters for user={} in world={}", userId, worldId);
 
         // Validate world exists and get regionId
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         String regionId = world.getRegionId();
@@ -271,9 +270,7 @@ public class AccessService {
         // Fetch characters for user in this region
         List<RCharacter> characters = characterService.listCharacters(userId, regionId);
 
-        return characters.stream()
-                .map(this::mapToCharacterInfoDto)
-                .collect(Collectors.toList());
+        return characters.stream().map(this::mapToCharacterInfoDto).collect(Collectors.toList());
     }
 
     /**
@@ -304,12 +301,12 @@ public class AccessService {
         log.debug("Fetching roles for character={} in world={}", characterId, worldId);
 
         // Get world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Get character to extract userId
-        RCharacter character = characterService.listCharactersByRegion(world.getRegionId())
-                .stream()
+        RCharacter character = characterService.listCharactersByRegion(world.getRegionId()).stream()
                 .filter(c -> c.getId().equals(characterId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
@@ -338,22 +335,29 @@ public class AccessService {
      */
     @Transactional
     public DevLoginResponse devSessionLogin(DevSessionLoginRequest request) {
-        log.info("Dev session login: user={}, world={}, character={}, actor={}",
-                request.getUserId(), request.getWorldId(), request.getCharacterId(), request.getActor());
+        log.info(
+                "Dev session login: user={}, world={}, character={}, actor={}",
+                request.getUserId(),
+                request.getWorldId(),
+                request.getCharacterId(),
+                request.getActor());
 
         WorldId worldId = WorldId.of(request.getWorldId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + request.getWorldId()));
 
         // Validate world exists
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + request.getWorldId()));
 
         // Load main world for permission checks (zones/instances inherit permissions from main world)
         WorldId mainWorldId = worldId.toMainWorld();
         WWorld mainWorld = mainWorldId.getId().equals(worldId.getId())
                 ? world
-                : worldService.getByWorldId(mainWorldId)
-                        .orElseThrow(() -> new IllegalArgumentException("Main world not found: " + mainWorldId.getId()));
+                : worldService
+                        .getByWorldId(mainWorldId)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException("Main world not found: " + mainWorldId.getId()));
 
         // Validate actor permissions against main world
         UserId loginUserId = UserId.of(request.getUserId())
@@ -362,9 +366,9 @@ public class AccessService {
         validateActorPermission(request.getActor(), loginUserId, mainWorld);
 
         // Validate character exists
-        RCharacter character = characterService.getCharacter(request.getUserId(), world.getRegionId(), request.getCharacterId()).orElseThrow(
-                () -> new IllegalArgumentException("Character not found: " + request.getCharacterId())
-        );
+        RCharacter character = characterService
+                .getCharacter(request.getUserId(), world.getRegionId(), request.getCharacterId())
+                .orElseThrow(() -> new IllegalArgumentException("Character not found: " + request.getCharacterId()));
 
         // Validate userId matches
         if (!character.getUserId().equals(request.getUserId())) {
@@ -392,13 +396,14 @@ public class AccessService {
             }
             // Explicit instance selected (PLAYER rejoin or SUPPORT join)
             final String resolvedInstanceId = fullInstanceId;
-            var existingInstance = worldInstanceService.findByInstanceIdWithValidation(resolvedInstanceId)
+            var existingInstance = worldInstanceService
+                    .findByInstanceIdWithValidation(resolvedInstanceId)
                     .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + resolvedInstanceId));
 
             // PLAYER: must pass instance access check; SUPPORT: can join any instance
             if (request.getActor() == ActorRoles.PLAYER) {
-                WorldInstanceType worldInstanceType = world.getInstanceType() != null
-                        ? world.getInstanceType() : WorldInstanceType.PRIVATE;
+                WorldInstanceType worldInstanceType =
+                        world.getInstanceType() != null ? world.getInstanceType() : WorldInstanceType.PRIVATE;
                 int maxPlayers = world.getMaxPlayersPerInstance();
                 if (!isInstanceAccessible(existingInstance, playerId.getId(), worldInstanceType, maxPlayers)) {
                     throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
@@ -407,8 +412,11 @@ public class AccessService {
 
             worldInstanceService.addActivePlayerAtomic(existingInstance.getInstanceId(), playerId.getId());
             effectiveWorldId = existingInstance.getWorldWithInstanceId();
-            log.info("{} joining instance: instanceId={}, playerId={}",
-                    request.getActor(), existingInstance.getInstanceId(), playerId.getId());
+            log.info(
+                    "{} joining instance: instanceId={}, playerId={}",
+                    request.getActor(),
+                    existingInstance.getInstanceId(),
+                    playerId.getId());
 
         } else if (request.getActor() == ActorRoles.PLAYER) {
             // PLAYER without instanceId: auto-create new instance
@@ -416,11 +424,13 @@ public class AccessService {
                     worldId.getId(),
                     world.getPublicData().getTitle(),
                     playerId.getId(),
-                    character.getPublicData().getTitle()
-            );
+                    character.getPublicData().getTitle());
             effectiveWorldId = instance.getWorldWithInstanceId();
-            log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
-                    instance.getInstanceId(), worldId.getId(), playerId.getId());
+            log.info(
+                    "Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
+                    instance.getInstanceId(),
+                    worldId.getId(),
+                    playerId.getId());
         }
 
         // Notify world-life and other services about the active world
@@ -433,7 +443,10 @@ public class AccessService {
         // Set entry point if provided
         if (request.getEntryPoint() != null && !request.getEntryPoint().isBlank()) {
             sessionService.updateEntryPoint(session.getId(), request.getEntryPoint());
-            log.debug("Entry point set for session: sessionId={}, entryPoint={}", session.getId(), request.getEntryPoint());
+            log.debug(
+                    "Entry point set for session: sessionId={}, entryPoint={}",
+                    session.getId(),
+                    request.getEntryPoint());
         }
 
         // Create JWT token
@@ -443,8 +456,7 @@ public class AccessService {
                 effectiveWorldId,
                 playerId.getCharacterId(),
                 request.getActor().name(),
-                session.getId()
-        );
+                session.getId());
 
         // Build response with configured URLs
         return DevLoginResponse.builder()
@@ -476,15 +488,18 @@ public class AccessService {
     private void removePlayerFromAllInstances(String worldId, String playerId) {
         var instances = worldInstanceService.findByWorldId(worldId);
         for (var instance : instances) {
-            if (instance.getActivePlayers() != null && instance.getActivePlayers().contains(playerId)) {
+            if (instance.getActivePlayers() != null
+                    && instance.getActivePlayers().contains(playerId)) {
                 worldInstanceService.removeActivePlayerAtomic(instance.getInstanceId(), playerId);
                 log.info("Removed player {} from instance {} (switching instance)", playerId, instance.getInstanceId());
             }
         }
     }
 
-    private String findJumpUrl(AccessSettings properties, DevSessionLoginRequest request, String sessionId, String effectiveWorldId) {
-        var url = request.getActor() == ActorRoles.EDITOR ? properties.getJumpUrlEditor() : properties.getJumpUrlViewer();
+    private String findJumpUrl(
+            AccessSettings properties, DevSessionLoginRequest request, String sessionId, String effectiveWorldId) {
+        var url =
+                request.getActor() == ActorRoles.EDITOR ? properties.getJumpUrlEditor() : properties.getJumpUrlViewer();
         url = url.replace("{worldId}", effectiveWorldId);
         url = url.replace("{session}", sessionId);
         url = url.replace("{userId}", request.getUserId());
@@ -505,27 +520,30 @@ public class AccessService {
         switch (actor) {
             case PLAYER:
                 if (!mainWorld.isPlayerAllowed(userId)) {
-                    throw new IllegalArgumentException("User " + userId.getId()
-                            + " is not allowed as PLAYER in world " + mainWorld.getWorldId());
+                    throw new IllegalArgumentException(
+                            "User " + userId.getId() + " is not allowed as PLAYER in world " + mainWorld.getWorldId());
                 }
                 break;
             case EDITOR:
                 if (!mainWorld.isEditorAllowed(userId) && !mainWorld.isOwnerAllowed(userId)) {
-                    throw new IllegalArgumentException("User " + userId.getId()
-                            + " is not allowed as EDITOR in world " + mainWorld.getWorldId());
+                    throw new IllegalArgumentException(
+                            "User " + userId.getId() + " is not allowed as EDITOR in world " + mainWorld.getWorldId());
                 }
                 break;
             case SUPPORT:
                 if (!mainWorld.isSupporterAllowed(userId) && !mainWorld.isOwnerAllowed(userId)) {
-                    throw new IllegalArgumentException("User " + userId.getId()
-                            + " is not allowed as SUPPORT in world " + mainWorld.getWorldId());
+                    throw new IllegalArgumentException(
+                            "User " + userId.getId() + " is not allowed as SUPPORT in world " + mainWorld.getWorldId());
                 }
                 break;
             default:
                 throw new IllegalArgumentException("Unknown actor role: " + actor);
         }
-        log.debug("Actor permission validated: user={}, actor={}, world={}",
-                userId.getId(), actor, mainWorld.getWorldId());
+        log.debug(
+                "Actor permission validated: user={}, actor={}, world={}",
+                userId.getId(),
+                actor,
+                mainWorld.getWorldId());
     }
 
     private String findJumpUrl(AccessSettings properties, DevAgentLoginRequest request) {
@@ -546,16 +564,16 @@ public class AccessService {
      * @param sessionId Session ID
      * @return JWT token
      */
-    public String createSessionTokenForTeleport(String regionId, String userId, String worldId,
-                                                 String characterId, String role, String sessionId) {
+    public String createSessionTokenForTeleport(
+            String regionId, String userId, String worldId, String characterId, String role, String sessionId) {
         return createSessionToken(regionId, userId, worldId, characterId, role, sessionId);
     }
 
     /**
      * Creates a JWT token for session-based access.
      */
-    private String createSessionToken(String regionId, String userId, String worldId,
-                                      String characterId, String role, String sessionId) {
+    private String createSessionToken(
+            String regionId, String userId, String worldId, String characterId, String role, String sessionId) {
         // Build claims map
         Map<String, Object> claims = new HashMap<>();
         claims.put("agent", false);
@@ -575,8 +593,7 @@ public class AccessService {
                 KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
-                expiresAt
-        );
+                expiresAt);
     }
 
     // ===== 5. devAgentLogin =====
@@ -594,21 +611,18 @@ public class AccessService {
         log.info("Dev agent login: user={}, world={}", request.getUserId(), request.getWorldId());
 
         // Validate world exists
-        WWorld world = worldService.getByWorldId(request.getWorldId())
+        WWorld world = worldService
+                .getByWorldId(request.getWorldId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + request.getWorldId()));
 
         // Create JWT token
-        String token = createAgentToken(
-                world.getRegionId(),
-                request.getUserId(),
-                request.getWorldId()
-        );
+        String token = createAgentToken(world.getRegionId(), request.getUserId(), request.getWorldId());
 
         // Build response with configured URLs (no sessionId/playerId)
         return DevLoginResponse.builder()
                 .accessToken(token)
                 .accessUrls(properties.getAccessUrls())
-                .jumpUrl(findJumpUrl(properties,request))
+                .jumpUrl(findJumpUrl(properties, request))
                 .sessionId(null)
                 .playerId(null)
                 .build();
@@ -634,8 +648,7 @@ public class AccessService {
                 KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
-                expiresAt
-        );
+                expiresAt);
     }
 
     // ===== 6. authorizeWithToken =====
@@ -647,11 +660,10 @@ public class AccessService {
             boolean agent,
             String worldId,
             String userId,
-            String characterId,  // null for agent
-            String role,         // null for agent
-            String sessionId,    // null for agent
-            String regionId
-    ) {}
+            String characterId, // null for agent
+            String role, // null for agent
+            String sessionId, // null for agent
+            String regionId) {}
 
     /**
      * Validates access token and creates session cookies.
@@ -669,7 +681,8 @@ public class AccessService {
         AccessTokenClaims claims = validateAndParseAccessToken(accessToken);
 
         // 2. Get world
-        WWorld world = worldService.getByWorldId(claims.worldId())
+        WWorld world = worldService
+                .getByWorldId(claims.worldId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + claims.worldId()));
 
         // 3. Validate based on agent flag
@@ -685,8 +698,11 @@ public class AccessService {
         // 5. Set cookies
         setCookies(response, tokenWithExpiry.token(), tokenWithExpiry.expiresAt(), claims);
 
-        log.info("Authorization successful - worldId={}, userId={}, agent={}",
-                claims.worldId(), claims.userId(), claims.agent());
+        log.info(
+                "Authorization successful - worldId={}, userId={}, agent={}",
+                claims.worldId(),
+                claims.userId(),
+                claims.agent());
     }
 
     /**
@@ -703,8 +719,7 @@ public class AccessService {
         Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                 token,
                 KeyType.SECTOR,
-                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
-        );
+                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN));
 
         if (jwsOpt.isEmpty()) {
             throw new IllegalArgumentException("Invalid or expired access token");
@@ -744,7 +759,8 @@ public class AccessService {
         log.debug("Validating session access - sessionId={}", claims.sessionId());
 
         // Get session from Redis
-        WSession session = sessionService.get(claims.sessionId())
+        WSession session = sessionService
+                .get(claims.sessionId())
                 .orElseThrow(() -> new IllegalStateException("Session not found: " + claims.sessionId()));
 
         // Check status = WAITING
@@ -772,8 +788,8 @@ public class AccessService {
     private void validateAgentAccess(String userId, WWorld world) {
         log.debug("Validating agent access - userId={}, worldId={}", userId, world.getWorldId());
 
-        UserId userIdObj = UserId.of(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + userId));
+        UserId userIdObj =
+                UserId.of(userId).orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + userId));
 
         var userOpt = userService.getByUsername(userId);
         if (userOpt.isEmpty()) {
@@ -785,12 +801,11 @@ public class AccessService {
             throw new IllegalArgumentException("Invalid worldId: " + world.getWorldId());
         }
 
-        boolean hasAccess =
-                user.isSectorAdmin() ||
-                user.isRegionAdmin(worldIdOpt.get()) ||
-                world.isOwnerAllowed(userIdObj) ||
-                world.isEditorAllowed(userIdObj) ||
-                world.isSupporterAllowed(userIdObj);
+        boolean hasAccess = user.isSectorAdmin()
+                || user.isRegionAdmin(worldIdOpt.get())
+                || world.isOwnerAllowed(userIdObj)
+                || world.isEditorAllowed(userIdObj)
+                || world.isSupporterAllowed(userIdObj);
 
         if (!hasAccess) {
             throw new IllegalStateException("User not authorized for agent access to world: " + world.getWorldId());
@@ -818,9 +833,8 @@ public class AccessService {
         }
 
         // TTL: 24h (session) or 1h (agent)
-        long ttlSeconds = claims.agent()
-                ? properties.getAgentTokenTtlSeconds()
-                : properties.getSessionTokenTtlSeconds();
+        long ttlSeconds =
+                claims.agent() ? properties.getAgentTokenTtlSeconds() : properties.getSessionTokenTtlSeconds();
 
         Instant expiresAt = Instant.now().plusSeconds(ttlSeconds);
 
@@ -829,8 +843,7 @@ public class AccessService {
                 KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 claims.userId(),
                 tokenClaims,
-                expiresAt
-        );
+                expiresAt);
 
         return new SessionTokenWithExpiry(token, expiresAt);
     }
@@ -838,7 +851,8 @@ public class AccessService {
     /**
      * Sets two cookies: sessionToken (httpOnly) and sessionData (JS-accessible).
      */
-    private void setCookies(HttpServletResponse response, String sessionToken, Instant expiresAt, AccessTokenClaims claims) {
+    private void setCookies(
+            HttpServletResponse response, String sessionToken, Instant expiresAt, AccessTokenClaims claims) {
         // Calculate maxAge from the difference between expiration and now (in UTC)
         long maxAgeSeconds = expiresAt.getEpochSecond() - Instant.now().getEpochSecond();
 
@@ -846,23 +860,30 @@ public class AccessService {
         String domain = properties.getCookieDomain();
 
         // Build Set-Cookie headers manually to include SameSite attribute
-        String tokenCookieHeader = buildCookieHeader("sessionToken", sessionToken, secure, domain, (int) maxAgeSeconds, true);
+        String tokenCookieHeader =
+                buildCookieHeader("sessionToken", sessionToken, secure, domain, (int) maxAgeSeconds, true);
         response.addHeader("Set-Cookie", tokenCookieHeader);
 
         // Cookie 2: sessionData (JS-accessible, Base64-encoded)
         String sessionData = buildSessionDataJson(claims);
         String encodedSessionData = base64Service.encode(sessionData);
-        String dataCookieHeader = buildCookieHeader("sessionData", encodedSessionData, secure, domain, (int) maxAgeSeconds, false);
+        String dataCookieHeader =
+                buildCookieHeader("sessionData", encodedSessionData, secure, domain, (int) maxAgeSeconds, false);
         response.addHeader("Set-Cookie", dataCookieHeader);
 
-        log.info("Cookies set - sessionToken (httpOnly, secure={}, domain='{}', path='/', maxAge={}, expiresAt={}), sessionData (JS-accessible, Base64-encoded, same settings)",
-                secure, domain != null ? domain : "(none)", maxAgeSeconds, expiresAt);
+        log.info(
+                "Cookies set - sessionToken (httpOnly, secure={}, domain='{}', path='/', maxAge={}, expiresAt={}), sessionData (JS-accessible, Base64-encoded, same settings)",
+                secure,
+                domain != null ? domain : "(none)",
+                maxAgeSeconds,
+                expiresAt);
     }
 
     /**
      * Builds Set-Cookie header with SameSite attribute.
      */
-    private String buildCookieHeader(String name, String value, boolean secure, String domain, int maxAge, boolean httpOnly) {
+    private String buildCookieHeader(
+            String name, String value, boolean secure, String domain, int maxAge, boolean httpOnly) {
         StringBuilder cookie = new StringBuilder();
         cookie.append(name).append("=").append(value);
         cookie.append("; Path=/");
@@ -898,8 +919,13 @@ public class AccessService {
     private String buildSessionDataJson(AccessTokenClaims claims) {
         SessionDataDto dto = claims.agent()
                 ? new SessionDataDto(claims.worldId(), claims.userId(), true, null, null, null)
-                : new SessionDataDto(claims.worldId(), claims.userId(), false,
-                        claims.sessionId(), claims.characterId(), claims.role());
+                : new SessionDataDto(
+                        claims.worldId(),
+                        claims.userId(),
+                        false,
+                        claims.sessionId(),
+                        claims.characterId(),
+                        claims.role());
         try {
             return objectMapper.writeValueAsString(dto);
         } catch (tools.jackson.core.JacksonException e) {
@@ -913,13 +939,7 @@ public class AccessService {
      */
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private record SessionDataDto(
-            String worldId,
-            String userId,
-            boolean agent,
-            String sessionId,
-            String characterId,
-            String role
-    ) {}
+            String worldId, String userId, boolean agent, String sessionId, String characterId, String role) {}
 
     // ===== 7. getSessionStatus =====
 
@@ -971,8 +991,7 @@ public class AccessService {
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     sessionToken,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
-            );
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN));
 
             if (jwsOpt.isEmpty()) {
                 throw new IllegalArgumentException("Token validation failed");
@@ -1039,8 +1058,7 @@ public class AccessService {
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     bearerToken,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
-            );
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN));
 
             if (jwsOpt.isEmpty()) {
                 throw new IllegalArgumentException("Bearer token validation failed");
@@ -1127,7 +1145,8 @@ public class AccessService {
         tokenCookie.setSecure(properties.isSecureCookies());
         tokenCookie.setPath("/");
         tokenCookie.setMaxAge(0); // Delete cookie
-        if (properties.getCookieDomain() != null && !properties.getCookieDomain().isBlank()) {
+        if (properties.getCookieDomain() != null
+                && !properties.getCookieDomain().isBlank()) {
             tokenCookie.setDomain(properties.getCookieDomain());
         }
         response.addCookie(tokenCookie);
@@ -1138,7 +1157,8 @@ public class AccessService {
         dataCookie.setSecure(properties.isSecureCookies());
         dataCookie.setPath("/");
         dataCookie.setMaxAge(0); // Delete cookie
-        if (properties.getCookieDomain() != null && !properties.getCookieDomain().isBlank()) {
+        if (properties.getCookieDomain() != null
+                && !properties.getCookieDomain().isBlank()) {
             dataCookie.setDomain(properties.getCookieDomain());
         }
         response.addCookie(dataCookie);
@@ -1198,12 +1218,7 @@ public class AccessService {
             // Create token
             var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
             String token = jwtService.createTokenWithPrivateKey(
-                    KeyType.SECTOR,
-                    intent,
-                    "service:" + serviceName,
-                    claims,
-                    expiresAt
-            );
+                    KeyType.SECTOR, intent, "service:" + serviceName, claims, expiresAt);
 
             // Cache token
             cachedWorldToken = token;
@@ -1241,13 +1256,19 @@ public class AccessService {
         }
 
         String existingSessionId = existingSessionIdOpt.get();
-        log.info("Found existing session for player, closing: regionId={}, playerId={}, sessionId={}",
-                regionId, playerId, existingSessionId);
+        log.info(
+                "Found existing session for player, closing: regionId={}, playerId={}, sessionId={}",
+                regionId,
+                playerId,
+                existingSessionId);
 
         // Get WSession to find playerUrl
-        Optional<de.mhus.nimbus.world.shared.session.WSession> wSessionOpt = sessionService.getWithPlayerUrl(existingSessionId);
+        Optional<de.mhus.nimbus.world.shared.session.WSession> wSessionOpt =
+                sessionService.getWithPlayerUrl(existingSessionId);
         if (wSessionOpt.isEmpty()) {
-            log.warn("WSession not found for existing session, cannot send close command: sessionId={}", existingSessionId);
+            log.warn(
+                    "WSession not found for existing session, cannot send close command: sessionId={}",
+                    existingSessionId);
             // Force destroy since we can't reach the player pod
             destroyPlayerSession(regionId, playerId, existingSessionId);
             return;
@@ -1255,7 +1276,9 @@ public class AccessService {
 
         String playerUrl = wSessionOpt.get().getPlayerUrl();
         if (playerUrl == null || playerUrl.isBlank()) {
-            log.warn("PlayerUrl not set for existing session, cannot send close command: sessionId={}", existingSessionId);
+            log.warn(
+                    "PlayerUrl not set for existing session, cannot send close command: sessionId={}",
+                    existingSessionId);
             // Force destroy since we can't reach the player pod
             destroyPlayerSession(regionId, playerId, existingSessionId);
             return;
@@ -1263,24 +1286,30 @@ public class AccessService {
 
         // Send closeSession command to player pod
         try {
-            de.mhus.nimbus.world.shared.commands.CommandContext context = de.mhus.nimbus.world.shared.commands.CommandContext.builder()
-                    .worldId(wSessionOpt.get().getWorldId())
-                    .sessionId(existingSessionId)
-                    .build();
+            de.mhus.nimbus.world.shared.commands.CommandContext context =
+                    de.mhus.nimbus.world.shared.commands.CommandContext.builder()
+                            .worldId(wSessionOpt.get().getWorldId())
+                            .sessionId(existingSessionId)
+                            .build();
 
-            worldClientService.sendPlayerCommand(
-                    wSessionOpt.get().getWorldId(),
+            worldClientService
+                    .sendPlayerCommand(
+                            wSessionOpt.get().getWorldId(),
+                            existingSessionId,
+                            playerUrl,
+                            "session.close",
+                            List.of(),
+                            context)
+                    .get(5, java.util.concurrent.TimeUnit.SECONDS); // 5s timeout for command execution
+
+            log.debug(
+                    "Sent closeSession command to player pod: sessionId={}, playerUrl={}",
                     existingSessionId,
-                    playerUrl,
-                    "session.close",
-                    List.of(),
-                    context
-            ).get(5, java.util.concurrent.TimeUnit.SECONDS); // 5s timeout for command execution
-
-            log.debug("Sent closeSession command to player pod: sessionId={}, playerUrl={}", existingSessionId, playerUrl);
+                    playerUrl);
 
         } catch (Exception e) {
-            log.error("Failed to send closeSession command: sessionId={}, playerUrl={}", existingSessionId, playerUrl, e);
+            log.error(
+                    "Failed to send closeSession command: sessionId={}, playerUrl={}", existingSessionId, playerUrl, e);
             // Continue with polling - command might have partially succeeded
         }
 
@@ -1293,8 +1322,11 @@ public class AccessService {
             // Check if Redis entry is gone
             if (sessionService.getPlayerSessionId(regionId, playerId).isEmpty()) {
                 deleted = true;
-                log.info("Player session closed successfully: regionId={}, playerId={}, sessionId={}",
-                        regionId, playerId, existingSessionId);
+                log.info(
+                        "Player session closed successfully: regionId={}, playerId={}, sessionId={}",
+                        regionId,
+                        playerId,
+                        existingSessionId);
                 break;
             }
 
@@ -1310,8 +1342,11 @@ public class AccessService {
 
         // If timeout, force destroy
         if (!deleted) {
-            log.warn("Timeout waiting for session to close gracefully, forcing destroy: regionId={}, playerId={}, sessionId={}",
-                    regionId, playerId, existingSessionId);
+            log.warn(
+                    "Timeout waiting for session to close gracefully, forcing destroy: regionId={}, playerId={}, sessionId={}",
+                    regionId,
+                    playerId,
+                    existingSessionId);
             destroyPlayerSession(regionId, playerId, existingSessionId);
         }
     }
@@ -1329,7 +1364,11 @@ public class AccessService {
      * @param sessionId Session ID
      */
     private void destroyPlayerSession(String regionId, String playerId, String sessionId) {
-        log.warn("Force-destroying player session: regionId={}, playerId={}, sessionId={}", regionId, playerId, sessionId);
+        log.warn(
+                "Force-destroying player session: regionId={}, playerId={}, sessionId={}",
+                regionId,
+                playerId,
+                sessionId);
 
         try {
             // Update WSession status to CLOSED (this also deletes player session entry)
@@ -1338,20 +1377,30 @@ public class AccessService {
 
             // Verify Redis entry is deleted
             if (sessionService.getPlayerSessionId(regionId, playerId).isPresent()) {
-                log.error("Failed to delete player session entry after force-close: regionId={}, playerId={}", regionId, playerId);
+                log.error(
+                        "Failed to delete player session entry after force-close: regionId={}, playerId={}",
+                        regionId,
+                        playerId);
                 // Last resort: directly delete Redis entry
                 sessionService.deletePlayerSession(regionId, playerId);
             }
 
         } catch (Exception e) {
-            log.error("Failed to force-destroy player session: regionId={}, playerId={}, sessionId={}",
-                    regionId, playerId, sessionId, e);
+            log.error(
+                    "Failed to force-destroy player session: regionId={}, playerId={}, sessionId={}",
+                    regionId,
+                    playerId,
+                    sessionId,
+                    e);
             // Last resort: directly delete Redis entry
             try {
                 sessionService.deletePlayerSession(regionId, playerId);
             } catch (Exception ex) {
-                log.error("Failed to delete player session entry as last resort: regionId={}, playerId={}",
-                        regionId, playerId, ex);
+                log.error(
+                        "Failed to delete player session entry as last resort: regionId={}, playerId={}",
+                        regionId,
+                        playerId,
+                        ex);
             }
         }
     }

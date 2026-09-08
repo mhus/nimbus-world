@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /** Small summary for a Stage-D materializer (how many entities written, plus per-entry errors). */
 @Data

@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WDocument;
-import de.mhus.nimbus.world.shared.world.WDocumentService;
-import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
-
-import java.nio.charset.StandardCharsets;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WDocument;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Offline tests for the JSON → {@link RealityPlan} mapping ({@link RealityPlanParser#parseJson}).

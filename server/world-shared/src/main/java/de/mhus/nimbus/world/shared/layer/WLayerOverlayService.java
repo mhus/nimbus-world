@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.shared.layer;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.AreaData;
 import de.mhus.nimbus.generated.types.Block;
@@ -15,13 +14,13 @@ import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for layer overlay algorithm.
@@ -79,9 +78,9 @@ public class WLayerOverlayService {
      */
     public Optional<ChunkData> generateChunk(String worldId, String chunkKey, List<WLayer> layers, Integer epoch) {
 
-        var world = worldService.getByWorldId(worldId).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + worldId)
-        );
+        var world = worldService
+                .getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
 
         // Parse chunk coordinates
@@ -139,8 +138,7 @@ public class WLayerOverlayService {
         // Calculate height data
         Map<String, int[]> heightData = calculateHeightData(world, chunkSize, blockMap.values(), layers);
         result.setHeightData(heightData);
-        if (calculateDeny(world, heightData))
-            result.setDeny(true);
+        if (calculateDeny(world, heightData)) result.setDeny(true);
 
         List<AreaData> areaData = calculateAreaData(world, cx, cz, epoch);
         result.setA(areaData);
@@ -149,16 +147,15 @@ public class WLayerOverlayService {
         List<Integer> epoches = epoch != null ? List.of(epoch) : List.of();
         chunkService.saveChunkInfo(worldId, chunkKey, epoches, blockGroups, blockLayers);
 
-        log.debug("Generated chunk {} from {} layers, {} blocks",
-                chunkKey, layers.size(), blockMap.size());
+        log.debug("Generated chunk {} from {} layers, {} blocks", chunkKey, layers.size(), blockMap.size());
 
         return Optional.of(result);
     }
 
-    private boolean calculateDeny(WWorld world, Map<String,int[]> heightData) {
+    private boolean calculateDeny(WWorld world, Map<String, int[]> heightData) {
         int chunkSize = world.getPublicData().getChunkSize();
         if (heightData.size() < chunkSize * chunkSize) // missed some chunk columns ... not good
-            return true;
+        return true;
         int minHeight = (int) world.getPublicData().getStart().getY();
 
         // Check if any column has no GROUND block (minGroundLevel equals world minHeight)
@@ -196,9 +193,11 @@ public class WLayerOverlayService {
                     var area = TypeUtil.parseArea(areaEntry.getKey());
                     var areaData = deltaArea(area, minX, minZ, maxX, maxZ);
                     if (areaData == null) continue;
-                    HashMap<String,String> p = grid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e_"))
+                    HashMap<String, String> p = grid.getParameters().entrySet().stream()
+                            .filter(e -> e.getKey().startsWith("e_"))
                             .map(e -> new AreaEntry(e.getKey().substring(2), e.getValue()))
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b) -> b, HashMap::new));
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, HashMap::new));
                     if (p.isEmpty()) continue;
                     p.put("grid", grid.getPosition());
                     areaData.setP(p);
@@ -214,13 +213,13 @@ public class WLayerOverlayService {
             var areaData = new AreaData();
             areaData.setA(TypeUtil.vector3(minX, 0, minZ));
             areaData.setB(TypeUtil.vector3(maxX, 0, maxZ));
-            HashMap<String,String> p = new HashMap<>();
+            HashMap<String, String> p = new HashMap<>();
             p.put("grid", mainGrid.getPosition());
             if (mainGrid.getPublicData().getTitle() != null)
                 p.put("title", mainGrid.getPublicData().getTitle());
             areaData.setP(p);
             if (p.size() > 1) // more then grid
-                areaDataList.add(areaData);
+            areaDataList.add(areaData);
         }
         return areaDataList;
     }
@@ -265,12 +264,17 @@ public class WLayerOverlayService {
      * - For MODEL layers: First merge all WLayerModel documents into terrain data,
      *   then overlay the merged terrain data
      */
-    private void overlayTerrainLayer(WLayer layer, String chunkKey, int cx, int cz,
-                                     Map<String, Block> blockMap,
-                                     Map<String, String> blockGroups, Map<String, String> blockLayers) {
+    private void overlayTerrainLayer(
+            WLayer layer,
+            String chunkKey,
+            int cx,
+            int cz,
+            Map<String, Block> blockMap,
+            Map<String, String> blockGroups,
+            Map<String, String> blockLayers) {
         // Load terrain chunk from storage
-        Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
+        Optional<WLayerTerrain> terrainOpt = terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(
+                layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
         if (terrainOpt.isEmpty()) {
             // For MODEL layers, terrain might not exist yet - need to generate from models
@@ -324,7 +328,8 @@ public class WLayerOverlayService {
                 }
             }
 
-            log.trace("Overlaid terrain layer {}: {} blocks",
+            log.trace(
+                    "Overlaid terrain layer {}: {} blocks",
                     layer.getName(),
                     chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
 
@@ -341,9 +346,14 @@ public class WLayerOverlayService {
      * - Each WLayerModel has its own mount point
      * - Result is overlaid onto the blockMap
      */
-    private void overlayModelLayersToTerrain(WLayer layer, String chunkKey, int cx, int cz,
-                                              Map<String, Block> blockMap,
-                                              Map<String, String> blockGroups, Map<String, String> blockLayers) {
+    private void overlayModelLayersToTerrain(
+            WLayer layer,
+            String chunkKey,
+            int cx,
+            int cz,
+            Map<String, Block> blockMap,
+            Map<String, String> blockGroups,
+            Map<String, String> blockLayers) {
         // Load all models for this layerDataId (already sorted by order)
         List<WLayerModel> models = modelRepository.findByLayerDataIdOrderByOrder(layer.getLayerDataId());
 
@@ -353,11 +363,10 @@ public class WLayerOverlayService {
         }
 
         var worldId = layer.getWorldId();
-        var world = worldService.getByWorldId(worldId).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + worldId)
-        );
+        var world = worldService
+                .getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
-
 
         // Calculate chunk bounds
         int chunkMinX = cx * chunkSize;
@@ -393,8 +402,7 @@ public class WLayerOverlayService {
                 int worldZ = mountZ + (int) relativeBlock.getPosition().getZ();
 
                 // Check if within chunk bounds
-                if (worldX >= chunkMinX && worldX <= chunkMaxX &&
-                        worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
+                if (worldX >= chunkMinX && worldX <= chunkMaxX && worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
 
                     Vector3Int worldPos = new Vector3Int();
                     worldPos.setX(worldX);
@@ -421,7 +429,11 @@ public class WLayerOverlayService {
             log.trace("Overlaid model {} (order={}): {} blocks", model.getName(), model.getOrder(), overlaidCount);
         }
 
-        log.trace("Overlaid {} model layers for layer {}: {} total blocks", models.size(), layer.getName(), totalOverlaidCount);
+        log.trace(
+                "Overlaid {} model layers for layer {}: {} total blocks",
+                models.size(),
+                layer.getName(),
+                totalOverlaidCount);
     }
 
     /**
@@ -436,8 +448,7 @@ public class WLayerOverlayService {
      */
     private Block cloneBlock(Block source) {
         try {
-            return objectMapper.readValue(
-                    objectMapper.writeValueAsString(source), Block.class);
+            return objectMapper.readValue(objectMapper.writeValueAsString(source), Block.class);
         } catch (Exception e) {
             log.error("Failed to clone block", e);
             return source; // Fallback
@@ -454,7 +465,8 @@ public class WLayerOverlayService {
      * @param layers All layers (to find baseGround layer)
      * @return Height data map
      */
-    private Map<String, int[]> calculateHeightData(WWorld world, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
+    private Map<String, int[]> calculateHeightData(
+            WWorld world, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
         int maxHeight = (int) world.getPublicData().getStop().getY();
         int minHeight = (int) world.getPublicData().getStart().getY();
         var worldId = WorldId.of(world.getWorldId()).orElseThrow();
@@ -472,16 +484,15 @@ public class WLayerOverlayService {
             int worldZ = (int) block.getPosition().getZ();
             String columnKey = worldX + "," + worldZ;
 
-            ColumnData column = columns.computeIfAbsent(columnKey, k -> new ColumnData(worldX, worldZ, minHeight, maxHeight));
+            ColumnData column =
+                    columns.computeIfAbsent(columnKey, k -> new ColumnData(worldX, worldZ, minHeight, maxHeight));
             column.addBlock(block);
 
             // Check block type: GROUND blocks for ground levels, WATER/LAVA for water level
             if (block.getBlockTypeId() != null) {
                 // Use cache to avoid repeated database lookups
                 var blockType = blockTypeCache.computeIfAbsent(
-                    block.getBlockTypeId(),
-                    blockTypeId -> blockTypeService.findByBlockId(worldId, blockTypeId)
-                );
+                        block.getBlockTypeId(), blockTypeId -> blockTypeService.findByBlockId(worldId, blockTypeId));
 
                 if (blockType.isPresent() && blockType.get().getPublicData() != null) {
                     BlockTypeType type = blockType.get().getPublicData().getType();
@@ -511,12 +522,11 @@ public class WLayerOverlayService {
         for (ColumnData column : columns.values()) {
             String key = column.x + "," + column.z;
             int waterVal = column.waterLevel != null ? column.waterLevel : -1;
-            heightDataMap.put(key, new int[]{column.maxGroundLevel, waterVal});
+            heightDataMap.put(key, new int[] {column.maxGroundLevel, waterVal});
         }
 
         return heightDataMap;
     }
-
 
     /**
      * Calculate and apply face visibility for GROUND, PATH and BLOCK type blocks in the chunk.
@@ -539,7 +549,8 @@ public class WLayerOverlayService {
      * @param chunkSize Chunk size
      * @param worldId World identifier for block type lookup
      */
-    private void calculateAndApplyFaceVisibility(Map<String, Block> blockMap, int cx, int cz, int chunkSize, String worldId) {
+    private void calculateAndApplyFaceVisibility(
+            Map<String, Block> blockMap, int cx, int cz, int chunkSize, String worldId) {
         int chunkMinX = cx * chunkSize;
         int chunkMaxX = chunkMinX + chunkSize - 1;
         int chunkMinZ = cz * chunkSize;
@@ -549,7 +560,8 @@ public class WLayerOverlayService {
         Map<String, WBlockType> blockTypeCache = new HashMap<>();
 
         // Parse worldId for block type lookup
-        de.mhus.nimbus.shared.types.WorldId wid = de.mhus.nimbus.shared.types.WorldId.of(worldId).orElse(null);
+        de.mhus.nimbus.shared.types.WorldId wid =
+                de.mhus.nimbus.shared.types.WorldId.of(worldId).orElse(null);
         if (wid == null) {
             log.warn("Invalid worldId for face visibility calculation: {}", worldId);
             return;
@@ -574,21 +586,23 @@ public class WLayerOverlayService {
 
             // Only process GROUND, PATH or BLOCK type blocks - get or cache block type
             String blockTypeId = block.getBlockTypeId();
-            WBlockType blockType = blockTypeCache.computeIfAbsent(blockTypeId, id ->
-                    blockTypeService.findByBlockId(wid, id).orElse(null)
-            );
+            WBlockType blockType = blockTypeCache.computeIfAbsent(
+                    blockTypeId, id -> blockTypeService.findByBlockId(wid, id).orElse(null));
 
-            if (blockType == null || blockType.getPublicData() == null || blockType.getPublicData().getType() == null) {
+            if (blockType == null
+                    || blockType.getPublicData() == null
+                    || blockType.getPublicData().getType() == null) {
                 // Can't determine type, skip
                 skippedNonGroundCount++;
                 continue;
             }
 
             // Only process GROUND, PATH or BLOCK blocks
-            de.mhus.nimbus.generated.types.BlockTypeType blockTypeType = blockType.getPublicData().getType();
-            if (blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.GROUND &&
-                blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.PATH &&
-                blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.BLOCK) {
+            de.mhus.nimbus.generated.types.BlockTypeType blockTypeType =
+                    blockType.getPublicData().getType();
+            if (blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.GROUND
+                    && blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.PATH
+                    && blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.BLOCK) {
                 skippedNonGroundCount++;
                 continue;
             }
@@ -605,37 +619,37 @@ public class WLayerOverlayService {
             // TOP (y+1): visible if no GROUND/PATH/BLOCK neighbor above
             String topKey = blockKey(x, y + 1, z);
             if (!hasGroundBlockAt(blockMap, topKey, blockTypeCache, wid)) {
-                faceVisibility |= 1;  // TOP visible
+                faceVisibility |= 1; // TOP visible
             }
 
             // BOTTOM (y-1): visible if no GROUND/PATH/BLOCK neighbor below
             String bottomKey = blockKey(x, y - 1, z);
             if (!hasGroundBlockAt(blockMap, bottomKey, blockTypeCache, wid)) {
-                faceVisibility |= 2;  // BOTTOM visible
+                faceVisibility |= 2; // BOTTOM visible
             }
 
             // LEFT / West (x-1): visible if no GROUND/PATH/BLOCK neighbor or at chunk boundary
             String leftKey = blockKey(x - 1, y, z);
             if (!hasGroundBlockAt(blockMap, leftKey, blockTypeCache, wid) || x == chunkMinX) {
-                faceVisibility |= 4;  // LEFT visible
+                faceVisibility |= 4; // LEFT visible
             }
 
             // RIGHT / East (x+1): visible if no GROUND/PATH/BLOCK neighbor or at chunk boundary
             String rightKey = blockKey(x + 1, y, z);
             if (!hasGroundBlockAt(blockMap, rightKey, blockTypeCache, wid) || x == chunkMaxX) {
-                faceVisibility |= 8;  // RIGHT visible
+                faceVisibility |= 8; // RIGHT visible
             }
 
             // FRONT (South): visible if no GROUND/PATH/BLOCK neighbor at North (z+1) or at chunk boundary (swapped)
             String northKey = blockKey(x, y, z + 1);
             if (!hasGroundBlockAt(blockMap, northKey, blockTypeCache, wid) || z == chunkMaxZ) {
-                faceVisibility |= 16;  // FRONT visible
+                faceVisibility |= 16; // FRONT visible
             }
 
             // BACK (North): visible if no GROUND/PATH/BLOCK neighbor at South (z-1) or at chunk boundary (swapped)
             String southKey = blockKey(x, y, z - 1);
             if (!hasGroundBlockAt(blockMap, southKey, blockTypeCache, wid) || z == chunkMinZ) {
-                faceVisibility |= 32;  // BACK visible
+                faceVisibility |= 32; // BACK visible
             }
 
             // Set faceVisibility on block
@@ -643,8 +657,14 @@ public class WLayerOverlayService {
             processedCount++;
         }
 
-        log.debug("Applied face visibility to chunk {}:{} - processed: {}, skipped (fixed): {}, skipped (non-ground): {}, cached types: {}",
-                cx, cz, processedCount, skippedFixedCount, skippedNonGroundCount, blockTypeCache.size());
+        log.debug(
+                "Applied face visibility to chunk {}:{} - processed: {}, skipped (fixed): {}, skipped (non-ground): {}, cached types: {}",
+                cx,
+                cz,
+                processedCount,
+                skippedFixedCount,
+                skippedNonGroundCount,
+                blockTypeCache.size());
     }
 
     /**
@@ -657,9 +677,11 @@ public class WLayerOverlayService {
      * @param wid World identifier
      * @return true if a GROUND, PATH or BLOCK type block exists at this position, false otherwise
      */
-    private boolean hasGroundBlockAt(Map<String, Block> blockMap, String blockKey,
-                                      Map<String, WBlockType> blockTypeCache,
-                                      de.mhus.nimbus.shared.types.WorldId wid) {
+    private boolean hasGroundBlockAt(
+            Map<String, Block> blockMap,
+            String blockKey,
+            Map<String, WBlockType> blockTypeCache,
+            de.mhus.nimbus.shared.types.WorldId wid) {
         Block neighbor = blockMap.get(blockKey);
         if (neighbor == null || neighbor.getBlockTypeId() == null) {
             return false;
@@ -668,19 +690,21 @@ public class WLayerOverlayService {
         String blockTypeId = neighbor.getBlockTypeId();
 
         // Get or cache block type
-        WBlockType blockType = blockTypeCache.computeIfAbsent(blockTypeId, id ->
-                blockTypeService.findByBlockId(wid, id).orElse(null)
-        );
+        WBlockType blockType = blockTypeCache.computeIfAbsent(
+                blockTypeId, id -> blockTypeService.findByBlockId(wid, id).orElse(null));
 
-        if (blockType == null || blockType.getPublicData() == null || blockType.getPublicData().getType() == null) {
+        if (blockType == null
+                || blockType.getPublicData() == null
+                || blockType.getPublicData().getType() == null) {
             return false;
         }
 
         // Check if block type is GROUND, PATH or BLOCK
-        de.mhus.nimbus.generated.types.BlockTypeType blockTypeType = blockType.getPublicData().getType();
-        return blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.GROUND ||
-               blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.PATH ||
-               blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
+        de.mhus.nimbus.generated.types.BlockTypeType blockTypeType =
+                blockType.getPublicData().getType();
+        return blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.GROUND
+                || blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.PATH
+                || blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
     }
 
     /**
@@ -716,7 +740,7 @@ public class WLayerOverlayService {
         }
     }
 
-    private static class AreaEntry implements Map.Entry<String,String> {
+    private static class AreaEntry implements Map.Entry<String, String> {
         private final String key;
         private String value;
 
@@ -742,5 +766,4 @@ public class WLayerOverlayService {
             return old;
         }
     }
-
 }

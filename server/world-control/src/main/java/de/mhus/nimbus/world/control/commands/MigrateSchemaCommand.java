@@ -5,12 +5,11 @@ import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * MigrateSchema command - migrates MongoDB entities to their latest schema version.
@@ -100,8 +99,8 @@ public class MigrateSchemaCommand implements Command {
     public CommandResult execute(CommandContext context, List<String> args) {
         // Validate arguments
         if (args.size() < 4) {
-            return CommandResult.error(-1,
-                    "Usage: MigrateSchema <collection> <id|*|no-schema> <entityType> <targetVersion>");
+            return CommandResult.error(
+                    -1, "Usage: MigrateSchema <collection> <id|*|no-schema> <entityType> <targetVersion>");
         }
 
         String collectionName = args.get(0);
@@ -109,8 +108,12 @@ public class MigrateSchemaCommand implements Command {
         String entityType = args.get(2);
         SchemaVersion targetVersion = SchemaVersion.create(args.get(3));
 
-        log.info("Starting schema migration for collection '{}', pattern '{}', entity '{}', target version '{}'",
-                collectionName, idOrPattern, entityType, targetVersion);
+        log.info(
+                "Starting schema migration for collection '{}', pattern '{}', entity '{}', target version '{}'",
+                collectionName,
+                idOrPattern,
+                entityType,
+                targetVersion);
 
         try {
             return switch (idOrPattern.toLowerCase()) {
@@ -120,8 +123,7 @@ public class MigrateSchemaCommand implements Command {
             };
 
         } catch (Exception e) {
-            log.error("Schema migration failed for collection '{}': {}",
-                    collectionName, e.getMessage(), e);
+            log.error("Schema migration failed for collection '{}': {}", collectionName, e.getMessage(), e);
             return CommandResult.error(-100, "Migration failed: " + e.getMessage());
         }
     }
@@ -129,8 +131,8 @@ public class MigrateSchemaCommand implements Command {
     /**
      * Migrates a single document by ID.
      */
-    private CommandResult migrateSingleDocument(String collectionName, String id,
-                                                String entityType, SchemaVersion targetVersion) {
+    private CommandResult migrateSingleDocument(
+            String collectionName, String id, String entityType, SchemaVersion targetVersion) {
         log.info("Migrating single document: {} in {}", id, collectionName);
 
         // Load document as JSON
@@ -165,8 +167,7 @@ public class MigrateSchemaCommand implements Command {
     /**
      * Migrates all documents in a collection.
      */
-    private CommandResult migrateAllDocuments(String collectionName,
-                                              String entityType, SchemaVersion targetVersion) {
+    private CommandResult migrateAllDocuments(String collectionName, String entityType, SchemaVersion targetVersion) {
         log.info("Migrating all documents in collection: {}", collectionName);
 
         // Load all documents
@@ -230,8 +231,8 @@ public class MigrateSchemaCommand implements Command {
     /**
      * Migrates documents without _schema field.
      */
-    private CommandResult migrateDocumentsWithoutSchema(String collectionName,
-                                                        String entityType, SchemaVersion targetVersion) {
+    private CommandResult migrateDocumentsWithoutSchema(
+            String collectionName, String entityType, SchemaVersion targetVersion) {
         log.info("Migrating documents without _schema field in collection: {}", collectionName);
 
         // Load documents without _schema field

@@ -1,28 +1,25 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.shared.types.WorldId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WorldInstanceType;
-
-import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
-
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for managing WWorld entities.
@@ -60,8 +57,7 @@ public class WWorldController extends BaseEditorController {
             Double noiseFrequency,
             Boolean publicFlag,
             Boolean universeSync,
-            List<WEpochMeta> epoches
-    ) {}
+            List<WEpochMeta> epoches) {}
 
     public record WorldResponse(
             String id,
@@ -87,8 +83,7 @@ public class WWorldController extends BaseEditorController {
             Set<String> player,
             boolean publicFlag,
             boolean universeSync,
-            List<WEpochMeta> epoches
-    ) {}
+            List<WEpochMeta> epoches) {}
 
     public record WorldCreateResponse(
             String id,
@@ -115,8 +110,7 @@ public class WWorldController extends BaseEditorController {
             boolean publicFlag,
             boolean universeSync,
             List<WEpochMeta> epoches,
-            String jobId
-    ) {}
+            String jobId) {}
 
     private WorldResponse toResponse(WWorld world) {
         // Get title from publicData if available
@@ -149,8 +143,7 @@ public class WWorldController extends BaseEditorController {
                 world.getPlayer(),
                 world.isPublicFlag(),
                 world.isUniverseSync(),
-                world.getEpoches()
-        );
+                world.getEpoches());
     }
 
     private WorldResponse toResponseFromWorldId(WorldId worldId) {
@@ -158,31 +151,31 @@ public class WWorldController extends BaseEditorController {
         String title = worldService.getWorldCollectionTitle(worldId);
 
         return new WorldResponse(
-                null,  // no database id for collections
+                null, // no database id for collections
                 worldId.getId(),
                 worldId.getRegionId(),
                 title,
-                "World Collection: " + worldId.getId(),  // generated description
-                null,  // no publicData for collections
-                null,  // no createdAt
-                null,  // no updatedAt
-                true,  // collections are always enabled
+                "World Collection: " + worldId.getId(), // generated description
+                null, // no publicData for collections
+                null, // no createdAt
+                null, // no updatedAt
+                true, // collections are always enabled
                 WorldInstanceType.NONE, // collections have no instances
-                0,     // default maxPlayersPerInstance
-                0,     // default groundLevel
-                null,  // no oceanLevel
-                null,  // no groundBlockType
-                null,  // no seaBlockType
-                1337,  // default noiseSeed
-                0.02,  // default noiseFrequency
-                Set.of(),  // empty owner set
-                Set.of(),  // empty editor set
-                Set.of(),  // empty supporter set
-                Set.of(),  // empty player set
-                false,  // not public
-                false,  // no universe sync
-                List.of()  // empty epoches
-        );
+                0, // default maxPlayersPerInstance
+                0, // default groundLevel
+                null, // no oceanLevel
+                null, // no groundBlockType
+                null, // no seaBlockType
+                1337, // default noiseSeed
+                0.02, // default noiseFrequency
+                Set.of(), // empty owner set
+                Set.of(), // empty editor set
+                Set.of(), // empty supporter set
+                Set.of(), // empty player set
+                false, // not public
+                false, // no universe sync
+                List.of() // empty epoches
+                );
     }
 
     /**
@@ -201,9 +194,7 @@ public class WWorldController extends BaseEditorController {
      *   - "withCollectionsAndZones": Include main worlds + world collections + zones
      */
     @GetMapping
-    public ResponseEntity<?> list(
-            @PathVariable String regionId,
-            @RequestParam(required = false) String filter) {
+    public ResponseEntity<?> list(@PathVariable String regionId, @RequestParam(required = false) String filter) {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
@@ -294,9 +285,9 @@ public class WWorldController extends BaseEditorController {
 
             case "regionCollections" ->
                 // Only @region + shared collections
-                worldId.isCollection() &&
-                (world.getWorldId().startsWith(WorldId.COLLECTION_REGION) ||
-                 world.getWorldId().startsWith(WorldId.COLLECTION_SHARED));
+                worldId.isCollection()
+                        && (world.getWorldId().startsWith(WorldId.COLLECTION_REGION)
+                                || world.getWorldId().startsWith(WorldId.COLLECTION_SHARED));
 
             case "regionOnly" ->
                 // Only @region collection
@@ -311,9 +302,7 @@ public class WWorldController extends BaseEditorController {
      * GET /control/regions/{regionId}/worlds/{worldId}
      */
     @GetMapping("/{worldId}")
-    public ResponseEntity<?> get(
-            @PathVariable String regionId,
-            @PathVariable String worldId) {
+    public ResponseEntity<?> get(@PathVariable String regionId, @PathVariable String worldId) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -321,7 +310,8 @@ public class WWorldController extends BaseEditorController {
         var error2 = validateId(worldId, "worldId");
         if (error2 != null) return error2;
 
-        return worldService.getByWorldId(worldId)
+        return worldService
+                .getByWorldId(worldId)
                 .<ResponseEntity<?>>map(w -> {
                     if (!regionId.equals(w.getRegionId())) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -338,9 +328,7 @@ public class WWorldController extends BaseEditorController {
      * POST /control/regions/{regionId}/worlds
      */
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String regionId,
-            @RequestBody WorldRequest request) {
+    public ResponseEntity<?> create(@PathVariable String regionId, @RequestBody WorldRequest request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -359,8 +347,8 @@ public class WWorldController extends BaseEditorController {
             // Set title in publicData
             info.setTitle(title);
 
-            WorldId worldIdObj = WorldId.of(request.worldId()).orElseThrow(() ->
-                new IllegalArgumentException("Invalid worldId: " + request.worldId()));
+            WorldId worldIdObj = WorldId.of(request.worldId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + request.worldId()));
 
             WWorld created = worldService.createWorld(worldIdObj, info);
 
@@ -386,9 +374,9 @@ public class WWorldController extends BaseEditorController {
                     "Initialize World: " + request.worldId(),
                     "initialize",
                     jobParameters,
-                    5,  // priority
-                    0   // no retries
-            );
+                    5, // priority
+                    0 // no retries
+                    );
 
             WWorld updated = worldService.getByWorldId(worldIdObj).orElseThrow();
             WorldResponse worldResponse = toResponse(updated);
@@ -418,10 +406,10 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.publicFlag(),
                     worldResponse.universeSync(),
                     worldResponse.epoches(),
-                    job.getId()
-            );
+                    job.getId());
 
-            return ResponseEntity.created(URI.create("/control/regions/" + regionId + "/worlds/" + updated.getWorldId()))
+            return ResponseEntity.created(
+                            URI.create("/control/regions/" + regionId + "/worlds/" + updated.getWorldId()))
                     .body(response);
         } catch (IllegalStateException | IllegalArgumentException e) {
             return bad(e.getMessage());
@@ -434,9 +422,7 @@ public class WWorldController extends BaseEditorController {
      */
     @PutMapping("/{worldId}")
     public ResponseEntity<?> update(
-            @PathVariable String regionId,
-            @PathVariable String worldId,
-            @RequestBody WorldRequest request) {
+            @PathVariable String regionId, @PathVariable String worldId, @RequestBody WorldRequest request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -491,7 +477,8 @@ public class WWorldController extends BaseEditorController {
             }
             if (request.enabled() != null) existing.setEnabled(request.enabled());
             if (request.instanceType() != null) existing.setInstanceType(request.instanceType());
-            if (request.maxPlayersPerInstance() != null) existing.setMaxPlayersPerInstance(request.maxPlayersPerInstance());
+            if (request.maxPlayersPerInstance() != null)
+                existing.setMaxPlayersPerInstance(request.maxPlayersPerInstance());
             if (request.owner() != null) existing.setOwner(request.owner());
             if (request.editor() != null) existing.setEditor(request.editor());
             if (request.supporter() != null) existing.setSupporter(request.supporter());
@@ -520,9 +507,7 @@ public class WWorldController extends BaseEditorController {
      * Response: { "jobId": "..." }
      */
     @DeleteMapping("/{worldId}")
-    public ResponseEntity<?> delete(
-            @PathVariable String regionId,
-            @PathVariable String worldId) {
+    public ResponseEntity<?> delete(@PathVariable String regionId, @PathVariable String worldId) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -540,8 +525,8 @@ public class WWorldController extends BaseEditorController {
         }
 
         try {
-            WorldId worldIdObj = WorldId.of(worldId).orElseThrow(() ->
-                new IllegalArgumentException("Invalid worldId: " + worldId));
+            WorldId worldIdObj =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Delete the WWorld entity first
             worldService.deleteWorld(worldIdObj);
@@ -555,9 +540,9 @@ public class WWorldController extends BaseEditorController {
                     "Delete World Resources: " + worldId,
                     "cleanup",
                     jobParameters,
-                    5,  // priority
-                    0   // no retries
-            );
+                    5, // priority
+                    0 // no retries
+                    );
 
             // Return job info
             Map<String, String> response = Map.of("jobId", job.getId());
@@ -577,9 +562,7 @@ public class WWorldController extends BaseEditorController {
      */
     @PostMapping("/{worldId}/zones")
     public ResponseEntity<?> createZone(
-            @PathVariable String regionId,
-            @PathVariable String worldId,
-            @RequestBody Map<String, String> request) {
+            @PathVariable String regionId, @PathVariable String worldId, @RequestBody Map<String, String> request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -603,8 +586,8 @@ public class WWorldController extends BaseEditorController {
         }
 
         try {
-            WorldId worldIdObj = WorldId.of(worldId).orElseThrow(() ->
-                new IllegalArgumentException("Invalid worldId: " + worldId));
+            WorldId worldIdObj =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             WWorld zoneWorld = worldService.copyWorldAsZone(worldIdObj, zoneName);
             String zoneWorldId = zoneWorld.getWorldId();
@@ -625,9 +608,7 @@ public class WWorldController extends BaseEditorController {
      */
     @PostMapping("/{worldId}/duplicate")
     public ResponseEntity<?> duplicate(
-            @PathVariable String regionId,
-            @PathVariable String worldId,
-            @RequestBody Map<String, String> request) {
+            @PathVariable String regionId, @PathVariable String worldId, @RequestBody Map<String, String> request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -665,8 +646,8 @@ public class WWorldController extends BaseEditorController {
             WWorld source = sourceWorld.get();
 
             // Create target world entity with same properties as source
-            WorldId targetWorldIdObj = WorldId.of(targetWorldId).orElseThrow(() ->
-                new IllegalArgumentException("Invalid targetWorldId: " + targetWorldId));
+            WorldId targetWorldIdObj = WorldId.of(targetWorldId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid targetWorldId: " + targetWorldId));
 
             WorldInfo targetInfo = source.getPublicData() != null ? source.getPublicData() : new WorldInfo();
 
@@ -702,8 +683,7 @@ public class WWorldController extends BaseEditorController {
             // Create duplication job
             Map<String, String> jobParameters = Map.of(
                     "sourceWorldId", worldId,
-                    "targetWorldId", targetWorldId
-            );
+                    "targetWorldId", targetWorldId);
 
             de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
                     targetWorldId,
@@ -711,16 +691,15 @@ public class WWorldController extends BaseEditorController {
                     "Duplicate World: " + worldId + " to " + targetWorldId,
                     "duplicate",
                     jobParameters,
-                    5,  // priority
-                    0   // no retries
-            );
+                    5, // priority
+                    0 // no retries
+                    );
 
             // Return job info
             Map<String, String> response = Map.of(
                     "jobId", job.getId(),
                     "targetWorldId", targetWorldId,
-                    "targetWorldTitle", targetWorldTitle
-            );
+                    "targetWorldTitle", targetWorldTitle);
 
             return ResponseEntity.ok(response);
 

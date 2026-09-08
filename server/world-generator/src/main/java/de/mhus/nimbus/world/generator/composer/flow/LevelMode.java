@@ -35,5 +35,4 @@ public enum LevelMode {
      * and meanHeight = landLevel + landOffset/2
      */
     ADJUST_MAXIMUM,
-
 }

@@ -1,12 +1,12 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.GameplayService;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Handles simple interaction messages from clients (no block/entity target).
@@ -35,7 +35,8 @@ public class SimpleInteractionHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Simple interaction from unauthenticated session: {}",
+            log.warn(
+                    "Simple interaction from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -50,10 +51,12 @@ public class SimpleInteractionHandler implements MessageHandler {
             return;
         }
 
-        log.trace("Simple interaction received: action={}, shortcutKey={}, user={}",
-                action, shortcutKey, session.getTitle());
+        log.trace(
+                "Simple interaction received: action={}, shortcutKey={}, user={}",
+                action,
+                shortcutKey,
+                session.getTitle());
 
         gameplay.onSimpleInteraction(session, action, shortcutKey, data);
     }
-
 }

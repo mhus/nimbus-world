@@ -1,13 +1,13 @@
 package de.mhus.nimbus.world.generator;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.fauna.FaunaAnimalDefinition;
 import de.mhus.nimbus.world.generator.flora.FloraPlantDefinition;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Guards the {@code @Builder.Default} values of the definition classes against Jackson's creator
@@ -52,8 +52,7 @@ class JacksonBuilderDefaultsTest {
     /** A null registry made getOrCreateFeatureHexGrid throw and aborted the whole composition. */
     @Test
     void hexCompositionKeepsItsRegistryWhenDeserialized() {
-        HexComposition composition =
-                mapper.readValue("{\"name\":\"c1\",\"worldId\":\"w:test\"}", HexComposition.class);
+        HexComposition composition = mapper.readValue("{\"name\":\"c1\",\"worldId\":\"w:test\"}", HexComposition.class);
 
         assertThat(composition.getFeatureHexGridRegistry()).isNotNull().isEmpty();
         assertThat(composition.getVersion()).isEqualTo("1.0.0");

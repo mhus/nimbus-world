@@ -14,15 +14,35 @@ public class TypeScriptField {
         this.optional = optional;
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public String getTsType() { return tsType; }
-    public void setTsType(String tsType) { this.tsType = tsType; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public boolean isOptional() { return optional; }
-    public void setOptional(boolean optional) { this.optional = optional; }
+    public String getTsType() {
+        return tsType;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setTsType(String tsType) {
+        this.tsType = tsType;
+    }
+
+    public boolean isOptional() {
+        return optional;
+    }
+
+    public void setOptional(boolean optional) {
+        this.optional = optional;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

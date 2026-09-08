@@ -3,12 +3,11 @@ package de.mhus.nimbus.world.generator.weather;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Job executor for generating weather configuration on a single hex grid.
@@ -57,7 +56,11 @@ public class HexGridWeatherGeneratorJobExecutor implements JobExecutor {
 
             boolean generated = weatherGeneratorService.generateWeather(job.getWorldId(), hexQ, hexR, epoch);
 
-            log.info("Weather generation for hex {},{} epoch {}: {}", hexQ, hexR, epoch,
+            log.info(
+                    "Weather generation for hex {},{} epoch {}: {}",
+                    hexQ,
+                    hexR,
+                    epoch,
                     generated ? "created" : "skipped (already exists or no biome)");
 
             Map<String, Object> result = new HashMap<>();

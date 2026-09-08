@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.types.WorldId;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +96,8 @@ public interface WChatAgent {
      * @param sessionId The session ID for accessing session-specific context (optional)
      * @return List of response messages from the agent
      */
-    default List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
+    default List<WChatMessage> chatWithSession(
+            WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
         return chat(worldId, chatId, playerId, message, context);
     }
 
@@ -117,8 +117,14 @@ public interface WChatAgent {
      * @param queue The session queue to consume further messages from
      * @return List of response messages from the agent
      */
-    default List<WChatMessage> chatWithQueue(WorldId worldId, String chatId, String playerId,
-                                             String message, String sessionId, WChatSessionQueue queue, WChatContext context) {
+    default List<WChatMessage> chatWithQueue(
+            WorldId worldId,
+            String chatId,
+            String playerId,
+            String message,
+            String sessionId,
+            WChatSessionQueue queue,
+            WChatContext context) {
         return chatWithSession(worldId, chatId, playerId, message, sessionId, context);
     }
 
@@ -172,8 +178,7 @@ public interface WChatAgent {
      * @param chat The chat entity with persisted agentState
      * @param queue The session queue — store this reference for session control and message access
      */
-    default void onSessionStarted(WChat chat, WChatSessionQueue queue) {
-    }
+    default void onSessionStarted(WChat chat, WChatSessionQueue queue) {}
 
     /**
      * Called when a chat session ends (idle timeout or shutdown).
@@ -183,8 +188,7 @@ public interface WChatAgent {
      *
      * @param chat The chat entity — set agentState here for persistence
      */
-    default void onSessionEnded(WChat chat) {
-    }
+    default void onSessionEnded(WChat chat) {}
 
     /**
      * Whether this agent runs locally on this pod.
@@ -220,8 +224,8 @@ public interface WChatAgent {
      * @param params Command parameters
      * @return List of response messages from the agent
      */
-    default List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
-                                             String command, Map<String, Object> params) {
+    default List<WChatMessage> executeCommand(
+            WorldId worldId, String chatId, String playerId, String command, Map<String, Object> params) {
         // Default implementation: return error message
         WChatMessage errorMessage = WChatMessage.builder()
                 .worldId(worldId.toBaseWorldId().getId())

@@ -1,26 +1,23 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.generated.types.ChunkData;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
-import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
-import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
-import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 /**
  * Service for creating WFlat instances.
@@ -53,11 +50,27 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance
      * @throws IllegalArgumentException if world not found or parameters invalid
      */
-    public WFlat createFlat(String worldId, String layerDataId, String flatId,
-                           int sizeX, int sizeZ, int mountX, int mountZ,
-                           String title, String description) {
-        log.debug("Creating flat: worldId={}, layerDataId={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
-                worldId, layerDataId, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
+    public WFlat createFlat(
+            String worldId,
+            String layerDataId,
+            String flatId,
+            int sizeX,
+            int sizeZ,
+            int mountX,
+            int mountZ,
+            String title,
+            String description) {
+        log.debug(
+                "Creating flat: worldId={}, layerDataId={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
+                worldId,
+                layerDataId,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                title,
+                description);
 
         // Load world to get ocean level
         Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);
@@ -82,9 +95,7 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
                 .seaBlockId(oceanBlockId)
-                .hexGrid(HexMathUtil.getDominantHexForArea(
-                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
-                ))
+                .hexGrid(HexMathUtil.getDominantHexForArea(world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)))
                 .build();
 
         // Initialize with size
@@ -93,8 +104,15 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("Created flat: id={}, worldId={}, layerDataId={}, flatId={}, size={}x{}, title={}",
-                saved.getId(), worldId, layerDataId, flatId, sizeX, sizeZ, title);
+        log.info(
+                "Created flat: id={}, worldId={}, layerDataId={}, flatId={}, size={}x{}, title={}",
+                saved.getId(),
+                worldId,
+                layerDataId,
+                flatId,
+                sizeX,
+                sizeZ,
+                title);
 
         return saved;
     }
@@ -130,19 +148,37 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with imported height data
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat importFromLayer(String worldId, String layerName, String flatId,
-                                 int sizeX, int sizeZ, int mountX, int mountZ,
-                                 String title, String description) {
-        log.info("Importing flat from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
-                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
+    public WFlat importFromLayer(
+            String worldId,
+            String layerName,
+            String flatId,
+            int sizeX,
+            int sizeZ,
+            int mountX,
+            int mountZ,
+            String title,
+            String description) {
+        log.info(
+                "Importing flat from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                title,
+                description);
 
         var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -151,8 +187,8 @@ public class FlatCreateService {
         }
 
         // Check if flat already exists and delete it (in case of retry)
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before re-import: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -173,9 +209,7 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
                 .seaBlockId(oceanBlockId)
-                .hexGrid(HexMathUtil.getDominantHexForArea(
-                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
-                ))
+                .hexGrid(HexMathUtil.getDominantHexForArea(world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)))
                 .build();
 
         // Initialize with size
@@ -247,8 +281,11 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("Import complete: flatId={}, imported={} columns, empty={} columns",
-                flatId, importedColumns, emptyColumns);
+        log.info(
+                "Import complete: flatId={}, imported={} columns, empty={} columns",
+                flatId,
+                importedColumns,
+                emptyColumns);
 
         return saved;
     }
@@ -303,19 +340,37 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with BEDROCK material
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat createEmptyFlat(String worldId, String layerName, String flatId,
-                                 int sizeX, int sizeZ, int mountX, int mountZ,
-                                 String title, String description) {
-        log.info("Creating empty flat with border from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
-                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
+    public WFlat createEmptyFlat(
+            String worldId,
+            String layerName,
+            String flatId,
+            int sizeX,
+            int sizeZ,
+            int mountX,
+            int mountZ,
+            String title,
+            String description) {
+        log.info(
+                "Creating empty flat with border from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                title,
+                description);
 
         var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -324,8 +379,8 @@ public class FlatCreateService {
         }
 
         // Check if flat already exists and delete it (in case of retry)
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before creation: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -346,9 +401,7 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
                 .seaBlockId(oceanBlockId)
-                .hexGrid(HexMathUtil.getDominantHexForArea(
-                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
-                ))
+                .hexGrid(HexMathUtil.getDominantHexForArea(world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)))
                 .build();
 
         // Initialize with size (sets all levels to 0)
@@ -390,8 +443,7 @@ public class FlatCreateService {
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
                 // Check if this is a border cell
-                boolean isBorder = (localX == 0 || localX == sizeX - 1 ||
-                                   localZ == 0 || localZ == sizeZ - 1);
+                boolean isBorder = (localX == 0 || localX == sizeX - 1 || localZ == 0 || localZ == sizeZ - 1);
 
                 if (!isBorder) {
                     continue; // Skip interior cells
@@ -428,8 +480,12 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("Empty flat creation complete: flatId={}, size={}x{}, borderCells={}",
-                flatId, sizeX, sizeZ, borderCellsImported);
+        log.info(
+                "Empty flat creation complete: flatId={}, size={}x{}, borderCells={}",
+                flatId,
+                sizeX,
+                sizeZ,
+                borderCellsImported);
 
         return saved;
     }
@@ -453,13 +509,28 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with HexGrid area
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat createHexGridFlat(String worldId, String layerName, String flatId,
-                                   int hexQ, int hexR, int border, String title, String description) {
-        log.info("Creating HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
-                worldId, layerName, flatId, hexQ, hexR, title, description);
+    public WFlat createHexGridFlat(
+            String worldId,
+            String layerName,
+            String flatId,
+            int hexQ,
+            int hexR,
+            int border,
+            String title,
+            String description) {
+        log.info(
+                "Creating HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                hexQ,
+                hexR,
+                title,
+                description);
 
         // Load world to get hexGridSize
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         int gridSize = world.getPublicData().getHexGridSize();
@@ -481,20 +552,25 @@ public class FlatCreateService {
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
         int sizeX = HexMathUtil.getGridWidth(gridSize) + border * 2;
-        int sizeZ = gridSize + border * 2;  // +30: +15 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + border * 2; // +30: +15 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
         int mountX = (int) Math.floor(centerX - sizeX / 2.0);
         int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
-        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
-                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+        log.info(
+                "Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                centerX,
+                centerZ);
 
         // Delegate to existing method with calculated parameters
-        return createHexGridFlat(worldId, layerName, flatId,
-                sizeX, sizeZ, mountX, mountZ,
-                hexQ, hexR, title, description);
+        return createHexGridFlat(
+                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
     }
 
     /**
@@ -519,18 +595,40 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with HexGrid area
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat createHexGridFlat(String worldId, String layerName, String flatId,
-                                   int sizeX, int sizeZ, int mountX, int mountZ,
-                                   int hexQ, int hexR, String title, String description) {
-        log.info("Creating HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}",
-                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
+    public WFlat createHexGridFlat(
+            String worldId,
+            String layerName,
+            String flatId,
+            int sizeX,
+            int sizeZ,
+            int mountX,
+            int mountZ,
+            int hexQ,
+            int hexR,
+            String title,
+            String description) {
+        log.info(
+                "Creating HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                hexQ,
+                hexR,
+                title,
+                description);
 
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -547,8 +645,8 @@ public class FlatCreateService {
         log.debug("Using hexGridSize={} from world", gridSize);
 
         // Check if flat already exists and delete it (in case of retry)
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before creation: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -577,8 +675,10 @@ public class FlatCreateService {
         int chunkSize = world.getPublicData().getChunkSize();
 
         // Calculate hex center in cartesian coordinates
-        de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-                de.mhus.nimbus.generated.types.HexVector2.builder().q(hexQ).r(hexR).build();
+        de.mhus.nimbus.generated.types.HexVector2 hexPosition = de.mhus.nimbus.generated.types.HexVector2.builder()
+                .q(hexQ)
+                .r(hexR)
+                .build();
         int[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
         int hexCenterX = hexCenter[0];
         int hexCenterZ = hexCenter[1];
@@ -620,7 +720,8 @@ public class FlatCreateService {
                 int hexCheckZ = worldZ;
 
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
+                boolean isInHex = HexMathUtil.isPointInHex(
+                        hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
 
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
@@ -641,8 +742,13 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), unknownProtected=true",
-                flatId, sizeX, sizeZ, hexCellsSet, outsideCellsImported);
+        log.info(
+                "HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), unknownProtected=true",
+                flatId,
+                sizeX,
+                sizeZ,
+                hexCellsSet,
+                outsideCellsImported);
 
         return saved;
     }
@@ -664,13 +770,21 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with HexGrid protection
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat importHexGridFlat(String worldId, String layerName, String flatId,
-                                   int hexQ, int hexR, String title, String description) {
-        log.info("Importing HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
-                worldId, layerName, flatId, hexQ, hexR, title, description);
+    public WFlat importHexGridFlat(
+            String worldId, String layerName, String flatId, int hexQ, int hexR, String title, String description) {
+        log.info(
+                "Importing HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                hexQ,
+                hexR,
+                title,
+                description);
 
         // Load world to get hexGridSize
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         int gridSize = world.getPublicData().getHexGridSize();
@@ -692,20 +806,25 @@ public class FlatCreateService {
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
         int sizeX = HexMathUtil.getGridWidth(gridSize) + 30;
-        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + 30; // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
         int mountX = (int) Math.floor(centerX - sizeX / 2.0);
         int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
-        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
-                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+        log.info(
+                "Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                centerX,
+                centerZ);
 
         // Delegate to existing method with calculated parameters
-        return importHexGridFlat(worldId, layerName, flatId,
-                sizeX, sizeZ, mountX, mountZ,
-                hexQ, hexR, title, description);
+        return importHexGridFlat(
+                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
     }
 
     /**
@@ -728,20 +847,42 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with HexGrid protection
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
-    public WFlat importHexGridFlat(String worldId, String layerName, String flatId,
-                                   int sizeX, int sizeZ, int mountX, int mountZ,
-                                   int hexQ, int hexR, String title, String description) {
-        log.info("Importing HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}",
-                worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
+    public WFlat importHexGridFlat(
+            String worldId,
+            String layerName,
+            String flatId,
+            int sizeX,
+            int sizeZ,
+            int mountX,
+            int mountZ,
+            int hexQ,
+            int hexR,
+            String title,
+            String description) {
+        log.info(
+                "Importing HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                hexQ,
+                hexR,
+                title,
+                description);
 
         var worldIdObj = WorldId.of(worldId).orElseThrow();
 
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -758,8 +899,8 @@ public class FlatCreateService {
         log.debug("Using hexGridSize={} from world", gridSize);
 
         // Check if flat already exists and delete it (in case of retry)
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before import: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -780,8 +921,7 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
                 .seaBlockId(oceanBlockId)
-                .hexGrid(TypeUtil.hexVector2(hexQ, hexR)
-                )
+                .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
         // Initialize with size
@@ -790,8 +930,10 @@ public class FlatCreateService {
         int defaultLevel = oceanLevel - 10; // Default level if no blocks found
 
         // Calculate hex center in cartesian coordinates
-        de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-                de.mhus.nimbus.generated.types.HexVector2.builder().q(hexQ).r(hexR).build();
+        de.mhus.nimbus.generated.types.HexVector2 hexPosition = de.mhus.nimbus.generated.types.HexVector2.builder()
+                .q(hexQ)
+                .r(hexR)
+                .build();
         int[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
         int hexCenterX = hexCenter[0];
         int hexCenterZ = hexCenter[1];
@@ -814,7 +956,7 @@ public class FlatCreateService {
         log.debug("Loading {} chunks for importHexGridFlat", requiredChunkKeys.size());
 
         // Load all required chunks at once
-//        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+        //        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
         java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
             Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
@@ -870,7 +1012,11 @@ public class FlatCreateService {
 
         // Step 2: Set positions OUTSIDE HexGrid to material 0 (UNKNOWN_PROTECTED)
         // The hex grid is positioned with a 10-pixel offset to allow for border connections
-        log.debug("Step 2: Setting outside positions to material 0. HexCenter: ({}, {}), gridSize: {}", hexCenterX, hexCenterZ, gridSize);
+        log.debug(
+                "Step 2: Setting outside positions to material 0. HexCenter: ({}, {}), gridSize: {}",
+                hexCenterX,
+                hexCenterZ,
+                gridSize);
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
                 // Calculate world coordinates
@@ -883,7 +1029,8 @@ public class FlatCreateService {
                 int hexCheckZ = worldZ + gapZ;
 
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
+                boolean isInHex = HexMathUtil.isPointInHex(
+                        hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
 
                 if (!isInHex) {
                     // Position is outside HexGrid: Set material to 0 (UNKNOWN_PROTECTED)
@@ -893,8 +1040,11 @@ public class FlatCreateService {
             }
         }
 
-        log.info("HexGrid flat import material summary: total={}, inside (255)={}, outside (0)={}",
-                sizeX * sizeZ, (sizeX * sizeZ) - outsideColumns, outsideColumns);
+        log.info(
+                "HexGrid flat import material summary: total={}, inside (255)={}, outside (0)={}",
+                sizeX * sizeZ,
+                (sizeX * sizeZ) - outsideColumns,
+                outsideColumns);
 
         // after import, set protection
         flat.setUnknownProtected(true);
@@ -902,8 +1052,12 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("HexGrid flat import complete: flatId={}, imported={} columns, empty={} columns, outside={} columns, unknownProtected=true",
-                flatId, importedColumns, emptyColumns, outsideColumns);
+        log.info(
+                "HexGrid flat import complete: flatId={}, imported={} columns, empty={} columns, outside={} columns, unknownProtected=true",
+                flatId,
+                importedColumns,
+                emptyColumns,
+                outsideColumns);
 
         return saved;
     }
@@ -923,11 +1077,13 @@ public class FlatCreateService {
         log.info("Updating border for flat: worldId={}, layerName={}, flatId={}", worldId, layerName, flatId);
 
         // Load layer first to get layerDataId
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Load existing flat
-        WFlat flat = flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId)
+        WFlat flat = flatService
+                .findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         int mountX = flat.getMountX();
@@ -937,7 +1093,8 @@ public class FlatCreateService {
 
         var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         int chunkSize = world.getPublicData().getChunkSize();
 
@@ -964,7 +1121,8 @@ public class FlatCreateService {
         // Load all required chunks at once
         java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-//            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            //            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(),
+            // chunkKey);
             Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
@@ -975,8 +1133,7 @@ public class FlatCreateService {
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
                 // Check if this is a border cell
-                boolean isBorder = (localX == 0 || localX == sizeX - 1 ||
-                                   localZ == 0 || localZ == sizeZ - 1);
+                boolean isBorder = (localX == 0 || localX == sizeX - 1 || localZ == 0 || localZ == sizeZ - 1);
 
                 if (!isBorder) {
                     continue; // Skip interior cells
@@ -1037,13 +1194,21 @@ public class FlatCreateService {
      * @return Created and persisted WFlat instance with empty HexGrid
      * @throws IllegalArgumentException if world or layer not found
      */
-    public WFlat createEmptyHexGridFlat(String worldId, String layerName, String flatId,
-                                        int hexQ, int hexR, String title, String description) {
-        log.info("Creating empty HexGrid flat: worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
-                worldId, layerName, flatId, hexQ, hexR, title, description);
+    public WFlat createEmptyHexGridFlat(
+            String worldId, String layerName, String flatId, int hexQ, int hexR, String title, String description) {
+        log.info(
+                "Creating empty HexGrid flat: worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId,
+                layerName,
+                flatId,
+                hexQ,
+                hexR,
+                title,
+                description);
 
         // Load world to get hexGridSize
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         int gridSize = world.getPublicData().getHexGridSize();
@@ -1052,7 +1217,8 @@ public class FlatCreateService {
         }
 
         // Load layer to get layerDataId
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -1073,7 +1239,7 @@ public class FlatCreateService {
         if (sizeX % 2 != 0) {
             sizeX++; // Ensure even size for symmetry
         }
-        int sizeZ = gridSize + 30;  // 400 + 30 = 430 (even)
+        int sizeZ = gridSize + 30; // 400 + 30 = 430 (even)
         if (sizeZ % 2 != 0) {
             sizeZ++; // Ensure even size for symmetry
         }
@@ -1083,12 +1249,18 @@ public class FlatCreateService {
         int mountX = (int) Math.floor(centerX - sizeX / 2.0);
         int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
-        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
-                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+        log.info(
+                "Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ,
+                centerX,
+                centerZ);
 
         // Check if flat already exists and delete it (in case of retry)
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before creation: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -1129,7 +1301,8 @@ public class FlatCreateService {
                 int worldZ = mountZ + localZ;
 
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(worldX, worldZ, centerX, centerZ, gridSize + HEX_BORDER); // test with small margin
+                boolean isInHex = HexMathUtil.isPointInHex(
+                        worldX, worldZ, centerX, centerZ, gridSize + HEX_BORDER); // test with small margin
 
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
@@ -1150,8 +1323,13 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("Empty HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), all levels=0, unknownProtected=true",
-                flatId, sizeX, sizeZ, hexCellsSet, outsideCellsSet);
+        log.info(
+                "Empty HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), all levels=0, unknownProtected=true",
+                flatId,
+                sizeX,
+                sizeZ,
+                hexCellsSet,
+                outsideCellsSet);
 
         return saved;
     }
@@ -1171,15 +1349,30 @@ public class FlatCreateService {
      * @param description Optional description
      * @return Created WFlat with border
      */
-    public WFlat createGridBorderFlat(String worldId, String layerName, String flatId,
-                                      int hexQ, int hexR, WHexGrid.EDGE border, int borderSize,
-                                      String title, String description) {
-        log.info("Creating grid border flat: worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}",
-                worldId, layerName, flatId, hexQ, hexR, border, borderSize);
+    public WFlat createGridBorderFlat(
+            String worldId,
+            String layerName,
+            String flatId,
+            int hexQ,
+            int hexR,
+            WHexGrid.EDGE border,
+            int borderSize,
+            String title,
+            String description) {
+        log.info(
+                "Creating grid border flat: worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}",
+                worldId,
+                layerName,
+                flatId,
+                hexQ,
+                hexR,
+                border,
+                borderSize);
 
         var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world to get hexGridSize
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         int gridSize = world.getPublicData().getHexGridSize();
@@ -1188,7 +1381,8 @@ public class FlatCreateService {
         }
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         if (layer.getLayerType() != LayerType.GROUND) {
@@ -1243,8 +1437,8 @@ public class FlatCreateService {
         log.info("Calculated border rectangle: sizeX={}, sizeZ={}, mount=({},{})", sizeX, sizeZ, mountX, mountZ);
 
         // Check if flat already exists and delete it
-        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
-                worldId, layer.getLayerDataId(), flatId);
+        Optional<WFlat> existingFlat =
+                flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layer.getLayerDataId(), flatId);
         if (existingFlat.isPresent()) {
             log.info("Flat already exists, deleting before import: flatId={}", flatId);
             flatService.deleteById(existingFlat.get().getId());
@@ -1366,8 +1560,14 @@ public class FlatCreateService {
         // Persist to database
         WFlat created = flatService.create(flat);
 
-        log.info("Grid border flat created: flatId={}, id={}, size={}x{}, mount=({},{})",
-                flatId, created.getId(), sizeX, sizeZ, mountX, mountZ);
+        log.info(
+                "Grid border flat created: flatId={}, id={}, size={}x{}, mount=({},{})",
+                flatId,
+                created.getId(),
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ);
 
         return created;
     }

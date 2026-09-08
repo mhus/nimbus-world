@@ -4,11 +4,10 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Job executor for AI-assisted item price generation.
@@ -49,8 +48,11 @@ public class ItemPriceGeneratorJobExecutor implements JobExecutor {
                 }
             }
 
-            log.info("Starting item-price-generator for worldId={}, aiModel={}, batchSize={}",
-                    worldId.getId(), aiModel, batchSize);
+            log.info(
+                    "Starting item-price-generator for worldId={}, aiModel={}, batchSize={}",
+                    worldId.getId(),
+                    aiModel,
+                    batchSize);
 
             Map<String, Object> result = service.generatePrices(worldId, aiModel, batchSize);
 

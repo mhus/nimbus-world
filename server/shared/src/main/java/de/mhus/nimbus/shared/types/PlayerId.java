@@ -1,9 +1,8 @@
 package de.mhus.nimbus.shared.types;
 
+import java.util.Optional;
 import lombok.Getter;
 import org.apache.logging.log4j.util.Strings;
-
-import java.util.Optional;
 
 /**
  * PlayerId represents a unique identifier for a player in the format "@userId:charachterId".
@@ -12,6 +11,7 @@ import java.util.Optional;
 public class PlayerId {
     @Getter
     private String id;
+
     private String userId;
     private String characterId;
 
@@ -73,5 +73,4 @@ public class PlayerId {
     public String toString() {
         return id;
     }
-
 }

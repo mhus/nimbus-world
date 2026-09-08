@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.dto.HeightDataDto;
-import lombok.extern.slf4j.Slf4j;
-
 import java.lang.ref.SoftReference;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Cache for ChunkData with automatic loading via WChunkService.
@@ -58,10 +57,7 @@ public class ChunksCache {
         }
 
         // Format: [groundLevel, waterLevel (-1=none), maxHeight?]
-        return new HeightDataDto(
-                columnData[0], columnData[1],
-                columnData.length > 2 ? columnData[2] : null
-        );
+        return new HeightDataDto(columnData[0], columnData[1], columnData.length > 2 ? columnData[2] : null);
     }
 
     /**
@@ -152,7 +148,8 @@ public class ChunksCache {
             if (worldId == null) throw new IllegalStateException("worldId is required");
 
             WorldId baseWorldId = worldId.toBaseWorldId();
-            WWorld world = worldService.getByWorldId(baseWorldId.getId())
+            WWorld world = worldService
+                    .getByWorldId(baseWorldId.getId())
                     .orElseThrow(() -> new IllegalStateException("World not found: " + baseWorldId.getId()));
 
             int epoch = resolveEpoch();
@@ -165,7 +162,8 @@ public class ChunksCache {
             if (!worldId.isInstance()) {
                 return 0;
             }
-            return instanceService.findByInstanceIdWithValidation(worldId.getId())
+            return instanceService
+                    .findByInstanceIdWithValidation(worldId.getId())
                     .map(WWorldInstance::getEpoch)
                     .orElse(0);
         }

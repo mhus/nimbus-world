@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.StorageEntity;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,13 +11,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
 
 /**
  * MongoDB Asset Entity. Speichert kleine Binärdaten direkt (content) bis zur konfigurierten Grenze.
@@ -25,9 +23,7 @@ import java.time.Instant;
  */
 @Document(collection = "s_assets")
 @ActualSchemaVersion("1.0.0")
-@CompoundIndexes({
-        @CompoundIndex(name = "region_world_path_idx", def = "{ 'worldId': 1, 'path': 1 }", unique = true)
-})
+@CompoundIndexes({@CompoundIndex(name = "region_world_path_idx", def = "{ 'worldId': 1, 'path': 1 }", unique = true)})
 @Data
 @Builder
 @NoArgsConstructor
@@ -80,16 +76,13 @@ public class SAsset implements Identifiable, StorageEntity {
     @Indexed
     private String worldId; // kann null sein
 
-
     public SAsset appendWorldPrefix() {
         path = WorldCollection.appendPrefix(worldId, path);
         return this;
     }
 
-    public  SAsset removeWorldPrefix() {
+    public SAsset removeWorldPrefix() {
         path = WorldCollection.removePrefix(path);
         return this;
     }
-
 }
-

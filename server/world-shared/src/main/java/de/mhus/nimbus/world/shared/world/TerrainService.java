@@ -3,15 +3,14 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
-
 import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for accessing terrain data (chunk blocks) for entity positioning.
@@ -23,11 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(
-        value = "nimbus.services.terrain",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.terrain", havingValue = "true", matchIfMissing = false)
 public class TerrainService {
 
     private final WChunkService chunkService;
@@ -104,7 +99,11 @@ public class TerrainService {
                 if (heightDataDto != null) {
                     // Check if there's water at this position
                     if (heightDataDto.hasWater() && !canWalkOnWater) {
-                        log.trace("Skipping position with water: ({}, {}), waterLevel={}", x, z, heightDataDto.waterLevel());
+                        log.trace(
+                                "Skipping position with water: ({}, {}), waterLevel={}",
+                                x,
+                                z,
+                                heightDataDto.waterLevel());
                         return -1; // Indicate invalid position (has water)
                     }
 
@@ -195,8 +194,13 @@ public class TerrainService {
                 int waterLevel = heightDataDto.waterLevel();
 
                 int waterY = (groundLevel + waterLevel) / 2;
-                log.trace("Water position at ({}, {}): y={} (ground={}, water={})",
-                        x, z, waterY, groundLevel, waterLevel);
+                log.trace(
+                        "Water position at ({}, {}): y={} (ground={}, water={})",
+                        x,
+                        z,
+                        waterY,
+                        groundLevel,
+                        waterLevel);
                 return waterY;
             }
 

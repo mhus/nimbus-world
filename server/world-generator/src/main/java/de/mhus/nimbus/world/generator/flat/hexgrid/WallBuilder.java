@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * WallBuilder manipulator builder.
@@ -48,7 +47,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class WallBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
     private static final int DEFAULT_WIDTH = 3;
     private static final int DEFAULT_HEIGHT = 5;
     private static final int DEFAULT_TYPE = FlatMaterialService.STONE;
@@ -61,7 +62,8 @@ public class WallBuilder extends HexGridBuilder {
         log.debug("Building walls for flat: {}", flat.getFlatId());
 
         // Get wall parameter from hex grid
-        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_wall") : null;
+        String wallParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_wall") : null;
         if (wallParam == null || wallParam.isBlank()) {
             log.debug("No wall parameter found, skipping");
             return;
@@ -74,8 +76,8 @@ public class WallBuilder extends HexGridBuilder {
             // Determine center position (use position string or default to flat center)
             int centerX, centerZ;
             if (config.getCenter().getPosition() != null) {
-                int[] centerCoords = getAbsoluteCoordinates(config.getCenter().getPosition(),
-                    flat.getSizeX(), flat.getSizeZ());
+                int[] centerCoords =
+                        getAbsoluteCoordinates(config.getCenter().getPosition(), flat.getSizeX(), flat.getSizeZ());
                 centerX = centerCoords[0];
                 centerZ = centerCoords[1];
             } else {
@@ -84,7 +86,11 @@ public class WallBuilder extends HexGridBuilder {
                 centerZ = flat.getSizeZ() / 2;
             }
 
-            log.debug("Parsed wall config: center=({}, {}), routes={}", centerX, centerZ, config.getRoute().size());
+            log.debug(
+                    "Parsed wall config: center=({}, {}), routes={}",
+                    centerX,
+                    centerZ,
+                    config.getRoute().size());
 
             log.debug("Center position: ({}, {})", centerX, centerZ);
 
@@ -93,7 +99,9 @@ public class WallBuilder extends HexGridBuilder {
                 buildWallToDestination(flat, centerX, centerZ, route);
             }
 
-            log.info("Walls completed for flat: {} routes built", config.getRoute().size());
+            log.info(
+                    "Walls completed for flat: {} routes built",
+                    config.getRoute().size());
         } catch (Exception e) {
             log.error("Failed to build walls for flat: {}", flat.getFlatId(), e);
         }
@@ -120,18 +128,23 @@ public class WallBuilder extends HexGridBuilder {
 
                 // Parse position (required)
                 if (!routeNode.has("position")) {
-                    throw new IllegalArgumentException("Wall route must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
+                    throw new IllegalArgumentException(
+                            "Wall route must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
                 }
                 route.setPosition(routeNode.get("position").asText());
 
                 // Parse wall properties
-                route.setHeight(routeNode.has("height") ? routeNode.get("height").asInt() : DEFAULT_HEIGHT);
+                route.setHeight(
+                        routeNode.has("height") ? routeNode.get("height").asInt() : DEFAULT_HEIGHT);
                 route.setLevel(routeNode.get("level").asInt());
                 route.setWidth(routeNode.has("width") ? routeNode.get("width").asInt() : DEFAULT_WIDTH);
-                route.setMinimum(routeNode.has("minimum") ? routeNode.get("minimum").asInt() : 0);
+                route.setMinimum(
+                        routeNode.has("minimum") ? routeNode.get("minimum").asInt() : 0);
                 route.setType(routeNode.has("type") ? routeNode.get("type").asInt() : DEFAULT_TYPE);
-                route.setRespectRoad(routeNode.has("respectRoad") && routeNode.get("respectRoad").asBoolean());
-                route.setRespectRiver(routeNode.has("respectRiver") && routeNode.get("respectRiver").asBoolean());
+                route.setRespectRoad(routeNode.has("respectRoad")
+                        && routeNode.get("respectRoad").asBoolean());
+                route.setRespectRiver(routeNode.has("respectRiver")
+                        && routeNode.get("respectRiver").asBoolean());
 
                 routes.add(route);
             }
@@ -150,8 +163,7 @@ public class WallBuilder extends HexGridBuilder {
         int destX = destCoords[0];
         int destZ = destCoords[1];
 
-        log.debug("Building wall from center ({}, {}) to destination ({}, {})",
-                centerX, centerZ, destX, destZ);
+        log.debug("Building wall from center ({}, {}) to destination ({}, {})", centerX, centerZ, destX, destZ);
 
         // Get water block definition if needed
         String waterBlockDef = route.isRespectRiver() ? getWaterBlockDef(flat) : null;
@@ -195,17 +207,17 @@ public class WallBuilder extends HexGridBuilder {
      */
     private int[] getAbsoluteCoordinates(String position, int sizeX, int sizeZ) {
         // Assume hexGridSize equals WFlat size (standard case)
-        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+        int hexGridSize = sizeX; // or could use Math.max(sizeX, sizeZ)
 
         // Parse position string and get relative coordinates
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
-            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
+                de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
 
         // Convert to absolute WFlat coordinates
         int lx = sizeX / 2 + relativePos.getX();
         int lz = sizeZ / 2 + relativePos.getZ();
 
-        return new int[]{lx, lz};
+        return new int[] {lx, lz};
     }
 
     /**
@@ -346,7 +358,7 @@ public class WallBuilder extends HexGridBuilder {
      */
     @Data
     private static class CenterDefinition {
-        private String position;  // HexLocal format: "<NE2/4>" or "<0;0>" (null = use flat center)
+        private String position; // HexLocal format: "<NE2/4>" or "<0;0>" (null = use flat center)
     }
 
     /**
@@ -354,7 +366,7 @@ public class WallBuilder extends HexGridBuilder {
      */
     @Data
     private static class WallRoute {
-        private String position;  // HexLocal format: "<NE2/4>" or "<0;0>"
+        private String position; // HexLocal format: "<NE2/4>" or "<0;0>"
         private int height;
         private int level;
         private int width;

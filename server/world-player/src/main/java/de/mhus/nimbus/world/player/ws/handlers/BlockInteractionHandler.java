@@ -1,12 +1,12 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.GameplayService;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Handles block interaction messages from clients.
@@ -43,7 +43,8 @@ public class BlockInteractionHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Block interaction from unauthenticated session: {}",
+            log.warn(
+                    "Block interaction from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -74,17 +75,17 @@ public class BlockInteractionHandler implements MessageHandler {
             return;
         }
 
-        log.trace("Block interaction - Session: {}, Position: ({},{},{}), action: {}, shortcut: {}, BlockId: {}, GroupId: {}",
+        log.trace(
+                "Block interaction - Session: {}, Position: ({},{},{}), action: {}, shortcut: {}, BlockId: {}, GroupId: {}",
                 session.getWebSocketSession().getId(),
-                x, y, z,
+                x,
+                y,
+                z,
                 userAction,
                 shortcutKey,
                 blockId,
                 groupId);
 
         gameplay.onPlayerBlockInteraction(session, x, y, z, blockId, groupId, userAction, shortcutKey, params);
-
     }
-
-
 }

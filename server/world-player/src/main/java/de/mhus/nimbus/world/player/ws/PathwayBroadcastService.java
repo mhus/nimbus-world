@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.player.ws;
 
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.generated.types.EntityPathway;
-import de.mhus.nimbus.generated.types.Waypoint;
-import de.mhus.nimbus.generated.types.Vector3;
-import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
+import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.generated.types.Rotation;
+import de.mhus.nimbus.generated.types.Vector3;
+import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.engine.EngineMapper;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.config.PathwayBroadcastSettings;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
@@ -16,7 +15,8 @@ import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Duration;
+import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.util.*;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for generating and broadcasting entity pathways to Redis.
@@ -90,15 +89,16 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                     String worldId = session.getWorldId().getId();
 
                     // Create container with session metadata
-                    PathwayBroadcastMessage.PathwayContainer container = PathwayBroadcastMessage.PathwayContainer.builder()
-                        .pathway(pathway)
-                        .sessionId(session.getSessionId())
-                        .worldId(worldId)
-                        .build();
+                    PathwayBroadcastMessage.PathwayContainer container =
+                            PathwayBroadcastMessage.PathwayContainer.builder()
+                                    .pathway(pathway)
+                                    .sessionId(session.getSessionId())
+                                    .worldId(worldId)
+                                    .build();
 
                     containersByWorld
-                        .computeIfAbsent(worldId, k -> new ArrayList<>())
-                        .add(container);
+                            .computeIfAbsent(worldId, k -> new ArrayList<>())
+                            .add(container);
 
                     // Cache pathway in Redis for new sessions joining later
                     cachePathway(worldId, session.getSessionId(), pathway, session.getPingInterval());
@@ -106,14 +106,16 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
             }
 
             // Publish pathways to Redis (grouped by world)
-            for (Map.Entry<String, List<PathwayBroadcastMessage.PathwayContainer>> entry : containersByWorld.entrySet()) {
+            for (Map.Entry<String, List<PathwayBroadcastMessage.PathwayContainer>> entry :
+                    containersByWorld.entrySet()) {
                 publishPathways(entry.getKey(), entry.getValue());
             }
 
             if (!containersByWorld.isEmpty()) {
-                log.trace("Broadcasted {} pathways across {} worlds",
-                    containersByWorld.values().stream().mapToInt(List::size).sum(),
-                    containersByWorld.size());
+                log.trace(
+                        "Broadcasted {} pathways across {} worlds",
+                        containersByWorld.values().stream().mapToInt(List::size).sum(),
+                        containersByWorld.size());
             }
 
         } catch (Exception e) {
@@ -142,17 +144,17 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
 
             // Calculate predicted target position
             Vector3 targetPosition = position;
-            if (velocity != null &&
-                (Math.abs(velocity.getX()) > 0.001 ||
-                 Math.abs(velocity.getY()) > 0.001 ||
-                 Math.abs(velocity.getZ()) > 0.001)) {
+            if (velocity != null
+                    && (Math.abs(velocity.getX()) > 0.001
+                            || Math.abs(velocity.getY()) > 0.001
+                            || Math.abs(velocity.getZ()) > 0.001)) {
 
                 double predictionSec = predictionMs / 1000.0;
                 targetPosition = Vector3.builder()
-                    .x(position.getX() + velocity.getX() * predictionSec)
-                    .y(position.getY() + velocity.getY() * predictionSec)
-                    .z(position.getZ() + velocity.getZ() * predictionSec)
-                    .build();
+                        .x(position.getX() + velocity.getX() * predictionSec)
+                        .y(position.getY() + velocity.getY() * predictionSec)
+                        .z(position.getZ() + velocity.getZ() * predictionSec)
+                        .build();
             }
 
             // Create waypoints: start (now) → target (now + 100ms)
@@ -160,36 +162,41 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
 
             // Start waypoint (current position)
             waypoints.add(Waypoint.builder()
-                .timestamp(now)
-                .target(position)
-                .rotation(rotation != null ? rotation : Rotation.builder().y(0.0).p(0.0).build())
-                .pose(pose != null ? pose : ENTITY_POSES.IDLE)
-                .build());
+                    .timestamp(now)
+                    .target(position)
+                    .rotation(
+                            rotation != null
+                                    ? rotation
+                                    : Rotation.builder().y(0.0).p(0.0).build())
+                    .pose(pose != null ? pose : ENTITY_POSES.IDLE)
+                    .build());
 
             // Target waypoint (predicted position)
             waypoints.add(Waypoint.builder()
-                .timestamp(now + predictionMs)
-                .target(targetPosition)
-                .rotation(rotation != null ? rotation : Rotation.builder().y(0.0).p(0.0).build())
-                .pose(pose != null ? pose : ENTITY_POSES.IDLE)
-                .build());
+                    .timestamp(now + predictionMs)
+                    .target(targetPosition)
+                    .rotation(
+                            rotation != null
+                                    ? rotation
+                                    : Rotation.builder().y(0.0).p(0.0).build())
+                    .pose(pose != null ? pose : ENTITY_POSES.IDLE)
+                    .build());
 
             // Build EntityPathway
             return EntityPathway.builder()
-                .entityId(session.getEntityId())  // Format: "@userId:characterId"
-                .startAt(now)
-                .waypoints(waypoints)
-                .isLooping(false)
-                .queryAt(now)
-                .idlePose(pose)
-                .physicsEnabled(true)
-                .velocity(velocity)
-                .grounded(false)  // Testing: set to true
-                .build();
+                    .entityId(session.getEntityId()) // Format: "@userId:characterId"
+                    .startAt(now)
+                    .waypoints(waypoints)
+                    .isLooping(false)
+                    .queryAt(now)
+                    .idlePose(pose)
+                    .physicsEnabled(true)
+                    .velocity(velocity)
+                    .grounded(false) // Testing: set to true
+                    .build();
 
         } catch (Exception e) {
-            log.error("Failed to generate pathway for session {}",
-                session.getSessionId(), e);
+            log.error("Failed to generate pathway for session {}", session.getSessionId(), e);
             return null;
         }
     }
@@ -242,8 +249,11 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
             String json = engineMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "e.p", json);
 
-            log.trace("Published {} pathway containers to Redis for world {} ({} chunks)",
-                containers.size(), worldId, affectedChunks.size());
+            log.trace(
+                    "Published {} pathway containers to Redis for world {} ({} chunks)",
+                    containers.size(),
+                    worldId,
+                    affectedChunks.size());
 
         } catch (Exception e) {
             log.error("Failed to publish pathways to Redis", e);
@@ -323,8 +333,13 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                 }
             }
 
-            log.debug("Found {} cached pathways for chunk ({}, {}) in world {} ({} NPC, rest player)",
-                    pathways.size(), cx, cz, worldId, entityIds.size());
+            log.debug(
+                    "Found {} cached pathways for chunk ({}, {}) in world {} ({} NPC, rest player)",
+                    pathways.size(),
+                    cx,
+                    cz,
+                    worldId,
+                    entityIds.size());
 
         } catch (Exception e) {
             log.error("Failed to get cached pathways for chunk ({}, {})", cx, cz, e);

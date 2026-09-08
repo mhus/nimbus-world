@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.chat;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatMessageProcessor;
@@ -9,12 +7,13 @@ import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Processes model-selector command messages from chat agents.
@@ -45,15 +44,12 @@ public class ModelSelectorMessageProcessor implements WChatMessageProcessor {
         var lookupWorld = worldId.toBaseWorldId();
 
         try {
-            List<String> modelSelectorData = objectMapper.readValue(
-                    message.getMessage(),
-                    new TypeReference<List<String>>() {}
-            );
+            List<String> modelSelectorData =
+                    objectMapper.readValue(message.getMessage(), new TypeReference<List<String>>() {});
 
             wSessionService.updateModelSelector(sessionId, modelSelectorData);
 
-            log.info("Stored ModelSelector in Redis: sessionId={}, blocks={}",
-                    sessionId, modelSelectorData.size());
+            log.info("Stored ModelSelector in Redis: sessionId={}, blocks={}", sessionId, modelSelectorData.size());
 
             sendShowModelSelectorCommand(lookupWorld.getId(), sessionId);
 
@@ -86,13 +82,7 @@ public class ModelSelectorMessageProcessor implements WChatMessageProcessor {
                     .build();
 
             worldClientService.sendPlayerCommand(
-                    worldId,
-                    sessionId,
-                    playerUrl,
-                    "client.ShowModelSelector",
-                    List.of(),
-                    ctx
-            );
+                    worldId, sessionId, playerUrl, "client.ShowModelSelector", List.of(), ctx);
 
             log.info("Sent ShowModelSelector command to player: sessionId={}, playerUrl={}", sessionId, playerUrl);
 

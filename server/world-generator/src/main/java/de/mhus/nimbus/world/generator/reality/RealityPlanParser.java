@@ -9,6 +9,10 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -17,11 +21,6 @@ import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Phase 0 of the Reality Workflow: turns a free-text Reality Instruction Document into a typed
@@ -63,9 +62,8 @@ public class RealityPlanParser {
     public RealityPlanResult parseFromDocument(WorldId regionId, String instructionsDocId) {
         Optional<WDocument> docOpt = documentService.findByDocumentId(regionId, instructionsDocId);
         if (docOpt.isEmpty()) {
-            return RealityPlanResult.failure(
-                    "Instruction document not found: worldId=" + regionId.getId()
-                            + ", documentId=" + instructionsDocId);
+            return RealityPlanResult.failure("Instruction document not found: worldId=" + regionId.getId()
+                    + ", documentId=" + instructionsDocId);
         }
         String content = docOpt.get().getContent();
         if (Strings.isBlank(content)) {
@@ -154,7 +152,8 @@ public class RealityPlanParser {
             if (plan == null) {
                 return RealityPlanResult.failure("Parser returned null plan", json);
             }
-            log.info("Parsed RealityPlan: region={}, items={}, creatures={}, lore={}",
+            log.info(
+                    "Parsed RealityPlan: region={}, items={}, creatures={}, lore={}",
                     plan.getMeta() != null ? plan.getMeta().getRegionId() : "?",
                     plan.getItems() != null ? plan.getItems().size() : 0,
                     plan.getCreatures() != null ? plan.getCreatures().size() : 0,
@@ -162,8 +161,7 @@ public class RealityPlanParser {
             return RealityPlanResult.success(plan, json);
         } catch (Exception e) {
             log.warn("Failed to parse RealityPlan JSON", e);
-            return RealityPlanResult.failure(
-                    "Failed to parse RealityPlan JSON: " + e.getMessage(), json);
+            return RealityPlanResult.failure("Failed to parse RealityPlan JSON: " + e.getMessage(), json);
         }
     }
 
@@ -177,13 +175,14 @@ public class RealityPlanParser {
      *         updates that document instead of creating a second one under a fresh id.
      */
     public String savePlan(WorldId regionId, String json) {
-        WDocument saved = documentService.save(regionId, PLAN_COLLECTION, UUID.randomUUID().toString(), doc -> {
-            doc.setName("reality-plan");
-            doc.setTitle("Reality Plan");
-            doc.setContent(json);
-            doc.setFormat("json");
-            doc.setType("reality_plan");
-        });
+        WDocument saved = documentService.save(
+                regionId, PLAN_COLLECTION, UUID.randomUUID().toString(), doc -> {
+                    doc.setName("reality-plan");
+                    doc.setTitle("Reality Plan");
+                    doc.setContent(json);
+                    doc.setFormat("json");
+                    doc.setType("reality_plan");
+                });
         log.info("Saved reality plan: worldId={}, documentId={}", regionId.getId(), saved.getDocumentId());
         return saved.getDocumentId();
     }
@@ -191,7 +190,7 @@ public class RealityPlanParser {
     private Optional<AiChat> createChatModel(String modelName) {
         AiChatOptions options = AiChatOptions.builder()
                 .temperature(0.2) // low temperature for deterministic, structured output
-                .maxTokens(0)     // model maximum for large JSON
+                .maxTokens(0) // model maximum for large JSON
                 .timeoutSeconds(180)
                 .build();
         return RealityAiSupport.createChat(aiModelService, modelName, options);

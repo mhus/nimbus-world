@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.shared.client;
 
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingInteger;
-import de.mhus.nimbus.shared.settings.SettingString;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
@@ -19,15 +18,18 @@ public class WorldClientSettings {
 
     private final SSettingsService settingsService;
 
-
     @Value("${nimbus.pod.playerBaseUrl:}")
     private String playerBaseUrl;
+
     @Value("${nimbus.pod.lifeBaseUrl:}")
     private String lifeBaseUrl;
+
     @Value("${nimbus.pod.controlBaseUrl:}")
     private String controlBaseUrl;
+
     @Value("${nimbus.pod.generatorBaseUrl:}")
     private String generatorBaseUrl;
+
     @Value("${nimbus.pod.ministryBaseUrl:}")
     private String ministryBaseUrl;
 
@@ -35,10 +37,7 @@ public class WorldClientSettings {
 
     @PostConstruct
     private void init() {
-        commandTimeoutMs = settingsService.getInteger(
-                "client.commandTimeoutMs",
-                5000
-        );
+        commandTimeoutMs = settingsService.getInteger("client.commandTimeoutMs", 5000);
     }
 
     /**
@@ -47,10 +46,7 @@ public class WorldClientSettings {
      * Default: http://localhost:9042
      */
     public String getPlayerBaseUrl() {
-        return Strings.isBlank(playerBaseUrl) ?
-                "http://localhost:9042"
-                :
-                playerBaseUrl;
+        return Strings.isBlank(playerBaseUrl) ? "http://localhost:9042" : playerBaseUrl;
     }
 
     /**
@@ -59,10 +55,7 @@ public class WorldClientSettings {
      * Default: http://localhost:9044
      */
     public String getLifeBaseUrl() {
-        return Strings.isBlank(lifeBaseUrl) ?
-                "http://localhost:9044"
-                :
-                lifeBaseUrl;
+        return Strings.isBlank(lifeBaseUrl) ? "http://localhost:9044" : lifeBaseUrl;
     }
 
     /**
@@ -71,10 +64,7 @@ public class WorldClientSettings {
      * Default: http://localhost:9043
      */
     public String getControlBaseUrl() {
-        return Strings.isBlank(controlBaseUrl) ?
-                "http://localhost:9043"
-                :
-                controlBaseUrl;
+        return Strings.isBlank(controlBaseUrl) ? "http://localhost:9043" : controlBaseUrl;
     }
 
     /**
@@ -83,10 +73,7 @@ public class WorldClientSettings {
      * Default: http://localhost:9045
      */
     public String getGeneratorBaseUrl() {
-        return Strings.isBlank(generatorBaseUrl) ?
-                "http://localhost:9045"
-                :
-                generatorBaseUrl;
+        return Strings.isBlank(generatorBaseUrl) ? "http://localhost:9045" : generatorBaseUrl;
     }
 
     /**
@@ -95,10 +82,7 @@ public class WorldClientSettings {
      * Default: http://localhost:9046
      */
     public String getMinistryBaseUrl() {
-        return Strings.isBlank(ministryBaseUrl) ?
-                "http://localhost:9046"
-                :
-                ministryBaseUrl;
+        return Strings.isBlank(ministryBaseUrl) ? "http://localhost:9046" : ministryBaseUrl;
     }
 
     /**

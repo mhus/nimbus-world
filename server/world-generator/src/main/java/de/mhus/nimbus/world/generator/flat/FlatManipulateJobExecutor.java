@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.generator.flat;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Job executor for manipulating WFlat terrain using registered manipulators.
@@ -73,16 +72,17 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             WFlat flat;
             if (layerDataId != null && !layerDataId.isBlank()) {
                 // Use compound lookup with worldId, layerDataId, and flatId
-                flat = flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
-                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                                ", layerDataId=" + layerDataId + ", flatId=" + flatId));
+                flat = flatService
+                        .findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
+                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId
+                                + ", layerDataId=" + layerDataId + ", flatId=" + flatId));
             } else {
                 // Search for flat with matching flatId in this world
                 flat = flatService.findByWorldId(worldId).stream()
                         .filter(f -> flatId.equals(f.getFlatId()))
                         .findFirst()
-                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                                ", flatId=" + flatId));
+                        .orElseThrow(() ->
+                                new JobExecutionException("Flat not found: worldId=" + worldId + ", flatId=" + flatId));
             }
 
             // Extract optional region parameters (defaults to entire flat)
@@ -107,14 +107,25 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             for (Map.Entry<String, String> entry : job.getParameters().entrySet()) {
                 String key = entry.getKey();
                 // Skip parameters that are already handled
-                if (!key.equals("flatId") && !key.equals("x") && !key.equals("z") &&
-                    !key.equals("sizeX") && !key.equals("sizeZ") && !key.equals("parameters")) {
+                if (!key.equals("flatId")
+                        && !key.equals("x")
+                        && !key.equals("z")
+                        && !key.equals("sizeX")
+                        && !key.equals("sizeZ")
+                        && !key.equals("parameters")) {
                     parameters.put(key, entry.getValue());
                 }
             }
 
-            log.info("Manipulating flat: flatId={}, manipulator={}, region=({},{},{},{}), parameters={}",
-                    flatId, manipulatorName, x, z, sizeX, sizeZ, parameters);
+            log.info(
+                    "Manipulating flat: flatId={}, manipulator={}, region=({},{},{},{}), parameters={}",
+                    flatId,
+                    manipulatorName,
+                    x,
+                    z,
+                    sizeX,
+                    sizeZ,
+                    parameters);
 
             // Execute manipulator
             manipulatorService.executeManipulator(manipulatorName, flat, x, z, sizeX, sizeZ, parameters);
@@ -126,8 +137,7 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             // Build successful result
             String resultData = String.format(
                     "Successfully manipulated flat: flatId=%s, manipulator=%s, region=(%d,%d,%d,%d), parameters=%s",
-                    flatId, manipulatorName, x, z, sizeX, sizeZ, parameters.isEmpty() ? "none" : parameters.toString()
-            );
+                    flatId, manipulatorName, x, z, sizeX, sizeZ, parameters.isEmpty() ? "none" : parameters.toString());
 
             log.info("Flat manipulation completed successfully: flatId={}, manipulator={}", flatId, manipulatorName);
             return JobResult.success(resultData);

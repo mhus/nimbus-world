@@ -1,25 +1,24 @@
 package de.mhus.nimbus.world.life.service;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;
 import de.mhus.nimbus.world.life.model.EntityOwnership;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for managing entity ownership across multiple world-life pods.
@@ -121,9 +120,9 @@ public class EntityOwnershipService {
 
         // Fast-path: registry says another pod owns it (non-stale) → skip.
         EntityOwnership existing = ownershipRegistry.get(entityKey);
-        if (existing != null &&
-                !existing.getPodId().equals(podId) &&
-                !existing.isStale(timestamp, properties.getOwnershipStaleThresholdMs())) {
+        if (existing != null
+                && !existing.getPodId().equals(podId)
+                && !existing.isStale(timestamp, properties.getOwnershipStaleThresholdMs())) {
 
             log.trace("World {}: Entity {} already owned by pod {}", worldId, entityId, existing.getPodId());
             return false;
@@ -203,15 +202,19 @@ public class EntityOwnershipService {
             // longer than the TTL and another pod claimed the entity), relinquish
             // it locally and stop simulating instead of double-simulating.
             String token = entityLockTokens.get(entityKey);
-            boolean held = token != null
-                    && lockService.refreshGenericLock(ownershipLockKey(entityKey), token, ownershipTtl());
+            boolean held =
+                    token != null && lockService.refreshGenericLock(ownershipLockKey(entityKey), token, ownershipTtl());
             if (!held) {
                 log.warn("Lost ownership lease for {}, relinquishing", entityKey);
                 relinquishLocalOwnership(entityKey);
                 continue;
             }
             ownership.setLastHeartbeat(timestamp);
-            publishOwnershipAnnouncement(WorldId.unchecked(ownership.getWorldId()), "claim", ownership.getEntityId(), ownership.getCurrentChunk());
+            publishOwnershipAnnouncement(
+                    WorldId.unchecked(ownership.getWorldId()),
+                    "claim",
+                    ownership.getEntityId(),
+                    ownership.getCurrentChunk());
         }
 
         log.trace("Sent heartbeats for {} entities", ownedEntities.size());
@@ -312,10 +315,16 @@ public class EntityOwnershipService {
 
             if ("claim".equals(action)) {
                 String entityKey = makeEntityKey(worldId, entityId);
-                EntityOwnership ownership = new EntityOwnership(entityId, worldId.getId(), podIdFromMessage, timestamp, timestamp, chunk);
+                EntityOwnership ownership =
+                        new EntityOwnership(entityId, worldId.getId(), podIdFromMessage, timestamp, timestamp, chunk);
                 ownershipRegistry.put(entityKey, ownership);
 
-                log.trace("World {}: Entity {} claimed by pod {} in chunk {}", worldId, entityId, podIdFromMessage, chunk);
+                log.trace(
+                        "World {}: Entity {} claimed by pod {} in chunk {}",
+                        worldId,
+                        entityId,
+                        podIdFromMessage,
+                        chunk);
 
             } else if ("release".equals(action)) {
                 String entityKey = makeEntityKey(worldId, entityId);
@@ -367,8 +376,12 @@ public class EntityOwnershipService {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId.getId(), "e.o", json);
 
-            log.trace("World {}: Published ownership announcement: action={}, entityId={}, chunk={}",
-                    worldId, action, entityId, chunk);
+            log.trace(
+                    "World {}: Published ownership announcement: action={}, entityId={}, chunk={}",
+                    worldId,
+                    action,
+                    entityId,
+                    chunk);
 
         } catch (Exception e) {
             log.error("World {}: Failed to publish ownership announcement: entityId={}", worldId, entityId, e);

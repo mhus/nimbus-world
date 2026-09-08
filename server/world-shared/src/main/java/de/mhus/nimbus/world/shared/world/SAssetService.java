@@ -1,9 +1,18 @@
 package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.storage.StorageService;
+import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
 import io.micrometer.common.util.StringUtils;
+import java.io.*;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -17,16 +26,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.*;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Service zur Verwaltung von Assets (Inline oder extern gespeichert).
@@ -66,8 +65,8 @@ public class SAssetService implements StorageProvider {
      * Für Import aus test_server mit .info Dateien.
      */
     @Transactional
-    public SAsset saveAsset(WorldId worldId, String path, InputStream stream,
-                           String createdBy, AssetMetadata publicData) {
+    public SAsset saveAsset(
+            WorldId worldId, String path, InputStream stream, String createdBy, AssetMetadata publicData) {
         if (path == null || path.isBlank()) throw new IllegalArgumentException("path required");
         if (stream == null) return null;
 
@@ -125,9 +124,13 @@ public class SAssetService implements StorageProvider {
                 byte[] compressedData = buffer.toByteArray();
                 finalStream = new ByteArrayInputStream(compressedData);
                 asset.setCompressed(true);
-                log.debug("Asset compressed: path={} original={} compressed={} ratio={} threshold={}",
-                        collection.path(), originalSize, compressedData.length,
-                        String.format("%.1f%%", 100.0 * compressedData.length / originalSize), compressionThreshold);
+                log.debug(
+                        "Asset compressed: path={} original={} compressed={} ratio={} threshold={}",
+                        collection.path(),
+                        originalSize,
+                        compressedData.length,
+                        String.format("%.1f%%", 100.0 * compressedData.length / originalSize),
+                        compressionThreshold);
             } catch (Exception e) {
                 log.warn("Failed to compress asset, storing uncompressed: path={}", collection.path(), e);
                 ByteArrayOutputStream fallback = new ByteArrayOutputStream();
@@ -153,17 +156,31 @@ public class SAssetService implements StorageProvider {
             finalStream = new ByteArrayInputStream(uncompressed.toByteArray());
             asset.setCompressed(false);
             if (compressionEnabled) {
-                log.debug("Asset below compression threshold: path={} size={} threshold={}",
-                        collection.path(), originalSize, compressionThreshold);
+                log.debug(
+                        "Asset below compression threshold: path={} size={} threshold={}",
+                        collection.path(),
+                        originalSize,
+                        compressionThreshold);
             }
         }
 
-        var storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, collection.worldId().getId(), "assets/" + collection.path(), finalStream);
+        var storageInfo = storageService.store(
+                STORAGE_SCHEMA,
+                STORAGE_SCHEMA_VERSION,
+                collection.worldId().getId(),
+                "assets/" + collection.path(),
+                finalStream);
         asset.setStorageId(storageInfo.id());
         // Always store original uncompressed size
         asset.setSize(originalSize);
-        log.debug("Storing asset externally path={} originalSize={} storageSize={} storageId={} world={} compressed={}",
-                collection.path(), asset.getSize(), storageInfo.size(), storageInfo.id(), collection.worldId(), asset.isCompressed());
+        log.debug(
+                "Storing asset externally path={} originalSize={} storageSize={} storageId={} world={} compressed={}",
+                collection.path(),
+                asset.getSize(),
+                storageInfo.size(),
+                storageInfo.id(),
+                collection.worldId(),
+                asset.isCompressed());
 
         return repository.save(asset);
     }
@@ -196,7 +213,8 @@ public class SAssetService implements StorageProvider {
         var collection = WorldCollection.of(lookupWorld, path);
 
         // Find all assets with this path
-        List<SAsset> assets = repository.findAllByWorldIdAndPath(collection.worldId().getId(), collection.path());
+        List<SAsset> assets =
+                repository.findAllByWorldIdAndPath(collection.worldId().getId(), collection.path());
 
         if (assets.isEmpty()) {
             return Optional.empty();
@@ -208,16 +226,19 @@ public class SAssetService implements StorageProvider {
         }
 
         // Multiple assets found - sort by createdAt descending (newest first)
-        log.warn("Found {} assets with same path, cleaning up old ones: worldId={}, path={}",
-                assets.size(), worldId, path);
+        log.warn(
+                "Found {} assets with same path, cleaning up old ones: worldId={}, path={}",
+                assets.size(),
+                worldId,
+                path);
 
         assets.sort((a, b) -> {
             Instant aCreated = a.getCreatedAt();
             Instant bCreated = b.getCreatedAt();
             if (aCreated == null && bCreated == null) return 0;
-            if (aCreated == null) return 1;  // null is oldest
+            if (aCreated == null) return 1; // null is oldest
             if (bCreated == null) return -1;
-            return bCreated.compareTo(aCreated);  // descending (newest first)
+            return bCreated.compareTo(aCreated); // descending (newest first)
         });
 
         // Keep the newest (first in sorted list)
@@ -226,8 +247,11 @@ public class SAssetService implements StorageProvider {
         // Delete all old ones
         for (int i = 1; i < assets.size(); i++) {
             SAsset old = assets.get(i);
-            log.info("Deleting old duplicate asset: id={}, path={}, createdAt={}",
-                    old.getId(), old.getPath(), old.getCreatedAt());
+            log.info(
+                    "Deleting old duplicate asset: id={}, path={}, createdAt={}",
+                    old.getId(),
+                    old.getPath(),
+                    old.getCreatedAt());
             try {
                 delete(old);
             } catch (Exception e) {
@@ -305,121 +329,140 @@ public class SAssetService implements StorageProvider {
         }
         asset.removeWorldPrefix();
 
-        return repository.findById(asset.getId()).map(a -> {
-            if (!a.isEnabled()) throw new IllegalStateException("Asset disabled: " + a.getId());
+        return repository
+                .findById(asset.getId())
+                .map(a -> {
+                    if (!a.isEnabled()) throw new IllegalStateException("Asset disabled: " + a.getId());
 
-            // Read first threshold bytes to determine if we should compress
-            byte[] initialBuffer = new byte[compressionThreshold + 1];
-            int bytesRead;
-            try {
-                bytesRead = stream.readNBytes(initialBuffer, 0, initialBuffer.length);
-            } catch (Exception e) {
-                log.error("Failed to read asset content: path={}", a.getPath(), e);
-                throw new IllegalStateException("Failed to read asset content", e);
-            }
-
-            InputStream finalStream;
-            final AtomicLong totalBytesCounter = new AtomicLong(0);
-
-            if (bytesRead > compressionThreshold && compressionEnabled) {
-                // Large file with compression enabled - stream compression without loading all into memory
-                // Use PipedInputStream/PipedOutputStream to compress in background thread
-                try {
-                    PipedInputStream pipedInput = new PipedInputStream(64 * 1024); // 64KB buffer
-                    PipedOutputStream pipedOutput = new PipedOutputStream(pipedInput);
-
-                    // Capture bytesRead for lambda
-                    final int initialBytesRead = bytesRead;
-
-                    // Compress in background thread using executor
-                    compressionExecutor.submit(() -> {
-                        try (GZIPOutputStream gzip = new GZIPOutputStream(pipedOutput)) {
-                            gzip.write(initialBuffer, 0, initialBytesRead);
-                            totalBytesCounter.addAndGet(initialBytesRead);
-
-                            // Copy remaining stream in chunks
-                            byte[] chunk = new byte[8192];
-                            int n;
-                            while ((n = stream.read(chunk)) > 0) {
-                                gzip.write(chunk, 0, n);
-                                totalBytesCounter.addAndGet(n);
-                            }
-                            gzip.finish();
-                            log.debug("Asset compression completed: path={} original={}", a.getPath(), totalBytesCounter.get());
-                        } catch (Exception e) {
-                            log.error("Failed to compress asset in background thread: path={}", a.getPath(), e);
-                            try {
-                                pipedOutput.close();
-                            } catch (Exception ignored) {}
-                        }
-                    });
-
-                    finalStream = pipedInput;
-                    a.setCompressed(true);
-                    log.debug("Large asset compression started (streaming): path={}", a.getPath());
-                } catch (IOException e) {
-                    log.error("Failed to create piped streams for compression: path={}", a.getPath(), e);
-                    throw new IllegalStateException("Failed to create piped streams", e);
-                }
-            } else {
-                // All other cases: store uncompressed (streaming without full memory load)
-                if (bytesRead > compressionThreshold) {
-                    // Large file uncompressed: combine initialBuffer + remaining stream
-                    // Use SequenceInputStream to avoid loading everything into memory
-                    // Wrap in CountingInputStream to track size
-                    ByteArrayInputStream initialStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
-                    InputStream sequenceStream = new java.io.SequenceInputStream(initialStream, stream);
-
-                    // Wrap with CountingInputStream to track bytes
-                    totalBytesCounter.set(0);
-                    finalStream = new FilterInputStream(sequenceStream) {
-                        @Override
-                        public int read() throws IOException {
-                            int b = super.read();
-                            if (b != -1) totalBytesCounter.incrementAndGet();
-                            return b;
-                        }
-
-                        @Override
-                        public int read(byte[] b, int off, int len) throws IOException {
-                            int n = super.read(b, off, len);
-                            if (n > 0) totalBytesCounter.addAndGet(n);
-                            return n;
-                        }
-                    };
-                    a.setCompressed(false);
-                    log.debug("Large asset stored uncompressed (streaming): path={}", a.getPath());
-                } else {
-                    // Small file: all data in initialBuffer
-                    finalStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
-                    a.setCompressed(false);
-                    totalBytesCounter.set(bytesRead);
-                    if (compressionEnabled && bytesRead > 0) {
-                        log.debug("Asset below compression threshold: path={} threshold={}",
-                                a.getPath(), compressionThreshold);
+                    // Read first threshold bytes to determine if we should compress
+                    byte[] initialBuffer = new byte[compressionThreshold + 1];
+                    int bytesRead;
+                    try {
+                        bytesRead = stream.readNBytes(initialBuffer, 0, initialBuffer.length);
+                    } catch (Exception e) {
+                        log.error("Failed to read asset content: path={}", a.getPath(), e);
+                        throw new IllegalStateException("Failed to read asset content", e);
                     }
-                }
-            }
 
-            if (StringUtils.isNotEmpty(a.getStorageId())  && storageService.exists(a.getStorageId()) ) {
-                var storageId = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, a.getStorageId(), finalStream);
-                // Always store original uncompressed size
-                a.setSize(totalBytesCounter.get());
-                a.setStorageId(storageId.id());
-                log.debug("Updated external content id={} originalSize={} storageSize={} compressed={}",
-                        storageId.id(), a.getSize(), storageId.size(), a.isCompressed());
-            } else {
-                var worldId = a.getWorldId();
-                var path = a.getPath();
-                var storageId = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId, "assets/" + path, finalStream);
-                // Always store original uncompressed size
-                a.setSize(totalBytesCounter.get());
-                a.setStorageId(storageId.id());
-                log.debug("Updated/Created external content id={} originalSize={} storageSize={} compressed={}",
-                        storageId.id(), a.getSize(), storageId.size(), a.isCompressed());
-            }
-            return repository.save(a);
-        }).orElse(null);
+                    InputStream finalStream;
+                    final AtomicLong totalBytesCounter = new AtomicLong(0);
+
+                    if (bytesRead > compressionThreshold && compressionEnabled) {
+                        // Large file with compression enabled - stream compression without loading all into memory
+                        // Use PipedInputStream/PipedOutputStream to compress in background thread
+                        try {
+                            PipedInputStream pipedInput = new PipedInputStream(64 * 1024); // 64KB buffer
+                            PipedOutputStream pipedOutput = new PipedOutputStream(pipedInput);
+
+                            // Capture bytesRead for lambda
+                            final int initialBytesRead = bytesRead;
+
+                            // Compress in background thread using executor
+                            compressionExecutor.submit(() -> {
+                                try (GZIPOutputStream gzip = new GZIPOutputStream(pipedOutput)) {
+                                    gzip.write(initialBuffer, 0, initialBytesRead);
+                                    totalBytesCounter.addAndGet(initialBytesRead);
+
+                                    // Copy remaining stream in chunks
+                                    byte[] chunk = new byte[8192];
+                                    int n;
+                                    while ((n = stream.read(chunk)) > 0) {
+                                        gzip.write(chunk, 0, n);
+                                        totalBytesCounter.addAndGet(n);
+                                    }
+                                    gzip.finish();
+                                    log.debug(
+                                            "Asset compression completed: path={} original={}",
+                                            a.getPath(),
+                                            totalBytesCounter.get());
+                                } catch (Exception e) {
+                                    log.error("Failed to compress asset in background thread: path={}", a.getPath(), e);
+                                    try {
+                                        pipedOutput.close();
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                            });
+
+                            finalStream = pipedInput;
+                            a.setCompressed(true);
+                            log.debug("Large asset compression started (streaming): path={}", a.getPath());
+                        } catch (IOException e) {
+                            log.error("Failed to create piped streams for compression: path={}", a.getPath(), e);
+                            throw new IllegalStateException("Failed to create piped streams", e);
+                        }
+                    } else {
+                        // All other cases: store uncompressed (streaming without full memory load)
+                        if (bytesRead > compressionThreshold) {
+                            // Large file uncompressed: combine initialBuffer + remaining stream
+                            // Use SequenceInputStream to avoid loading everything into memory
+                            // Wrap in CountingInputStream to track size
+                            ByteArrayInputStream initialStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
+                            InputStream sequenceStream = new java.io.SequenceInputStream(initialStream, stream);
+
+                            // Wrap with CountingInputStream to track bytes
+                            totalBytesCounter.set(0);
+                            finalStream = new FilterInputStream(sequenceStream) {
+                                @Override
+                                public int read() throws IOException {
+                                    int b = super.read();
+                                    if (b != -1) totalBytesCounter.incrementAndGet();
+                                    return b;
+                                }
+
+                                @Override
+                                public int read(byte[] b, int off, int len) throws IOException {
+                                    int n = super.read(b, off, len);
+                                    if (n > 0) totalBytesCounter.addAndGet(n);
+                                    return n;
+                                }
+                            };
+                            a.setCompressed(false);
+                            log.debug("Large asset stored uncompressed (streaming): path={}", a.getPath());
+                        } else {
+                            // Small file: all data in initialBuffer
+                            finalStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
+                            a.setCompressed(false);
+                            totalBytesCounter.set(bytesRead);
+                            if (compressionEnabled && bytesRead > 0) {
+                                log.debug(
+                                        "Asset below compression threshold: path={} threshold={}",
+                                        a.getPath(),
+                                        compressionThreshold);
+                            }
+                        }
+                    }
+
+                    if (StringUtils.isNotEmpty(a.getStorageId()) && storageService.exists(a.getStorageId())) {
+                        var storageId = storageService.update(
+                                STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, a.getStorageId(), finalStream);
+                        // Always store original uncompressed size
+                        a.setSize(totalBytesCounter.get());
+                        a.setStorageId(storageId.id());
+                        log.debug(
+                                "Updated external content id={} originalSize={} storageSize={} compressed={}",
+                                storageId.id(),
+                                a.getSize(),
+                                storageId.size(),
+                                a.isCompressed());
+                    } else {
+                        var worldId = a.getWorldId();
+                        var path = a.getPath();
+                        var storageId = storageService.store(
+                                STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId, "assets/" + path, finalStream);
+                        // Always store original uncompressed size
+                        a.setSize(totalBytesCounter.get());
+                        a.setStorageId(storageId.id());
+                        log.debug(
+                                "Updated/Created external content id={} originalSize={} storageSize={} compressed={}",
+                                storageId.id(),
+                                a.getSize(),
+                                storageId.size(),
+                                a.isCompressed());
+                    }
+                    return repository.save(a);
+                })
+                .orElse(null);
     }
 
     @Transactional
@@ -504,15 +547,22 @@ public class SAssetService implements StorageProvider {
                 STORAGE_SCHEMA_VERSION,
                 collection.worldId().getId(),
                 "assets/" + collection.path(),
-                sourceContent
-        );
+                sourceContent);
 
         duplicate.setStorageId(storageInfo.id());
         // Copy original size from source (source.size is already the uncompressed size)
         duplicate.setSize(source.getSize());
 
-        log.debug("Duplicated asset: sourcePath={}, sourceWorldId={}, newPath={}, targetWorldId={}, originalSize={}, storageSize={}, storageId={}, compressed={}",
-                  source.getPath(), source.getWorldId(), collection.path(), collection.worldId().getId(), duplicate.getSize(), storageInfo.size(), storageInfo.id(), duplicate.isCompressed());
+        log.debug(
+                "Duplicated asset: sourcePath={}, sourceWorldId={}, newPath={}, targetWorldId={}, originalSize={}, storageSize={}, storageId={}, compressed={}",
+                source.getPath(),
+                source.getWorldId(),
+                collection.path(),
+                collection.worldId().getId(),
+                duplicate.getSize(),
+                storageInfo.size(),
+                storageInfo.id(),
+                duplicate.isCompressed());
 
         return repository.save(duplicate);
     }
@@ -564,37 +614,29 @@ public class SAssetService implements StorageProvider {
     /**
      * Search assets in a specific worldId with filtering and pagination.
      */
-    private AssetSearchResult searchInWorldId(String worldId, String pathPattern, String extensionPattern, int offset, int limit) {
+    private AssetSearchResult searchInWorldId(
+            String worldId, String pathPattern, String extensionPattern, int offset, int limit) {
         // Calculate page number from offset (Spring Data uses 0-based page numbers)
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<SAsset> page;
 
         if (pathPattern != null && extensionPattern != null) {
-            page = repository.findByWorldIdAndPathContainingAndExtension(worldId, pathPattern, extensionPattern, pageable);
+            page = repository.findByWorldIdAndPathContainingAndExtension(
+                    worldId, pathPattern, extensionPattern, pageable);
         } else if (pathPattern != null) {
             page = repository.findByWorldIdAndPathContaining(worldId, pathPattern, pageable);
         } else {
             page = repository.findByWorldId(worldId, pageable);
         }
 
-        return new AssetSearchResult(
-                page.getContent(),
-                (int) page.getTotalElements(),
-                offset,
-                limit
-        );
+        return new AssetSearchResult(page.getContent(), (int) page.getTotalElements(), offset, limit);
     }
 
     /**
      * Result wrapper for asset search with pagination info.
      */
-    public record AssetSearchResult(
-            List<SAsset> assets,
-            int totalCount,
-            int offset,
-            int limit
-    ) {}
+    public record AssetSearchResult(List<SAsset> assets, int totalCount, int offset, int limit) {}
 
     /**
      * Extract unique folder paths from assets in a world.
@@ -609,16 +651,17 @@ public class SAssetService implements StorageProvider {
         if (worldId == null) throw new IllegalArgumentException("worldId required");
 
         // Normalize parent path (remove trailing slash)
-        String normalizedParent = parentPath != null && !parentPath.isEmpty()
-                ? parentPath.replaceAll("/+$", "")
-                : null;
+        String normalizedParent = parentPath != null && !parentPath.isEmpty() ? parentPath.replaceAll("/+$", "") : null;
 
         // Load all assets for the world
         WorldId lookupWorld = worldId.toMainWorld();
         List<SAsset> assets = repository.findByWorldId(lookupWorld.getId());
 
-        log.debug("Extracting folders from {} assets (worldId={}, parent={})",
-                assets.size(), lookupWorld.getId(), normalizedParent);
+        log.debug(
+                "Extracting folders from {} assets (worldId={}, parent={})",
+                assets.size(),
+                lookupWorld.getId(),
+                normalizedParent);
 
         // Extract folder paths and count assets per folder
         Map<String, FolderStats> folderMap = new HashMap<>();
@@ -692,22 +735,12 @@ public class SAssetService implements StorageProvider {
      * Build FolderInfo DTO from folder path and statistics.
      */
     private FolderInfo buildFolderInfo(String path, FolderStats stats) {
-        String name = path.contains("/")
-                ? path.substring(path.lastIndexOf("/") + 1)
-                : path;
+        String name = path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
 
-        String parentPath = path.contains("/")
-                ? path.substring(0, path.lastIndexOf("/"))
-                : "";
+        String parentPath = path.contains("/") ? path.substring(0, path.lastIndexOf("/")) : "";
 
         return new FolderInfo(
-                path,
-                name,
-                stats.getAssetCount(),
-                stats.getTotalAssetCount(),
-                stats.getSubfolderCount(),
-                parentPath
-        );
+                path, name, stats.getAssetCount(), stats.getTotalAssetCount(), stats.getSubfolderCount(), parentPath);
     }
 
     /**
@@ -723,10 +756,21 @@ public class SAssetService implements StorageProvider {
             totalAssetCount++;
         }
 
-        int getAssetCount() { return assetCount; }
-        int getTotalAssetCount() { return totalAssetCount; }
-        int getSubfolderCount() { return subfolderCount; }
-        void setSubfolderCount(int count) { this.subfolderCount = count; }
+        int getAssetCount() {
+            return assetCount;
+        }
+
+        int getTotalAssetCount() {
+            return totalAssetCount;
+        }
+
+        int getSubfolderCount() {
+            return subfolderCount;
+        }
+
+        void setSubfolderCount(int count) {
+            this.subfolderCount = count;
+        }
     }
 
     /**
@@ -746,7 +790,8 @@ public class SAssetService implements StorageProvider {
         if (worldId == null) throw new IllegalArgumentException("worldId required");
         if (oldPrefix == null || oldPrefix.isEmpty()) throw new IllegalArgumentException("oldPrefix required");
         if (newPrefix == null || newPrefix.isEmpty()) throw new IllegalArgumentException("newPrefix required");
-        if (oldPrefix.equals(newPrefix)) throw new IllegalArgumentException("oldPrefix and newPrefix must be different");
+        if (oldPrefix.equals(newPrefix))
+            throw new IllegalArgumentException("oldPrefix and newPrefix must be different");
         // world lookup
         if (worldId.isInstanceOrZone()) {
             throw new IllegalArgumentException("can't be save to a world instance: " + worldId);
@@ -758,13 +803,16 @@ public class SAssetService implements StorageProvider {
 
         WorldId lookupWorld = worldId.toMainWorld();
 
-        log.debug("Updating path prefix: worldId={}, oldPrefix='{}', newPrefix='{}'",
-                lookupWorld.getId(), normalizedOldPrefix, normalizedNewPrefix);
+        log.debug(
+                "Updating path prefix: worldId={}, oldPrefix='{}', newPrefix='{}'",
+                lookupWorld.getId(),
+                normalizedOldPrefix,
+                normalizedNewPrefix);
 
         // 1. Find all assets with path starting with oldPrefix
-        List<SAsset> assetsToUpdate = repository.findByWorldId(lookupWorld.getId())
-                .stream()
-                .filter(asset -> asset.getPath().startsWith(normalizedOldPrefix + "/") || asset.getPath().equals(normalizedOldPrefix))
+        List<SAsset> assetsToUpdate = repository.findByWorldId(lookupWorld.getId()).stream()
+                .filter(asset -> asset.getPath().startsWith(normalizedOldPrefix + "/")
+                        || asset.getPath().equals(normalizedOldPrefix))
                 .collect(Collectors.toList());
 
         if (assetsToUpdate.isEmpty()) {
@@ -780,10 +828,7 @@ public class SAssetService implements StorageProvider {
             String newPath = generateNewPath(asset.getPath(), normalizedOldPrefix, normalizedNewPrefix);
 
             // Check if target path already exists
-            Optional<SAsset> existingAsset = repository.findByWorldIdAndPath(
-                    lookupWorld.getId(),
-                    newPath
-            );
+            Optional<SAsset> existingAsset = repository.findByWorldIdAndPath(lookupWorld.getId(), newPath);
 
             if (existingAsset.isPresent() && !existingAsset.get().getId().equals(asset.getId())) {
                 conflicts.add(asset.getPath() + " -> " + newPath);
@@ -792,10 +837,8 @@ public class SAssetService implements StorageProvider {
 
         if (!conflicts.isEmpty()) {
             String conflictList = String.join(", ", conflicts.subList(0, Math.min(5, conflicts.size())));
-            throw new IllegalStateException(
-                    String.format("Path conflicts detected: %d conflicts. Examples: %s",
-                            conflicts.size(), conflictList)
-            );
+            throw new IllegalStateException(String.format(
+                    "Path conflicts detected: %d conflicts. Examples: %s", conflicts.size(), conflictList));
         }
 
         // 3. Update all assets (path and name)
@@ -813,8 +856,11 @@ public class SAssetService implements StorageProvider {
             log.debug("Updated asset path: '{}' -> '{}'", oldPath, newPath);
         }
 
-        log.info("Successfully updated {} asset paths from '{}' to '{}'",
-                updatedCount, normalizedOldPrefix, normalizedNewPrefix);
+        log.info(
+                "Successfully updated {} asset paths from '{}' to '{}'",
+                updatedCount,
+                normalizedOldPrefix,
+                normalizedNewPrefix);
 
         return updatedCount;
     }
@@ -844,12 +890,7 @@ public class SAssetService implements StorageProvider {
      * @return List of distinct worldIds (excludes null values)
      */
     public List<String> findDistinctWorldIds() {
-        return mongoTemplate.findDistinct(
-                new Query(),
-                "worldId",
-                SAsset.class,
-                String.class
-        );
+        return mongoTemplate.findDistinct(new Query(), "worldId", SAsset.class, String.class);
     }
 
     /**
@@ -876,8 +917,11 @@ public class SAssetService implements StorageProvider {
                     storageService.delete(asset.getStorageId());
                     storageCount++;
                 } catch (Exception e) {
-                    log.warn("Failed to delete storage {} for asset {}: {}",
-                            asset.getStorageId(), asset.getId(), e.getMessage());
+                    log.warn(
+                            "Failed to delete storage {} for asset {}: {}",
+                            asset.getStorageId(),
+                            asset.getId(),
+                            e.getMessage());
                 }
             }
 
@@ -885,8 +929,7 @@ public class SAssetService implements StorageProvider {
             deletedCount++;
         }
 
-        log.info("Deleted {} assets (including {} storage items) for world {}",
-                deletedCount, storageCount, worldId);
+        log.info("Deleted {} assets (including {} storage items) for world {}", deletedCount, storageCount, worldId);
         return deletedCount;
     }
 
@@ -931,8 +974,12 @@ public class SAssetService implements StorageProvider {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} assets (including {} storage items) from world {} to {}",
-                duplicatedCount, storageCount, sourceWorldId, targetWorldId);
+        log.info(
+                "Duplicated {} assets (including {} storage items) from world {} to {}",
+                duplicatedCount,
+                storageCount,
+                sourceWorldId,
+                targetWorldId);
         return duplicatedCount;
     }
 
@@ -947,14 +994,9 @@ public class SAssetService implements StorageProvider {
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.toMainWorld();
         var query = new org.springframework.data.mongodb.core.query.Query(
-                org.springframework.data.mongodb.core.query.Criteria.where("worldId").is(lookupWorld.getId())
-        );
-        return mongoTemplate.findDistinct(
-                query,
-                "storageId",
-                SAsset.class,
-                String.class
-        );
+                org.springframework.data.mongodb.core.query.Criteria.where("worldId")
+                        .is(lookupWorld.getId()));
+        return mongoTemplate.findDistinct(query, "storageId", SAsset.class, String.class);
     }
 
     /**
@@ -1006,7 +1048,8 @@ public class SAssetService implements StorageProvider {
 
                 // Keep the document with _schema field (most recent), or highest createdAt
                 Document toKeep = DuplicateRepairHelper.selectDocumentToKeep(duplicates);
-                log.info("Keeping document with _id: {} (has _schema: {})",
+                log.info(
+                        "Keeping document with _id: {} (has _schema: {})",
                         toKeep.get("_id"),
                         toKeep.containsKey("_schema"));
 
@@ -1019,8 +1062,11 @@ public class SAssetService implements StorageProvider {
                     Object docId = doc.get("_id");
                     String storageId = doc.getString("storageId");
 
-                    log.info("Removing duplicate document _id: {} (has _schema: {}, storageId: {})",
-                            docId, doc.containsKey("_schema"), storageId);
+                    log.info(
+                            "Removing duplicate document _id: {} (has _schema: {}, storageId: {})",
+                            docId,
+                            doc.containsKey("_schema"),
+                            storageId);
 
                     // Check if storageId is used by the document we're keeping or any other document
                     boolean storageInUse = false;
@@ -1030,10 +1076,10 @@ public class SAssetService implements StorageProvider {
 
                         // Check if any other document uses this storageId
                         if (!storageInUse) {
-                            Query storageQuery = new Query(
-                                    Criteria.where("storageId").is(storageId)
-                                            .and("_id").ne(docId)
-                            );
+                            Query storageQuery = new Query(Criteria.where("storageId")
+                                    .is(storageId)
+                                    .and("_id")
+                                    .ne(docId));
                             storageInUse = mongoTemplate.exists(storageQuery, collectionName);
                         }
                     }
@@ -1053,7 +1099,6 @@ public class SAssetService implements StorageProvider {
                     Query deleteQuery = new Query(Criteria.where("_id").is(docId));
                     mongoTemplate.remove(deleteQuery, collectionName);
                     duplicatesRemoved++;
-
                 }
             }
         }
@@ -1084,22 +1129,24 @@ public class SAssetService implements StorageProvider {
             }
         }
 
-        log.info("Asset repair completed: {} duplicates found, {} removed, {} orphaned storage found, {} removed",
-                duplicatesFound, duplicatesRemoved, orphanedStorageFound, orphanedStorageRemoved);
+        log.info(
+                "Asset repair completed: {} duplicates found, {} removed, {} orphaned storage found, {} removed",
+                duplicatesFound,
+                duplicatesRemoved,
+                orphanedStorageFound,
+                orphanedStorageRemoved);
 
         return new AssetRepairResult(
                 "asset",
                 true,
-                String.format("Duplicates found: %d, removed: %d; Orphaned storage found: %d, removed: %d",
-                        duplicatesFound, duplicatesRemoved,
-                        orphanedStorageFound, orphanedStorageRemoved
-                ),
+                String.format(
+                        "Duplicates found: %d, removed: %d; Orphaned storage found: %d, removed: %d",
+                        duplicatesFound, duplicatesRemoved, orphanedStorageFound, orphanedStorageRemoved),
                 System.currentTimeMillis(),
                 duplicatesFound,
                 duplicatesRemoved,
                 orphanedStorageFound,
-                orphanedStorageRemoved
-        );
+                orphanedStorageRemoved);
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -1123,7 +1170,8 @@ public class SAssetService implements StorageProvider {
      */
     public Optional<Document> findDocumentByWorldIdAndPath(String worldId, String path) {
         String collectionName = mongoTemplate.getCollectionName(SAsset.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("path").is(path));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("path").is(path));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -1135,8 +1183,10 @@ public class SAssetService implements StorageProvider {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(SAsset.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("path").is(doc.getString("path")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("path")
+                .is(doc.getString("path")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

@@ -25,7 +25,6 @@ public class DuplicateItemsService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating items from world {} to {}", sourceWorldId, targetWorldId);
         int duplicatedCount = itemService.duplicateToWorld(sourceWorldId, targetWorldId);
-        log.info("Duplicated {} items from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} items from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

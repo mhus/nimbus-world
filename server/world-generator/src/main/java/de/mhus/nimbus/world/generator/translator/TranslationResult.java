@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of translating textual instructions to Composer Model JSON.
@@ -76,9 +75,7 @@ public class TranslationResult {
      * @return Failed translation result
      */
     public static TranslationResult failure(List<String> errors) {
-        return TranslationResult.builder()
-                .errors(errors)
-                .build();
+        return TranslationResult.builder().errors(errors).build();
     }
 
     /**
@@ -90,8 +87,6 @@ public class TranslationResult {
     public static TranslationResult failure(String error) {
         List<String> errors = new ArrayList<>();
         errors.add(error);
-        return TranslationResult.builder()
-                .errors(errors)
-                .build();
+        return TranslationResult.builder().errors(errors).build();
     }
 }

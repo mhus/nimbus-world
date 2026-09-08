@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.life.logic;
 
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * REST controller for the Logic Machine.
@@ -38,8 +37,10 @@ public class LogicController {
      */
     @PostMapping("/condition")
     public ResponseEntity<LogicConditionResult> checkCondition(@RequestBody LogicCondition condition) {
-        log.debug("Received condition check: worldId={}, expression={}",
-                condition.getWorldId(), condition.getSpelExpression());
+        log.debug(
+                "Received condition check: worldId={}, expression={}",
+                condition.getWorldId(),
+                condition.getSpelExpression());
         LogicConditionResult result = logicMachineService.checkCondition(condition);
         return ResponseEntity.ok(result);
     }
@@ -93,8 +94,7 @@ public class LogicController {
      * Optional worldId filter.
      */
     @GetMapping("/metrics")
-    public ResponseEntity<Map<String, Object>> getMetrics(
-            @RequestParam(required = false) String worldId) {
+    public ResponseEntity<Map<String, Object>> getMetrics(@RequestParam(required = false) String worldId) {
         return ResponseEntity.ok(metricsService.getMetrics(worldId));
     }
 

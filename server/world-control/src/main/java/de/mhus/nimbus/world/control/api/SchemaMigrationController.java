@@ -3,18 +3,16 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.shared.service.MongoRawDocumentService;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST controller for schema migration operations.
@@ -38,22 +36,15 @@ public class SchemaMigrationController {
      */
     public record MigrationRequest(
             String collectionName,
-            String documentId,      // ID, "*" for all, or "no-schema" for documents without _schema
+            String documentId, // ID, "*" for all, or "no-schema" for documents without _schema
             String entityType,
-            SchemaVersion targetVersion
-    ) {}
+            SchemaVersion targetVersion) {}
 
     /**
      * Migration response DTO.
      */
     public record MigrationResponse(
-            boolean success,
-            String message,
-            int successCount,
-            int failureCount,
-            int skippedCount,
-            int totalCount
-    ) {}
+            boolean success, String message, int successCount, int failureCount, int skippedCount, int totalCount) {}
 
     /**
      * Storage migration response DTO.
@@ -64,8 +55,7 @@ public class SchemaMigrationController {
             SchemaVersion fromVersion,
             SchemaVersion toVersion,
             boolean migrated,
-            String message
-    ) {}
+            String message) {}
 
     /**
      * Migrates a storage object to the latest available version.
@@ -87,8 +77,7 @@ public class SchemaMigrationController {
                     result.fromVersion(),
                     result.toVersion(),
                     result.migrated(),
-                    result.message()
-            );
+                    result.message());
 
             return ResponseEntity.ok(response);
 
@@ -96,13 +85,7 @@ public class SchemaMigrationController {
             log.error("Storage migration failed for storageId: {}", storageId, e);
 
             StorageMigrationResponse response = new StorageMigrationResponse(
-                    storageId,
-                    null,
-                    null,
-                    null,
-                    false,
-                    "Migration failed: " + e.getMessage()
-            );
+                    storageId, null, null, null, false, "Migration failed: " + e.getMessage());
 
             return ResponseEntity.status(500).body(response);
         }
@@ -116,39 +99,44 @@ public class SchemaMigrationController {
      */
     @PostMapping("/migrate")
     public ResponseEntity<MigrationResponse> migrate(@RequestBody MigrationRequest request) {
-        log.info("Migration request: collection={}, pattern={}, entity={}, targetVersion={}",
-                request.collectionName, request.documentId, request.entityType, request.targetVersion);
+        log.info(
+                "Migration request: collection={}, pattern={}, entity={}, targetVersion={}",
+                request.collectionName,
+                request.documentId,
+                request.entityType,
+                request.targetVersion);
 
         try {
             // Validate request
             if (request.collectionName == null || request.collectionName.isBlank()) {
-                return ResponseEntity.badRequest().body(new MigrationResponse(
-                        false, "Collection title is required", 0, 0, 0, 0));
+                return ResponseEntity.badRequest()
+                        .body(new MigrationResponse(false, "Collection title is required", 0, 0, 0, 0));
             }
 
             if (request.entityType == null || request.entityType.isBlank()) {
-                return ResponseEntity.badRequest().body(new MigrationResponse(
-                        false, "Entity type is required", 0, 0, 0, 0));
+                return ResponseEntity.badRequest()
+                        .body(new MigrationResponse(false, "Entity type is required", 0, 0, 0, 0));
             }
 
             if (request.targetVersion == null || request.targetVersion.isNull()) {
-                return ResponseEntity.badRequest().body(new MigrationResponse(
-                        false, "Target version is required", 0, 0, 0, 0));
+                return ResponseEntity.badRequest()
+                        .body(new MigrationResponse(false, "Target version is required", 0, 0, 0, 0));
             }
 
             // Route to appropriate migration method
-            MigrationResponse response = switch (request.documentId.toLowerCase()) {
-                case "*" -> migrateAllDocuments(request);
-                case "no-schema" -> migrateDocumentsWithoutSchema(request);
-                default -> migrateSingleDocument(request);
-            };
+            MigrationResponse response =
+                    switch (request.documentId.toLowerCase()) {
+                        case "*" -> migrateAllDocuments(request);
+                        case "no-schema" -> migrateDocumentsWithoutSchema(request);
+                        default -> migrateSingleDocument(request);
+                    };
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             log.error("Migration failed: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(new MigrationResponse(
-                    false, "Migration failed: " + e.getMessage(), 0, 0, 0, 0));
+            return ResponseEntity.internalServerError()
+                    .body(new MigrationResponse(false, "Migration failed: " + e.getMessage(), 0, 0, 0, 0));
         }
     }
 
@@ -186,8 +174,8 @@ public class SchemaMigrationController {
 
         } catch (Exception e) {
             log.error("Failed to get stats: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(
-                    Map.of("error", "Failed to get statistics: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to get statistics: " + e.getMessage()));
         }
     }
 
@@ -219,13 +207,15 @@ public class SchemaMigrationController {
 
         try {
             var currentVersion = extractSchemaVersion(documentJson);
-            String migratedJson = migrationService.migrate(documentJson, request.entityType, request.targetVersion, currentVersion);
-            boolean updated = rawDocumentService.replaceDocument(request.collectionName, request.documentId, migratedJson);
+            String migratedJson =
+                    migrationService.migrate(documentJson, request.entityType, request.targetVersion, currentVersion);
+            boolean updated =
+                    rawDocumentService.replaceDocument(request.collectionName, request.documentId, migratedJson);
 
             if (updated) {
                 log.info("Successfully migrated document {} to version {}", request.documentId, request.targetVersion);
-                return new MigrationResponse(true,
-                        "Document migrated successfully to version " + request.targetVersion, 1, 0, 0, 1);
+                return new MigrationResponse(
+                        true, "Document migrated successfully to version " + request.targetVersion, 1, 0, 0, 1);
             } else {
                 return new MigrationResponse(false, "Failed to update document: " + request.documentId, 0, 1, 0, 1);
             }
@@ -260,7 +250,8 @@ public class SchemaMigrationController {
                 }
 
                 var currentVersion = extractSchemaVersion(documentJson);
-                String migratedJson = migrationService.migrate(documentJson, request.entityType, request.targetVersion, currentVersion);
+                String migratedJson = migrationService.migrate(
+                        documentJson, request.entityType, request.targetVersion, currentVersion);
                 boolean updated = rawDocumentService.replaceDocument(request.collectionName, documentId, migratedJson);
 
                 if (updated) {
@@ -289,8 +280,7 @@ public class SchemaMigrationController {
                 successCount.get(),
                 failureCount.get(),
                 skippedCount.get(),
-                documents.size()
-        );
+                documents.size());
     }
 
     private MigrationResponse migrateDocumentsWithoutSchema(MigrationRequest request) {
@@ -308,7 +298,8 @@ public class SchemaMigrationController {
             try {
                 String documentId = rawDocumentService.extractDocumentId(documentJson);
                 var currentVersion = extractSchemaVersion(documentJson);
-                String migratedJson = migrationService.migrate(documentJson, request.entityType, request.targetVersion, currentVersion);
+                String migratedJson = migrationService.migrate(
+                        documentJson, request.entityType, request.targetVersion, currentVersion);
                 boolean updated = rawDocumentService.replaceDocument(request.collectionName, documentId, migratedJson);
 
                 if (updated) {
@@ -332,13 +323,7 @@ public class SchemaMigrationController {
         log.info(message);
 
         return new MigrationResponse(
-                failureCount.get() == 0,
-                message,
-                successCount.get(),
-                failureCount.get(),
-                0,
-                documents.size()
-        );
+                failureCount.get() == 0, message, successCount.get(), failureCount.get(), 0, documents.size());
     }
 
     private boolean needsMigration(String documentJson, SchemaVersion targetVersion) {

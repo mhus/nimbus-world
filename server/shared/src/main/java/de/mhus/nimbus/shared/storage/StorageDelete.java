@@ -1,6 +1,7 @@
 package de.mhus.nimbus.shared.storage;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,8 +9,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.Date;
 
 /**
  * MongoDB entity for scheduled deletion of storage data.

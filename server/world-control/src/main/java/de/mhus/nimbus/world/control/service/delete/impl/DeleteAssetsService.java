@@ -2,11 +2,10 @@ package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.world.SAssetService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Service to delete assets for a given world.
@@ -34,5 +33,4 @@ public class DeleteAssetsService implements DeleteWorldResources {
     public List<String> getKnownWorldIds() throws Exception {
         return sAssetService.findDistinctWorldIds();
     }
-
 }

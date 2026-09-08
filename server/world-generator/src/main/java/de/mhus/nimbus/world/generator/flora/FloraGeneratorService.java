@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.generator.modelbuilder.FloraConstraints;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderContext;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderException;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderService;
+import de.mhus.nimbus.world.shared.dto.HeightDataDto;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.WLayer;
@@ -19,19 +20,16 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.world.shared.dto.HeightDataDto;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for generating flora on a single hex grid.
@@ -58,7 +56,6 @@ public class FloraGeneratorService {
     private final WLayerService layerService;
     private final ModelBuilderService modelBuilderService;
 
-
     private static String toHex(int value) {
         return Integer.toHexString(value);
     }
@@ -72,12 +69,14 @@ public class FloraGeneratorService {
      * @return number of blocks placed
      */
     public int generateFlora(String worldId, int hexQ, int hexR) throws ModelBuilderException {
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new ModelBuilderException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
         HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
-        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+        WHexGrid hexGrid = hexGridService
+                .findByWorldIdAndPosition(worldId, hexPos)
                 .orElseThrow(() -> new ModelBuilderException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();
@@ -92,20 +91,22 @@ public class FloraGeneratorService {
         // Extract hex grid context parameters (g_* without prefix) for conditions and model building
         Map<String, String> hexContext = extractHexContext(params);
 
-        WorldId regionWorldId = WorldId.of(worldId).orElseThrow()
-                .toRegionCollection();
+        WorldId regionWorldId = WorldId.of(worldId).orElseThrow().toRegionCollection();
 
         FloraTypeDefinition floraDef = loadFloraTypeDefinition(regionWorldId.getId(), floraType);
-        if (floraDef == null || floraDef.getPlants() == null || floraDef.getPlants().isEmpty()) {
+        if (floraDef == null
+                || floraDef.getPlants() == null
+                || floraDef.getPlants().isEmpty()) {
             log.info("Flora type '{}' has no plants for hex {},{}", floraType, hexQ, hexR);
             return 0;
         }
 
-        WLayer floraLayer = layerService.findByWorldIdAndName(worldId, FLORA_LAYER_NAME)
+        WLayer floraLayer = layerService
+                .findByWorldIdAndName(worldId, FLORA_LAYER_NAME)
                 .orElseThrow(() -> new ModelBuilderException("Flora layer not found for world: " + worldId));
 
-        WLayer groundLayer = layerService.findByWorldIdAndName(worldId, GROUND_LAYER_NAME)
-                .orElse(null);
+        WLayer groundLayer =
+                layerService.findByWorldIdAndName(worldId, GROUND_LAYER_NAME).orElse(null);
 
         // Clear existing flora in this hex grid before generating new flora
         layerService.clearTerrainInHexGrid(worldId, floraLayer, hexGrid);
@@ -122,20 +123,23 @@ public class FloraGeneratorService {
         for (Vector2Int flatPos : hexGrid.getFlatPositionSet(world)) {
 
             HeightDataDto heightInfo = getHeightDataDto(
-                    worldId, groundLayer,
-                    flatPos.getX(), flatPos.getZ(),
-                    chunkSize, defaultGroundLevel, groundChunkCache);
+                    worldId,
+                    groundLayer,
+                    flatPos.getX(),
+                    flatPos.getZ(),
+                    chunkSize,
+                    defaultGroundLevel,
+                    groundChunkCache);
 
-            FloraCategory category = FloraCategory.determine(
-                    heightInfo.groundLevel(), heightInfo.waterLevel(), seaLevel);
+            FloraCategory category =
+                    FloraCategory.determine(heightInfo.groundLevel(), heightInfo.waterLevel(), seaLevel);
 
             if (random.nextDouble() >= density) continue;
 
             int waterDepth = heightInfo.waterLevel() - heightInfo.groundLevel();
 
             Map<String, Object> conditionVars = buildFloraConditionContext(
-                    heightInfo, category, waterDepth,
-                    flatPos.getX(), flatPos.getZ(), seaLevel, random, hexContext);
+                    heightInfo, category, waterDepth, flatPos.getX(), flatPos.getZ(), seaLevel, random, hexContext);
 
             FloraPlantDefinition plant = selectPlant(floraDef, waterDepth, category, random, conditionVars);
             if (plant == null) continue;
@@ -148,9 +152,14 @@ public class FloraGeneratorService {
             }
 
             // Ground block check
-            LayerBlock groundBlock = findGroundBlock(worldId, groundLayer,
-                    flatPos.getX(), heightInfo.groundLevel(), flatPos.getZ(),
-                    chunkSize, groundChunkCache);
+            LayerBlock groundBlock = findGroundBlock(
+                    worldId,
+                    groundLayer,
+                    flatPos.getX(),
+                    heightInfo.groundLevel(),
+                    flatPos.getZ(),
+                    chunkSize,
+                    groundChunkCache);
             if (groundBlock == null) continue;
             if (!fitsGround(plant, groundBlock, category)) continue;
 
@@ -164,27 +173,44 @@ public class FloraGeneratorService {
                     .build();
 
             totalBlockCount += buildPlantWithClustering(
-                    world, floraLayer, plant, startPos, waterDepth, category, heightInfo,
-                    worldId, groundLayer, chunkSize, defaultGroundLevel, groundChunkCache,
-                    seaLevel, random, allChunkData, group);
+                    world,
+                    floraLayer,
+                    plant,
+                    startPos,
+                    waterDepth,
+                    category,
+                    heightInfo,
+                    worldId,
+                    groundLayer,
+                    chunkSize,
+                    defaultGroundLevel,
+                    groundChunkCache,
+                    seaLevel,
+                    random,
+                    allChunkData,
+                    group);
         }
 
         for (Map.Entry<String, LayerChunkData> entry : allChunkData.entrySet()) {
-            layerService.saveTerrainChunkSilent(worldId, floraLayer.getLayerDataId(),
-                    entry.getKey(), entry.getValue());
+            layerService.saveTerrainChunkSilent(worldId, floraLayer.getLayerDataId(), entry.getKey(), entry.getValue());
         }
 
         // Mark all hex grid chunks as dirty (covers both cleared and newly generated chunks)
         layerService.markHexGridDirty(worldId, hexGrid);
 
-        log.info("Generated flora for hex {},{}: {} blocks in {} chunks",
-                hexQ, hexR, totalBlockCount, allChunkData.size());
+        log.info(
+                "Generated flora for hex {},{}: {} blocks in {} chunks",
+                hexQ,
+                hexR,
+                totalBlockCount,
+                allChunkData.size());
         return totalBlockCount;
     }
 
     private FloraTypeDefinition loadFloraTypeDefinition(String regionWorldId, String floraType) {
-        WAnything entry = anythingService.findByWorldIdAndCollectionAndName(
-                regionWorldId, FLORA_COLLECTION, floraType).orElse(null);
+        WAnything entry = anythingService
+                .findByWorldIdAndCollectionAndName(regionWorldId, FLORA_COLLECTION, floraType)
+                .orElse(null);
         if (entry == null) {
             log.warn("Flora type definition not found: {}", floraType);
             return null;
@@ -197,9 +223,12 @@ public class FloraGeneratorService {
      * and whose optional when-condition evaluates to true.
      * Uses weight-based random selection among all fitting candidates.
      */
-    private FloraPlantDefinition selectPlant(FloraTypeDefinition floraDef, int waterDepth,
-                                              FloraCategory category, Random random,
-                                              Map<String, Object> conditionVars) {
+    private FloraPlantDefinition selectPlant(
+            FloraTypeDefinition floraDef,
+            int waterDepth,
+            FloraCategory category,
+            Random random,
+            Map<String, Object> conditionVars) {
         List<FloraPlantDefinition> candidates = new ArrayList<>();
         double totalWeight = 0;
 
@@ -225,9 +254,14 @@ public class FloraGeneratorService {
     }
 
     private Map<String, Object> buildFloraConditionContext(
-            HeightDataDto heightInfo, FloraCategory category,
-            int waterDepth, int worldX, int worldZ,
-            Integer seaLevel, Random random, Map<String, String> hexContext) {
+            HeightDataDto heightInfo,
+            FloraCategory category,
+            int waterDepth,
+            int worldX,
+            int worldZ,
+            Integer seaLevel,
+            Random random,
+            Map<String, String> hexContext) {
         Map<String, Object> vars = new HashMap<>();
         // Hex grid context parameters (e.g. builder, flora, density)
         vars.putAll(hexContext);
@@ -266,13 +300,23 @@ public class FloraGeneratorService {
      * Build a plant at the given position, optionally with clustering.
      * Returns total block count placed.
      */
-    private int buildPlantWithClustering(WWorld world, WLayer floraLayer,
-                                          FloraPlantDefinition plant, Vector3Int startPos,
-                                          int waterDepth, FloraCategory category, HeightDataDto heightInfo,
-                                          String worldId, WLayer groundLayer, int chunkSize, int defaultGroundLevel,
-                                          Map<String, LayerChunkData> groundChunkCache, Integer seaLevel,
-                                          Random random, Map<String, LayerChunkData> allChunkData,
-                                          String group) {
+    private int buildPlantWithClustering(
+            WWorld world,
+            WLayer floraLayer,
+            FloraPlantDefinition plant,
+            Vector3Int startPos,
+            int waterDepth,
+            FloraCategory category,
+            HeightDataDto heightInfo,
+            String worldId,
+            WLayer groundLayer,
+            int chunkSize,
+            int defaultGroundLevel,
+            Map<String, LayerChunkData> groundChunkCache,
+            Integer seaLevel,
+            Random random,
+            Map<String, LayerChunkData> allChunkData,
+            String group) {
         int totalBlocks = 0;
 
         // Build the first plant at original position
@@ -288,11 +332,10 @@ public class FloraGeneratorService {
                 int clusterZ = startPos.getZ() + offsetZ;
 
                 HeightDataDto clusterHeight = getHeightDataDto(
-                        worldId, groundLayer, clusterX, clusterZ,
-                        chunkSize, defaultGroundLevel, groundChunkCache);
+                        worldId, groundLayer, clusterX, clusterZ, chunkSize, defaultGroundLevel, groundChunkCache);
 
-                FloraCategory clusterCategory = FloraCategory.determine(
-                        clusterHeight.groundLevel(), clusterHeight.waterLevel(), seaLevel);
+                FloraCategory clusterCategory =
+                        FloraCategory.determine(clusterHeight.groundLevel(), clusterHeight.waterLevel(), seaLevel);
                 if (clusterCategory != category) continue;
 
                 int clusterWaterDepth = clusterHeight.waterLevel() - clusterHeight.groundLevel();
@@ -300,9 +343,14 @@ public class FloraGeneratorService {
                 if (!constraints.fitsPosition(clusterWaterDepth, clusterCategory)) continue;
 
                 // Ground block check for cluster position
-                LayerBlock clusterGroundBlock = findGroundBlock(worldId, groundLayer,
-                        clusterX, clusterHeight.groundLevel(), clusterZ,
-                        chunkSize, groundChunkCache);
+                LayerBlock clusterGroundBlock = findGroundBlock(
+                        worldId,
+                        groundLayer,
+                        clusterX,
+                        clusterHeight.groundLevel(),
+                        clusterZ,
+                        chunkSize,
+                        groundChunkCache);
                 if (clusterGroundBlock == null) continue;
                 if (!fitsGround(plant, clusterGroundBlock, clusterCategory)) continue;
 
@@ -312,8 +360,8 @@ public class FloraGeneratorService {
                         .z(clusterZ)
                         .build();
 
-                totalBlocks += buildSinglePlant(world, floraLayer, plant, clusterPos,
-                        clusterWaterDepth, clusterCategory, allChunkData, group);
+                totalBlocks += buildSinglePlant(
+                        world, floraLayer, plant, clusterPos, clusterWaterDepth, clusterCategory, allChunkData, group);
             }
         }
 
@@ -324,9 +372,15 @@ public class FloraGeneratorService {
      * Build a single plant at the given position. Dispatches to block stacking
      * or model building depending on the model name.
      */
-    private int buildSinglePlant(WWorld world, WLayer floraLayer, FloraPlantDefinition plant,
-                                  Vector3Int startPos, int waterDepth, FloraCategory category,
-                                  Map<String, LayerChunkData> allChunkData, String group) {
+    private int buildSinglePlant(
+            WWorld world,
+            WLayer floraLayer,
+            FloraPlantDefinition plant,
+            Vector3Int startPos,
+            int waterDepth,
+            FloraCategory category,
+            Map<String, LayerChunkData> allChunkData,
+            String group) {
         try {
             Map<String, String> buildParams = new HashMap<>();
             if (plant.getParameters() != null) {
@@ -339,11 +393,13 @@ public class FloraGeneratorService {
 
             ModelBuilderContext ctx;
             if (STACKED_MODEL.equals(plant.getModel())
-                    || (plant.getModel() == null && plant.getBlocks() != null && !plant.getBlocks().isEmpty())) {
+                    || (plant.getModel() == null
+                            && plant.getBlocks() != null
+                            && !plant.getBlocks().isEmpty())) {
                 ctx = buildBlockStack(world, floraLayer, plant.getBlocks(), startPos, group);
             } else {
-                ctx = modelBuilderService.buildModel(world, floraLayer,
-                        FLORA_MODELS_COLLECTION, plant.getModel(), startPos, buildParams, group);
+                ctx = modelBuilderService.buildModel(
+                        world, floraLayer, FLORA_MODELS_COLLECTION, plant.getModel(), startPos, buildParams, group);
             }
 
             for (Map.Entry<String, LayerChunkData> entry : ctx.getChunkDataMap().entrySet()) {
@@ -356,8 +412,13 @@ public class FloraGeneratorService {
             }
             return ctx.getBlockCount();
         } catch (Exception e) {
-            log.warn("Failed to build flora '{}' at ({},{},{}): {}",
-                    plant.getName(), startPos.getX(), startPos.getY(), startPos.getZ(), e.getMessage());
+            log.warn(
+                    "Failed to build flora '{}' at ({},{},{}): {}",
+                    plant.getName(),
+                    startPos.getX(),
+                    startPos.getY(),
+                    startPos.getZ(),
+                    e.getMessage());
             return 0;
         }
     }
@@ -365,10 +426,9 @@ public class FloraGeneratorService {
     /**
      * Build a vertical block stack from a list of block types.
      */
-    private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,
-                                                List<String> blockTypes,
-                                                Vector3Int startPos,
-                                                String group) throws ModelBuilderException {
+    private ModelBuilderContext buildBlockStack(
+            WWorld world, WLayer layer, List<String> blockTypes, Vector3Int startPos, String group)
+            throws ModelBuilderException {
         if (blockTypes == null || blockTypes.isEmpty()) {
             throw new ModelBuilderException("Block stack has no block types");
         }
@@ -397,18 +457,25 @@ public class FloraGeneratorService {
         return context;
     }
 
-    private LayerBlock findGroundBlock(String worldId, WLayer groundLayer,
-                                        int worldX, int groundY, int worldZ,
-                                        int chunkSize, Map<String, LayerChunkData> groundChunkCache) {
+    private LayerBlock findGroundBlock(
+            String worldId,
+            WLayer groundLayer,
+            int worldX,
+            int groundY,
+            int worldZ,
+            int chunkSize,
+            Map<String, LayerChunkData> groundChunkCache) {
         if (groundLayer == null) return null;
 
         int cx = Math.floorDiv(worldX, chunkSize);
         int cz = Math.floorDiv(worldZ, chunkSize);
         String chunkKey = cx + ":" + cz;
 
-        LayerChunkData chunkData = groundChunkCache.computeIfAbsent(chunkKey, key ->
-                layerService.loadTerrainChunk(worldId,
-                        groundLayer.getLayerDataId(), key).orElse(null));
+        LayerChunkData chunkData = groundChunkCache.computeIfAbsent(
+                chunkKey,
+                key -> layerService
+                        .loadTerrainChunk(worldId, groundLayer.getLayerDataId(), key)
+                        .orElse(null));
 
         if (chunkData == null) return null;
 
@@ -454,19 +521,25 @@ public class FloraGeneratorService {
         return true;
     }
 
-    private HeightDataDto getHeightDataDto(String worldId, WLayer groundLayer,
-                                     int worldX, int worldZ,
-                                     int chunkSize, int defaultGroundLevel,
-                                     Map<String, LayerChunkData> cache) {
+    private HeightDataDto getHeightDataDto(
+            String worldId,
+            WLayer groundLayer,
+            int worldX,
+            int worldZ,
+            int chunkSize,
+            int defaultGroundLevel,
+            Map<String, LayerChunkData> cache) {
         if (groundLayer == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
         int cx = Math.floorDiv(worldX, chunkSize);
         int cz = Math.floorDiv(worldZ, chunkSize);
         String chunkKey = cx + ":" + cz;
 
-        LayerChunkData chunkData = cache.computeIfAbsent(chunkKey, key ->
-                layerService.loadTerrainChunk(worldId,
-                        groundLayer.getLayerDataId(), key).orElse(null));
+        LayerChunkData chunkData = cache.computeIfAbsent(
+                chunkKey,
+                key -> layerService
+                        .loadTerrainChunk(worldId, groundLayer.getLayerDataId(), key)
+                        .orElse(null));
 
         if (chunkData == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 

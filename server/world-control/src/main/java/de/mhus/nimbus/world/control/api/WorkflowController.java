@@ -6,15 +6,14 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.workflow.StartRecord;
 import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalRecord;
 import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for managing workflows.
@@ -31,23 +30,13 @@ public class WorkflowController extends BaseEditorController {
     /**
      * Response DTO for workflow summary.
      */
-    public record WorkflowSummary(
-            String workflowId,
-            String workflowName,
-            Instant createdAt
-    ) {}
+    public record WorkflowSummary(String workflowId, String workflowName, Instant createdAt) {}
 
     /**
      * Response DTO for workflow journal entry.
      */
     public record WorkflowJournalEntry(
-            String id,
-            String worldId,
-            String workflowId,
-            String type,
-            String data,
-            Instant createdAt
-    ) {}
+            String id, String worldId, String workflowId, String type, String data, Instant createdAt) {}
 
     /**
      * Get all workflows for a world (based on StartRecord entries).
@@ -61,16 +50,15 @@ public class WorkflowController extends BaseEditorController {
         try {
             // Get all StartRecord entries for this world
             String startRecordType = StartRecord.class.getCanonicalName();
-            List<WWorkflowJournalRecord> startRecords = workflowJournalService
-                    .getWorkflowJournalRecordsForType(worldId, startRecordType);
+            List<WWorkflowJournalRecord> startRecords =
+                    workflowJournalService.getWorkflowJournalRecordsForType(worldId, startRecordType);
 
             // Map to workflow summaries
             List<WorkflowSummary> workflows = startRecords.stream()
                     .map(record -> new WorkflowSummary(
                             record.getWorkflowId(),
                             record.getData(), // StartRecord.entryToString() returns workflow name
-                            record.getCreatedAt()
-                    ))
+                            record.getCreatedAt()))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(workflows);
@@ -84,9 +72,7 @@ public class WorkflowController extends BaseEditorController {
      * GET /control/worlds/{worldId}/workflows/{workflowId}
      */
     @GetMapping("/{workflowId}")
-    public ResponseEntity<?> getWorkflowJournal(
-            @PathVariable String worldId,
-            @PathVariable String workflowId) {
+    public ResponseEntity<?> getWorkflowJournal(@PathVariable String worldId, @PathVariable String workflowId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -95,8 +81,8 @@ public class WorkflowController extends BaseEditorController {
         if (error2 != null) return error2;
 
         try {
-            List<WWorkflowJournalRecord> records = workflowJournalService
-                    .getWorkflowJournalRecords(worldId, workflowId);
+            List<WWorkflowJournalRecord> records =
+                    workflowJournalService.getWorkflowJournalRecords(worldId, workflowId);
 
             if (records.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -110,8 +96,7 @@ public class WorkflowController extends BaseEditorController {
                             record.getWorkflowId(),
                             record.getType(),
                             record.getData(),
-                            record.getCreatedAt()
-                    ))
+                            record.getCreatedAt()))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(entries);
@@ -125,9 +110,7 @@ public class WorkflowController extends BaseEditorController {
      * DELETE /control/worlds/{worldId}/workflows/{workflowId}
      */
     @DeleteMapping("/{workflowId}")
-    public ResponseEntity<?> deleteWorkflow(
-            @PathVariable String worldId,
-            @PathVariable String workflowId) {
+    public ResponseEntity<?> deleteWorkflow(@PathVariable String worldId, @PathVariable String workflowId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -137,8 +120,8 @@ public class WorkflowController extends BaseEditorController {
 
         try {
             // Verify workflow exists
-            List<WWorkflowJournalRecord> records = workflowJournalService
-                    .getWorkflowJournalRecords(worldId, workflowId);
+            List<WWorkflowJournalRecord> records =
+                    workflowJournalService.getWorkflowJournalRecords(worldId, workflowId);
 
             if (records.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)

@@ -1,20 +1,18 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Service for managing WLogicRule entities.
@@ -32,14 +30,12 @@ public class WLogicRuleService {
     /**
      * Matches fully qualified state references: "state.pkg.key"
      */
-    private static final Pattern QUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)\\.([a-zA-Z_]\\w*)");
+    private static final Pattern QUALIFIED_STATE = Pattern.compile("state\\.([a-zA-Z_]\\w*)\\.([a-zA-Z_]\\w*)");
 
     /**
      * Matches unqualified state references: "state.xxx" NOT followed by ".yyy"
      */
-    private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
+    private static final Pattern UNQUALIFIED_STATE = Pattern.compile("state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     private static final String DEFAULT_PACKAGE = "default";
 
@@ -69,8 +65,7 @@ public class WLogicRuleService {
      * @return affected, enabled rules for the epoch
      */
     public List<WLogicRule> findAffectedRules(String worldId, List<String> changedFlags, int epoch) {
-        return repository.findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(
-                worldId, changedFlags, epoch);
+        return repository.findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(worldId, changedFlags, epoch);
     }
 
     /**
@@ -113,8 +108,7 @@ public class WLogicRuleService {
         // Delegate state definition teardown to its owner service.
         int flagCount = logicStateService.deleteAllByWorldId(worldId);
 
-        log.info("Deleted {} logic rules and {} state definitions for world {}",
-                rules.size(), flagCount, worldId);
+        log.info("Deleted {} logic rules and {} state definitions for world {}", rules.size(), flagCount, worldId);
         return rules.size() + flagCount;
     }
 
@@ -126,10 +120,8 @@ public class WLogicRuleService {
      */
     public List<String> findDistinctWorldIds() {
         Set<String> worldIds = new LinkedHashSet<>();
-        worldIds.addAll(mongoTemplate.findDistinct(
-                new Query(), "worldId", WLogicRule.class, String.class));
-        worldIds.addAll(mongoTemplate.findDistinct(
-                new Query(), "worldId", WLogicStateDef.class, String.class));
+        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WLogicRule.class, String.class));
+        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WLogicStateDef.class, String.class));
         return worldIds.stream().sorted().toList();
     }
 
@@ -169,8 +161,12 @@ public class WLogicRuleService {
         // Delegate state definition duplication to its owner service.
         int flagCount = logicStateService.duplicateToWorld(sourceWorldId, targetWorldId);
 
-        log.info("Duplicated {} logic rules and {} state definitions from {} to {}",
-                ruleCount, flagCount, sourceWorldId, targetWorldId);
+        log.info(
+                "Duplicated {} logic rules and {} state definitions from {} to {}",
+                ruleCount,
+                flagCount,
+                sourceWorldId,
+                targetWorldId);
         return ruleCount + flagCount;
     }
 
@@ -181,7 +177,8 @@ public class WLogicRuleService {
      */
     List<String> computeAffected(WLogicRule rule) {
         String pkg = rule.getRulePackage() != null && !rule.getRulePackage().isBlank()
-                ? rule.getRulePackage() : DEFAULT_PACKAGE;
+                ? rule.getRulePackage()
+                : DEFAULT_PACKAGE;
 
         Set<String> affected = new LinkedHashSet<>();
 
@@ -271,12 +268,9 @@ public class WLogicRuleService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WLogicRule.class, "logic-rule", worldId,
-                doc -> {
-                    String name = doc.getString("name");
-                    return name != null ? doc.getString("worldId") + "|" + name : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WLogicRule.class, "logic-rule", worldId, doc -> {
+            String name = doc.getString("name");
+            return name != null ? doc.getString("worldId") + "|" + name : null;
+        });
     }
 }

@@ -14,13 +14,12 @@ import de.mhus.nimbus.world.shared.world.WLeaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for the crafting widget.
@@ -45,9 +44,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
      */
     @GetMapping
     @Operation(summary = "Get crafting station config via progress reference")
-    public ResponseEntity<?> getStation(
-            @RequestParam String progressId,
-            HttpServletRequest request) {
+    public ResponseEntity<?> getStation(@RequestParam String progressId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -66,7 +63,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
 
-        var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        var character = characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
         if (character == null) return notFound("Character not found");
 
         String category = (String) lease.getLeaseData().getOrDefault("category", "");
@@ -114,9 +113,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
     @PostMapping("/try")
     @Operation(summary = "Try to find a matching recipe for materials")
     public ResponseEntity<?> tryRecipe(
-            @RequestParam String progressId,
-            @RequestBody Map<String, Integer> materials,
-            HttpServletRequest request) {
+            @RequestParam String progressId, @RequestBody Map<String, Integer> materials, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -132,7 +129,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
 
-        var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        var character = characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
         if (character == null) return notFound("Character not found");
 
         String category = (String) lease.getLeaseData().getOrDefault("category", "");
@@ -171,7 +170,8 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         response.put("resultTexture", resultTexture);
         response.put("resultAmount", recipe.getResultAmount());
         response.put("allowSpells", recipe.isAllowSpells());
-        response.put("allowedSpellWords", recipe.getAllowedSpellWords() != null ? recipe.getAllowedSpellWords() : List.of());
+        response.put(
+                "allowedSpellWords", recipe.getAllowedSpellWords() != null ? recipe.getAllowedSpellWords() : List.of());
         return ResponseEntity.ok(response);
     }
 
@@ -181,9 +181,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
     @PostMapping("/craft")
     @Operation(summary = "Execute crafting")
     public ResponseEntity<?> craft(
-            @RequestParam String progressId,
-            @RequestBody CraftRequest body,
-            HttpServletRequest request) {
+            @RequestParam String progressId, @RequestBody CraftRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -202,7 +200,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
 
-        var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        var character = characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
         if (character == null) return notFound("Character not found");
 
         // Validate spell words
@@ -216,8 +216,13 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         }
 
         String playerId = userId + ":" + characterId;
-        var result = craftingService.craft(worldId, parsedWorldId.toRegionCollection(),
-                character.getId(), playerId, body.recipeName(), body.spellWords());
+        var result = craftingService.craft(
+                worldId,
+                parsedWorldId.toRegionCollection(),
+                character.getId(),
+                playerId,
+                body.recipeName(),
+                body.spellWords());
 
         if (result.isEmpty()) {
             return ResponseEntity.ok(Map.of("success", false, "message", "Crafting fehlgeschlagen"));
@@ -248,9 +253,10 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
     }
 
     private List<Map<String, Object>> buildBackpackItemList(RCharacter character, WorldId worldId) {
-        Map<String, Integer> itemIds = character.getBackpack() != null && character.getBackpack().getItemIds() != null
-                ? character.getBackpack().getItemIds()
-                : Map.of();
+        Map<String, Integer> itemIds =
+                character.getBackpack() != null && character.getBackpack().getItemIds() != null
+                        ? character.getBackpack().getItemIds()
+                        : Map.of();
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (var entry : itemIds.entrySet()) {
@@ -274,7 +280,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
     }
 
     private WLease validateLease(String leaseId, String worldId, String playerId) {
-        return leaseService.validate(leaseId, worldId, playerId, "crafting-station").orElse(null);
+        return leaseService
+                .validate(leaseId, worldId, playerId, "crafting-station")
+                .orElse(null);
     }
 
     record CraftRequest(String recipeName, List<String> spellWords) {}

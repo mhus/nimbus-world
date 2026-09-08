@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.player.api;
 
 import de.mhus.nimbus.world.shared.access.AccessService;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * REST Controller for Authentication, Authorization, and Access (AAA) in world-player.
@@ -32,10 +31,7 @@ public class PlayerAaaController {
      * @return 200 OK if successful
      */
     @GetMapping("/authorize")
-    public ResponseEntity<?> authorize(
-            @RequestParam String token,
-            HttpServletResponse response
-    ) {
+    public ResponseEntity<?> authorize(@RequestParam String token, HttpServletResponse response) {
         log.debug("GET /player/aaa/authorize - validating token");
 
         try {
@@ -45,20 +41,17 @@ public class PlayerAaaController {
         } catch (IllegalArgumentException e) {
             // Token validation failures
             log.warn("Token validation failed: {}", e.getMessage());
-            return ResponseEntity.status(401)
-                    .body(Map.of("error", "Invalid or expired token"));
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid or expired token"));
 
         } catch (IllegalStateException e) {
             // Session/access validation failures
             log.warn("Authorization failed: {}", e.getMessage());
-            return ResponseEntity.status(403)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
             // Unexpected errors
             log.error("Authorization failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 
@@ -81,9 +74,7 @@ public class PlayerAaaController {
 
         } catch (Exception e) {
             log.error("Logout failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
-
 }

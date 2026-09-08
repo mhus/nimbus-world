@@ -95,7 +95,7 @@ public class WorldId implements Comparable<WorldId> {
     public String getFullId() {
         parseId();
         if (fullId == null) {
-             fullId = regionId + ":" + worldName + ":" + zone + ":" + instance;
+            fullId = regionId + ":" + worldName + ":" + zone + ":" + instance;
         }
         return fullId;
     }
@@ -147,9 +147,10 @@ public class WorldId implements Comparable<WorldId> {
             // Collection ID
             return id.matches("^@[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}$");
         }
-         // Every part is a string 'a-zA-Z0-9_-' from 1 to 64 characters.
+        // Every part is a string 'a-zA-Z0-9_-' from 1 to 64 characters.
         // format: regionId:worldName[:zone[:instance]] where zone can be empty
-        return id.matches("^[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}(:[a-zA-Z0-9_\\-]{0,64}(:[a-zA-Z0-9_\\-]{0,64})?)?$");
+        return id.matches(
+                "^[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}(:[a-zA-Z0-9_\\-]{0,64}(:[a-zA-Z0-9_\\-]{0,64})?)?$");
     }
 
     public boolean isMain() {
@@ -247,6 +248,7 @@ public class WorldId implements Comparable<WorldId> {
         return WorldId.of(COLLECTION_REGION, regionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
     }
+
     public WorldId toMainWorld() {
         parseId();
         return new WorldId(regionId + ":" + worldName);
@@ -375,5 +377,4 @@ public class WorldId implements Comparable<WorldId> {
         parseId();
         return Integer.parseInt(instance.substring(2));
     }
-
 }

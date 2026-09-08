@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.config;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.PlayerId;
@@ -9,22 +8,22 @@ import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Profile({"test","default"})
+@Profile({"test", "default"})
 public class InitSetupProvider {
 
     @Value("${world.init.region.data.directory:setup/regions}")
@@ -101,10 +100,9 @@ public class InitSetupProvider {
             var uri = resource.toURI();
             var path = Paths.get(uri);
             try (var stream = Files.list(path)) {
-                return stream
-                    .filter(p -> p.getFileName().toString().endsWith(".json"))
-                    .map(p -> p.getFileName().toString().replaceFirst("\\.json$", ""))
-                    .toArray(String[]::new);
+                return stream.filter(p -> p.getFileName().toString().endsWith(".json"))
+                        .map(p -> p.getFileName().toString().replaceFirst("\\.json$", ""))
+                        .toArray(String[]::new);
             }
         } catch (Exception e) {
             log.warn("Could not list region data resources in directory: {}", resourceDir, e);
@@ -124,18 +122,21 @@ public class InitSetupProvider {
                 continue;
             }
             var player = playerOpt.get();
-            characterService.getCharacter(player.user().getName(), "earth616", playerId.getCharacterId())
+            characterService
+                    .getCharacter(player.user().getName(), "earth616", playerId.getCharacterId())
                     .orElseGet(() -> {
                         var character = characterService.createCharacter(
                                 playerId.getUserId(),
                                 "earth616",
                                 playerId.getCharacterId(),
-                                player.character().getPublicData().getTitle()
-                        );
+                                player.character().getPublicData().getTitle());
                         character.setBackpack(player.character().getBackpack());
                         character.setPublicData(player.character().getPublicData());
                         characterService.updateCharater(character);
-                        log.info("Imported character: {} for user: {}", character.getName(), player.user().getName());
+                        log.info(
+                                "Imported character: {} for user: {}",
+                                character.getName(),
+                                player.user().getName());
                         return character;
                     });
         }
@@ -193,7 +194,8 @@ public class InitSetupProvider {
     }
 
     public Optional<PlayerData> getPlayer(PlayerId playerId, ClientType clientType) {
-        String resourcePath = playerDataResourceDirectory + "/" + normalizePath(playerId.getRawId() + "_" + clientType.tsString()) + ".json";
+        String resourcePath = playerDataResourceDirectory + "/"
+                + normalizePath(playerId.getRawId() + "_" + clientType.tsString()) + ".json";
         ClassLoader classLoader = getClass().getClassLoader();
         try (var inputStream = classLoader.getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
@@ -203,7 +205,12 @@ public class InitSetupProvider {
             var playerData = objectMapper.readValue(inputStream, PlayerData.class);
             return Optional.of(playerData);
         } catch (IOException e) {
-            log.warn("Player data not found for id: {} and client: {} at resource: {}", playerId, clientType, resourcePath, e);
+            log.warn(
+                    "Player data not found for id: {} and client: {} at resource: {}",
+                    playerId,
+                    clientType,
+                    resourcePath,
+                    e);
             return Optional.empty();
         }
     }

@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WBackdrop;
 import de.mhus.nimbus.world.shared.world.WBackdropService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +14,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for backdrops.
@@ -46,7 +45,8 @@ public class BackdropResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path backdropsDir = dataPath.resolve("backdrops");
         Files.createDirectories(backdropsDir);
 
@@ -81,7 +81,8 @@ public class BackdropResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(backdropsDir)) {
             try (Stream<Path> files = Files.list(backdropsDir)) {
-                for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                for (Path file :
+                        files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     String filename = file.getFileName().toString();
                     String backdropId = filename.substring(0, filename.length() - 5); // Remove .yaml
 
@@ -98,7 +99,9 @@ public class BackdropResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path backdropsDir = dataPath.resolve("backdrops");
         if (!Files.exists(backdropsDir)) {
             log.info("No backdrops directory found");
@@ -132,10 +135,10 @@ public class BackdropResourceSyncType implements ResourceSyncType {
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                     // Find existing by unique constraint (worldId + backdropId)
-                    Document existing = backdropService.findDocumentByWorldIdAndBackdropId(
-                            migratedDoc.getString("worldId"),
-                            migratedDoc.getString("backdropId")
-                    ).orElse(null);
+                    Document existing = backdropService
+                            .findDocumentByWorldIdAndBackdropId(
+                                    migratedDoc.getString("worldId"), migratedDoc.getString("backdropId"))
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {

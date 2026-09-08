@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.MountainPoint;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Random;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * SingleMountainBuilder builds a single mountain from MountainPoint configuration.
@@ -23,7 +22,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class SingleMountainBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     private static final int MIN_HEIGHT = 5;
     private static final int MAX_RECURSION = 6;
@@ -39,8 +40,8 @@ public class SingleMountainBuilder extends HexGridBuilder {
         log.debug("Building single mountain for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get mountain parameter from hex grid
-        String mountainParam = hexGrid.getParameters() != null ?
-            hexGrid.getParameters().get("g_mountain") : null;
+        String mountainParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_mountain") : null;
 
         if (mountainParam == null || mountainParam.isBlank()) {
             log.debug("No mountain parameter found, skipping");
@@ -49,11 +50,15 @@ public class SingleMountainBuilder extends HexGridBuilder {
 
         try {
             // Parse mountain configuration
-            MountainPoint.MountainConfig config = objectMapper.readValue(
-                mountainParam, MountainPoint.MountainConfig.class);
+            MountainPoint.MountainConfig config =
+                    objectMapper.readValue(mountainParam, MountainPoint.MountainConfig.class);
 
-            log.debug("Parsed mountain config for '{}': radius={}, height={}, baseHeight={}",
-                config.getMountainName(), config.getRadius(), config.getPeakHeight(), config.getBaseHeight());
+            log.debug(
+                    "Parsed mountain config for '{}': radius={}, height={}, baseHeight={}",
+                    config.getMountainName(),
+                    config.getRadius(),
+                    config.getPeakHeight(),
+                    config.getBaseHeight());
 
             // Build the mountain
             buildMountain(flat, config, hexGridSize);
@@ -79,8 +84,13 @@ public class SingleMountainBuilder extends HexGridBuilder {
         // Get material
         int material = getMaterialForType(config.getMaterial());
 
-        log.debug("Building mountain at center ({}, {}) with radius={}, peakHeight={}, material={}",
-            centerX, centerZ, config.getRadius(), config.getPeakHeight(), config.getMaterial());
+        log.debug(
+                "Building mountain at center ({}, {}) with radius={}, peakHeight={}, material={}",
+                centerX,
+                centerZ,
+                config.getRadius(),
+                config.getPeakHeight(),
+                config.getMaterial());
 
         // Create mountain using radial approach
         buildRadialMountain(painter, centerX, centerZ, config, material, random);
@@ -88,16 +98,25 @@ public class SingleMountainBuilder extends HexGridBuilder {
         // Apply smoothing to blend with existing terrain
         painter.soften(0, 0, flat.getSizeX() - 1, flat.getSizeZ() - 1, 1, 0.3);
 
-        log.info("Single mountain built: name='{}', radius={}, peakHeight={}, baseHeight={}, roughness={}",
-            config.getMountainName(), config.getRadius(), config.getPeakHeight(),
-            config.getBaseHeight(), config.getRoughness());
+        log.info(
+                "Single mountain built: name='{}', radius={}, peakHeight={}, baseHeight={}, roughness={}",
+                config.getMountainName(),
+                config.getRadius(),
+                config.getPeakHeight(),
+                config.getBaseHeight(),
+                config.getRoughness());
     }
 
     /**
      * Build a radial mountain with optional roughness and crater
      */
-    private void buildRadialMountain(FlatPainter painter, int centerX, int centerZ,
-                                      MountainPoint.MountainConfig config, int material, Random random) {
+    private void buildRadialMountain(
+            FlatPainter painter,
+            int centerX,
+            int centerZ,
+            MountainPoint.MountainConfig config,
+            int material,
+            Random random) {
         WFlat flat = painter.getFlat();
         int radius = config.getRadius();
         int peakHeight = config.getPeakHeight();
@@ -157,8 +176,7 @@ public class SingleMountainBuilder extends HexGridBuilder {
             }
         }
 
-        log.debug("Radial mountain completed: peak at ({},{}) with {} blocks radius",
-            centerX, centerZ, radius);
+        log.debug("Radial mountain completed: peak at ({},{}) with {} blocks radius", centerX, centerZ, radius);
     }
 
     /**

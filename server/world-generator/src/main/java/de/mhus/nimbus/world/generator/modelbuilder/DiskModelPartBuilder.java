@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import de.mhus.nimbus.world.generator.blocks.generator.EditBlockPainter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Builds a flat disk of blocks at the cursor position.
@@ -74,7 +73,13 @@ public class DiskModelPartBuilder implements ModelPartBuilder {
             }
         }
 
-        log.debug("disk: painted {} blocks, radius={}, thickness={} at ({},{},{})",
-                painted, radius, thickness, cx, cy, cz);
+        log.debug(
+                "disk: painted {} blocks, radius={}, thickness={} at ({},{},{})",
+                painted,
+                radius,
+                thickness,
+                cx,
+                cy,
+                cz);
     }
 }

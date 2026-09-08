@@ -1,19 +1,11 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for WFlat entities.
@@ -49,7 +48,8 @@ public class FlatResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path flatsDir = dataPath.resolve("flats");
         Files.createDirectories(flatsDir);
 
@@ -93,7 +93,8 @@ public class FlatResourceSyncType implements ResourceSyncType {
                     Set<String> dbIds = dbFlatIds.getOrDefault(subDir, Set.of());
 
                     try (Stream<Path> files = Files.list(layerDir)) {
-                        for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                        for (Path file : files.filter(f -> f.toString().endsWith(".yaml"))
+                                .toList()) {
                             String filename = file.getFileName().toString();
                             String flatId = filename.substring(0, filename.length() - 5);
 
@@ -120,7 +121,9 @@ public class FlatResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path flatsDir = dataPath.resolve("flats");
         if (!Files.exists(flatsDir)) {
             log.info("No flats directory found");
@@ -134,7 +137,8 @@ public class FlatResourceSyncType implements ResourceSyncType {
         try (Stream<Path> layerDirs = Files.list(flatsDir)) {
             for (Path layerDir : layerDirs.filter(Files::isDirectory).toList()) {
                 try (Stream<Path> files = Files.list(layerDir)) {
-                    for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                    for (Path file :
+                            files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                         try {
                             Document doc = yamlMapper.readValue(file.toFile(), Document.class);
                             String flatId = doc.getString("flatId");
@@ -160,11 +164,12 @@ public class FlatResourceSyncType implements ResourceSyncType {
                             migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                             // Find existing by unique constraint (worldId + layerDataId + flatId)
-                            Document existing = flatService.findDocumentByWorldIdAndLayerDataIdAndFlatId(
-                                    migratedDoc.getString("worldId"),
-                                    migratedDoc.getString("layerDataId"),
-                                    migratedDoc.getString("flatId")
-                            ).orElse(null);
+                            Document existing = flatService
+                                    .findDocumentByWorldIdAndLayerDataIdAndFlatId(
+                                            migratedDoc.getString("worldId"),
+                                            migratedDoc.getString("layerDataId"),
+                                            migratedDoc.getString("flatId"))
+                                    .orElse(null);
 
                             if (!force && existing != null) {
                                 Object fileUpdatedAt = migratedDoc.get("updatedAt");

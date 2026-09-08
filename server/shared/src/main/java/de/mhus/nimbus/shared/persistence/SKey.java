@@ -4,6 +4,11 @@ import de.mhus.nimbus.shared.security.KeyId;
 import de.mhus.nimbus.shared.security.KeyKind;
 import de.mhus.nimbus.shared.security.KeyType;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.time.Instant;
+import java.util.Base64;
+import javax.crypto.SecretKey;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -11,21 +16,15 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.crypto.SecretKey;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.Base64;
-
 /**
  * Persisted key definition to be stored in MongoDB.
  */
 @Document(collection = "s_keys")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "type_kind_keyId_idx", def = "{ 'type': 1, 'kind': 1, 'keyId': 1 }"),
-        @CompoundIndex(name = "type_kind_owner_keyId_idx", def = "{ 'type': 1, 'kind': 1, 'owner': 1, 'keyId': 1 }"),
-        @CompoundIndex(name = "type_kind_owner_intent_idx", def = "{ 'type': 1, 'kind': 1, 'owner': 1, 'intent': 1 }")
+    @CompoundIndex(name = "type_kind_keyId_idx", def = "{ 'type': 1, 'kind': 1, 'keyId': 1 }"),
+    @CompoundIndex(name = "type_kind_owner_keyId_idx", def = "{ 'type': 1, 'kind': 1, 'owner': 1, 'keyId': 1 }"),
+    @CompoundIndex(name = "type_kind_owner_intent_idx", def = "{ 'type': 1, 'kind': 1, 'owner': 1, 'intent': 1 }")
 })
 @Data
 public class SKey implements Identifiable {

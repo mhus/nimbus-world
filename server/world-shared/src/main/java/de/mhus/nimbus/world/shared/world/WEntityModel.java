@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * MongoDB Entity for EntityModel templates.
  * Wraps generated EntityModel DTO in 'publicData' field.
@@ -23,9 +22,7 @@ import java.time.Instant;
  */
 @Document(collection = "w_entity_models")
 @ActualSchemaVersion("1.0.1")
-@CompoundIndexes({
-        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)
-})
+@CompoundIndexes({@CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)})
 @Data
 @Builder
 @NoArgsConstructor
@@ -97,5 +94,4 @@ public class WEntityModel implements Identifiable {
         publicData.setName(WorldCollection.removePrefix(publicData.getName()));
         return this;
     }
-
 }

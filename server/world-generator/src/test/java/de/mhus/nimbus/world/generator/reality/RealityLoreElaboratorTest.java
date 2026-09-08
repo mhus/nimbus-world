@@ -1,14 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.world.ai.model.AiChat;
-import de.mhus.nimbus.world.ai.model.AiChatOptions;
-import de.mhus.nimbus.world.ai.model.AiModelService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,6 +7,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiChatOptions;
+import de.mhus.nimbus.world.ai.model.AiModelService;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Offline test for the phase-2 lore elaborator (AI mocked). */
 class RealityLoreElaboratorTest {
@@ -62,8 +61,8 @@ class RealityLoreElaboratorTest {
         ArgumentCaptor<String> promptCap = ArgumentCaptor.forClass(String.class);
         verify(chat, times(2)).ask(promptCap.capture());
         String secondPrompt = promptCap.getAllValues().get(1);
-        assertThat(secondPrompt).contains("The Great Rain");     // previous chapter in the summary
-        assertThat(secondPrompt).contains("The bog wakes.");     // seed context (direction)
+        assertThat(secondPrompt).contains("The Great Rain"); // previous chapter in the summary
+        assertThat(secondPrompt).contains("The bog wakes."); // seed context (direction)
 
         // Elaboration uses a LOW temperature.
         ArgumentCaptor<AiChatOptions> optsCap = ArgumentCaptor.forClass(AiChatOptions.class);

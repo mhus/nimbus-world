@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.service.ExecutionService;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionPingConsumer;
 import de.mhus.nimbus.world.player.ws.NetworkMessage;
-import de.mhus.nimbus.world.player.session.PlayerSession;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.List;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles ping messages from clients.
@@ -52,8 +51,8 @@ public class PingHandler implements MessageHandler {
 
         // Send pong response
         ObjectNode responseData = objectMapper.createObjectNode();
-        responseData.put("cTs", clientTimestamp);  // Echo client timestamp
-        responseData.put("sTs", System.currentTimeMillis());  // Add server timestamp
+        responseData.put("cTs", clientTimestamp); // Echo client timestamp
+        responseData.put("sTs", System.currentTimeMillis()); // Add server timestamp
 
         NetworkMessage response = NetworkMessage.builder()
                 .r(message.getI())
@@ -79,21 +78,27 @@ public class PingHandler implements MessageHandler {
             }
         });
 
-        log.trace("Ping/pong: session={}, clientTs={}, latency={}ms",
+        log.trace(
+                "Ping/pong: session={}, clientTs={}, latency={}ms",
                 session.getWebSocketSession().getId(),
                 clientTimestamp,
                 System.currentTimeMillis() - clientTimestamp);
     }
 
-    private boolean processSessionPingResult(PlayerSession session, SessionPingConsumer consumer, SessionPingConsumer.ACTION result) {
+    private boolean processSessionPingResult(
+            PlayerSession session, SessionPingConsumer consumer, SessionPingConsumer.ACTION result) {
         if (result != null && result == SessionPingConsumer.ACTION.DISCONNECT) {
-            log.warn("Session {} disconnected due to PingConsumer {} request",
+            log.warn(
+                    "Session {} disconnected due to PingConsumer {} request",
                     session.getWebSocketSession().getId(),
                     consumer.getClass().getName());
             try {
                 session.getWebSocketSession().close();
             } catch (Exception e) {
-                log.error("Error closing session {}", session.getWebSocketSession().getId(), e);
+                log.error(
+                        "Error closing session {}",
+                        session.getWebSocketSession().getId(),
+                        e);
             }
             return false;
         }

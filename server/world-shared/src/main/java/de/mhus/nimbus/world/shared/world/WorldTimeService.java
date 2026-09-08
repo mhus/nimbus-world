@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.generated.types.WorldInfoSettingsDTOWorldTimeDTO;
-import de.mhus.nimbus.generated.types.WorldInfoSettingsDTOWorldTimeDTODaySectionsDTO;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,7 +30,8 @@ public class WorldTimeService {
      */
     public long getCurrentWorldMinute(WorldInfo worldInfo) {
         var wt = getWorldTime(worldInfo);
-        int minuteScaling = wt != null && wt.getMinuteScaling() != null ? wt.getMinuteScaling() : DEFAULT_MINUTE_SCALING;
+        int minuteScaling =
+                wt != null && wt.getMinuteScaling() != null ? wt.getMinuteScaling() : DEFAULT_MINUTE_SCALING;
         long delta = wt != null && wt.getLinuxEpocheDeltaMinutes() != null ? wt.getLinuxEpocheDeltaMinutes() : 0L;
 
         long nowMinutes = System.currentTimeMillis() / 60_000L;
@@ -51,10 +51,12 @@ public class WorldTimeService {
      */
     public WorldTime toWorldTime(WorldInfo worldInfo, long worldMinute) {
         var wt = getWorldTime(worldInfo);
-        int minutesPerHour = wt != null && wt.getMinutesPerHour() != null ? wt.getMinutesPerHour() : DEFAULT_MINUTES_PER_HOUR;
+        int minutesPerHour =
+                wt != null && wt.getMinutesPerHour() != null ? wt.getMinutesPerHour() : DEFAULT_MINUTES_PER_HOUR;
         int hoursPerDay = wt != null && wt.getHoursPerDay() != null ? wt.getHoursPerDay() : DEFAULT_HOURS_PER_DAY;
         int daysPerMonth = wt != null && wt.getDaysPerMonth() != null ? wt.getDaysPerMonth() : DEFAULT_DAYS_PER_MONTH;
-        int monthsPerYear = wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
+        int monthsPerYear =
+                wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
         int era = wt != null && wt.getCurrentEra() != null ? wt.getCurrentEra() : 1;
 
         long remaining = worldMinute;
@@ -98,10 +100,12 @@ public class WorldTimeService {
      */
     public long toWorldMinute(WorldInfo worldInfo, int year, int month, int day, int hour, int minute) {
         var wt = getWorldTime(worldInfo);
-        int minutesPerHour = wt != null && wt.getMinutesPerHour() != null ? wt.getMinutesPerHour() : DEFAULT_MINUTES_PER_HOUR;
+        int minutesPerHour =
+                wt != null && wt.getMinutesPerHour() != null ? wt.getMinutesPerHour() : DEFAULT_MINUTES_PER_HOUR;
         int hoursPerDay = wt != null && wt.getHoursPerDay() != null ? wt.getHoursPerDay() : DEFAULT_HOURS_PER_DAY;
         int daysPerMonth = wt != null && wt.getDaysPerMonth() != null ? wt.getDaysPerMonth() : DEFAULT_DAYS_PER_MONTH;
-        int monthsPerYear = wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
+        int monthsPerYear =
+                wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
 
         long total = (long) (year - 1) * monthsPerYear;
         total = (total + (month - 1)) * daysPerMonth;
@@ -136,13 +140,16 @@ public class WorldTimeService {
      * Returns "summer" as default if seasonMonths is not configured.
      */
     public String getCurrentSeason(WorldInfo worldInfo) {
-        if (worldInfo == null || worldInfo.getSeasonMonths() == null || worldInfo.getSeasonMonths().size() < 4) {
+        if (worldInfo == null
+                || worldInfo.getSeasonMonths() == null
+                || worldInfo.getSeasonMonths().size() < 4) {
             return "summer";
         }
 
         WorldTime time = getCurrentWorldTime(worldInfo);
         var wt = getWorldTime(worldInfo);
-        int monthsPerYear = wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
+        int monthsPerYear =
+                wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
 
         // seasonMonths = [winterStart, springStart, summerStart, autumnStart] (0-based months)
         var seasonMonths = worldInfo.getSeasonMonths();

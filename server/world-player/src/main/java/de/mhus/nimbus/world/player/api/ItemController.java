@@ -10,12 +10,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * REST Controller for Items (read-only).
@@ -32,55 +31,55 @@ public class ItemController {
     private final AccessValidator accessUtil;
 
     // DTO for search results
-    public record ItemSearchResult(
-            String itemId,
-            String name,
-            String texture
-    ) {}
+    public record ItemSearchResult(String itemId, String name, String texture) {}
 
     /**
      * Search items (max 100 results).
      * GET /player/worlds/{worldId}/items?query={searchTerm}
      */
-//    @Deprecated
-//    @GetMapping("/player/world/items")
-//    @Operation(summary = "Search items", description = "Returns items matching the search query")
-//    @ApiResponses({
-//            @ApiResponse(responseCode = "200", description = "Success"),
-//            @ApiResponse(responseCode = "400", description = "Invalid parameters")
-//    })
-//    public ResponseEntity<?> search(
-//            HttpServletRequest request,
-//            @Parameter(description = "Search query") @RequestParam(required = false, defaultValue = "") String query) {
-//
-//        var worldId = accessUtil.getWorldId(request).orElseThrow(
-//                () -> new IllegalStateException("World ID not found in request")
-//        );
-//
-//        log.debug("SEARCH items: worldId={}, query={}", worldId, query);
-//
-//        List<WItem> all = itemService.findEnabledByWorldId(worldId);
-//        String lowerQuery = query.toLowerCase();
-//        final int maxResults = 100;
-//
-//        List<ItemSearchResult> results = all.stream()
-//                .filter(item -> {
-//                    if (query.isBlank()) return true;
-//                    Item publicData = item.getPublicData();
-//                    if (publicData == null) return false;
-//
-//                    // Match query against itemId, name, or description
-//                    return (publicData.getId() != null && publicData.getId().toLowerCase().contains(lowerQuery)) ||
-//                            (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
-//                            (publicData.getDescription() != null && publicData.getDescription().toLowerCase().contains(lowerQuery));
-//                })
-//                .limit(maxResults)
-//                .map(this::toSearchResult)
-//                .collect(Collectors.toList());
-//
-//        log.debug("Returning {} items", results.size());
-//        return ResponseEntity.ok(Map.of("items", results));
-//    }
+    //    @Deprecated
+    //    @GetMapping("/player/world/items")
+    //    @Operation(summary = "Search items", description = "Returns items matching the search query")
+    //    @ApiResponses({
+    //            @ApiResponse(responseCode = "200", description = "Success"),
+    //            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    //    })
+    //    public ResponseEntity<?> search(
+    //            HttpServletRequest request,
+    //            @Parameter(description = "Search query") @RequestParam(required = false, defaultValue = "") String
+    // query) {
+    //
+    //        var worldId = accessUtil.getWorldId(request).orElseThrow(
+    //                () -> new IllegalStateException("World ID not found in request")
+    //        );
+    //
+    //        log.debug("SEARCH items: worldId={}, query={}", worldId, query);
+    //
+    //        List<WItem> all = itemService.findEnabledByWorldId(worldId);
+    //        String lowerQuery = query.toLowerCase();
+    //        final int maxResults = 100;
+    //
+    //        List<ItemSearchResult> results = all.stream()
+    //                .filter(item -> {
+    //                    if (query.isBlank()) return true;
+    //                    Item publicData = item.getPublicData();
+    //                    if (publicData == null) return false;
+    //
+    //                    // Match query against itemId, name, or description
+    //                    return (publicData.getId() != null && publicData.getId().toLowerCase().contains(lowerQuery))
+    // ||
+    //                            (publicData.getName() != null &&
+    // publicData.getName().toLowerCase().contains(lowerQuery)) ||
+    //                            (publicData.getDescription() != null &&
+    // publicData.getDescription().toLowerCase().contains(lowerQuery));
+    //                })
+    //                .limit(maxResults)
+    //                .map(this::toSearchResult)
+    //                .collect(Collectors.toList());
+    //
+    //        log.debug("Returning {} items", results.size());
+    //        return ResponseEntity.ok(Map.of("items", results));
+    //    }
 
     /**
      * Get full item data.
@@ -89,8 +88,8 @@ public class ItemController {
     @GetMapping("/player/worlds/{worldId}/item/{itemId}")
     @Operation(summary = "Get item by ID", description = "Returns full item data for a specific itemId")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item found"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "200", description = "Item found"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -111,7 +110,8 @@ public class ItemController {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid worldId"));
         }
 
-        return itemService.findByItemId(wid, itemId)
+        return itemService
+                .findByItemId(wid, itemId)
                 .map(WItem::getPublicData)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
@@ -130,7 +130,6 @@ public class ItemController {
         return new ItemSearchResult(
                 publicData.getName(),
                 publicData.getTitle() != null ? publicData.getTitle() : publicData.getName(),
-                publicData.getTexture()
-        );
+                publicData.getTexture());
     }
 }

@@ -2,10 +2,9 @@ package de.mhus.nimbus.shared.types;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.BlockStatus;
+import java.util.Optional;
 import lombok.Getter;
 import org.apache.logging.log4j.util.Strings;
-
-import java.util.Optional;
 
 /**
  * Define a block with its properties.
@@ -21,7 +20,13 @@ public class BlockDef {
     private Integer level;
     private Integer faceVisibility;
 
-    private BlockDef(String blockTypeId, String state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
+    private BlockDef(
+            String blockTypeId,
+            String state,
+            int[] offsets,
+            double[] rotations,
+            Integer level,
+            Integer faceVisibility) {
         this.blockTypeId = blockTypeId;
         this.state = state;
         this.offsets = offsets;
@@ -34,14 +39,13 @@ public class BlockDef {
         block.setBlockTypeId(blockTypeId);
         block.setStatus(state);
         if (offsets != null) {
-            block.setOffsets(java.util.Arrays.stream(offsets).mapToObj(i -> (float)i).toList());
+            block.setOffsets(
+                    java.util.Arrays.stream(offsets).mapToObj(i -> (float) i).toList());
         }
         if (rotations != null) {
             var builder = de.mhus.nimbus.generated.types.RotationXY.builder();
-            if (rotations.length > 0)
-                builder.x(rotations[0]);
-            if (rotations.length > 1)
-                builder.y(rotations[1]);
+            if (rotations.length > 0) builder.x(rotations[0]);
+            if (rotations.length > 1) builder.y(rotations[1]);
             block.setRotation(builder.build());
         }
         if (level != null) {
@@ -52,7 +56,8 @@ public class BlockDef {
         }
     }
 
-    public static BlockDef value(String blockId, String state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
+    public static BlockDef value(
+            String blockId, String state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
         return new BlockDef(blockId, state, offsets, rotations, level, faceVisibility);
     }
 
@@ -61,8 +66,7 @@ public class BlockDef {
         try {
             String[] parts = blockDef.split("@");
             String blockTypeId = parts[0];
-            if (!validateBlockTypeId(blockTypeId))
-                return Optional.empty();
+            if (!validateBlockTypeId(blockTypeId)) return Optional.empty();
             String state = BlockStatus.DEFAULT.getTsIndex();
             int[] offsets = null;
             double[] rotations = null;
@@ -88,8 +92,7 @@ public class BlockDef {
                     level = Integer.parseInt(part.substring(2));
                 } else if (part.startsWith("f:")) {
                     String s = part.substring(2).toLowerCase();
-                    if (s.matches("[0-9]+"))
-                        faceVisibility = Integer.parseInt(part.substring(2));
+                    if (s.matches("[0-9]+")) faceVisibility = Integer.parseInt(part.substring(2));
                     else {
                         int f = 0;
                         if (s.contains("north")) f |= 1 << 0;
@@ -114,5 +117,4 @@ public class BlockDef {
         // Einfache Validierung: Block-ID darf nur Buchstaben, Zahlen, Unterstriche und Doppelpunkte enthalten
         return Strings.isNotBlank(blockId) && blockId.matches("[a-zA-Z0-9_:]+");
     }
-
 }

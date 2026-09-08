@@ -5,6 +5,9 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,10 +19,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MongoDB Entity for Chests - storage for items.
  * Chests can be user-specific or general, always region-specific.
@@ -28,10 +27,10 @@ import java.util.List;
 @Document(collection = "w_chests")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "region_name_idx", def = "{ 'regionId': 1, 'name': 1 }", unique = true),
-        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }"),
-        @CompoundIndex(name = "region_player_idx", def = "{ 'regionId': 1, 'playerId': 1 }"),
-        @CompoundIndex(name = "world_player_idx", def = "{ 'worldId': 1, 'playerId': 1 }")
+    @CompoundIndex(name = "region_name_idx", def = "{ 'regionId': 1, 'name': 1 }", unique = true),
+    @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }"),
+    @CompoundIndex(name = "region_player_idx", def = "{ 'regionId': 1, 'playerId': 1 }"),
+    @CompoundIndex(name = "world_player_idx", def = "{ 'worldId': 1, 'playerId': 1 }")
 })
 @Data
 @Builder
@@ -103,7 +102,6 @@ public class WChest implements Identifiable, CowEntity {
      */
     @Builder.Default
     private int lockPickingDifficulty = 0;
-
 
     /**
      * Items stored in this chest.

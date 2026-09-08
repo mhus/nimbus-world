@@ -30,45 +30,43 @@ public class EntityModelController {
     @GetMapping("/{modelId}")
     @Operation(summary = "Get EntityModel by ID", description = "Returns EntityModel template for a specific model ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "EntityModel found"),
-            @ApiResponse(responseCode = "400", description = "Invalid worldId"),
-            @ApiResponse(responseCode = "404", description = "EntityModel not found")
+        @ApiResponse(responseCode = "200", description = "EntityModel found"),
+        @ApiResponse(responseCode = "400", description = "Invalid worldId"),
+        @ApiResponse(responseCode = "404", description = "EntityModel not found")
     })
-    public ResponseEntity<?> getEntityModel(
-            HttpServletRequest request,
-            @PathVariable String modelId) {
+    public ResponseEntity<?> getEntityModel(HttpServletRequest request, @PathVariable String modelId) {
 
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         return service.findByModelId(worldId, modelId)
-                        .map(WEntityModel::getPublicData)
-                        .map(ResponseEntity::ok)
-                        .orElseGet(() -> ResponseEntity.notFound().build());
+                .map(WEntityModel::getPublicData)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-//    @Deprecated
-//    @GetMapping
-//    @Operation(summary = "Get all EntityModels", description = "Returns all enabled EntityModel templates")
-//    @ApiResponses({
-//            @ApiResponse(responseCode = "200", description = "List of EntityModels"),
-//            @ApiResponse(responseCode = "400", description = "Invalid worldId")
-//    })
-//    public ResponseEntity<?> getAllEntityModels(
-//            @PathVariable String worldId) {
-//
-//        return WorldId.of(worldId)
-//                .<ResponseEntity<?>>map(wid -> {
-//                    List<EntityModel> entityModels = service.findAllEnabled(wid).stream()
-//                            .map(WEntityModel::getPublicData)
-//                            .toList();
-//
-//                    return ResponseEntity.ok(Map.of(
-//                            "entityModels", entityModels,
-//                            "count", entityModels.size()
-//                    ));
-//                })
-//                .orElseGet(() -> ResponseEntity.badRequest().build());
-//    }
+    //    @Deprecated
+    //    @GetMapping
+    //    @Operation(summary = "Get all EntityModels", description = "Returns all enabled EntityModel templates")
+    //    @ApiResponses({
+    //            @ApiResponse(responseCode = "200", description = "List of EntityModels"),
+    //            @ApiResponse(responseCode = "400", description = "Invalid worldId")
+    //    })
+    //    public ResponseEntity<?> getAllEntityModels(
+    //            @PathVariable String worldId) {
+    //
+    //        return WorldId.of(worldId)
+    //                .<ResponseEntity<?>>map(wid -> {
+    //                    List<EntityModel> entityModels = service.findAllEnabled(wid).stream()
+    //                            .map(WEntityModel::getPublicData)
+    //                            .toList();
+    //
+    //                    return ResponseEntity.ok(Map.of(
+    //                            "entityModels", entityModels,
+    //                            "count", entityModels.size()
+    //                    ));
+    //                })
+    //                .orElseGet(() -> ResponseEntity.badRequest().build());
+    //    }
 }

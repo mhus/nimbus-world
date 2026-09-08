@@ -19,5 +19,4 @@ public record ImportLayerModelRequest(
         Integer sizeZ,
         Map<String, String> groups,
         Map<String, String> parameters,
-        List<BlockRequest> blocks
-) {}
+        List<BlockRequest> blocks) {}

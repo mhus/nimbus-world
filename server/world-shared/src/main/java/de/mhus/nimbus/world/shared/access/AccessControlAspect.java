@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.access;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -12,8 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.lang.reflect.Method;
 
 /**
  * Aspect for processing access control annotations on REST endpoints.
@@ -39,12 +38,12 @@ public class AccessControlAspect {
     /**
      * Intercepts all REST controller methods to check access annotations.
      */
-    @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.PutMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.DeleteMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.PatchMapping)")
+    @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || "
+            + "@annotation(org.springframework.web.bind.annotation.GetMapping) || "
+            + "@annotation(org.springframework.web.bind.annotation.PostMapping) || "
+            + "@annotation(org.springframework.web.bind.annotation.PutMapping) || "
+            + "@annotation(org.springframework.web.bind.annotation.DeleteMapping) || "
+            + "@annotation(org.springframework.web.bind.annotation.PatchMapping)")
     public Object checkAccess(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
@@ -92,7 +91,8 @@ public class AccessControlAspect {
         // Throwing (instead of returning a ResponseEntity) avoids a ClassCastException in the
         // AOP proxy for handlers that declare a non-ResponseEntity return type.
         if (accessDeniedReason != null) {
-            log.warn("Access denied: {} - method: {}.{}",
+            log.warn(
+                    "Access denied: {} - method: {}.{}",
                     accessDeniedReason,
                     method.getDeclaringClass().getSimpleName(),
                     method.getName());

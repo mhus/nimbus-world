@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.HashMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
 
 /**
  * Marsh biome with flat wetland terrain and extensive water coverage.
@@ -55,10 +54,10 @@ public class MarshBiome extends Biome {
      * Marshes are characterized by low elevation and flat terrain.
      */
     public enum MarshWaterLevel {
-        TIDAL(2, 1, 4, 0.4),      // Almost at sea level, very flat
-        COASTAL(3, 2, 5, 0.5),    // Close to sea level, flat [Default]
-        INLAND(4, 4, 7, 0.6),     // Slightly elevated, more variation
-        WETLAND(5, 6, 9, 0.7);    // Higher, more varied terrain
+        TIDAL(2, 1, 4, 0.4), // Almost at sea level, very flat
+        COASTAL(3, 2, 5, 0.5), // Close to sea level, flat [Default]
+        INLAND(4, 4, 7, 0.6), // Slightly elevated, more variation
+        WETLAND(5, 6, 9, 0.7); // Higher, more varied terrain
 
         private final int swampDepth;
         private final int aboveSeaLevel;
@@ -115,9 +114,14 @@ public class MarshBiome extends Biome {
         getParameters().put("g_frequency", String.valueOf(waterLevel.getFrequency()));
 
         // Marsh-specific material defaults (can be overridden)
-        getParameters().putIfAbsent("grassMaterial", "DIRT");  // Muddy ground
+        getParameters().putIfAbsent("grassMaterial", "DIRT"); // Muddy ground
 
-        log.debug("Applied MarshBiome defaults for '{}': waterLevel={}, swampDepth={}, landLevel={}, landOffset={}",
-            getName(), waterLevel, waterLevel.getSwampDepth(), waterLevel.getAboveSeaLevel(), waterLevel.getLandOffset());
+        log.debug(
+                "Applied MarshBiome defaults for '{}': waterLevel={}, swampDepth={}, landLevel={}, landOffset={}",
+                getName(),
+                waterLevel,
+                waterLevel.getSwampDepth(),
+                waterLevel.getAboveSeaLevel(),
+                waterLevel.getLandOffset());
     }
 }

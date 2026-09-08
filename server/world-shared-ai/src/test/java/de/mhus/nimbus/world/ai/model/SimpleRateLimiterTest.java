@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.ai.model;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for SimpleRateLimiter.

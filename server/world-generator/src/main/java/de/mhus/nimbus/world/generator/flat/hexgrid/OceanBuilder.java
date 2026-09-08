@@ -4,10 +4,9 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Ocean scenario builder.
@@ -20,20 +19,24 @@ public class OceanBuilder extends HexGridBuilder {
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Building ocean scenario for flat: {}",
-                flat.getFlatId());
+        log.info("Building ocean scenario for flat: {}", flat.getFlatId());
 
         int oceanLevel = flat.getSeaLevel();
 
         // Use getHexGridLevel() as baseHeight (PARAM_BASE_HEIGHT in HillyTerrainManipulator)
         // Use getLandOffset() as hillHeight (PARAM_HILL_HEIGHT in HillyTerrainManipulator)
         int hillHeight = getOffset();
-        int baseHeight = Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
+        int baseHeight =
+                Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
 
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
-        log.debug("Ocean floor generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
-                baseHeight, hillHeight, oceanLevel, seed);
+        log.debug(
+                "Ocean floor generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
+                baseHeight,
+                hillHeight,
+                oceanLevel,
+                seed);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -42,13 +45,9 @@ public class OceanBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
 
         // Use HillyTerrainManipulator to generate ocean floor terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set all to sand material for ocean floor
         for (int z = 0; z < flat.getSizeZ(); z++) {
@@ -60,18 +59,21 @@ public class OceanBuilder extends HexGridBuilder {
         // Blend edges with default noise where neighbors don't exist
         blendEdgesWithDefaultNoise();
 
-        log.info("Ocean scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, oceanLevel);
+        log.info(
+                "Ocean scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight,
+                hillHeight,
+                oceanLevel);
     }
 
     @Override
     protected int getDefaultOffset() {
-        return 7;  // OCEAN: medium variation for ocean floor
+        return 7; // OCEAN: medium variation for ocean floor
     }
 
     @Override
     protected int getDefaultAsl() {
-        return -10;  // OCEAN: below ocean level
+        return -10; // OCEAN: below ocean level
     }
 
     private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {
@@ -121,7 +123,7 @@ public class OceanBuilder extends HexGridBuilder {
      */
     private void blendEdgeWithNoise(WHexGrid.EDGE side, int groundLevel) {
         WFlat flat = context.getFlat();
-        int blendDepth = 30;  // Depth of blending zone in blocks
+        int blendDepth = 30; // Depth of blending zone in blocks
 
         // Calculate edge coordinates based on hex side
         HexFlatUtil.EdgeCoordinates edgeCoords = HexFlatUtil.getEdgeCoordinates(side, flat.getSizeX(), flat.getSizeZ());
@@ -166,5 +168,4 @@ public class OceanBuilder extends HexGridBuilder {
 
         log.trace("Blended edge {} with noise over {} blocks depth", side, blendDepth);
     }
-
 }

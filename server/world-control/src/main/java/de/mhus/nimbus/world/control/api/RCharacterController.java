@@ -2,21 +2,19 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.PlayerInfo;
+import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing RCharacter entities.
@@ -37,8 +35,8 @@ public class RCharacterController extends BaseEditorController {
             Map<String, Integer> skills,
             PlayerInfo publicData,
             PlayerBackpack backpack,
-            Map<String, String> attributes
-    ) {}
+            Map<String, String> attributes) {}
+
     public record CharacterResponse(
             String id,
             String userId,
@@ -50,8 +48,8 @@ public class RCharacterController extends BaseEditorController {
             PlayerBackpack backpack,
             Map<String, Integer> skills,
             Map<String, String> attributes,
-            Map<String, Integer> spellWords
-    ) {}
+            Map<String, Integer> spellWords) {}
+
     public record SkillRequest(String skill, Integer level) {}
 
     public record SpellWordRequest(String word, Integer xp) {}
@@ -68,8 +66,7 @@ public class RCharacterController extends BaseEditorController {
                 character.getBackpack(),
                 character.getSkills(),
                 character.getAttributes(),
-                character.getSpellWords()
-        );
+                character.getSpellWords());
     }
 
     /**
@@ -80,8 +77,7 @@ public class RCharacterController extends BaseEditorController {
      */
     @GetMapping
     public ResponseEntity<?> list(
-            @PathVariable String regionId,
-            @RequestParam(name = "userId", required = false) String userId) {
+            @PathVariable String regionId, @RequestParam(name = "userId", required = false) String userId) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -130,10 +126,11 @@ public class RCharacterController extends BaseEditorController {
             return bad("title parameter is required");
         }
 
-        return characterService.getCharacter(userId, regionId, name)
+        return characterService
+                .getCharacter(userId, regionId, name)
                 .<ResponseEntity<?>>map(c -> ResponseEntity.ok(toResponse(c)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Character not found")));
+                .orElseGet(
+                        () -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Character not found")));
     }
 
     /**
@@ -141,9 +138,7 @@ public class RCharacterController extends BaseEditorController {
      * POST /control/regions/{regionId}/character
      */
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String regionId,
-            @RequestBody CharacterRequest request) {
+    public ResponseEntity<?> create(@PathVariable String regionId, @RequestBody CharacterRequest request) {
 
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
@@ -161,12 +156,7 @@ public class RCharacterController extends BaseEditorController {
             // back to the character name when no publicData is provided.
             String title = request.publicData() != null ? request.publicData().getTitle() : null;
 
-            RCharacter created = characterService.createCharacter(
-                    request.userId(),
-                    regionId,
-                    request.name(),
-                    title
-            );
+            RCharacter created = characterService.createCharacter(request.userId(), regionId, request.name(), title);
 
             // Update publicData if provided (merge with defaults)
             if (request.publicData() != null) {
@@ -225,7 +215,8 @@ public class RCharacterController extends BaseEditorController {
 
         try {
             // Load existing character
-            RCharacter updated = characterService.getCharacter(userId, regionId, name)
+            RCharacter updated = characterService
+                    .getCharacter(userId, regionId, name)
                     .orElseThrow(() -> new IllegalArgumentException("Character not found"));
 
             // Update publicData if provided
@@ -383,10 +374,12 @@ public class RCharacterController extends BaseEditorController {
         }
 
         try {
-            RCharacter c = characterService.getCharacter(userId, regionId, name)
+            RCharacter c = characterService
+                    .getCharacter(userId, regionId, name)
                     .orElseThrow(() -> new IllegalArgumentException("Character not found"));
             characterService.setSpellWordXp(c.getId(), word, request.xp());
-            RCharacter updated = characterService.getCharacter(userId, regionId, name).orElseThrow();
+            RCharacter updated =
+                    characterService.getCharacter(userId, regionId, name).orElseThrow();
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
             return notFound(e.getMessage());
@@ -416,10 +409,12 @@ public class RCharacterController extends BaseEditorController {
         }
 
         try {
-            RCharacter c = characterService.getCharacter(userId, regionId, name)
+            RCharacter c = characterService
+                    .getCharacter(userId, regionId, name)
                     .orElseThrow(() -> new IllegalArgumentException("Character not found"));
             characterService.removeSpellWord(c.getId(), word);
-            RCharacter updated = characterService.getCharacter(userId, regionId, name).orElseThrow();
+            RCharacter updated =
+                    characterService.getCharacter(userId, regionId, name).orElseThrow();
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
             return notFound(e.getMessage());

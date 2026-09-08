@@ -1,22 +1,21 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.generated.network.messages.ChunkRegisterData;
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService.ChunkCoord;
 import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.PathwayBroadcastService;
-import de.mhus.nimbus.world.player.session.PlayerSession;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.ArrayList;
-import java.util.List;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 /**
  * Handles chunk registration messages from clients.
@@ -69,8 +68,12 @@ public class ChunkRegistrationHandler implements MessageHandler {
                 }
             }
 
-            log.debug("Chunk registration: center=({}, {}), loadRange={}, total chunks={}",
-                    centerX, centerZ, lowDensityRange, requestedChunks.size());
+            log.debug(
+                    "Chunk registration: center=({}, {}), loadRange={}, total chunks={}",
+                    centerX,
+                    centerZ,
+                    lowDensityRange,
+                    requestedChunks.size());
 
         } else {
             log.warn("Invalid chunk registration: missing 'cx/cz/lr'");
@@ -91,9 +94,12 @@ public class ChunkRegistrationHandler implements MessageHandler {
             session.registerChunk(coord.cx(), coord.cz());
         }
 
-        log.debug("Chunk registration: session={}, total={}, new={}, worldId={}",
-                session.getWebSocketSession().getId(), requestedChunks.size(),
-                newChunks.size(), session.getWorldId());
+        log.debug(
+                "Chunk registration: session={}, total={}, new={}, worldId={}",
+                session.getWebSocketSession().getId(),
+                requestedChunks.size(),
+                newChunks.size(),
+                session.getWorldId());
 
         // Publish chunk registration to Redis for world-life
         if (!newChunks.isEmpty()) {
@@ -125,24 +131,25 @@ public class ChunkRegistrationHandler implements MessageHandler {
 
             // Collect cached pathways for all new chunks
             for (ChunkCoord chunk : chunks) {
-                List<EntityPathway> pathways = pathwayBroadcastService.getCachedPathwaysForChunk(
-                        worldId, chunk.cx(), chunk.cz());
+                List<EntityPathway> pathways =
+                        pathwayBroadcastService.getCachedPathwaysForChunk(worldId, chunk.cx(), chunk.cz());
                 allPathways.addAll(pathways);
             }
 
             // Send pathways to client if any found
             if (!allPathways.isEmpty()) {
                 JsonNode pathwaysArray = objectMapper.valueToTree(allPathways);
-                NetworkMessage pathwayMessage = NetworkMessage.builder()
-                        .t("e.p")
-                        .d(pathwaysArray)
-                        .build();
+                NetworkMessage pathwayMessage =
+                        NetworkMessage.builder().t("e.p").d(pathwaysArray).build();
 
                 String json = objectMapper.writeValueAsString(pathwayMessage);
                 session.sendMessage(new TextMessage(json));
 
-                log.debug("Sent {} cached pathways to session {} for {} new chunks",
-                        allPathways.size(), session.getSessionId(), chunks.size());
+                log.debug(
+                        "Sent {} cached pathways to session {} for {} new chunks",
+                        allPathways.size(),
+                        session.getSessionId(),
+                        chunks.size());
             }
 
         } catch (Exception e) {
@@ -180,4 +187,3 @@ public class ChunkRegistrationHandler implements MessageHandler {
         }
     }
 }
-

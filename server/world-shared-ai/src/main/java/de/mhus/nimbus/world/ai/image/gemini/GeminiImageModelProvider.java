@@ -6,12 +6,11 @@ import de.mhus.nimbus.world.ai.image.BackgroundRemover;
 import de.mhus.nimbus.world.ai.image.LangchainImageModel;
 import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
 import de.mhus.nimbus.world.ai.model.gemini.GeminiSettings;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.Optional;
 
 /**
  * Google Gemini implementation of {@link LangchainImageModel}.
@@ -59,10 +58,17 @@ public class GeminiImageModelProvider implements LangchainImageModel {
 
         String fullName = PROVIDER_NAME + ":" + modelName;
         AiImageModel model = new GeminiImageModelImpl(
-                fullName, modelName, settings.getApiKey(), options,
-                objectMapper, rateLimiter, BackgroundRemover.DEFAULT_THRESHOLD);
-        log.info("Created Gemini image model: model={}, transparentBackground={}",
-                modelName, options.isTransparentBackground());
+                fullName,
+                modelName,
+                settings.getApiKey(),
+                options,
+                objectMapper,
+                rateLimiter,
+                BackgroundRemover.DEFAULT_THRESHOLD);
+        log.info(
+                "Created Gemini image model: model={}, transparentBackground={}",
+                modelName,
+                options.isTransparentBackground());
         return Optional.of(model);
     }
 

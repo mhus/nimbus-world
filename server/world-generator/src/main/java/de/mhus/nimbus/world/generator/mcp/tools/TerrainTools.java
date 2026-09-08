@@ -1,20 +1,18 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.layer.*;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import de.mhus.nimbus.world.shared.world.WWorld;
-import de.mhus.nimbus.world.shared.world.WWorldService;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -24,15 +22,15 @@ public class TerrainTools implements McpToolBean {
     private final WLayerService layerService;
     private final WWorldService worldService;
 
-    @Tool(name = "list_terrain_chunk_keys", description = "List chunk keys (cx:cz) that have terrain data for a specific layer")
+    @Tool(
+            name = "list_terrain_chunk_keys",
+            description = "List chunk keys (cx:cz) that have terrain data for a specific layer")
     public Map<String, Object> listTerrainChunkKeys(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer name") String layerName) {
         log.debug("MCP: List terrain chunk keys: worldId={}, layerName={}", worldId, layerName);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
         if (layerOpt.isEmpty()) {
@@ -52,7 +50,9 @@ public class TerrainTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "get_terrain_chunk_data", description = "Get terrain chunk storage data including blocks for a specific layer and chunk position")
+    @Tool(
+            name = "get_terrain_chunk_data",
+            description = "Get terrain chunk storage data including blocks for a specific layer and chunk position")
     public Map<String, Object> getTerrainChunkData(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer name") String layerName,
@@ -60,9 +60,7 @@ public class TerrainTools implements McpToolBean {
             @ToolParam(description = "Chunk Z coordinate") int cz) {
         log.debug("MCP: Get terrain chunk data: worldId={}, layerName={}, cx={}, cz={}", worldId, layerName, cx, cz);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
         if (layerOpt.isEmpty()) {
@@ -80,8 +78,7 @@ public class TerrainTools implements McpToolBean {
         result.put("cx", cx);
         result.put("cz", cz);
 
-        Optional<WLayerTerrain> terrainOpt = layerService
-                .findTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+        Optional<WLayerTerrain> terrainOpt = layerService.findTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
 
         if (terrainOpt.isEmpty()) {
             result.put("exists", false);
@@ -93,7 +90,8 @@ public class TerrainTools implements McpToolBean {
         result.put("exists", true);
         result.put("metadata", toTerrainMetadataDto(terrain));
 
-        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+        Optional<LayerChunkData> chunkDataOpt =
+                layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
         if (chunkDataOpt.isEmpty()) {
             result.put("storageDataLoaded", false);
             result.put("message", "WLayerTerrain entity exists but storage data could not be loaded");
@@ -107,9 +105,8 @@ public class TerrainTools implements McpToolBean {
         result.put("blockCount", blocks != null ? blocks.size() : 0);
 
         if (blocks != null && !blocks.isEmpty()) {
-            List<Map<String, Object>> blockDtos = blocks.stream()
-                    .map(this::toLayerBlockDto)
-                    .collect(Collectors.toList());
+            List<Map<String, Object>> blockDtos =
+                    blocks.stream().map(this::toLayerBlockDto).collect(Collectors.toList());
             result.put("blocks", blockDtos);
 
             Map<String, Long> blockTypeCounts = blocks.stream()
@@ -127,7 +124,10 @@ public class TerrainTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "get_terrain_block_at", description = "Get a single block from a terrain layer at an exact world position (x, y, z). Automatically calculates the correct chunk.")
+    @Tool(
+            name = "get_terrain_block_at",
+            description =
+                    "Get a single block from a terrain layer at an exact world position (x, y, z). Automatically calculates the correct chunk.")
     public Map<String, Object> getTerrainBlockAt(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer name") String layerName,
@@ -136,13 +136,10 @@ public class TerrainTools implements McpToolBean {
             @ToolParam(description = "World Z coordinate") int z) {
         log.debug("MCP: Get terrain block at: worldId={}, layerName={}, x={}, y={}, z={}", worldId, layerName, x, y, z);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new McpToolException("World not found: " + worldId)
-        );
+        WWorld world =
+                worldService.getByWorldId(wid).orElseThrow(() -> new McpToolException("World not found: " + worldId));
         int chunkSize = world.getPublicData().getChunkSize();
 
         Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
@@ -165,7 +162,8 @@ public class TerrainTools implements McpToolBean {
         result.put("cz", cz);
         result.put("layerName", layer.getName());
 
-        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+        Optional<LayerChunkData> chunkDataOpt =
+                layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
         if (chunkDataOpt.isEmpty()) {
             result.put("found", false);
             result.put("message", "No terrain data for layer '" + layerName + "' in chunk " + chunkKey);
@@ -181,7 +179,8 @@ public class TerrainTools implements McpToolBean {
         }
 
         LayerBlock match = blocks.stream()
-                .filter(b -> b.getBlock() != null && b.getBlock().getPosition() != null
+                .filter(b -> b.getBlock() != null
+                        && b.getBlock().getPosition() != null
                         && (int) b.getBlock().getPosition().getX() == x
                         && (int) b.getBlock().getPosition().getY() == y
                         && (int) b.getBlock().getPosition().getZ() == z)
@@ -195,7 +194,8 @@ public class TerrainTools implements McpToolBean {
             result.put("found", false);
             result.put("message", "No block at this position in terrain layer (air or empty)");
             List<Map<String, Object>> nearby = blocks.stream()
-                    .filter(b -> b.getBlock() != null && b.getBlock().getPosition() != null
+                    .filter(b -> b.getBlock() != null
+                            && b.getBlock().getPosition() != null
                             && Math.abs((int) b.getBlock().getPosition().getX() - x) <= 1
                             && Math.abs((int) b.getBlock().getPosition().getY() - y) <= 1
                             && Math.abs((int) b.getBlock().getPosition().getZ() - z) <= 1)

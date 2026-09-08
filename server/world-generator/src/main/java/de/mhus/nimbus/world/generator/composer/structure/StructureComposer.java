@@ -2,19 +2,18 @@ package de.mhus.nimbus.world.generator.composer.structure;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
 import de.mhus.nimbus.world.generator.composer.town.Town;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Composes structures (villages, towns, etc.) on a hex grid.
@@ -33,8 +32,7 @@ public class StructureComposer {
      * @param placementResult The biome placement result (for anchors and adding placed structures)
      * @return Result with placed structures
      */
-    public StructurePlacementResult composeStructures(ComposeContext context,
-                                                      BiomePlacementResult placementResult) {
+    public StructurePlacementResult composeStructures(ComposeContext context, BiomePlacementResult placementResult) {
         log.debug("Starting structure composition");
 
         HexComposition composition = context.getComposition();
@@ -55,8 +53,11 @@ public class StructureComposer {
                 if (placed != null) {
                     placedStructures.add(placed);
                     placedCount++;
-                    log.debug("Placed village '{}' at center {} with {} grids",
-                        village.getName(), placed.getCenter(), placed.getGrids().size());
+                    log.debug(
+                            "Placed village '{}' at center {} with {} grids",
+                            village.getName(),
+                            placed.getCenter(),
+                            placed.getGrids().size());
                 } else {
                     failedCount++;
                     errors.add("Failed to place village: " + village.getName());
@@ -73,17 +74,20 @@ public class StructureComposer {
 
         boolean success = failedCount == 0;
 
-        log.debug("Structure composition complete: {}/{} structures placed ({} failed)",
-            placedCount, totalStructures, failedCount);
+        log.debug(
+                "Structure composition complete: {}/{} structures placed ({} failed)",
+                placedCount,
+                totalStructures,
+                failedCount);
 
         return StructurePlacementResult.builder()
-            .placedStructures(placedStructures)
-            .totalStructures(totalStructures)
-            .placedCount(placedCount)
-            .failedCount(failedCount)
-            .errors(errors)
-            .success(success)
-            .build();
+                .placedStructures(placedStructures)
+                .totalStructures(totalStructures)
+                .placedCount(placedCount)
+                .failedCount(failedCount)
+                .errors(errors)
+                .success(success)
+                .build();
     }
 
     /**
@@ -102,8 +106,8 @@ public class StructureComposer {
         log.debug("Placing village '{}' with district-based design", village.getName());
 
         // Get hexGridSize from world
-        int hexGridSize = context.getWorld() != null ?
-            context.getWorld().getPublicData().getHexGridSize() : 512;
+        int hexGridSize =
+                context.getWorld() != null ? context.getWorld().getPublicData().getHexGridSize() : 512;
 
         // Find anchor position from village positions
         HexVector2 center = findAnchorPosition(village, placementResult);
@@ -114,8 +118,10 @@ public class StructureComposer {
 
         log.debug("Village '{}' anchor position: [{},{}]", village.getName(), center.getQ(), center.getR());
 
-        log.debug("Village '{}' has {} districts from config",
-            village.getName(), village.getDistricts() != null ? village.getDistricts().size() : 0);
+        log.debug(
+                "Village '{}' has {} districts from config",
+                village.getName(),
+                village.getDistricts() != null ? village.getDistricts().size() : 0);
 
         // IMPORTANT: Configure the village's HexGrids
         // This will run VillageDesigner and set g_village parameters
@@ -123,8 +129,10 @@ public class StructureComposer {
         log.debug("Calling village.configureHexGrids() for '{}' with hexGridSize: {}", village.getName(), hexGridSize);
         village.configureHexGrids(new ArrayList<>(), hexGridSize, context.getStructuresIndex());
 
-        log.debug("Village '{}' configured {} HexGrids", village.getName(),
-            village.getHexGrids() != null ? village.getHexGrids().size() : 0);
+        log.debug(
+                "Village '{}' configured {} HexGrids",
+                village.getName(),
+                village.getHexGrids() != null ? village.getHexGrids().size() : 0);
 
         if (village.getHexGrids() == null || village.getHexGrids().isEmpty()) {
             log.error("Village '{}' has no HexGrids after configuration!", village.getName());
@@ -139,10 +147,8 @@ public class StructureComposer {
             HexVector2 relativePos = featureHexGrid.getCoordinate();
 
             // Convert relative district position to absolute world position
-            HexVector2 absolutePos = TypeUtil.hexVector2(
-                center.getQ() + relativePos.getQ(),
-                center.getR() + relativePos.getR()
-            );
+            HexVector2 absolutePos =
+                    TypeUtil.hexVector2(center.getQ() + relativePos.getQ(), center.getR() + relativePos.getR());
 
             // Update the FeatureHexGrid with absolute coordinates
             featureHexGrid.setCoordinate(absolutePos);
@@ -150,10 +156,10 @@ public class StructureComposer {
 
             // Create a virtual "village" biome for this grid
             Biome villageBiome = Biome.builder()
-                .name(village.getName() + "-grid-" + absolutePos.getQ() + ";" + absolutePos.getR())
-                .title(village.getTitle() + " Grid")
-                .type(BiomeType.TOWN)
-                .build();
+                    .name(village.getName() + "-grid-" + absolutePos.getQ() + ";" + absolutePos.getR())
+                    .title(village.getTitle() + " Grid")
+                    .type(BiomeType.TOWN)
+                    .build();
             villageBiome.initialize();
 
             // Note: Biomes no longer have local hexGrids - they use central registry
@@ -162,28 +168,30 @@ public class StructureComposer {
 
             // Create PlacedBiome (representing the village grid)
             PlacedBiome placedGrid = PlacedBiome.builder()
-                .biome(villageBiome)
-                .center(absolutePos)
-                .coordinates(List.of(absolutePos))
-                .actualSize(1)
-                .build();
+                    .biome(villageBiome)
+                    .center(absolutePos)
+                    .coordinates(List.of(absolutePos))
+                    .actualSize(1)
+                    .build();
 
             // Add to placement result so it's included in the world
             placementResult.getPlacedBiomes().add(placedGrid);
 
-            log.debug("Created PlacedBiome for district at absolute position [{};{}]",
-                absolutePos.getQ(), absolutePos.getR());
+            log.debug(
+                    "Created PlacedBiome for district at absolute position [{};{}]",
+                    absolutePos.getQ(),
+                    absolutePos.getR());
         }
 
         log.debug("Village '{}' created {} PlacedBiomes", village.getName(), grids.size());
 
         // Create PlacedStructure result
         PlacedStructure placedStructure = PlacedStructure.builder()
-            .structure(village)
-            .center(center)
-            .grids(grids)
-            .gridCount(grids.size())
-            .build();
+                .structure(village)
+                .center(center)
+                .grids(grids)
+                .gridCount(grids.size())
+                .build();
 
         return placedStructure;
     }
@@ -205,9 +213,9 @@ public class StructureComposer {
 
         // Sort by priority and take the first one
         PreparedPosition position = positions.stream()
-            .sorted((p1, p2) -> Integer.compare(p2.getPriority(), p1.getPriority()))
-            .findFirst()
-            .orElse(null);
+                .sorted((p1, p2) -> Integer.compare(p2.getPriority(), p1.getPriority()))
+                .findFirst()
+                .orElse(null);
 
         if (position == null) {
             return null;
@@ -216,9 +224,9 @@ public class StructureComposer {
         // Find anchor biome
         String anchorName = position.getAnchor();
         PlacedBiome anchorBiome = placementResult.getPlacedBiomes().stream()
-            .filter(pb -> anchorName.equals(pb.getBiome().getName()))
-            .findFirst()
-            .orElse(null);
+                .filter(pb -> anchorName.equals(pb.getBiome().getName()))
+                .findFirst()
+                .orElse(null);
 
         if (anchorBiome == null) {
             log.warn("Anchor biome '{}' not found for structure '{}'", anchorName, structure.getName());
@@ -232,12 +240,18 @@ public class StructureComposer {
         HexVector2 targetPosition = anchorCenter;
         if (position.getDirection() != null) {
             int distance = position.getDistanceFrom() > 0 ? position.getDistanceFrom() : 3;
-            targetPosition = applyDirectionOffset(anchorCenter, position.getDirection().name(), distance);
+            targetPosition =
+                    applyDirectionOffset(anchorCenter, position.getDirection().name(), distance);
         }
 
-        String directionStr = position.getDirection() != null ? position.getDirection().name() : "CENTER";
-        log.debug("Found anchor position for structure '{}': {} (from anchor '{}' with direction '{}')",
-            structure.getName(), targetPosition, anchorName, directionStr);
+        String directionStr =
+                position.getDirection() != null ? position.getDirection().name() : "CENTER";
+        log.debug(
+                "Found anchor position for structure '{}': {} (from anchor '{}' with direction '{}')",
+                structure.getName(),
+                targetPosition,
+                anchorName,
+                directionStr);
 
         return targetPosition;
     }

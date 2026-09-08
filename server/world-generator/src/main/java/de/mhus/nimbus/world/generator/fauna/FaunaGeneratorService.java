@@ -6,6 +6,8 @@ import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.modelbuilder.ConditionEvaluator;
+import de.mhus.nimbus.world.shared.dto.HeightDataDto;
+import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
@@ -17,13 +19,6 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.world.shared.dto.HeightDataDto;
-import de.mhus.nimbus.world.shared.layer.LayerBlock;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for generating fauna (animals) on a single hex grid.
@@ -54,7 +53,6 @@ public class FaunaGeneratorService {
     private final WEntityService entityService;
     private final FaunaNameService nameService;
 
-
     /**
      * Generate fauna for a single hex grid.
      *
@@ -64,12 +62,14 @@ public class FaunaGeneratorService {
      * @return number of entities created
      */
     public int generateFauna(String worldId, int hexQ, int hexR) {
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new RuntimeException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
         HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
-        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+        WHexGrid hexGrid = hexGridService
+                .findByWorldIdAndPosition(worldId, hexPos)
                 .orElseThrow(() -> new RuntimeException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();
@@ -87,7 +87,9 @@ public class FaunaGeneratorService {
         WorldId regionWorldId = wid.toRegionCollection();
 
         FaunaTypeDefinition faunaDef = loadFaunaTypeDefinition(regionWorldId.getId(), faunaType);
-        if (faunaDef == null || faunaDef.getAnimals() == null || faunaDef.getAnimals().isEmpty()) {
+        if (faunaDef == null
+                || faunaDef.getAnimals() == null
+                || faunaDef.getAnimals().isEmpty()) {
             log.info("Fauna type '{}' has no animals for hex {},{}", faunaType, hexQ, hexR);
             return 0;
         }
@@ -96,8 +98,8 @@ public class FaunaGeneratorService {
         deleteEntitiesInHexGrid(worldId, hexGrid, world);
 
         // Load ground layer for height lookup
-        WLayer groundLayer = layerService.findByWorldIdAndName(worldId, GROUND_LAYER_NAME)
-                .orElse(null);
+        WLayer groundLayer =
+                layerService.findByWorldIdAndName(worldId, GROUND_LAYER_NAME).orElse(null);
 
         int chunkSize = world.getPublicData().getChunkSize();
         int defaultGroundLevel = world.getGroundLevel();
@@ -112,12 +114,16 @@ public class FaunaGeneratorService {
 
         for (Vector2Int flatPos : hexGrid.getFlatPositionSet(world)) {
             HeightDataDto heightInfo = getHeightDataDto(
-                    worldId, groundLayer,
-                    flatPos.getX(), flatPos.getZ(),
-                    chunkSize, defaultGroundLevel, groundChunkCache);
+                    worldId,
+                    groundLayer,
+                    flatPos.getX(),
+                    flatPos.getZ(),
+                    chunkSize,
+                    defaultGroundLevel,
+                    groundChunkCache);
 
-            FaunaCategory category = FaunaCategory.determine(
-                    heightInfo.groundLevel(), heightInfo.waterLevel(), seaLevel);
+            FaunaCategory category =
+                    FaunaCategory.determine(heightInfo.groundLevel(), heightInfo.waterLevel(), seaLevel);
 
             PositionInfo posInfo = new PositionInfo(flatPos.getX(), flatPos.getZ(), heightInfo, category);
             switch (category) {
@@ -138,8 +144,14 @@ public class FaunaGeneratorService {
         for (FaunaAnimalDefinition animal : faunaDef.getAnimals()) {
             if (Strings.isNotBlank(animal.getWhen())) {
                 Map<String, Object> conditionVars = buildFaunaConditionContext(
-                        hexQ, hexR, seaLevel, landPositions.size(),
-                        waterPositions.size(), seaPositions.size(), random, hexContext);
+                        hexQ,
+                        hexR,
+                        seaLevel,
+                        landPositions.size(),
+                        waterPositions.size(),
+                        seaPositions.size(),
+                        random,
+                        hexContext);
                 if (!ConditionEvaluator.evaluate(animal.getWhen(), conditionVars)) continue;
             }
 
@@ -164,8 +176,8 @@ public class FaunaGeneratorService {
                 if (groupSize <= 0) continue;
 
                 // Find a suitable group position
-                PositionInfo groupPosition = findGroupPosition(animal, landPositions, waterPositions,
-                        seaPositions, random);
+                PositionInfo groupPosition =
+                        findGroupPosition(animal, landPositions, waterPositions, seaPositions, random);
                 if (groupPosition == null) {
                     log.debug("No suitable position found for animal '{}' group {}", animal.getName(), groupIdx);
                     continue;
@@ -195,8 +207,8 @@ public class FaunaGeneratorService {
                 for (int i = 0; i < groupSize; i++) {
                     AnimalIdentity identity = identities.get(i);
                     String shortId = UUID.randomUUID().toString().substring(0, 8);
-                    String entityId = "gf_" + hexQ + "_" + hexR + "_" + animal.getName()
-                            + "_" + groupIdx + "_" + shortId;
+                    String entityId =
+                            "gf_" + hexQ + "_" + hexR + "_" + animal.getName() + "_" + groupIdx + "_" + shortId;
 
                     Entity publicData = Entity.builder()
                             .name(entityId)
@@ -264,9 +276,14 @@ public class FaunaGeneratorService {
     }
 
     private Map<String, Object> buildFaunaConditionContext(
-            int hexQ, int hexR, Integer seaLevel,
-            int landCount, int waterCount, int seaCount,
-            Random random, Map<String, String> hexContext) {
+            int hexQ,
+            int hexR,
+            Integer seaLevel,
+            int landCount,
+            int waterCount,
+            int seaCount,
+            Random random,
+            Map<String, String> hexContext) {
         Map<String, Object> vars = new HashMap<>();
         vars.putAll(hexContext);
         vars.put("hexQ", hexQ);
@@ -300,8 +317,9 @@ public class FaunaGeneratorService {
     }
 
     private FaunaTypeDefinition loadFaunaTypeDefinition(String regionWorldId, String faunaType) {
-        WAnything entry = anythingService.findByWorldIdAndCollectionAndName(
-                regionWorldId, FAUNA_COLLECTION, faunaType).orElse(null);
+        WAnything entry = anythingService
+                .findByWorldIdAndCollectionAndName(regionWorldId, FAUNA_COLLECTION, faunaType)
+                .orElse(null);
         if (entry == null) {
             log.warn("Fauna type definition not found: {}", faunaType);
             return null;
@@ -313,11 +331,12 @@ public class FaunaGeneratorService {
      * Find a suitable group position for an animal based on its category flags.
      * Tries positions from pre-categorized lists, with a maximum attempt limit.
      */
-    private PositionInfo findGroupPosition(FaunaAnimalDefinition animal,
-                                            List<PositionInfo> landPositions,
-                                            List<PositionInfo> waterPositions,
-                                            List<PositionInfo> seaPositions,
-                                            Random random) {
+    private PositionInfo findGroupPosition(
+            FaunaAnimalDefinition animal,
+            List<PositionInfo> landPositions,
+            List<PositionInfo> waterPositions,
+            List<PositionInfo> seaPositions,
+            Random random) {
         // Collect candidate lists based on animal flags
         List<List<PositionInfo>> candidateLists = new ArrayList<>();
         if (animal.isLand() || animal.isAerial()) candidateLists.add(landPositions);
@@ -341,19 +360,25 @@ public class FaunaGeneratorService {
         return null;
     }
 
-    private HeightDataDto getHeightDataDto(String worldId, WLayer groundLayer,
-                                     int worldX, int worldZ,
-                                     int chunkSize, int defaultGroundLevel,
-                                     Map<String, LayerChunkData> cache) {
+    private HeightDataDto getHeightDataDto(
+            String worldId,
+            WLayer groundLayer,
+            int worldX,
+            int worldZ,
+            int chunkSize,
+            int defaultGroundLevel,
+            Map<String, LayerChunkData> cache) {
         if (groundLayer == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
         int cx = Math.floorDiv(worldX, chunkSize);
         int cz = Math.floorDiv(worldZ, chunkSize);
         String chunkKey = cx + ":" + cz;
 
-        LayerChunkData chunkData = cache.computeIfAbsent(chunkKey, key ->
-                layerService.loadTerrainChunk(worldId,
-                        groundLayer.getLayerDataId(), key).orElse(null));
+        LayerChunkData chunkData = cache.computeIfAbsent(
+                chunkKey,
+                key -> layerService
+                        .loadTerrainChunk(worldId, groundLayer.getLayerDataId(), key)
+                        .orElse(null));
 
         if (chunkData == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
@@ -386,8 +411,7 @@ public class FaunaGeneratorService {
      * Generate gender and display name assignments for all animals in a group,
      * based on the animal definition's group type.
      */
-    private List<AnimalIdentity> generateGroupIdentities(
-            FaunaAnimalDefinition animal, int groupSize, Random random) {
+    private List<AnimalIdentity> generateGroupIdentities(FaunaAnimalDefinition animal, int groupSize, Random random) {
 
         FaunaGroupType groupType = animal.getGroupType();
         List<AnimalIdentity> identities = new ArrayList<>();
@@ -436,11 +460,12 @@ public class FaunaGeneratorService {
         double totalWeight = 0;
         double[] weights = new double[allowed.size()];
         for (int i = 0; i < allowed.size(); i++) {
-            double w = switch (allowed.get(i)) {
-                case M -> animal.getWeightM();
-                case W -> animal.getWeightW();
-                case D -> animal.getWeightD();
-            };
+            double w =
+                    switch (allowed.get(i)) {
+                        case M -> animal.getWeightM();
+                        case W -> animal.getWeightW();
+                        case D -> animal.getWeightD();
+                    };
             weights[i] = w;
             totalWeight += w;
         }

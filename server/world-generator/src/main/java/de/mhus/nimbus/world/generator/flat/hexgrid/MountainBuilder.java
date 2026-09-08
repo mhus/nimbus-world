@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Mountain scenario builder.
@@ -53,8 +52,10 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class MountainBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
-    private static final int DEFAULT_RIDGE_WIDTH = 200;  // Default width of ridge effect in pixels
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
+    private static final int DEFAULT_RIDGE_WIDTH = 200; // Default width of ridge effect in pixels
 
     @Override
     public void buildFlat() {
@@ -69,10 +70,16 @@ public class MountainBuilder extends HexGridBuilder {
         int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
-        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
+        double frequency =
+                CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
 
-        log.debug("Mountain terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
-                baseHeight, hillHeight, seaLevel, seed, frequency);
+        log.debug(
+                "Mountain terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                seed,
+                frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -82,13 +89,9 @@ public class MountainBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base mountain terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Get ridge width from parameters (default: 200)
         int ridgeWidth = parseIntParameter(parameters, "ridgeWidth", DEFAULT_RIDGE_WIDTH);
@@ -100,8 +103,11 @@ public class MountainBuilder extends HexGridBuilder {
         // Set materials based on height
         setMountainMaterials(flat, seaLevel);
 
-        log.debug("Mountain scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, seaLevel);
+        log.debug(
+                "Mountain scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight,
+                hillHeight,
+                seaLevel);
     }
 
     /**
@@ -109,7 +115,8 @@ public class MountainBuilder extends HexGridBuilder {
      */
     private void applyRidgeTransformations(WFlat flat, int baseHeight, int hillHeight, int ridgeWidth) {
         WHexGrid hexGrid = context.getHexGrid();
-        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
+        String ridgeParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
 
         if (ridgeParam == null || ridgeParam.isBlank()) {
             log.debug("No ridge parameter found, skipping ridge transformations");
@@ -181,8 +188,13 @@ public class MountainBuilder extends HexGridBuilder {
      * Apply height transformation for a single ridge.
      * Increases height near the specified side to create a mountain ridge.
      */
-    private void applyRidgeTransformation(WFlat flat, RidgeDefinition ridge, int baseHeight, int hillHeight, int ridgeWidth) {
-        log.debug("Applying ridge transformation: side={}, level={}, ridgeWidth={}", ridge.getSide(), ridge.getLevel(), ridgeWidth);
+    private void applyRidgeTransformation(
+            WFlat flat, RidgeDefinition ridge, int baseHeight, int hillHeight, int ridgeWidth) {
+        log.debug(
+                "Applying ridge transformation: side={}, level={}, ridgeWidth={}",
+                ridge.getSide(),
+                ridge.getLevel(),
+                ridgeWidth);
 
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
@@ -270,19 +282,19 @@ public class MountainBuilder extends HexGridBuilder {
     private int[][] getSideCorners(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         switch (side) {
             case NORTH_WEST:
-                return new int[][]{{0, 0}, {sizeX / 2, 0}};
+                return new int[][] {{0, 0}, {sizeX / 2, 0}};
             case NORTH_EAST:
-                return new int[][]{{sizeX / 2, 0}, {sizeX - 1, 0}};
+                return new int[][] {{sizeX / 2, 0}, {sizeX - 1, 0}};
             case EAST:
-                return new int[][]{{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
+                return new int[][] {{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
             case SOUTH_EAST:
-                return new int[][]{{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
+                return new int[][] {{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
             case SOUTH_WEST:
-                return new int[][]{{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
+                return new int[][] {{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
             case WEST:
-                return new int[][]{{0, sizeZ - 1}, {0, 0}};
+                return new int[][] {{0, sizeZ - 1}, {0, 0}};
             default:
-                return new int[][]{{0, 0}, {sizeX - 1, sizeZ - 1}};
+                return new int[][] {{0, 0}, {sizeX - 1, sizeZ - 1}};
         }
     }
 
@@ -319,10 +331,17 @@ public class MountainBuilder extends HexGridBuilder {
         int grassToStoneThreshold = oceanLevel + stoneOffset;
         int snowThreshold = oceanLevel + snowOffset;
 
-        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
-                grassToStoneThreshold, snowThreshold, oceanLevel);
-        log.debug("Materials: sand={}, grass={}, stone={}, snow={}",
-                sandMaterial, grassMaterial, stoneMaterial, snowMaterial);
+        log.debug(
+                "Material thresholds: stone={}, snow={} (oceanLevel={})",
+                grassToStoneThreshold,
+                snowThreshold,
+                oceanLevel);
+        log.debug(
+                "Materials: sand={}, grass={}, stone={}, snow={}",
+                sandMaterial,
+                grassMaterial,
+                stoneMaterial,
+                snowMaterial);
 
         for (int z = 0; z < sizeZ; z++) {
             for (int x = 0; x < sizeX; x++) {
@@ -346,19 +365,20 @@ public class MountainBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 20;  // MOUNTAIN: large variation for dramatic peaks
+        return 20; // MOUNTAIN: large variation for dramatic peaks
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 50;  // MOUNTAIN: well above ocean level
+        return 50; // MOUNTAIN: well above ocean level
     }
 
     @Override
     public int getLandSideLevel(WHexGrid.EDGE side) {
         // Check if this side has a ridge defined
         WHexGrid hexGrid = context.getHexGrid();
-        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
+        String ridgeParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
 
         if (ridgeParam != null && !ridgeParam.isBlank()) {
             try {
@@ -480,7 +500,7 @@ public class MountainBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

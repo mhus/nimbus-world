@@ -2,13 +2,12 @@ package de.mhus.nimbus.world.generator.reality;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.Locale;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
-
-import java.util.Locale;
-import java.util.UUID;
 
 /**
  * Stage D1 — materialize lore, factions and NPC archetypes as {@code WDocument}s in the region.
@@ -34,7 +33,12 @@ public class RealityLoreMaterializer {
                 String title = Strings.isBlank(e.getTitle()) ? "lore" : e.getTitle();
                 String collection = loreCollection(e.getKind());
                 try {
-                    saveDoc(region, collection, slug(title), title, e.getContent(),
+                    saveDoc(
+                            region,
+                            collection,
+                            slug(title),
+                            title,
+                            e.getContent(),
                             Strings.isBlank(e.getKind()) ? "lore" : e.getKind());
                     result.inc();
                 } catch (Exception ex) {
@@ -62,7 +66,10 @@ public class RealityLoreMaterializer {
             }
         }
 
-        log.info("RealityLoreMaterializer: {} documents, {} errors", result.getCreated(), result.getErrors().size());
+        log.info(
+                "RealityLoreMaterializer: {} documents, {} errors",
+                result.getCreated(),
+                result.getErrors().size());
         return result;
     }
 

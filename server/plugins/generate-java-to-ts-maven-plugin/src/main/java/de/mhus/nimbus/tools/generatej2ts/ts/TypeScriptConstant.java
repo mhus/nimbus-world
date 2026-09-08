@@ -3,7 +3,7 @@ package de.mhus.nimbus.tools.generatej2ts.ts;
 public class TypeScriptConstant {
     private String name;
     private String tsType; // optional Typannotation, falls kein Wert vorhanden
-    private String value;  // Literalwert als String, z. B. "\"PLAYER\"", 123, true
+    private String value; // Literalwert als String, z. B. "\"PLAYER\"", 123, true
 
     public TypeScriptConstant() {}
 
@@ -13,12 +13,27 @@ public class TypeScriptConstant {
         this.value = value;
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public String getTsType() { return tsType; }
-    public void setTsType(String tsType) { this.tsType = tsType; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getValue() { return value; }
-    public void setValue(String value) { this.value = value; }
+    public String getTsType() {
+        return tsType;
+    }
+
+    public void setTsType(String tsType) {
+        this.tsType = tsType;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
 }

@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Arch Block Manipulator - creates an arch with pillars.
@@ -47,9 +47,9 @@ public class ArchBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates an arch with pillars. " +
-                "Parameters: position {x,y,z}, width, height, depth (optional), blockType (optional). " +
-                "Example: {\"arch\": {\"transform\": \"position\", \"width\": 8, \"height\": 10, \"depth\": 3}}";
+        return "Creates an arch with pillars. "
+                + "Parameters: position {x,y,z}, width, height, depth (optional), blockType (optional). "
+                + "Example: {\"arch\": {\"transform\": \"position\", \"width\": 8, \"height\": 10, \"depth\": 3}}";
     }
 
     @Override
@@ -111,8 +111,15 @@ public class ArchBlockManipulator implements BlockManipulator {
         }
 
         // Generate arch
-        log.info("Generating arch: pos=({},{},{}), width={}, height={}, depth={}, blockType={}",
-                x, y, z, width, height, depth, blockType);
+        log.info(
+                "Generating arch: pos=({},{},{}), width={}, height={}, depth={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                height,
+                depth,
+                blockType);
 
         painter.arch(x, y, z, width, height, depth);
 
@@ -120,7 +127,8 @@ public class ArchBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated arch: %d blocks (width %d, height %d, depth %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated arch: %d blocks (width %d, height %d, depth %d) at (%d,%d,%d)",
                 blockCount, width, height, depth, x, y, z);
 
         log.info(message);

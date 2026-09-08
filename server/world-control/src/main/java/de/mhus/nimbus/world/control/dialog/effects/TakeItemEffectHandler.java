@@ -16,7 +16,9 @@ public class TakeItemEffectHandler implements DialogEffectHandler {
     private final RCharacterService characterService;
 
     @Override
-    public String getEffectType() { return "takeItem"; }
+    public String getEffectType() {
+        return "takeItem";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
@@ -27,9 +29,16 @@ public class TakeItemEffectHandler implements DialogEffectHandler {
         int count = effect.count() != null ? effect.count() : 1;
         boolean success = characterService.removeBackpackItem(ctx.getCharacter().getId(), effect.item(), count);
         if (success) {
-            log.debug("Took {} x{} from character {}", effect.item(), count, ctx.getCharacter().getId());
+            log.debug(
+                    "Took {} x{} from character {}",
+                    effect.item(),
+                    count,
+                    ctx.getCharacter().getId());
         } else {
-            log.warn("Failed to take item {} from character {}", effect.item(), ctx.getCharacter().getId());
+            log.warn(
+                    "Failed to take item {} from character {}",
+                    effect.item(),
+                    ctx.getCharacter().getId());
         }
     }
 }

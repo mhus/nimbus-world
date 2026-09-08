@@ -1,5 +1,7 @@
 package de.mhus.nimbus.shared.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import lombok.AllArgsConstructor;
@@ -7,7 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.Document;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -26,8 +27,6 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Integration test for SchemaVersionEventListener with real MongoDB.
  * Uses Testcontainers to spin up a MongoDB instance for testing.
@@ -44,12 +43,10 @@ class SchemaVersionEventListenerIntegrationTest {
     @EnableAutoConfiguration
     @EnableMongoRepositories(considerNestedRepositories = true)
     @EnableMongoAuditing
-    static class TestConfig {
-    }
+    static class TestConfig {}
 
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0")
-            .withExposedPorts(27017);
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0").withExposedPorts(27017);
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
@@ -74,6 +71,7 @@ class SchemaVersionEventListenerIntegrationTest {
     static class TestEntity implements Identifiable {
         @org.springframework.data.annotation.Id
         private String id;
+
         private String name;
         private String description;
     }
@@ -81,8 +79,7 @@ class SchemaVersionEventListenerIntegrationTest {
     /**
      * Repository for test entity.
      */
-    interface TestEntityRepository extends MongoRepository<TestEntity, String> {
-    }
+    interface TestEntityRepository extends MongoRepository<TestEntity, String> {}
 
     @Test
     void shouldAddSchemaVersionWhenSavingEntity() {
@@ -103,9 +100,7 @@ class SchemaVersionEventListenerIntegrationTest {
         Document document = mongoTemplate.findOne(query, Document.class, "test_entities");
 
         assertThat(document).isNotNull();
-        assertThat(document.getString("_schema"))
-                .isNotNull()
-                .isEqualTo("1.0.0");
+        assertThat(document.getString("_schema")).isNotNull().isEqualTo("1.0.0");
     }
 
     @Test
@@ -126,9 +121,7 @@ class SchemaVersionEventListenerIntegrationTest {
         Document document = mongoTemplate.findOne(query, Document.class, "test_entities");
 
         assertThat(document).isNotNull();
-        assertThat(document.getString("_schema"))
-                .isNotNull()
-                .isEqualTo("1.0.0");
+        assertThat(document.getString("_schema")).isNotNull().isEqualTo("1.0.0");
         assertThat(document.getString("description")).isEqualTo("Updated description");
     }
 
@@ -179,8 +172,6 @@ class SchemaVersionEventListenerIntegrationTest {
         Document document = mongoTemplate.findOne(query, Document.class, "test_entities");
 
         assertThat(document).isNotNull();
-        assertThat(document.getString("_schema"))
-                .isNotNull()
-                .isEqualTo("1.0.0");
+        assertThat(document.getString("_schema")).isNotNull().isEqualTo("1.0.0");
     }
 }

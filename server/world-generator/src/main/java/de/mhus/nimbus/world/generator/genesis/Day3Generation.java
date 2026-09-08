@@ -1,8 +1,5 @@
 package de.mhus.nimbus.world.generator.genesis;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
@@ -14,18 +11,19 @@ import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Parameters:
@@ -77,7 +75,8 @@ public class Day3Generation extends MethodBasedWorkflow {
         }
 
         WorldId wid = WorldId.of(worldId).orElseThrow();
-        var compositionDoc = documentService.findByDocumentId(wid, compositionId)
+        var compositionDoc = documentService
+                .findByDocumentId(wid, compositionId)
                 .orElseThrow(() -> new WorkflowException(null, "composition document not found: " + compositionId));
 
         // Read epoch from composition document
@@ -106,8 +105,7 @@ public class Day3Generation extends MethodBasedWorkflow {
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
                 GenesisConst.PHASES, phases,
-                GenesisConst.EPOCH, epoch
-        );
+                GenesisConst.EPOCH, epoch);
     }
 
     /**
@@ -134,10 +132,14 @@ public class Day3Generation extends MethodBasedWorkflow {
         context.updateWorkflowStatus("generateHexGrids");
         int epoch = (int) context.getParameters().get(GenesisConst.EPOCH);
         // GenerateHexGridFromCompositeJobExecutor
-        context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String)context.getParameters().get(GenesisConst.COMPOSITION_ID),
-                "epoch", String.valueOf(epoch)
-        ));
+        context.enqueueJob(
+                "generator-generate-hexgrid-from-composite",
+                "",
+                Map.of(
+                        "documentId",
+                        (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                        "epoch",
+                        String.valueOf(epoch)));
     }
 
     @OnSuccess("generateHexGrids")
@@ -150,7 +152,8 @@ public class Day3Generation extends MethodBasedWorkflow {
                 .filter(s -> !s.isBlank())
                 .map(coord -> {
                     String[] parts = coord.split(";");
-                    return new Day3ProcessingState.HexCoordinate(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                    return new Day3ProcessingState.HexCoordinate(
+                            Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
                 })
                 .collect(Collectors.toList());
 
@@ -213,8 +216,7 @@ public class Day3Generation extends MethodBasedWorkflow {
 
         // Process current item in current phase
         Day3ProcessingState.HexCoordinate coord = state.getCoordinates().get(index);
-        String gridLabel = String.format("Grid %d;%d (%d/%d)",
-                coord.getQ(), coord.getR(), index + 1, total);
+        String gridLabel = String.format("Grid %d;%d (%d/%d)", coord.getQ(), coord.getR(), index + 1, total);
 
         log.info("Processing phase '{}' for {}", phase, gridLabel);
 
@@ -224,11 +226,12 @@ public class Day3Generation extends MethodBasedWorkflow {
                 if (index == 0) {
                     String compositionId = (String) context.getParameters().get(GenesisConst.COMPOSITION_ID);
                     context.updateWorkflowStatus("createSchemaImage");
-                    context.enqueueJob("hex-grid-schema-image", "", "",
+                    context.enqueueJob(
+                            "hex-grid-schema-image",
+                            "",
+                            "",
                             "Create Schema Image",
-                            Map.of(
-                                    "compositionId", compositionId
-                            ));
+                            Map.of("compositionId", compositionId));
                 } else {
                     state.setCurrentIndex(total);
                     context.addRecord(state);
@@ -239,25 +242,36 @@ public class Day3Generation extends MethodBasedWorkflow {
                 String flatId = "genesis_" + state.getEpoch() + "_" + coord.getQ() + "_" + coord.getR();
                 // delete if exists
                 if (flatService.exists(context.getWorldId(), flatId)) {
-                    log.debug("Flat {} already exists for world {}, deleting before creation", flatId, context.getWorldId());
+                    log.debug(
+                            "Flat {} already exists for world {}, deleting before creation",
+                            flatId,
+                            context.getWorldId());
                     flatService.delete(context.getWorldId(), flatId);
                 }
                 // Store flatId in list for use in later phases
                 state.getFlatIds().set(index, flatId);
                 context.addRecord(state);
                 context.updateWorkflowStatus("createFlat");
-                context.enqueueJob("flat-create-hexgrid-empty", "", "",
+                context.enqueueJob(
+                        "flat-create-hexgrid-empty",
+                        "",
+                        "",
                         "Create " + gridLabel,
                         Map.of(
-                                "layerName", "ground",
-                                "hexQ", String.valueOf(coord.getQ()),
-                                "hexR", String.valueOf(coord.getR()),
-                                "flatId", flatId,
-                                "paletteName", "nimbus"
-                        ));
+                                "layerName",
+                                "ground",
+                                "hexQ",
+                                String.valueOf(coord.getQ()),
+                                "hexR",
+                                String.valueOf(coord.getR()),
+                                "flatId",
+                                flatId,
+                                "paletteName",
+                                "nimbus"));
             }
             case "importFlats" -> {
-                // use this instead of createAll if you want to import pre-created flats instead of generating them in this workflow
+                // use this instead of createAll if you want to import pre-created flats instead of generating them in
+                // this workflow
                 // Only execute once (at index 0), not for each grid
                 // Execute directly
                 for (int i = index; i < total; i++) {
@@ -265,7 +279,10 @@ public class Day3Generation extends MethodBasedWorkflow {
                     String flatId = "genesis_" + state.getEpoch() + "_" + c.getQ() + "_" + c.getR();
                     var flatOpt = flatService.findByWorldAndFlatId(context.getWorldId(), flatId);
                     if (flatOpt == null) {
-                        throw new WorkflowException(null, "Error checking flat existence: flatService returned null for world " + context.getWorldId() + " and flatId " + flatId);
+                        throw new WorkflowException(
+                                null,
+                                "Error checking flat existence: flatService returned null for world "
+                                        + context.getWorldId() + " and flatId " + flatId);
                     }
                     state.getFlatIds().set(i, flatId);
                 }
@@ -278,79 +295,88 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "groundAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateGround");
-                context.enqueueJob("flat-manipulate", "hex-grid", "",
+                context.enqueueJob(
+                        "flat-manipulate",
+                        "hex-grid",
+                        "",
                         "GROUND for " + gridLabel,
-                        Map.of(
-                                "flatId", flatId,
-                                "step", "GROUND"
-                        ));
+                        Map.of("flatId", flatId, "step", "GROUND"));
             }
             case "blenderAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateBlender");
-                context.enqueueJob("flat-manipulate", "hex-grid", "",
+                context.enqueueJob(
+                        "flat-manipulate",
+                        "hex-grid",
+                        "",
                         "BLENDER for " + gridLabel,
-                        Map.of(
-                                "flatId", flatId,
-                                "step", "BLENDER"
-                        ));
+                        Map.of("flatId", flatId, "step", "BLENDER"));
             }
             case "terrainAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateTerrain");
-                context.enqueueJob("flat-manipulate", "hex-grid", "",
+                context.enqueueJob(
+                        "flat-manipulate",
+                        "hex-grid",
+                        "",
                         "TERRAIN for " + gridLabel,
-                        Map.of(
-                                "flatId", flatId,
-                                "step", "TERRAIN"
-                        ));
+                        Map.of("flatId", flatId, "step", "TERRAIN"));
             }
             case "fillerAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateFiller");
-                context.enqueueJob("flat-manipulate", "hex-grid", "",
+                context.enqueueJob(
+                        "flat-manipulate",
+                        "hex-grid",
+                        "",
                         "FILLER for " + gridLabel,
-                        Map.of(
-                                "flatId", flatId,
-                                "step", "FILLER"
-                        ));
+                        Map.of("flatId", flatId, "step", "FILLER"));
             }
             case "exportAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("exportFlat");
-                context.enqueueJob("flat-export", "", "",
+                context.enqueueJob(
+                        "flat-export",
+                        "",
+                        "",
                         "Export to Layer " + gridLabel,
-                        Map.of(
-                                "flatId", flatId,
-                                "deleteAfterExport", "false"
-                        ));
+                        Map.of("flatId", flatId, "deleteAfterExport", "false"));
             }
             case "imagesAll" -> {
                 String flatId = state.getFlatIds().get(index);
-                String levelPath = String.format("map/%d_%d/%d_level.png", coord.getQ(), coord.getR(), state.getEpoch());
-                String materialPath = String.format("map/%d_%d/%d_material.png", coord.getQ(), coord.getR(), state.getEpoch());
+                String levelPath =
+                        String.format("map/%d_%d/%d_level.png", coord.getQ(), coord.getR(), state.getEpoch());
+                String materialPath =
+                        String.format("map/%d_%d/%d_material.png", coord.getQ(), coord.getR(), state.getEpoch());
                 context.updateWorkflowStatus("exportImages");
-                context.enqueueJob("flat-export-images", "", "",
+                context.enqueueJob(
+                        "flat-export-images",
+                        "",
+                        "",
                         "Export Images " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
                                 "levelPath", levelPath,
                                 "materialPath", materialPath,
-                                "ignoreEmptyMaterial", "false"
-                        ));
+                                "ignoreEmptyMaterial", "false"));
             }
             case "compositeImages" -> {
                 // Only execute once (at index 0), not for each grid
                 if (index == 0) {
                     String compositionId = (String) context.getParameters().get(GenesisConst.COMPOSITION_ID);
                     context.updateWorkflowStatus("createCompositeImages");
-                    context.enqueueJob("hex-grid-composite-image", "", "",
+                    context.enqueueJob(
+                            "hex-grid-composite-image",
+                            "",
+                            "",
                             "Create Composite Images",
                             Map.of(
-                                    "compositionId", compositionId,
-                                    "flatIdSuffix", "genesis_" + state.getEpoch() + "_",
-                                    "drawGridLines", "false"
-                            ));
+                                    "compositionId",
+                                    compositionId,
+                                    "flatIdSuffix",
+                                    "genesis_" + state.getEpoch() + "_",
+                                    "drawGridLines",
+                                    "false"));
                 } else {
                     // Skip remaining indices - composite images only created once
                     state.setCurrentIndex(total);
@@ -360,18 +386,21 @@ public class Day3Generation extends MethodBasedWorkflow {
             }
             case "structuresAll" -> {
                 // Only place structures for grids that have g_village defined
-                var hexPos = HexVector2.builder().q(coord.getQ()).r(coord.getR()).build();
+                var hexPos =
+                        HexVector2.builder().q(coord.getQ()).r(coord.getR()).build();
                 var hexGridOpt = hexGridService.findByWorldIdAndPosition(context.getWorldId(), hexPos);
-                if (hexGridOpt.isPresent() && !Strings.isBlank(hexGridOpt.get().getParameters().get("g_village"))) {
+                if (hexGridOpt.isPresent()
+                        && !Strings.isBlank(hexGridOpt.get().getParameters().get("g_village"))) {
                     context.updateWorkflowStatus("placeStructures");
                     context.enqueueJob(
-                            HexGridStructurePlacerJobExecutor.EXECUTOR_NAME, "", "",
+                            HexGridStructurePlacerJobExecutor.EXECUTOR_NAME,
+                            "",
+                            "",
                             "Structures for " + gridLabel,
                             Map.of(
                                     "hexQ", String.valueOf(coord.getQ()),
                                     "hexR", String.valueOf(coord.getR()),
-                                    "epoch", String.valueOf(state.getEpoch())
-                            ));
+                                    "epoch", String.valueOf(state.getEpoch())));
                 } else {
                     log.info("Skipping structures for {} - no g_village defined", gridLabel);
                     state.setCurrentIndex(index + 1);
@@ -384,11 +413,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 if (index == 0) {
                     context.updateWorkflowStatus("waitForDirtyChunks");
                     context.enqueueJob(
-                            WaitForDirtyChunksJobExecutor.EXECUTOR_NAME,
-                            "", null,
-                            "Wait for Dirty Chunks",
-                            Map.of()
-                    );
+                            WaitForDirtyChunksJobExecutor.EXECUTOR_NAME, "", null, "Wait for Dirty Chunks", Map.of());
                 } else {
                     state.setCurrentIndex(total);
                     context.addRecord(state);
@@ -459,8 +484,12 @@ public class Day3Generation extends MethodBasedWorkflow {
 
     private void advanceToNextInPhase(WorkflowContext context) throws WorkflowException {
         Day3ProcessingState state = getProcessingState(context);
-        log.info("Completed {} for index {}/{} in phase '{}'",
-                state.getCurrentPhase(), state.getCurrentIndex() + 1, state.getCoordinates().size(), state.getCurrentPhase());
+        log.info(
+                "Completed {} for index {}/{} in phase '{}'",
+                state.getCurrentPhase(),
+                state.getCurrentIndex() + 1,
+                state.getCoordinates().size(),
+                state.getCurrentPhase());
 
         // Move to next index
         state.setCurrentIndex(state.getCurrentIndex() + 1);
@@ -476,7 +505,5 @@ public class Day3Generation extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
-    }
+    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
 }
-

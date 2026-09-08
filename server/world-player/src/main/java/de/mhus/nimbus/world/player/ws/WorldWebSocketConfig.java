@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.player.ws;
 
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-
-import java.util.List;
 
 /**
  * WebSocket configuration for the world player connection.
@@ -35,7 +34,6 @@ public class WorldWebSocketConfig implements WebSocketConfigurer {
         String[] originPatterns = (allowedOrigins != null && !allowedOrigins.isEmpty())
                 ? allowedOrigins.toArray(new String[0])
                 : new String[] {"http://localhost:[*]", "https://localhost:[*]"};
-        registry.addHandler(handler, "/player/ws/world/*")
-                .setAllowedOriginPatterns(originPatterns);
+        registry.addHandler(handler, "/player/ws/world/*").setAllowedOriginPatterns(originPatterns);
     }
 }

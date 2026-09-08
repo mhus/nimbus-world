@@ -2,16 +2,15 @@ package de.mhus.nimbus.world.ai.tool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
-import org.springframework.stereotype.Service;
-
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.springframework.stereotype.Service;
 
 /**
  * AI Tool for downloading and extracting text content from web URLs.
@@ -32,9 +31,7 @@ public class WebRequestToolService {
     private static final int TIMEOUT_MS = 12000;
 
     @Tool("Download a web page and return its text content")
-    public String fetchWebPage(
-            @P("The URL to download") String url
-    ) {
+    public String fetchWebPage(@P("The URL to download") String url) {
         log.info("Downloading web page: {}", url);
         if (url == null || url.isBlank()) {
             return "URL is empty";
@@ -44,7 +41,8 @@ public class WebRequestToolService {
             for (int hop = 0; hop <= MAX_REDIRECTS; hop++) {
                 validateUrl(current);
                 Connection.Response response = Jsoup.connect(current)
-                        .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                        .userAgent(
+                                "Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                         .referrer("http://www.google.com")
                         .timeout(TIMEOUT_MS)
                         .followRedirects(false)
@@ -111,8 +109,10 @@ public class WebRequestToolService {
     }
 
     private boolean isInternal(InetAddress addr) {
-        if (addr.isLoopbackAddress() || addr.isAnyLocalAddress()
-                || addr.isLinkLocalAddress() || addr.isSiteLocalAddress()
+        if (addr.isLoopbackAddress()
+                || addr.isAnyLocalAddress()
+                || addr.isLinkLocalAddress()
+                || addr.isSiteLocalAddress()
                 || addr.isMulticastAddress()) {
             return true;
         }

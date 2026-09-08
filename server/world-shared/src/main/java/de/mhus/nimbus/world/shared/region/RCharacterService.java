@@ -5,6 +5,10 @@ import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.world.shared.sector.RUser;
 import de.mhus.nimbus.world.shared.sector.RUserRepository;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -12,11 +16,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Validated
@@ -28,7 +27,11 @@ public class RCharacterService {
     private final RegionCharacterSettings limitProperties;
     private final MongoTemplate mongoTemplate;
 
-    public RCharacterService(RCharacterRepository repository, RUserRepository userRepository, RegionCharacterSettings limitProperties, MongoTemplate mongoTemplate) {
+    public RCharacterService(
+            RCharacterRepository repository,
+            RUserRepository userRepository,
+            RegionCharacterSettings limitProperties,
+            MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.limitProperties = limitProperties;
@@ -43,12 +46,16 @@ public class RCharacterService {
             throw new IllegalArgumentException("Character name already exists for user/region: " + name);
         }
         // Limit prüfen
-        RUser user = userRepository.findByName(username).orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = userRepository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         Integer userLimit = user.getCharacterLimitForRegion(regionId);
         int effectiveLimit = userLimit != null ? userLimit : limitProperties.getMaxPerRegion();
-        int currentCount = repository.findByUserIdAndRegionId(username, regionId).size();
+        int currentCount =
+                repository.findByUserIdAndRegionId(username, regionId).size();
         if (currentCount >= effectiveLimit) {
-            throw new IllegalStateException("Character limit exceeded for region=" + regionId + " (" + currentCount + "/" + effectiveLimit + ")");
+            throw new IllegalStateException("Character limit exceeded for region=" + regionId + " (" + currentCount
+                    + "/" + effectiveLimit + ")");
         }
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.setTitle(display != null ? display : name);
@@ -83,15 +90,16 @@ public class RCharacterService {
     }
 
     public RCharacter updateDisplay(String userId, String regionId, String name, String display) {
-        RCharacter c = repository.findByUserIdAndRegionIdAndName(userId, regionId, name)
+        RCharacter c = repository
+                .findByUserIdAndRegionIdAndName(userId, regionId, name)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found"));
         if (display != null && !display.isBlank()) c.getPublicData().setTitle(display);
         return repository.save(c);
     }
 
-
     public RCharacter setSkill(String userId, String regionId, String name, String skill, int level) {
-        RCharacter c = repository.findByUserIdAndRegionIdAndName(userId, regionId, name)
+        RCharacter c = repository
+                .findByUserIdAndRegionIdAndName(userId, regionId, name)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found"));
         c.setSkill(skill, level);
         c.touchUpdate();
@@ -99,7 +107,8 @@ public class RCharacterService {
     }
 
     public RCharacter incrementSkill(String userId, String regionId, String name, String skill, int delta) {
-        RCharacter c = repository.findByUserIdAndRegionIdAndName(userId, regionId, name)
+        RCharacter c = repository
+                .findByUserIdAndRegionIdAndName(userId, regionId, name)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found"));
         c.incrementSkill(skill, delta);
         c.touchUpdate();
@@ -107,7 +116,8 @@ public class RCharacterService {
     }
 
     public void deleteCharacter(String userId, String regionId, String name) {
-        RCharacter c = repository.findByUserIdAndRegionIdAndName(userId, regionId, name)
+        RCharacter c = repository
+                .findByUserIdAndRegionIdAndName(userId, regionId, name)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found"));
         repository.delete(c);
     }
@@ -128,8 +138,10 @@ public class RCharacterService {
      * @return true if the update was applied (item was in backpack and character exists)
      */
     public boolean equipItem(String characterId, String itemId, WEARABLE_SLOT slot, String oldItemId) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("backpack.itemIds." + itemId).gte(1));
+        Query query = new Query(Criteria.where("id")
+                .is(characterId)
+                .and("backpack.itemIds." + itemId)
+                .gte(1));
 
         Update update = new Update()
                 .set("backpack.wearingItemIds." + slot.name(), itemId)
@@ -144,17 +156,21 @@ public class RCharacterService {
 
         if (result.getModifiedCount() > 0) {
             // Cleanup: remove item key if count dropped to 0
-            Query cleanupQuery = new Query(Criteria.where("id").is(characterId)
-                    .and("backpack.itemIds." + itemId).lte(0));
-            Update cleanupUpdate = new Update()
-                    .unset("backpack.itemIds." + itemId)
-                    .set("modifiedAt", Instant.now());
+            Query cleanupQuery = new Query(Criteria.where("id")
+                    .is(characterId)
+                    .and("backpack.itemIds." + itemId)
+                    .lte(0));
+            Update cleanupUpdate =
+                    new Update().unset("backpack.itemIds." + itemId).set("modifiedAt", Instant.now());
             mongoTemplate.updateFirst(cleanupQuery, cleanupUpdate, RCharacter.class);
             return true;
         }
 
-        log.warn("equipItem failed: characterId={}, itemId={}, slot={} - item not in backpack or character not found",
-                characterId, itemId, slot);
+        log.warn(
+                "equipItem failed: characterId={}, itemId={}, slot={} - item not in backpack or character not found",
+                characterId,
+                itemId,
+                slot);
         return false;
     }
 
@@ -167,8 +183,10 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean unequipItem(String characterId, WEARABLE_SLOT slot, String itemId) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("backpack.wearingItemIds." + slot.name()).is(itemId));
+        Query query = new Query(Criteria.where("id")
+                .is(characterId)
+                .and("backpack.wearingItemIds." + slot.name())
+                .is(itemId));
 
         Update update = new Update()
                 .unset("backpack.wearingItemIds." + slot.name())
@@ -181,8 +199,11 @@ public class RCharacterService {
             return true;
         }
 
-        log.warn("unequipItem failed: characterId={}, slot={}, itemId={} - slot empty or item mismatch",
-                characterId, slot, itemId);
+        log.warn(
+                "unequipItem failed: characterId={}, slot={}, itemId={} - slot empty or item mismatch",
+                characterId,
+                slot,
+                itemId);
         return false;
     }
 
@@ -197,9 +218,8 @@ public class RCharacterService {
     public boolean assignShortcut(String characterId, String slotKey, ShortcutDefinition shortcut) {
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .set("publicData.shortcuts." + slotKey, shortcut)
-                .set("modifiedAt", Instant.now());
+        Update update =
+                new Update().set("publicData.shortcuts." + slotKey, shortcut).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -219,12 +239,12 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean clearShortcut(String characterId, String slotKey) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("publicData.shortcuts." + slotKey).exists(true));
+        Query query = new Query(Criteria.where("id")
+                .is(characterId)
+                .and("publicData.shortcuts." + slotKey)
+                .exists(true));
 
-        Update update = new Update()
-                .unset("publicData.shortcuts." + slotKey)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().unset("publicData.shortcuts." + slotKey).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -247,9 +267,7 @@ public class RCharacterService {
     public boolean addBackpackItem(String characterId, String itemId, int amount) {
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .inc("backpack.itemIds." + itemId, amount)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("backpack.itemIds." + itemId, amount).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -272,28 +290,32 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean removeBackpackItem(String characterId, String itemId, int amount) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("backpack.itemIds." + itemId).gte(amount));
+        Query query = new Query(Criteria.where("id")
+                .is(characterId)
+                .and("backpack.itemIds." + itemId)
+                .gte(amount));
 
-        Update update = new Update()
-                .inc("backpack.itemIds." + itemId, -amount)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("backpack.itemIds." + itemId, -amount).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
         if (result.getModifiedCount() > 0) {
             // Cleanup: remove item key if count dropped to 0
-            Query cleanupQuery = new Query(Criteria.where("id").is(characterId)
-                    .and("backpack.itemIds." + itemId).lte(0));
-            Update cleanupUpdate = new Update()
-                    .unset("backpack.itemIds." + itemId)
-                    .set("modifiedAt", Instant.now());
+            Query cleanupQuery = new Query(Criteria.where("id")
+                    .is(characterId)
+                    .and("backpack.itemIds." + itemId)
+                    .lte(0));
+            Update cleanupUpdate =
+                    new Update().unset("backpack.itemIds." + itemId).set("modifiedAt", Instant.now());
             mongoTemplate.updateFirst(cleanupQuery, cleanupUpdate, RCharacter.class);
             return true;
         }
 
-        log.warn("removeBackpackItem failed: characterId={}, itemId={}, amount={} - insufficient quantity or not found",
-                characterId, itemId, amount);
+        log.warn(
+                "removeBackpackItem failed: characterId={}, itemId={}, amount={} - insufficient quantity or not found",
+                characterId,
+                itemId,
+                amount);
         return false;
     }
 
@@ -308,9 +330,7 @@ public class RCharacterService {
     public boolean setSkillAtomic(String characterId, String skill, int level) {
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .set("skills." + skill, Math.max(0, level))
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("skills." + skill, Math.max(0, level)).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -334,20 +354,18 @@ public class RCharacterService {
     public boolean incrementSkillAtomic(String characterId, String skill, int delta) {
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .inc("skills." + skill, delta)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("skills." + skill, delta).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
         if (result.getModifiedCount() > 0) {
             // Clamp to 0: if value went negative, set to 0
             if (delta < 0) {
-                Query clampQuery = new Query(Criteria.where("id").is(characterId)
-                        .and("skills." + skill).lt(0));
-                Update clampUpdate = new Update()
-                        .set("skills." + skill, 0)
-                        .set("modifiedAt", Instant.now());
+                Query clampQuery = new Query(Criteria.where("id")
+                        .is(characterId)
+                        .and("skills." + skill)
+                        .lt(0));
+                Update clampUpdate = new Update().set("skills." + skill, 0).set("modifiedAt", Instant.now());
                 mongoTemplate.updateFirst(clampQuery, clampUpdate, RCharacter.class);
             }
             return true;
@@ -365,12 +383,10 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean removeSkillAtomic(String characterId, String skill) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("skills." + skill).exists(true));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("skills." + skill).exists(true));
 
-        Update update = new Update()
-                .unset("skills." + skill)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().unset("skills." + skill).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -396,27 +412,26 @@ public class RCharacterService {
         if (delta <= 0) return false;
 
         // First ensure the key exists with default 1.0 if missing
-        Query initQuery = new Query(Criteria.where("id").is(characterId)
-                .and("constitution." + category).exists(false));
-        Update initUpdate = new Update()
-                .set("constitution." + category, 1.0)
-                .set("modifiedAt", Instant.now());
+        Query initQuery = new Query(Criteria.where("id")
+                .is(characterId)
+                .and("constitution." + category)
+                .exists(false));
+        Update initUpdate = new Update().set("constitution." + category, 1.0).set("modifiedAt", Instant.now());
         mongoTemplate.updateFirst(initQuery, initUpdate, RCharacter.class);
 
         // Now atomically decrement
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .inc("constitution." + category, -delta)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("constitution." + category, -delta).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
         if (result.getModifiedCount() > 0) {
             // Clamp to 0
-            Query clampQuery = new Query(Criteria.where("id").is(characterId)
-                    .and("constitution." + category).lt(0));
-            Update clampUpdate = new Update()
-                    .set("constitution." + category, 0.0)
-                    .set("modifiedAt", Instant.now());
+            Query clampQuery = new Query(Criteria.where("id")
+                    .is(characterId)
+                    .and("constitution." + category)
+                    .lt(0));
+            Update clampUpdate =
+                    new Update().set("constitution." + category, 0.0).set("modifiedAt", Instant.now());
             mongoTemplate.updateFirst(clampQuery, clampUpdate, RCharacter.class);
             return true;
         }
@@ -435,9 +450,7 @@ public class RCharacterService {
     public boolean setConstitution(String characterId, String category, double value) {
         value = Math.max(0.0, Math.min(1.0, value));
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .set("constitution." + category, value)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("constitution." + category, value).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -479,15 +492,12 @@ public class RCharacterService {
 
         Query query;
         if (amount < 0) {
-            query = new Query(Criteria.where("id").is(characterId)
-                    .and("silver").gte(-amount));
+            query = new Query(Criteria.where("id").is(characterId).and("silver").gte(-amount));
         } else {
             query = new Query(Criteria.where("id").is(characterId));
         }
 
-        Update update = new Update()
-                .inc("silver", amount)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("silver", amount).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -520,7 +530,8 @@ public class RCharacterService {
      * @param skillDefinitions list of skill definitions to calculate invested points
      * @return total skill points (invested + available)
      */
-    public int calculateTotalSkillPoints(RCharacter character, java.util.function.Function<String, int[]> skillStartLookup) {
+    public int calculateTotalSkillPoints(
+            RCharacter character, java.util.function.Function<String, int[]> skillStartLookup) {
         int invested = 0;
         for (var entry : character.getSkills().entrySet()) {
             int[] startMinMax = skillStartLookup.apply(entry.getKey());
@@ -543,8 +554,8 @@ public class RCharacterService {
     public boolean convertExperienceToSkillPoint(String characterId, long experienceToNext) {
         if (experienceToNext <= 0) experienceToNext = 100;
 
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("skillExperience").gte(experienceToNext));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("skillExperience").gte(experienceToNext));
 
         Update update = new Update()
                 .inc("skillPoints", 1)
@@ -566,9 +577,7 @@ public class RCharacterService {
         if (points <= 0) return false;
 
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .inc("skillPoints", points)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("skillPoints", points).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -585,9 +594,7 @@ public class RCharacterService {
         if (experience <= 0) return false;
 
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .inc("skillExperience", experience)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("skillExperience", experience).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -602,13 +609,11 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean spendSkillPoint(String characterId, String skill) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("skillPoints").gte(1));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("skillPoints").gte(1));
 
-        Update update = new Update()
-                .inc("skillPoints", -1)
-                .inc("skills." + skill, 1)
-                .set("modifiedAt", Instant.now());
+        Update update =
+                new Update().inc("skillPoints", -1).inc("skills." + skill, 1).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -618,144 +623,164 @@ public class RCharacterService {
         var stateValues = new HashMap<String, de.mhus.nimbus.generated.types.MovementStateValues>();
 
         // default state
-        stateValues.put("default", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(5)
-            .effectiveMoveSpeed(5)
-            .baseJumpSpeed(8)
-            .effectiveJumpSpeed(8)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.003)
-            .effectiveTurnSpeed(0.003)
-            .selectionRadius(5)
-            .stealthRange(8)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "default",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(5)
+                        .effectiveMoveSpeed(5)
+                        .baseJumpSpeed(8)
+                        .effectiveJumpSpeed(8)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.003)
+                        .effectiveTurnSpeed(0.003)
+                        .selectionRadius(5)
+                        .stealthRange(8)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // walk state
-        stateValues.put("walk", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(5)
-            .effectiveMoveSpeed(5)
-            .baseJumpSpeed(8)
-            .effectiveJumpSpeed(8)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.003)
-            .effectiveTurnSpeed(0.003)
-            .selectionRadius(5)
-            .stealthRange(8)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "walk",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(5)
+                        .effectiveMoveSpeed(5)
+                        .baseJumpSpeed(8)
+                        .effectiveJumpSpeed(8)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.003)
+                        .effectiveTurnSpeed(0.003)
+                        .selectionRadius(5)
+                        .stealthRange(8)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // sprint state
-        stateValues.put("sprint", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(7)
-            .effectiveMoveSpeed(7)
-            .baseJumpSpeed(8)
-            .effectiveJumpSpeed(8)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.003)
-            .effectiveTurnSpeed(0.003)
-            .selectionRadius(5)
-            .stealthRange(12)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "sprint",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(7)
+                        .effectiveMoveSpeed(7)
+                        .baseJumpSpeed(8)
+                        .effectiveJumpSpeed(8)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.003)
+                        .effectiveTurnSpeed(0.003)
+                        .selectionRadius(5)
+                        .stealthRange(12)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // crouch state
-        stateValues.put("crouch", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(1.5)
-            .effectiveMoveSpeed(1.5)
-            .baseJumpSpeed(4)
-            .effectiveJumpSpeed(4)
-            .eyeHeight(0.8)
-            .baseTurnSpeed(0.002)
-            .effectiveTurnSpeed(0.002)
-            .selectionRadius(4)
-            .stealthRange(4)
-            .distanceNotifyReduction(0.5)
-            .build());
+        stateValues.put(
+                "crouch",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(1.5)
+                        .effectiveMoveSpeed(1.5)
+                        .baseJumpSpeed(4)
+                        .effectiveJumpSpeed(4)
+                        .eyeHeight(0.8)
+                        .baseTurnSpeed(0.002)
+                        .effectiveTurnSpeed(0.002)
+                        .selectionRadius(4)
+                        .stealthRange(4)
+                        .distanceNotifyReduction(0.5)
+                        .build());
 
         // swim state
-        stateValues.put("swim", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(3)
-            .effectiveMoveSpeed(3)
-            .baseJumpSpeed(4)
-            .effectiveJumpSpeed(4)
-            .eyeHeight(1.4)
-            .baseTurnSpeed(0.002)
-            .effectiveTurnSpeed(0.002)
-            .selectionRadius(4)
-            .stealthRange(6)
-            .distanceNotifyReduction(0.3)
-            .build());
+        stateValues.put(
+                "swim",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(3)
+                        .effectiveMoveSpeed(3)
+                        .baseJumpSpeed(4)
+                        .effectiveJumpSpeed(4)
+                        .eyeHeight(1.4)
+                        .baseTurnSpeed(0.002)
+                        .effectiveTurnSpeed(0.002)
+                        .selectionRadius(4)
+                        .stealthRange(6)
+                        .distanceNotifyReduction(0.3)
+                        .build());
 
         // climb state
-        stateValues.put("climb", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(2.5)
-            .effectiveMoveSpeed(2.5)
-            .baseJumpSpeed(0)
-            .effectiveJumpSpeed(0)
-            .eyeHeight(1.5)
-            .baseTurnSpeed(0.002)
-            .effectiveTurnSpeed(0.002)
-            .selectionRadius(4)
-            .stealthRange(6)
-            .distanceNotifyReduction(0.2)
-            .build());
+        stateValues.put(
+                "climb",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(2.5)
+                        .effectiveMoveSpeed(2.5)
+                        .baseJumpSpeed(0)
+                        .effectiveJumpSpeed(0)
+                        .eyeHeight(1.5)
+                        .baseTurnSpeed(0.002)
+                        .effectiveTurnSpeed(0.002)
+                        .selectionRadius(4)
+                        .stealthRange(6)
+                        .distanceNotifyReduction(0.2)
+                        .build());
 
         // free_fly state
-        stateValues.put("free_fly", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(10)
-            .effectiveMoveSpeed(10)
-            .baseJumpSpeed(0)
-            .effectiveJumpSpeed(0)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.004)
-            .effectiveTurnSpeed(0.004)
-            .selectionRadius(8)
-            .stealthRange(15)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "free_fly",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(10)
+                        .effectiveMoveSpeed(10)
+                        .baseJumpSpeed(0)
+                        .effectiveJumpSpeed(0)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.004)
+                        .effectiveTurnSpeed(0.004)
+                        .selectionRadius(8)
+                        .stealthRange(15)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // fly state
-        stateValues.put("fly", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(10)
-            .effectiveMoveSpeed(10)
-            .baseJumpSpeed(0)
-            .effectiveJumpSpeed(0)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.004)
-            .effectiveTurnSpeed(0.004)
-            .selectionRadius(8)
-            .stealthRange(15)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "fly",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(10)
+                        .effectiveMoveSpeed(10)
+                        .baseJumpSpeed(0)
+                        .effectiveJumpSpeed(0)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.004)
+                        .effectiveTurnSpeed(0.004)
+                        .selectionRadius(8)
+                        .stealthRange(15)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // teleport state
-        stateValues.put("teleport", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(20)
-            .effectiveMoveSpeed(20)
-            .baseJumpSpeed(0)
-            .effectiveJumpSpeed(0)
-            .eyeHeight(1.6)
-            .baseTurnSpeed(0.005)
-            .effectiveTurnSpeed(0.005)
-            .selectionRadius(10)
-            .stealthRange(20)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "teleport",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(20)
+                        .effectiveMoveSpeed(20)
+                        .baseJumpSpeed(0)
+                        .effectiveJumpSpeed(0)
+                        .eyeHeight(1.6)
+                        .baseTurnSpeed(0.005)
+                        .effectiveTurnSpeed(0.005)
+                        .selectionRadius(10)
+                        .stealthRange(20)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         // riding state
-        stateValues.put("riding", de.mhus.nimbus.generated.types.MovementStateValues.builder()
-            .baseMoveSpeed(8)
-            .effectiveMoveSpeed(8)
-            .baseJumpSpeed(10)
-            .effectiveJumpSpeed(10)
-            .eyeHeight(2)
-            .baseTurnSpeed(0.003)
-            .effectiveTurnSpeed(0.003)
-            .selectionRadius(6)
-            .stealthRange(10)
-            .distanceNotifyReduction(0)
-            .build());
+        stateValues.put(
+                "riding",
+                de.mhus.nimbus.generated.types.MovementStateValues.builder()
+                        .baseMoveSpeed(8)
+                        .effectiveMoveSpeed(8)
+                        .baseJumpSpeed(10)
+                        .effectiveJumpSpeed(10)
+                        .eyeHeight(2)
+                        .baseTurnSpeed(0.003)
+                        .effectiveTurnSpeed(0.003)
+                        .selectionRadius(6)
+                        .stealthRange(10)
+                        .distanceNotifyReduction(0)
+                        .build());
 
         playerInfo.setStateValues(stateValues);
     }
@@ -770,12 +795,10 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean learnSpellWord(String characterId, String word) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("spellWords." + word).exists(false));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("spellWords." + word).exists(false));
 
-        Update update = new Update()
-                .set("spellWords." + word, 0)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("spellWords." + word, 0).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -792,12 +815,10 @@ public class RCharacterService {
     public boolean addSpellWordXp(String characterId, String word, int xp) {
         if (xp <= 0) return false;
 
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("spellWords." + word).exists(true));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("spellWords." + word).exists(true));
 
-        Update update = new Update()
-                .inc("spellWords." + word, xp)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("spellWords." + word, xp).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -805,8 +826,11 @@ public class RCharacterService {
             return true;
         }
 
-        log.warn("addSpellWordXp failed: characterId={}, word={}, xp={} - word not learned or character not found",
-                characterId, word, xp);
+        log.warn(
+                "addSpellWordXp failed: characterId={}, word={}, xp={} - word not learned or character not found",
+                characterId,
+                word,
+                xp);
         return false;
     }
 
@@ -821,9 +845,7 @@ public class RCharacterService {
     public boolean setSpellWordXp(String characterId, String word, int xp) {
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .set("spellWords." + word, Math.max(0, xp))
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("spellWords." + word, Math.max(0, xp)).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -837,12 +859,10 @@ public class RCharacterService {
      * @return true if the update was applied
      */
     public boolean removeSpellWord(String characterId, String word) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("spellWords." + word).exists(true));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("spellWords." + word).exists(true));
 
-        Update update = new Update()
-                .unset("spellWords." + word)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().unset("spellWords." + word).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
@@ -874,9 +894,7 @@ public class RCharacterService {
 
         Query query = new Query(Criteria.where("id").is(characterId));
 
-        Update update = new Update()
-                .inc("reputation." + faction, delta)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().inc("reputation." + faction, delta).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
 
@@ -893,9 +911,7 @@ public class RCharacterService {
      */
     public boolean updateTitle(String characterId, String title) {
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .set("publicData.title", title)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("publicData.title", title).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -905,9 +921,7 @@ public class RCharacterService {
      */
     public boolean updateGender(String characterId, String gender) {
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .set("publicData.gender", gender)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().set("publicData.gender", gender).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -917,9 +931,8 @@ public class RCharacterService {
      */
     public boolean updatePortraitPath(String characterId, String portraitPath) {
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .set("publicData.portraitPath", portraitPath)
-                .set("modifiedAt", Instant.now());
+        Update update =
+                new Update().set("publicData.portraitPath", portraitPath).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -958,9 +971,7 @@ public class RCharacterService {
      */
     public boolean blockPlayer(String characterId, String entityId) {
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .addToSet("blockedPlayers", entityId)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().addToSet("blockedPlayers", entityId).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -974,9 +985,7 @@ public class RCharacterService {
      */
     public boolean unblockPlayer(String characterId, String entityId) {
         Query query = new Query(Criteria.where("id").is(characterId));
-        Update update = new Update()
-                .pull("blockedPlayers", entityId)
-                .set("modifiedAt", Instant.now());
+        Update update = new Update().pull("blockedPlayers", entityId).set("modifiedAt", Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
         return result.getModifiedCount() > 0;
     }
@@ -989,8 +998,8 @@ public class RCharacterService {
      * @return true if the player is blocked
      */
     public boolean isPlayerBlocked(String characterId, String entityId) {
-        Query query = new Query(Criteria.where("id").is(characterId)
-                .and("blockedPlayers").is(entityId));
+        Query query = new Query(
+                Criteria.where("id").is(characterId).and("blockedPlayers").is(entityId));
         return mongoTemplate.exists(query, RCharacter.class);
     }
 }

@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.service.ClientService;
-import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.gameplay.VitalType;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
-
-import java.util.List;
 import jakarta.annotation.PostConstruct;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Listens for vital delta messages targeting players on this pod.
@@ -68,7 +67,11 @@ public class VitalDeltaBroadcastListener {
             }
 
             String type = msg.getType();
-            log.debug("Received vital delta: type={}, target={}, source={}", type, msg.getTargetEntityId(), msg.getSourceEntityId());
+            log.debug(
+                    "Received vital delta: type={}, target={}, source={}",
+                    type,
+                    msg.getTargetEntityId(),
+                    msg.getSourceEntityId());
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 adventureGameplay.handleIncomingAttack(targetSession, data, msg);
             } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT.equals(type)) {
@@ -84,17 +87,19 @@ public class VitalDeltaBroadcastListener {
         }
     }
 
-    private void handleAttackResult(PlayerSession session, AdventureGameplay adventureGameplay, VitalDeltaBroadcastMessage msg) {
+    private void handleAttackResult(
+            PlayerSession session, AdventureGameplay adventureGameplay, VitalDeltaBroadcastMessage msg) {
         boolean hit = msg.getDelta() != 0;
-        String texture = hit
-                ? "n:textures/actions/attack_hit.png"
-                : "n:textures/actions/attack_blocked.png";
+        String texture = hit ? "n:textures/actions/attack_hit.png" : "n:textures/actions/attack_blocked.png";
         clientService.sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
 
         // Play NPC hit sound at position (if provided in message)
         if (msg.getSoundUrl() != null && !msg.getSoundUrl().isBlank()) {
-            clientService.sendCommand(session, "playSoundAtPosition",
-                    List.of(msg.getSoundUrl(),
+            clientService.sendCommand(
+                    session,
+                    "playSoundAtPosition",
+                    List.of(
+                            msg.getSoundUrl(),
                             String.valueOf((int) msg.getSoundX()),
                             String.valueOf((int) msg.getSoundY()),
                             String.valueOf((int) msg.getSoundZ())));
@@ -105,8 +110,12 @@ public class VitalDeltaBroadcastListener {
             adventureGameplay.addSkillExperienceForSession(session);
         }
 
-        log.debug("Attack result for {}: {} (damage={}, sound={})",
-                session.getEntityId(), hit ? "HIT" : "BLOCKED", msg.getDelta(), msg.getSoundUrl());
+        log.debug(
+                "Attack result for {}: {} (damage={}, sound={})",
+                session.getEntityId(),
+                hit ? "HIT" : "BLOCKED",
+                msg.getDelta(),
+                msg.getSoundUrl());
     }
 
     private void handleDelta(VitalDeltaBroadcastMessage msg, AdventureData data) {
@@ -132,8 +141,12 @@ public class VitalDeltaBroadcastListener {
         vital.setCurrent(vital.getCurrent() + msg.getDelta());
         vital.clamp();
 
-        log.debug("Applied vital delta to {}: {} {} (from {}), now {}",
-                msg.getTargetEntityId(), vitalType, msg.getDelta(),
-                msg.getSourceEntityId(), vital.getCurrent());
+        log.debug(
+                "Applied vital delta to {}: {} {} (from {}), now {}",
+                msg.getTargetEntityId(),
+                vitalType,
+                msg.getDelta(),
+                msg.getSourceEntityId(),
+                vital.getCurrent());
     }
 }

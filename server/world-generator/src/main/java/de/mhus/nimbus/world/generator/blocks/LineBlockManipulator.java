@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Line Block Manipulator - creates a line between two points.
@@ -63,11 +63,11 @@ public class LineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a line between two points. " +
-                "Parameters (Variant 1): from {x,y,z}, to {x,y,z}, blockType (optional). " +
-                "Parameters (Variant 2): position {x,y,z}, width, height, depth, blockType (optional). " +
-                "Example: {\"line\": {\"from\": {\"x\": 0, \"y\": 0, \"z\": 0}, \"to\": {\"x\": 10, \"y\": 5, \"z\": 0}}} " +
-                "or {\"line\": {\"position\": {\"x\": 0, \"y\": 0, \"z\": 0}, \"width\": 10, \"height\": 5}}";
+        return "Creates a line between two points. "
+                + "Parameters (Variant 1): from {x,y,z}, to {x,y,z}, blockType (optional). "
+                + "Parameters (Variant 2): position {x,y,z}, width, height, depth, blockType (optional). "
+                + "Example: {\"line\": {\"from\": {\"x\": 0, \"y\": 0, \"z\": 0}, \"to\": {\"x\": 10, \"y\": 5, \"z\": 0}}} "
+                + "or {\"line\": {\"position\": {\"x\": 0, \"y\": 0, \"z\": 0}, \"width\": 10, \"height\": 5}}";
     }
 
     @Override
@@ -132,12 +132,21 @@ public class LineBlockManipulator implements BlockManipulator {
             y2 = y1 + height;
             z2 = z1 + depth;
 
-            log.debug("Calculated line from position: from=({},{},{}), to=({},{},{}), dimensions=({},{},{})",
-                    x1, y1, z1, x2, y2, z2, width, height, depth);
+            log.debug(
+                    "Calculated line from position: from=({},{},{}), to=({},{},{}), dimensions=({},{},{})",
+                    x1,
+                    y1,
+                    z1,
+                    x2,
+                    y2,
+                    z2,
+                    width,
+                    height,
+                    depth);
 
         } else {
-            return ManipulatorResult.error("Missing required parameters. " +
-                    "Use either 'from' + 'to' or 'position' + dimensions (width/height/depth)");
+            return ManipulatorResult.error("Missing required parameters. "
+                    + "Use either 'from' + 'to' or 'position' + dimensions (width/height/depth)");
         }
 
         // Extract blockType
@@ -162,8 +171,7 @@ public class LineBlockManipulator implements BlockManipulator {
         }
 
         // Generate line
-        log.info("Generating line: from=({},{},{}), to=({},{},{}), blockType={}",
-                x1, y1, z1, x2, y2, z2, blockType);
+        log.info("Generating line: from=({},{},{}), to=({},{},{}), blockType={}", x1, y1, z1, x2, y2, z2, blockType);
 
         painter.line(x1, y1, z1, x2, y2, z2);
 
@@ -174,9 +182,10 @@ public class LineBlockManipulator implements BlockManipulator {
         int dx = Math.abs(x2 - x1);
         int dy = Math.abs(y2 - y1);
         int dz = Math.abs(z2 - z1);
-        int distance = (int) Math.sqrt(dx*dx + dy*dy + dz*dz);
+        int distance = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        String message = String.format("Generated line: %d blocks (~%d units) from (%d,%d,%d) to (%d,%d,%d)",
+        String message = String.format(
+                "Generated line: %d blocks (~%d units) from (%d,%d,%d) to (%d,%d,%d)",
                 blockCount, distance, x1, y1, z1, x2, y2, z2);
 
         log.info(message);

@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.redis;
 
+import jakarta.annotation.PostConstruct;
+import java.net.URI;
 import lombok.Data;
 import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import jakarta.annotation.PostConstruct;
-import java.net.URI;
 
 @Data
 @ConfigurationProperties(prefix = "world.redis")

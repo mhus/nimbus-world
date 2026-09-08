@@ -3,15 +3,14 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 /**
  * Composition manipulator.
@@ -59,8 +58,7 @@ public class CompositionManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting composition manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse preset or steps
@@ -86,8 +84,7 @@ public class CompositionManipulator implements FlatManipulator {
                 Map<String, String> subParams = extractSubParameters(parameters, manipulatorName);
 
                 // Execute manipulator via service (includes validation)
-                manipulatorService.executeManipulator(
-                        manipulatorName, flat, x, z, sizeX, sizeZ, subParams);
+                manipulatorService.executeManipulator(manipulatorName, flat, x, z, sizeX, sizeZ, subParams);
 
                 successCount++;
                 log.debug("Composition step completed: {}", manipulatorName);
@@ -99,8 +96,12 @@ public class CompositionManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Composition manipulation completed: preset={}, steps={}, successful={}, failures={}",
-                preset, steps, successCount, failureCount);
+        log.info(
+                "Composition manipulation completed: preset={}, steps={}, successful={}, failures={}",
+                preset,
+                steps,
+                successCount,
+                failureCount);
     }
 
     /**

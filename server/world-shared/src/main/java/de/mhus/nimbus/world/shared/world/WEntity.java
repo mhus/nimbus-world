@@ -5,6 +5,11 @@ import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,12 +21,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * MongoDB Entity for Entity instances in the world.
  * Wraps generated Entity DTO in 'publicData' field.
@@ -30,8 +29,8 @@ import java.util.Set;
 @Document(collection = "w_entities")
 @ActualSchemaVersion("1.0.1")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
+    @CompoundIndex(name = "worldId_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
+    @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
 @Builder

@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.player.session.PlayerSession;
-
 import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 public interface Gameplay {
 
@@ -27,7 +26,16 @@ public interface Gameplay {
      * @param shortcutKey
      * @param params
      */
-    void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params);
+    void onBlockInteraction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String userAction,
+            String shortcutKey,
+            JsonNode params);
 
     /**
      * If the shortcut key is specified, the shortcut item action will be executed on the block.
@@ -44,7 +52,16 @@ public interface Gameplay {
      * @param shortcutKey
      * @param params
      */
-    void onItemInteraction(PlayerSession session, int x, int y, int z, ItemBlockRef itemRef, String groupId, String userAction, String shortcutKey, JsonNode params);
+    void onItemInteraction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            ItemBlockRef itemRef,
+            String groupId,
+            String userAction,
+            String shortcutKey,
+            JsonNode params);
 
     /**
      * Session owner 'interacts' with another player (Space-Key or A-Button on X-Box).
@@ -58,7 +75,13 @@ public interface Gameplay {
      * @param timestamp
      * @param params
      */
-    void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
+    void onPlayerInteraction(
+            PlayerSession session,
+            String entityId,
+            String userAction,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params);
 
     /**
      * Called after session is authenticated and ready.
@@ -74,7 +97,13 @@ public interface Gameplay {
      * Otherwise, session owner 'interacts' with an entity (Space-Key or A-Button on X-Box).
      * This should execute the action for 'interaction', defined on the entity's parameters on the player.
      **/
-     void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
+    void onEntityInteraction(
+            PlayerSession session,
+            String entityId,
+            String userAction,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params);
 
     /**
      * The item action will be executed on the player.

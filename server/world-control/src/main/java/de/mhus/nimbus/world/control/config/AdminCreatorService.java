@@ -12,13 +12,12 @@ import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import jakarta.annotation.PostConstruct;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -38,7 +37,8 @@ public class AdminCreatorService {
     @PostConstruct
     public void init() {
         settingEnabled = settingsService.getBoolean("control.admin.create.enabled", true);
-        // don't change this as respect for the original creator of the admin user, but of course it can be changed via settings
+        // don't change this as respect for the original creator of the admin user, but of course it can be changed via
+        // settings
         settingAdminUsername = settingsService.getString("control.admin.create.username", "mhus");
         settingAdminEmail = settingsService.getString("control.admin.create.email", "j3sus@mhus.de");
         settingCharacterName = settingsService.getString("control.admin.create.characterName", "j3sus");
@@ -50,7 +50,8 @@ public class AdminCreatorService {
             return;
         }
         try {
-            Thread.sleep((long)(Math.random() * 60000.0)); // add random delay to avoid multiple instances creating admin at the same time
+            Thread.sleep((long) (Math.random()
+                    * 60000.0)); // add random delay to avoid multiple instances creating admin at the same time
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -71,7 +72,10 @@ public class AdminCreatorService {
             }
             return;
         }
-        log.debug("Admin user '{}' not found, creating it with email '{}'", settingAdminUsername.get(), settingAdminEmail.get());
+        log.debug(
+                "Admin user '{}' not found, creating it with email '{}'",
+                settingAdminUsername.get(),
+                settingAdminEmail.get());
         var data = new PlayerUser();
         data.setName(settingAdminUsername.get());
         data.setTitle("Admin");
@@ -88,12 +92,17 @@ public class AdminCreatorService {
     }
 
     private void checkRegion(RRegion region) {
-        var character = characterService.getCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get());
+        var character =
+                characterService.getCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get());
         if (character.isPresent()) {
             return;
         }
-        log.debug("Admin character '{}' not found in region '{}', creating it", settingCharacterName.get(), region.getName());
-        var created = characterService.createCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get(), "Admin character");
+        log.debug(
+                "Admin character '{}' not found in region '{}', creating it",
+                settingCharacterName.get(),
+                region.getName());
+        var created = characterService.createCharacter(
+                settingAdminUsername.get(), region.getName(), settingCharacterName.get(), "Admin character");
         created.getPublicData().setThirdPersonModelId("n:wizard");
         characterService.updateCharater(created);
     }
@@ -119,5 +128,4 @@ public class AdminCreatorService {
     public String getAdminUsername() {
         return settingAdminUsername.get();
     }
-
 }

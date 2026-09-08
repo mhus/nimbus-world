@@ -1,13 +1,13 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test for HexLocalUtil hex-to-cartesian coordinate conversion.
@@ -28,10 +28,13 @@ class HexLocalUtilTest {
         Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
 
         // Center should be at (0, 0) relative to grid center
-        System.out.printf("Center <0;0> divider %d: relative (%d, %d), absolute (%d, %d)%n",
-            divider, cartesian.getX(), cartesian.getZ(),
-            HEX_GRID_SIZE / 2 + cartesian.getX(),
-            HEX_GRID_SIZE / 2 + cartesian.getZ());
+        System.out.printf(
+                "Center <0;0> divider %d: relative (%d, %d), absolute (%d, %d)%n",
+                divider,
+                cartesian.getX(),
+                cartesian.getZ(),
+                HEX_GRID_SIZE / 2 + cartesian.getX(),
+                HEX_GRID_SIZE / 2 + cartesian.getZ());
 
         assertEquals(0, cartesian.getX(), 5, "Center X should be near 0");
         assertEquals(0, cartesian.getZ(), 5, "Center Z should be near 0");
@@ -46,12 +49,12 @@ class HexLocalUtilTest {
         // Ring 1 positions in flat-top offset coordinates (odd-q stagger) for even q=0:
         // Neighbors: (1,0), (1,-1), (0,1), (0,-1), (-1,0), (-1,-1)
         HexVector2[] ring1 = {
-            TypeUtil.hexVector2(0, 1),   // Top
-            TypeUtil.hexVector2(1, 0),   // Right-Top
-            TypeUtil.hexVector2(1, -1),  // Right-Bottom
-            TypeUtil.hexVector2(0, -1),  // Bottom
-            TypeUtil.hexVector2(-1, 0),  // Left-Top
-            TypeUtil.hexVector2(-1, -1)  // Left-Bottom
+            TypeUtil.hexVector2(0, 1), // Top
+            TypeUtil.hexVector2(1, 0), // Right-Top
+            TypeUtil.hexVector2(1, -1), // Right-Bottom
+            TypeUtil.hexVector2(0, -1), // Bottom
+            TypeUtil.hexVector2(-1, 0), // Left-Top
+            TypeUtil.hexVector2(-1, -1) // Left-Bottom
         };
 
         String[] directions = {"Top", "Right-Top", "Right-Bottom", "Bottom", "Left-Top", "Left-Bottom"};
@@ -60,20 +63,25 @@ class HexLocalUtilTest {
             HexLocalPosition localPos = new HexLocalPosition(ring1[i], divider, slotSize);
             Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
 
-            System.out.printf("Ring1 %s <%d;%d> divider %d: relative (%d, %d), absolute (%d, %d)%n",
-                directions[i], ring1[i].getQ(), ring1[i].getR(), divider,
-                cartesian.getX(), cartesian.getZ(),
-                HEX_GRID_SIZE / 2 + cartesian.getX(),
-                HEX_GRID_SIZE / 2 + cartesian.getZ());
+            System.out.printf(
+                    "Ring1 %s <%d;%d> divider %d: relative (%d, %d), absolute (%d, %d)%n",
+                    directions[i],
+                    ring1[i].getQ(),
+                    ring1[i].getR(),
+                    divider,
+                    cartesian.getX(),
+                    cartesian.getZ(),
+                    HEX_GRID_SIZE / 2 + cartesian.getX(),
+                    HEX_GRID_SIZE / 2 + cartesian.getZ());
 
             // Ring 1 neighbors should be at approximately slotSize distance from center
-            double distance = Math.sqrt(cartesian.getX() * cartesian.getX() +
-                                       cartesian.getZ() * cartesian.getZ());
+            double distance = Math.sqrt(cartesian.getX() * cartesian.getX() + cartesian.getZ() * cartesian.getZ());
 
             // Expected distance is roughly slotSize (with some tolerance for hex geometry)
-            assertTrue(distance > slotSize * 0.5 && distance < slotSize * 1.5,
-                String.format("Distance for %s should be roughly %d, but was %.1f",
-                    directions[i], slotSize, distance));
+            assertTrue(
+                    distance > slotSize * 0.5 && distance < slotSize * 1.5,
+                    String.format(
+                            "Distance for %s should be roughly %d, but was %.1f", directions[i], slotSize, distance));
         }
     }
 
@@ -87,10 +95,13 @@ class HexLocalUtilTest {
         HexLocalPosition localPos = new HexLocalPosition(hexPos, divider, slotSize);
         Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
 
-        System.out.printf("Center <0;0> divider %d: relative (%d, %d), absolute (%d, %d)%n",
-            divider, cartesian.getX(), cartesian.getZ(),
-            HEX_GRID_SIZE / 2 + cartesian.getX(),
-            HEX_GRID_SIZE / 2 + cartesian.getZ());
+        System.out.printf(
+                "Center <0;0> divider %d: relative (%d, %d), absolute (%d, %d)%n",
+                divider,
+                cartesian.getX(),
+                cartesian.getZ(),
+                HEX_GRID_SIZE / 2 + cartesian.getX(),
+                HEX_GRID_SIZE / 2 + cartesian.getZ());
 
         assertEquals(0, cartesian.getX(), 5, "Center X should be near 0");
         assertEquals(0, cartesian.getZ(), 5, "Center Z should be near 0");
@@ -107,18 +118,20 @@ class HexLocalUtilTest {
         HexLocalPosition localPos = new HexLocalPosition(hexPos, divider, slotSize);
         Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
 
-        System.out.printf("Ring2 <0;2> divider %d: relative (%d, %d), absolute (%d, %d)%n",
-            divider, cartesian.getX(), cartesian.getZ(),
-            HEX_GRID_SIZE / 2 + cartesian.getX(),
-            HEX_GRID_SIZE / 2 + cartesian.getZ());
+        System.out.printf(
+                "Ring2 <0;2> divider %d: relative (%d, %d), absolute (%d, %d)%n",
+                divider,
+                cartesian.getX(),
+                cartesian.getZ(),
+                HEX_GRID_SIZE / 2 + cartesian.getX(),
+                HEX_GRID_SIZE / 2 + cartesian.getZ());
 
         // Ring 2 should be roughly 2 * slotSize distance from center
-        double distance = Math.sqrt(cartesian.getX() * cartesian.getX() +
-                                   cartesian.getZ() * cartesian.getZ());
+        double distance = Math.sqrt(cartesian.getX() * cartesian.getX() + cartesian.getZ() * cartesian.getZ());
 
-        assertTrue(distance > slotSize * 1.5 && distance < slotSize * 2.5,
-            String.format("Distance for ring 2 should be roughly %d, but was %.1f",
-                slotSize * 2, distance));
+        assertTrue(
+                distance > slotSize * 1.5 && distance < slotSize * 2.5,
+                String.format("Distance for ring 2 should be roughly %d, but was %.1f", slotSize * 2, distance));
     }
 
     @Test
@@ -133,13 +146,12 @@ class HexLocalUtilTest {
             HexLocalPosition localPos = new HexLocalPosition(hexPos, divider, slotSize);
             Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
 
-            System.out.printf("Divider %d (slotSize %d): center at relative (%d, %d)%n",
-                divider, slotSize, cartesian.getX(), cartesian.getZ());
+            System.out.printf(
+                    "Divider %d (slotSize %d): center at relative (%d, %d)%n",
+                    divider, slotSize, cartesian.getX(), cartesian.getZ());
 
-            assertEquals(0, cartesian.getX(), 5,
-                String.format("Center X for divider %d should be near 0", divider));
-            assertEquals(0, cartesian.getZ(), 5,
-                String.format("Center Z for divider %d should be near 0", divider));
+            assertEquals(0, cartesian.getX(), 5, String.format("Center X for divider %d should be near 0", divider));
+            assertEquals(0, cartesian.getZ(), 5, String.format("Center Z for divider %d should be near 0", divider));
         }
     }
 
@@ -164,10 +176,8 @@ class HexLocalUtilTest {
         for (int i = 0; i < ring1.length; i++) {
             HexLocalPosition localPos = new HexLocalPosition(ring1[i], divider, slotSize);
             Vector2Int cartesian = HexLocalUtil.toHexGridLocalCenter(localPos);
-            distances[i] = Math.sqrt(cartesian.getX() * cartesian.getX() +
-                                    cartesian.getZ() * cartesian.getZ());
-            System.out.printf("Neighbor <%d;%d>: distance %.1f%n",
-                ring1[i].getQ(), ring1[i].getR(), distances[i]);
+            distances[i] = Math.sqrt(cartesian.getX() * cartesian.getX() + cartesian.getZ() * cartesian.getZ());
+            System.out.printf("Neighbor <%d;%d>: distance %.1f%n", ring1[i].getQ(), ring1[i].getR(), distances[i]);
         }
 
         // All neighbors should have roughly the same distance from center
@@ -176,9 +186,11 @@ class HexLocalUtilTest {
         avgDistance /= distances.length;
 
         for (int i = 0; i < distances.length; i++) {
-            assertEquals(avgDistance, distances[i], avgDistance * 0.1,
-                String.format("Neighbor %d distance should be close to average %.1f",
-                    i, avgDistance));
+            assertEquals(
+                    avgDistance,
+                    distances[i],
+                    avgDistance * 0.1,
+                    String.format("Neighbor %d distance should be close to average %.1f", i, avgDistance));
         }
     }
 }

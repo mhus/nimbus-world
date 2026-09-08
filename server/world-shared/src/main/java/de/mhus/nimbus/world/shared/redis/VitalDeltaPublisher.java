@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.gameplay.VitalType;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Publisher for vital delta broadcasts via Redis.
@@ -35,7 +34,8 @@ public class VitalDeltaPublisher {
      * @param delta          Delta value (negative = damage, positive = heal)
      * @param sourceEntityId Entity that caused this delta
      */
-    public void publishDelta(String worldId, String targetEntityId, VitalType vitalType, double delta, String sourceEntityId) {
+    public void publishDelta(
+            String worldId, String targetEntityId, VitalType vitalType, double delta, String sourceEntityId) {
         if (targetEntityId == null || vitalType == null || delta == 0) return;
 
         try {
@@ -51,8 +51,13 @@ public class VitalDeltaPublisher {
             String channel = targetEntityId.startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
             redisMessaging.publish(worldId, channel, json);
 
-            log.debug("Published vital delta: {} {} {} -> {} [source={}]",
-                    vitalType, delta, targetEntityId, channel, sourceEntityId);
+            log.debug(
+                    "Published vital delta: {} {} {} -> {} [source={}]",
+                    vitalType,
+                    delta,
+                    targetEntityId,
+                    channel,
+                    sourceEntityId);
 
         } catch (Exception e) {
             log.error("Failed to publish vital delta for {} in world {}", targetEntityId, worldId, e);
@@ -73,19 +78,45 @@ public class VitalDeltaPublisher {
      * @param critChance      Critical hit chance (0-1)
      * @param critMult        Critical hit multiplier (e.g. 1.5)
      */
-    public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
-                              double physDmg, double physAcc, double magDmg, double magAcc,
-                              double critChance, double critMult) {
-        publishAttack(worldId, targetEntityId, sourceEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult, null, null);
+    public void publishAttack(
+            String worldId,
+            String targetEntityId,
+            String sourceEntityId,
+            double physDmg,
+            double physAcc,
+            double magDmg,
+            double magAcc,
+            double critChance,
+            double critMult) {
+        publishAttack(
+                worldId,
+                targetEntityId,
+                sourceEntityId,
+                physDmg,
+                physAcc,
+                magDmg,
+                magAcc,
+                critChance,
+                critMult,
+                null,
+                null);
     }
 
     /**
      * Publish an attack with source session ID and weapon item ID.
      */
-    public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
-                              double physDmg, double physAcc, double magDmg, double magAcc,
-                              double critChance, double critMult,
-                              String sourceSessionId, String weaponItemId) {
+    public void publishAttack(
+            String worldId,
+            String targetEntityId,
+            String sourceEntityId,
+            double physDmg,
+            double physAcc,
+            double magDmg,
+            double magAcc,
+            double critChance,
+            double critMult,
+            String sourceSessionId,
+            String weaponItemId) {
         if (targetEntityId == null) return;
 
         try {
@@ -108,8 +139,16 @@ public class VitalDeltaPublisher {
             String channel = targetEntityId.startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
             redisMessaging.publish(worldId, channel, json);
 
-            log.debug("Published attack: {} -> {} [phys={}/{}, mag={}/{}, crit={}/{}]",
-                    sourceEntityId, targetEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+            log.debug(
+                    "Published attack: {} -> {} [phys={}/{}, mag={}/{}, crit={}/{}]",
+                    sourceEntityId,
+                    targetEntityId,
+                    physDmg,
+                    physAcc,
+                    magDmg,
+                    magAcc,
+                    critChance,
+                    critMult);
 
         } catch (Exception e) {
             log.error("Failed to publish attack for {} in world {}", targetEntityId, worldId, e);
@@ -126,17 +165,24 @@ public class VitalDeltaPublisher {
      * @param hit            True if attack hit, false if missed/blocked
      * @param damage         Actual damage dealt (0 if missed)
      */
-    public void publishAttackResult(String worldId, String attackerEntityId, String targetEntityId,
-                                     boolean hit, double damage) {
+    public void publishAttackResult(
+            String worldId, String attackerEntityId, String targetEntityId, boolean hit, double damage) {
         publishAttackResult(worldId, attackerEntityId, targetEntityId, hit, damage, null, 0, 0, 0);
     }
 
     /**
      * Publish attack result with optional sound.
      */
-    public void publishAttackResult(String worldId, String attackerEntityId, String targetEntityId,
-                                     boolean hit, double damage,
-                                     String soundUrl, double soundX, double soundY, double soundZ) {
+    public void publishAttackResult(
+            String worldId,
+            String attackerEntityId,
+            String targetEntityId,
+            boolean hit,
+            double damage,
+            String soundUrl,
+            double soundX,
+            double soundY,
+            double soundZ) {
         if (attackerEntityId == null) return;
 
         try {
@@ -148,17 +194,19 @@ public class VitalDeltaPublisher {
                     .delta(damage);
 
             if (soundUrl != null && !soundUrl.isBlank()) {
-                builder.soundUrl(soundUrl)
-                        .soundX(soundX)
-                        .soundY(soundY)
-                        .soundZ(soundZ);
+                builder.soundUrl(soundUrl).soundX(soundX).soundY(soundY).soundZ(soundZ);
             }
 
             String json = objectMapper.writeValueAsString(builder.build());
             redisMessaging.publish(worldId, CHANNEL_PLAYER, json);
 
-            log.debug("Published attack result: {} -> {} hit={} damage={} sound={}",
-                    targetEntityId, attackerEntityId, hit, damage, soundUrl);
+            log.debug(
+                    "Published attack result: {} -> {} hit={} damage={} sound={}",
+                    targetEntityId,
+                    attackerEntityId,
+                    hit,
+                    damage,
+                    soundUrl);
 
         } catch (Exception e) {
             log.error("Failed to publish attack result for {} in world {}", attackerEntityId, worldId, e);
@@ -235,8 +283,11 @@ public class VitalDeltaPublisher {
                 String channel = delta.getTargetEntityId().startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
                 redisMessaging.publish(delta.getWorldId(), channel, json);
             } catch (Exception e) {
-                log.error("Failed to publish vital delta for {} in world {}",
-                        delta.getTargetEntityId(), delta.getWorldId(), e);
+                log.error(
+                        "Failed to publish vital delta for {} in world {}",
+                        delta.getTargetEntityId(),
+                        delta.getWorldId(),
+                        e);
             }
         }
 

@@ -1,16 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles vital signs management: sending updates, stamina speed control,
@@ -39,7 +37,8 @@ public class VitalsHandler {
             for (var vital : data.getVitals().values()) {
                 // Skip vitals with sendThreshold if percentage has not yet crossed the threshold
                 // For normal vitals (regenRate >= 0): skip when above threshold (not critical yet)
-                // For inverse vitals (baseRegenRate > 0, e.g. hunger/thirst): skip when below threshold (not critical yet)
+                // For inverse vitals (baseRegenRate > 0, e.g. hunger/thirst): skip when below threshold (not critical
+                // yet)
                 if (vital.getSendThreshold() > 0) {
                     if (vital.getBaseRegenRate() > 0) {
                         // Inverse vital (hunger, thirst): value rises over time, critical = high
@@ -85,8 +84,9 @@ public class VitalsHandler {
             // Low health alert flash
             VitalValue health = data.getVital("health");
             if (health != null && health.getPercentage() > 0 && health.getPercentage() <= 0.25) {
-                gameplay.getClientService().sendCommand(session, "flashImage",
-                        List.of("n:textures/actions/health_alert.png", "500", "0.5"));
+                gameplay.getClientService()
+                        .sendCommand(
+                                session, "flashImage", List.of("n:textures/actions/health_alert.png", "500", "0.5"));
             }
 
             // Broadcast health status to other players via entity status update
@@ -126,15 +126,14 @@ public class VitalsHandler {
             gameplay.getClientService().sendCommand(session, "speed", List.of(speedStr));
 
             if (isSlowed && !wasSlowed) {
-                gameplay.getClientService().sendCommand(session, "effect",
-                        List.of("add", STAMINA_EXHAUSTED_TEXTURE));
+                gameplay.getClientService().sendCommand(session, "effect", List.of("add", STAMINA_EXHAUSTED_TEXTURE));
             } else if (!isSlowed && wasSlowed) {
-                gameplay.getClientService().sendCommand(session, "effect",
-                        List.of("remove", STAMINA_EXHAUSTED_TEXTURE));
+                gameplay.getClientService()
+                        .sendCommand(session, "effect", List.of("remove", STAMINA_EXHAUSTED_TEXTURE));
             }
 
-            log.debug("Stamina speed for {}: {}% -> speed={}", session.getEntityId(),
-                    (int)(percentage * 100), speedStr);
+            log.debug(
+                    "Stamina speed for {}: {}% -> speed={}", session.getEntityId(), (int) (percentage * 100), speedStr);
         }
     }
 

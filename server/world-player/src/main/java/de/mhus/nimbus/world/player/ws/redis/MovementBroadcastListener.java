@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Redis listener for user movement updates.
@@ -51,7 +50,9 @@ public class MovementBroadcastListener {
      * Thread-safe - can be called from multiple threads.
      */
     public void subscribeToWorld(String worldId) {
-        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId)
+                .toBaseWorldId()
+                .getId();
 
         if (subscribedWorlds.contains(baseWorldId)) {
             return;
@@ -82,7 +83,8 @@ public class MovementBroadcastListener {
             JsonNode data = objectMapper.readTree(message);
 
             // Extract metadata
-            String originatingSessionId = data.has("sessionId") ? data.get("sessionId").asText() : null;
+            String originatingSessionId =
+                    data.has("sessionId") ? data.get("sessionId").asText() : null;
             Integer cx = data.has("cx") ? data.get("cx").asInt() : null;
             Integer cz = data.has("cz") ? data.get("cz").asInt() : null;
 

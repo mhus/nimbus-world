@@ -22,14 +22,8 @@ public class GeminiSettings {
 
     @PostConstruct
     private void init() {
-        apiKey = settingsService.getString(
-                "langchain4j.gemini.apiKey",
-                null
-        );
-        flashRateLimit = settingsService.getInteger(
-                "langchain4j.gemini.flashRateLimit",
-                15
-        );
+        apiKey = settingsService.getString("langchain4j.gemini.apiKey", null);
+        flashRateLimit = settingsService.getInteger("langchain4j.gemini.flashRateLimit", 15);
     }
 
     /**

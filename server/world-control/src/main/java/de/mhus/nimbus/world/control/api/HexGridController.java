@@ -10,17 +10,16 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing WHexGrid entities.
@@ -47,8 +46,7 @@ public class HexGridController extends BaseEditorController {
             Map<String, String> parameters,
             Map<String, Map<String, String>> areas,
             Boolean enabled,
-            List<Integer> epoches
-    ) {}
+            List<Integer> epoches) {}
 
     /**
      * Response DTO for hex grid data.
@@ -63,8 +61,7 @@ public class HexGridController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            List<Integer> epoches
-    ) {}
+            List<Integer> epoches) {}
 
     private HexGridResponse toResponse(WHexGrid hexGrid) {
         return new HexGridResponse(
@@ -77,8 +74,7 @@ public class HexGridController extends BaseEditorController {
                 hexGrid.getCreatedAt(),
                 hexGrid.getUpdatedAt(),
                 hexGrid.isEnabled(),
-                hexGrid.getEpoches()
-        );
+                hexGrid.getEpoches());
     }
 
     /**
@@ -86,9 +82,7 @@ public class HexGridController extends BaseEditorController {
      * GET /control/worlds/{worldId}/hexgrid
      */
     @GetMapping
-    public ResponseEntity<?> list(
-            @PathVariable String worldId,
-            @RequestParam(required = false) Integer epoch) {
+    public ResponseEntity<?> list(@PathVariable String worldId, @RequestParam(required = false) Integer epoch) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
@@ -96,9 +90,8 @@ public class HexGridController extends BaseEditorController {
             List<WHexGrid> hexGrids = epoch != null
                     ? hexGridService.findByWorldId(worldId, epoch)
                     : hexGridService.findByWorldId(worldId);
-            List<HexGridResponse> result = hexGrids.stream()
-                    .map(this::toResponse)
-                    .toList();
+            List<HexGridResponse> result =
+                    hexGrids.stream().map(this::toResponse).toList();
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return bad(e.getMessage());
@@ -110,9 +103,7 @@ public class HexGridController extends BaseEditorController {
      * GET /control/worlds/{worldId}/hexgrid/enabled
      */
     @GetMapping("/enabled")
-    public ResponseEntity<?> listEnabled(
-            @PathVariable String worldId,
-            @RequestParam(required = false) Integer epoch) {
+    public ResponseEntity<?> listEnabled(@PathVariable String worldId, @RequestParam(required = false) Integer epoch) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
@@ -120,9 +111,8 @@ public class HexGridController extends BaseEditorController {
             List<WHexGrid> hexGrids = epoch != null
                     ? hexGridService.findAllEnabled(worldId, epoch)
                     : hexGridService.findAllEnabled(worldId);
-            List<HexGridResponse> result = hexGrids.stream()
-                    .map(this::toResponse)
-                    .toList();
+            List<HexGridResponse> result =
+                    hexGrids.stream().map(this::toResponse).toList();
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return bad(e.getMessage());
@@ -134,17 +124,15 @@ public class HexGridController extends BaseEditorController {
      * GET /control/worlds/{worldId}/hexgrid/{q}/{r}
      */
     @GetMapping("/{q}/{r}")
-    public ResponseEntity<?> get(
-            @PathVariable String worldId,
-            @PathVariable int q,
-            @PathVariable int r) {
+    public ResponseEntity<?> get(@PathVariable String worldId, @PathVariable int q, @PathVariable int r) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
         HexVector2 position = HexVector2.builder().q(q).r(r).build();
 
-        return hexGridService.findByWorldIdAndPosition(worldId, position)
+        return hexGridService
+                .findByWorldIdAndPosition(worldId, position)
                 .<ResponseEntity<?>>map(hexGrid -> ResponseEntity.ok(toResponse(hexGrid)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Hex grid not found at position: " + q + ":" + r)));
@@ -157,19 +145,16 @@ public class HexGridController extends BaseEditorController {
      * Returns the hex grid that contains the given chunk, or the calculated hex position if not found
      */
     @GetMapping("/by-chunk/{cx}/{cz}")
-    public ResponseEntity<?> getByChunk(
-            @PathVariable String worldId,
-            @PathVariable int cx,
-            @PathVariable int cz) {
+    public ResponseEntity<?> getByChunk(@PathVariable String worldId, @PathVariable int cx, @PathVariable int cz) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
         try {
             // Get world to get chunk size
-            var world = worldService.getByWorldId(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("World not found: " + worldId)
-            );
+            var world = worldService
+                    .getByWorldId(worldId)
+                    .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
             if (world.getPublicData() == null || world.getPublicData().getChunkSize() <= 0) {
                 return bad("World chunkSize not configured");
@@ -184,10 +169,8 @@ public class HexGridController extends BaseEditorController {
             // Convert flat world coordinates to hex coordinates using HexMathUtil
             Vector2Int flatPos = TypeUtil.vector2int(flatX, flatZ);
 
-            HexVector2 hexPos = HexMathUtil.flatToHex(
-                flatPos,
-                world.getPublicData().getHexGridSize()
-            );
+            HexVector2 hexPos =
+                    HexMathUtil.flatToHex(flatPos, world.getPublicData().getHexGridSize());
 
             // Try to find hex grid at this position
             var hexGridOpt = hexGridService.findByWorldIdAndPosition(worldId, hexPos);
@@ -195,18 +178,16 @@ public class HexGridController extends BaseEditorController {
             if (hexGridOpt.isPresent()) {
                 // Found hex grid
                 return ResponseEntity.ok(Map.of(
-                    "found", true,
-                    "hexGrid", toResponse(hexGridOpt.get()),
-                    "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
-                    "chunkPosition", Map.of("cx", cx, "cz", cz)
-                ));
+                        "found", true,
+                        "hexGrid", toResponse(hexGridOpt.get()),
+                        "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
+                        "chunkPosition", Map.of("cx", cx, "cz", cz)));
             } else {
                 // Not found, return calculated hex position
                 return ResponseEntity.ok(Map.of(
-                    "found", false,
-                    "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
-                    "chunkPosition", Map.of("cx", cx, "cz", cz)
-                ));
+                        "found", false,
+                        "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
+                        "chunkPosition", Map.of("cx", cx, "cz", cz)));
             }
 
         } catch (IllegalArgumentException e) {
@@ -221,9 +202,7 @@ public class HexGridController extends BaseEditorController {
      * POST /control/worlds/{worldId}/hexgrid
      */
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String worldId,
-            @RequestBody HexGridRequest request) {
+    public ResponseEntity<?> create(@PathVariable String worldId, @RequestBody HexGridRequest request) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -238,23 +217,19 @@ public class HexGridController extends BaseEditorController {
 
         try {
             WHexGrid created = hexGridService.create(
-                    worldId,
-                    request.publicData(),
-                    request.parameters(),
-                    request.areas(),
-                    request.epoches()
-            );
+                    worldId, request.publicData(), request.parameters(), request.areas(), request.epoches());
 
             // Apply enabled flag if specified
             if (request.enabled() != null && !request.enabled()) {
                 hexGridService.disable(worldId, request.publicData().getPosition());
-                created = hexGridService.findByWorldIdAndPosition(worldId, request.publicData().getPosition())
+                created = hexGridService
+                        .findByWorldIdAndPosition(worldId, request.publicData().getPosition())
                         .orElseThrow();
             }
 
             HexVector2 pos = request.publicData().getPosition();
             return ResponseEntity.created(
-                    URI.create("/control/worlds/" + worldId + "/hexgrid/" + pos.getQ() + "/" + pos.getR()))
+                            URI.create("/control/worlds/" + worldId + "/hexgrid/" + pos.getQ() + "/" + pos.getR()))
                     .body(toResponse(created));
 
         } catch (IllegalStateException e) {
@@ -301,8 +276,7 @@ public class HexGridController extends BaseEditorController {
                 }
             });
 
-            return updated
-                    .<ResponseEntity<?>>map(h -> ResponseEntity.ok(toResponse(h)))
+            return updated.<ResponseEntity<?>>map(h -> ResponseEntity.ok(toResponse(h)))
                     .orElseGet(() -> notFound("Hex grid not found at position: " + q + ":" + r));
 
         } catch (IllegalArgumentException e) {
@@ -349,8 +323,7 @@ public class HexGridController extends BaseEditorController {
                 // Note: publicData updates should use PUT for safety
             });
 
-            return updated
-                    .<ResponseEntity<?>>map(h -> ResponseEntity.ok(toResponse(h)))
+            return updated.<ResponseEntity<?>>map(h -> ResponseEntity.ok(toResponse(h)))
                     .orElseGet(() -> notFound("Hex grid not found at position: " + q + ":" + r));
 
         } catch (ClassCastException e) {
@@ -365,10 +338,7 @@ public class HexGridController extends BaseEditorController {
      * DELETE /control/worlds/{worldId}/hexgrid/{q}/{r}
      */
     @DeleteMapping("/{q}/{r}")
-    public ResponseEntity<?> delete(
-            @PathVariable String worldId,
-            @PathVariable int q,
-            @PathVariable int r) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, @PathVariable int q, @PathVariable int r) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -392,10 +362,7 @@ public class HexGridController extends BaseEditorController {
      * POST /control/worlds/{worldId}/hexgrid/{q}/{r}/disable
      */
     @PostMapping("/{q}/{r}/disable")
-    public ResponseEntity<?> disable(
-            @PathVariable String worldId,
-            @PathVariable int q,
-            @PathVariable int r) {
+    public ResponseEntity<?> disable(@PathVariable String worldId, @PathVariable int q, @PathVariable int r) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -419,10 +386,7 @@ public class HexGridController extends BaseEditorController {
      * POST /control/worlds/{worldId}/hexgrid/{q}/{r}/enable
      */
     @PostMapping("/{q}/{r}/enable")
-    public ResponseEntity<?> enable(
-            @PathVariable String worldId,
-            @PathVariable int q,
-            @PathVariable int r) {
+    public ResponseEntity<?> enable(@PathVariable String worldId, @PathVariable int q, @PathVariable int r) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -447,9 +411,7 @@ public class HexGridController extends BaseEditorController {
      */
     @PostMapping("/{q}/{r}/dirty")
     public ResponseEntity<?> markAffectedChunksDirty(
-            @PathVariable String worldId,
-            @PathVariable int q,
-            @PathVariable int r) {
+            @PathVariable String worldId, @PathVariable int q, @PathVariable int r) {
 
         if (Strings.isBlank(worldId)) {
             return bad("worldId is required");
@@ -467,19 +429,22 @@ public class HexGridController extends BaseEditorController {
             WHexGrid hexGrid = hexGridOpt.get();
 
             // Get world entity for chunk size calculation
-            var world = worldService.getByWorldId(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("World not found: " + worldId)
-            );
+            var world = worldService
+                    .getByWorldId(worldId)
+                    .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
             // Validate world configuration
             if (world.getPublicData() == null) {
                 return bad("World has no publicData configured");
             }
             if (world.getPublicData().getHexGridSize() <= 0) {
-                return bad("World hexGridSize is not configured (value: " + world.getPublicData().getHexGridSize() + "). Please configure hexGridSize in world settings.");
+                return bad("World hexGridSize is not configured (value: "
+                        + world.getPublicData().getHexGridSize()
+                        + "). Please configure hexGridSize in world settings.");
             }
             if (world.getPublicData().getChunkSize() <= 0) {
-                return bad("World chunkSize is not configured (value: " + world.getPublicData().getChunkSize() + "). Please configure chunkSize in world settings.");
+                return bad("World chunkSize is not configured (value: "
+                        + world.getPublicData().getChunkSize() + "). Please configure chunkSize in world settings.");
             }
 
             var affectedChunks = dirtyChunkService.markHexGridDirty(world, hexGrid, "hexgrid_manual_dirty");
@@ -489,11 +454,14 @@ public class HexGridController extends BaseEditorController {
             }
 
             return ResponseEntity.ok(Map.of(
-                    "successful", true,
-                    "position", q + ":" + r,
-                    "chunksMarked", affectedChunks.size(),
-                    "message", "Marked " + affectedChunks.size() + " chunks as dirty"
-            ));
+                    "successful",
+                    true,
+                    "position",
+                    q + ":" + r,
+                    "chunksMarked",
+                    affectedChunks.size(),
+                    "message",
+                    "Marked " + affectedChunks.size() + " chunks as dirty"));
         } catch (Exception e) {
             return bad("Failed to mark chunks dirty: " + e.getMessage());
         }

@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.commands;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Help command - shows available commands and their usage.
@@ -69,13 +68,12 @@ public class HelpCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Show help for commands\n" +
-                "Usage:\n" +
-                "  /help           - List all commands\n" +
-                "  /help <command> - Show help for specific command\n" +
-                "\n" +
-                "Examples:\n" +
-                "  /help\n" +
-                "  /help say";
+        return "Show help for commands\n" + "Usage:\n"
+                + "  /help           - List all commands\n"
+                + "  /help <command> - Show help for specific command\n"
+                + "\n"
+                + "Examples:\n"
+                + "  /help\n"
+                + "  /help say";
     }
 }

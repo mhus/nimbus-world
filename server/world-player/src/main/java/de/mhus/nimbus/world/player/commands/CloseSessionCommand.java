@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.commands;
 
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.commands.Command;
@@ -9,12 +8,11 @@ import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * CloseSessionCommand - closes a player session gracefully.
@@ -73,10 +71,12 @@ public class CloseSessionCommand implements Command {
                                 wSession.getPlayerId(),
                                 playerSession.getLastPosition(),
                                 playerSession.getLastRotation(),
-                                playerSession.serializeGameplay()
-                        );
-                        log.debug("Persisted session state to MongoDB: sessionId={}, worldId={}, playerId={}",
-                                sessionId, playerSession.getWorldId().getId(), wSession.getPlayerId());
+                                playerSession.serializeGameplay());
+                        log.debug(
+                                "Persisted session state to MongoDB: sessionId={}, worldId={}, playerId={}",
+                                sessionId,
+                                playerSession.getWorldId().getId(),
+                                wSession.getPlayerId());
                     } catch (Exception e) {
                         log.error("Failed to persist session state: sessionId={}", sessionId, e);
                         // Continue with close even if persistence fails
@@ -85,7 +85,8 @@ public class CloseSessionCommand implements Command {
 
                 // Close WebSocket connection if still active
                 try {
-                    sessionManager.removeSession(playerSession.getWebSocketSession().getId());
+                    sessionManager.removeSession(
+                            playerSession.getWebSocketSession().getId());
                     log.debug("Closed WebSocket connection: sessionId={}", sessionId);
                 } catch (Exception e) {
                     log.error("Failed to close WebSocket: sessionId={}", sessionId, e);

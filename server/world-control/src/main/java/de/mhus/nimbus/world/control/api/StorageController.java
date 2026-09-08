@@ -2,6 +2,10 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.storage.StorageService;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -12,11 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/shared/storage")
@@ -38,8 +37,7 @@ public class StorageController {
     public ResponseEntity<?> list(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "50") int limit
-    ) {
+            @RequestParam(defaultValue = "50") int limit) {
         // Limit max page size to avoid performance issues
         if (limit > 100) limit = 100;
         if (limit < 1) limit = 1;
@@ -78,8 +76,7 @@ public class StorageController {
     public ResponseEntity<?> getInfo(@PathVariable String id) {
         var info = storageService.info(id);
         if (info == null) {
-            return ResponseEntity.status(HttpStatusCode.valueOf(404))
-                    .body(Map.of("error", "Storage id not found"));
+            return ResponseEntity.status(HttpStatusCode.valueOf(404)).body(Map.of("error", "Storage id not found"));
         }
         return ResponseEntity.ok(Map.of(
                 "id", info.id(),
@@ -88,16 +85,12 @@ public class StorageController {
                 "worldId", info.worldId(),
                 "path", info.path(),
                 "schema", info.schema(),
-                "schemaVersion", info.schemaVersion()
-        ));
+                "schemaVersion", info.schemaVersion()));
     }
 
     @GetMapping("/content/{id}")
-    public void getContent(
-            @PathVariable String id,
-            HttpServletResponse response
+    public void getContent(@PathVariable String id, HttpServletResponse response) {
 
-    ) {
         var info = storageService.info(id);
         if (info == null) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Storage id not found");
@@ -129,5 +122,4 @@ public class StorageController {
         if (path.endsWith(".off")) return "audio/ogg";
         return "application/octet-stream";
     }
-
 }

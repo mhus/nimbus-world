@@ -1,16 +1,15 @@
 package de.mhus.nimbus.shared.engine;
 
-import tools.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Tests that EngineMapper correctly serializes TsEnum values (e.g., ENTITY_POSES)
@@ -79,8 +78,8 @@ class EngineMapperTsEnumTest {
         String json = engineMapper.writeValueAsString(pathway);
 
         // Verify poses are numeric in serialized JSON
-        assertThat(json).contains("\"pose\":\"1\"");   // WALK
-        assertThat(json).contains("\"pose\":\"0\"");   // IDLE
+        assertThat(json).contains("\"pose\":\"1\""); // WALK
+        assertThat(json).contains("\"pose\":\"0\""); // IDLE
         assertThat(json).contains("\"idlePose\":\"0\""); // idlePose
 
         // Verify round-trip

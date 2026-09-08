@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.workflow;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * A simple "Hello World" workflow implementation.
@@ -20,11 +19,7 @@ import java.util.Map;
  * - errorRate (optional): Probability (0.0 to 1.0) of simulating a job failure (default: 0).
  */
 @Service
-@ConditionalOnProperty(
-        value = "nimbus.services.workflows",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.workflows", havingValue = "true", matchIfMissing = false)
 public class HelloWorldWorkflow extends MethodBasedWorkflow {
 
     @Override
@@ -43,19 +38,20 @@ public class HelloWorldWorkflow extends MethodBasedWorkflow {
         return Map.of(
                 "greeting", greeting,
                 "sleep", sleep,
-                "errorRate", errorRate
-        );
+                "errorRate", errorRate);
     }
 
     @Override
     public void start(WorkflowContext context) throws WorkflowException {
         context.addNote("Workflow started");
-        int sleep = (int)context.getParameters().get("sleep");
-        double errorRate = (double)context.getParameters().get("errorRate");
-        context.enqueueJob("hello-world","", CastUtil.mapStringOfString(
-                "sleep", sleep,
-                "errorRate", errorRate
-        ));
+        int sleep = (int) context.getParameters().get("sleep");
+        double errorRate = (double) context.getParameters().get("errorRate");
+        context.enqueueJob(
+                "hello-world",
+                "",
+                CastUtil.mapStringOfString(
+                        "sleep", sleep,
+                        "errorRate", errorRate));
         context.updateWorkflowStatus("waiting-for-job");
     }
 

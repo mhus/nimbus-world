@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.layer;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.StorageEntity;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +14,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * Terrain layer entity - chunk-oriented storage.
  * One document per chunk, similar to WChunk.
@@ -23,8 +22,8 @@ import java.time.Instant;
 @Document(collection = "w_layer_terrain")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "layerData_chunk_idx", def = "{ 'layerDataId': 1, 'chunkKey': 1 }", unique = true),
-        @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }")
+    @CompoundIndex(name = "layerData_chunk_idx", def = "{ 'layerDataId': 1, 'chunkKey': 1 }", unique = true),
+    @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }")
 })
 @Data
 @Builder

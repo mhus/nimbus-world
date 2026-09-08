@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +16,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * MongoDB Entity for short-lived access leases.
  * A lease grants a player temporary access to a widget interaction
@@ -26,8 +25,8 @@ import java.util.UUID;
 @Document(collection = "w_lease")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_player_type_idx", def = "{ 'worldId': 1, 'playerId': 1, 'type': 1 }"),
-        @CompoundIndex(name = "world_player_resource_idx", def = "{ 'worldId': 1, 'playerId': 1, 'resourceId': 1 }")
+    @CompoundIndex(name = "world_player_type_idx", def = "{ 'worldId': 1, 'playerId': 1, 'type': 1 }"),
+    @CompoundIndex(name = "world_player_resource_idx", def = "{ 'worldId': 1, 'playerId': 1, 'resourceId': 1 }")
 })
 @Data
 @Builder

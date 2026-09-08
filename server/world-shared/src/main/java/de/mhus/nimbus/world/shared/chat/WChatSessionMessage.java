@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 /**
  * Queue item DTO for async chat message processing.
@@ -19,8 +18,10 @@ import java.util.Map;
 public class WChatSessionMessage {
 
     public enum Type {
-        @JsonProperty("chat") CHAT,
-        @JsonProperty("command") COMMAND
+        @JsonProperty("chat")
+        CHAT,
+        @JsonProperty("command")
+        COMMAND
     }
 
     private Type type;
@@ -31,6 +32,7 @@ public class WChatSessionMessage {
      * Falls back to worldId if not set.
      */
     private String fullWorldId;
+
     private String chatId;
     private String agentName;
     private String playerId;

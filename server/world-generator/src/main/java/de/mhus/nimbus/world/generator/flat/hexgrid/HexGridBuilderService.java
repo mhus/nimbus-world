@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for managing hex grid composition builders.
@@ -26,8 +25,8 @@ public class HexGridBuilderService {
         TERRAIN // flows, structures
     }
 
-    public Map<String,Class<? extends HexGridBuilder>> builderRegistry = new HashMap<>();
-    public Map<String,Class<? extends HexGridBuilder>> manipulatorRegistry = new HashMap<>();
+    public Map<String, Class<? extends HexGridBuilder>> builderRegistry = new HashMap<>();
+    public Map<String, Class<? extends HexGridBuilder>> manipulatorRegistry = new HashMap<>();
 
     public HexGridBuilderService() {
         // Main builders (use singular names matching BiomeType.getBuilderName())
@@ -65,7 +64,8 @@ public class HexGridBuilderService {
      */
     public Optional<HexGridBuilder> createBuilder(String builderType, Map<String, String> parameters) {
         try {
-            HexGridBuilder builder = builderRegistry.get(builderType).getConstructor().newInstance();
+            HexGridBuilder builder =
+                    builderRegistry.get(builderType).getConstructor().newInstance();
             builder.init(parameters);
             return Optional.of(builder);
         } catch (Exception e) {
@@ -77,10 +77,11 @@ public class HexGridBuilderService {
     public Optional<HexGridBuilder> createBuilder(WHexGrid grid) {
         String type = grid.getParameters().get("g_builder");
         if (type == null) return Optional.empty();
-        return createBuilder(type, grid.getParameters().
-                entrySet().stream().filter(p -> p.getKey().startsWith("g_"))
-                        .collect(HashMap::new, (m, e) -> m.put(e.getKey().substring(2), e.getValue()), Map::putAll)
-                );
+        return createBuilder(
+                type,
+                grid.getParameters().entrySet().stream()
+                        .filter(p -> p.getKey().startsWith("g_"))
+                        .collect(HashMap::new, (m, e) -> m.put(e.getKey().substring(2), e.getValue()), Map::putAll));
     }
 
     /**
@@ -91,7 +92,8 @@ public class HexGridBuilderService {
      */
     public Optional<HexGridBuilder> createManipulator(String manipulatorType, Map<String, String> parameters) {
         try {
-            HexGridBuilder builder = manipulatorRegistry.get(manipulatorType).getConstructor().newInstance();
+            HexGridBuilder builder =
+                    manipulatorRegistry.get(manipulatorType).getConstructor().newInstance();
             builder.init(parameters);
             return Optional.of(builder);
         } catch (Exception e) {
@@ -160,7 +162,8 @@ public class HexGridBuilderService {
 
             // 1.5. SingleMountainBuilder (if g_mountain parameter exists)
             // Executed after main builder to create mountain peaks on top of terrain
-            if (gridParams.containsKey("g_mountain") && !gridParams.get("g_mountain").isBlank()) {
+            if (gridParams.containsKey("g_mountain")
+                    && !gridParams.get("g_mountain").isBlank()) {
                 Optional<HexGridBuilder> mountainBuilder = createManipulator("g_mountain", builderParams);
                 if (mountainBuilder.isPresent()) {
                     pipeline.add(mountainBuilder.get());
@@ -170,7 +173,8 @@ public class HexGridBuilderService {
 
             // 1.6. SingleSpikesBuilder (if g_spikes parameter exists)
             // Executed after main builder to create spike formations on top of terrain
-            if (gridParams.containsKey("g_spikes") && !gridParams.get("g_spikes").isBlank()) {
+            if (gridParams.containsKey("g_spikes")
+                    && !gridParams.get("g_spikes").isBlank()) {
                 Optional<HexGridBuilder> spikesBuilder = createManipulator("g_spikes", builderParams);
                 if (spikesBuilder.isPresent()) {
                     pipeline.add(spikesBuilder.get());
@@ -180,7 +184,8 @@ public class HexGridBuilderService {
 
             // 1.7. SingleMountainFaceBuilder (if g_mountain_face parameter exists)
             // Executed after main builder to create cliff faces with branching ridges
-            if (gridParams.containsKey("g_mountain_face") && !gridParams.get("g_mountain_face").isBlank()) {
+            if (gridParams.containsKey("g_mountain_face")
+                    && !gridParams.get("g_mountain_face").isBlank()) {
                 Optional<HexGridBuilder> mountainFaceBuilder = createManipulator("g_mountain_face", builderParams);
                 if (mountainFaceBuilder.isPresent()) {
                     pipeline.add(mountainFaceBuilder.get());
@@ -237,7 +242,8 @@ public class HexGridBuilderService {
             }
 
             // 6. SideWallBuilder (if sidewall parameter exists)
-            if (gridParams.containsKey("g_sidewall") && !gridParams.get("g_sidewall").isBlank()) {
+            if (gridParams.containsKey("g_sidewall")
+                    && !gridParams.get("g_sidewall").isBlank()) {
                 Optional<HexGridBuilder> sideWallBuilder = createManipulator("g_sidewall", builderParams);
                 if (sideWallBuilder.isPresent()) {
                     pipeline.add(sideWallBuilder.get());
@@ -255,7 +261,8 @@ public class HexGridBuilderService {
             }
 
             // 8. VillageBuilder (if village parameter exists)
-            if (gridParams.containsKey("g_village") && !gridParams.get("g_village").isBlank()) {
+            if (gridParams.containsKey("g_village")
+                    && !gridParams.get("g_village").isBlank()) {
                 Optional<HexGridBuilder> villageBuilder = createManipulator("g_village", builderParams);
                 if (villageBuilder.isPresent()) {
                     pipeline.add(villageBuilder.get());
@@ -273,8 +280,11 @@ public class HexGridBuilderService {
             }
         }
 
-        log.debug("Created builder {} pipeline with {} builders for hex grid: {}", step, pipeline.size(), grid.getPosition());
+        log.debug(
+                "Created builder {} pipeline with {} builders for hex grid: {}",
+                step,
+                pipeline.size(),
+                grid.getPosition());
         return pipeline;
     }
-
 }

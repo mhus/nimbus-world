@@ -5,13 +5,12 @@ import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor for resource repair operations.
@@ -68,9 +67,8 @@ public class ResourceRepairJobExecutor implements JobExecutor {
             WorldId worldId;
             try {
                 WorldId.validate(worldIdStr);
-                worldId = WorldId.of(worldIdStr).orElseThrow(
-                        () -> new JobExecutionException("Invalid worldId: " + worldIdStr)
-                );
+                worldId = WorldId.of(worldIdStr)
+                        .orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldIdStr));
             } catch (Exception e) {
                 throw new JobExecutionException("Invalid worldId: " + worldIdStr, e);
             }
@@ -90,15 +88,13 @@ public class ResourceRepairJobExecutor implements JobExecutor {
             }
             report.append(":\n");
 
-            results.forEach(
-                    r -> report.append("- ")
-                            .append(r.serviceName())
-                            .append(": ")
-                            .append(r.success() ? "SUCCESS" : "FAILED")
-                            .append(" - ")
-                            .append(r.message())
-                            .append("\n")
-            );
+            results.forEach(r -> report.append("- ")
+                    .append(r.serviceName())
+                    .append(": ")
+                    .append(r.success() ? "SUCCESS" : "FAILED")
+                    .append(" - ")
+                    .append(r.message())
+                    .append("\n"));
 
             String finalMessage = report.toString();
             log.info("Resource repair completed:\n{}", finalMessage);

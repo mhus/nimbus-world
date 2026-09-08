@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WEntityModel;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +14,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for entity models.
@@ -46,7 +45,8 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path entityModelsDir = dataPath.resolve("entitymodels");
         Files.createDirectories(entityModelsDir);
 
@@ -84,7 +84,8 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(entityModelsDir)) {
             try (Stream<Path> files = Files.list(entityModelsDir)) {
-                for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                for (Path file :
+                        files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     try {
                         Document doc = yamlMapper.readValue(file.toFile(), Document.class);
                         String modelId = doc.getString("name");
@@ -105,7 +106,9 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path entityModelsDir = dataPath.resolve("entitymodels");
         if (!Files.exists(entityModelsDir)) {
             log.info("No entitymodels directory found");
@@ -141,10 +144,10 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                     // Find existing by unique constraint (worldId + name).
                     // BUG FIX: the owner keys on the actual natural-key field 'name'
                     // (the previous code queried a non-existent 'modelId' field).
-                    Document existing = entityModelService.findDocumentByWorldIdAndName(
-                            migratedDoc.getString("worldId"),
-                            migratedDoc.getString("name")
-                    ).orElse(null);
+                    Document existing = entityModelService
+                            .findDocumentByWorldIdAndName(
+                                    migratedDoc.getString("worldId"), migratedDoc.getString("name"))
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -186,4 +189,3 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
         return ResourceSyncType.ImportResult.of(imported, deleted);
     }
 }
-

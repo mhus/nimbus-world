@@ -3,6 +3,10 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.ItemRef;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,11 +15,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Service for managing WChest entities.
@@ -45,8 +44,9 @@ public class WChestService {
         // For player instance worlds (not editor): check instance layer first, then base world (COW)
         if (parsedWorldId != null && parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             var instanceEntry = repository.findByWorldIdAndName(worldId, name).orElse(null);
-            var baseEntry = repository.findByWorldIdAndName(
-                    parsedWorldId.toBaseWorldId().getId(), name).orElse(null);
+            var baseEntry = repository
+                    .findByWorldIdAndName(parsedWorldId.toBaseWorldId().getId(), name)
+                    .orElse(null);
             return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
         }
 
@@ -75,7 +75,8 @@ public class WChestService {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         // Player instances (not editor): COW merge
         if (parsedWorldId != null && parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
-            var baseList = repository.findByWorldId(parsedWorldId.toBaseWorldId().getId());
+            var baseList =
+                    repository.findByWorldId(parsedWorldId.toBaseWorldId().getId());
             var instanceList = repository.findByWorldId(worldId);
             return CowUtil.merge(baseList, instanceList);
         }
@@ -159,8 +160,11 @@ public class WChestService {
         copy.touchCreate();
         repository.save(copy);
 
-        log.info("COW copy created for chest: worldId={}, name={}, baseWorldId={}",
-                worldId, chest.getName(), chest.getWorldId());
+        log.info(
+                "COW copy created for chest: worldId={}, name={}, baseWorldId={}",
+                worldId,
+                chest.getName(),
+                chest.getWorldId());
         return copy;
     }
 
@@ -188,8 +192,8 @@ public class WChestService {
      */
     @Transactional
     public WChest getOrCreateUserBankChest(String worldId, PlayerId playerId) {
-        var parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        var parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
         String regionWorldId = parsedWorldId.toRegionCollection().getId();
         String userId = playerId.getUserId();
         String playerIdStr = playerId.getId();
@@ -225,8 +229,8 @@ public class WChestService {
      */
     @Transactional
     public WChest getOrCreateUserTransferChest(String worldId, PlayerId playerId) {
-        var parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        var parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
         String regionWorldId = parsedWorldId.toRegionCollection().getId();
         String userId = playerId.getUserId();
         String playerIdStr = playerId.getId();
@@ -278,8 +282,8 @@ public class WChestService {
      * Create a new chest.
      */
     @Transactional
-    public WChest createChest(String worldId, String name, String title,
-                              String description, String playerId, WChest.ChestType type) {
+    public WChest createChest(
+            String worldId, String name, String title, String description, String playerId, WChest.ChestType type) {
         if (repository.findByWorldIdAndName(worldId, name).isPresent()) {
             throw new IllegalStateException("Chest with name already exists in region: " + name);
         }
@@ -324,8 +328,12 @@ public class WChestService {
     public Optional<WChest> addItem(String chestId, ItemRef itemRef) {
         return updateChest(chestId, chest -> {
             chest.getItems().add(itemRef);
-            log.info("ItemRef added to chest: chestId={}, itemId={}, amount={}, totalItems={}",
-                    chestId, itemRef.getItemId(), itemRef.getAmount(), chest.getItems().size());
+            log.info(
+                    "ItemRef added to chest: chestId={}, itemId={}, amount={}, totalItems={}",
+                    chestId,
+                    itemRef.getItemId(),
+                    itemRef.getAmount(),
+                    chest.getItems().size());
         });
     }
 
@@ -357,8 +365,12 @@ public class WChestService {
                         .build();
 
                 chest.getItems().set(existingIndex, updated);
-                log.info("ItemRef amount updated in chest: chestId={}, itemId={}, oldAmount={}, newAmount={}",
-                        chestId, itemId, existing.getAmount(), newAmount);
+                log.info(
+                        "ItemRef amount updated in chest: chestId={}, itemId={}, oldAmount={}, newAmount={}",
+                        chestId,
+                        itemId,
+                        existing.getAmount(),
+                        newAmount);
             } else {
                 log.warn("ItemRef not found for amount update: chestId={}, itemId={}", chestId, itemId);
                 throw new IllegalArgumentException("Item not found in chest: " + itemId);
@@ -373,8 +385,11 @@ public class WChestService {
     @Transactional
     public Optional<WChest> removeItem(String chestId, String itemId) {
         return updateChest(chestId, chest -> {
-            log.debug("Removing ItemRef from chest: chestId={}, itemId={}, currentItems={}",
-                    chestId, itemId, chest.getItems().size());
+            log.debug(
+                    "Removing ItemRef from chest: chestId={}, itemId={}, currentItems={}",
+                    chestId,
+                    itemId,
+                    chest.getItems().size());
 
             int indexToRemove = -1;
             for (int i = 0; i < chest.getItems().size(); i++) {
@@ -386,8 +401,12 @@ public class WChestService {
 
             if (indexToRemove >= 0) {
                 ItemRef removed = chest.getItems().remove(indexToRemove);
-                log.info("ItemRef removed from chest: chestId={}, itemId={}, removedAmount={}, remainingItems={}",
-                        chestId, itemId, removed.getAmount(), chest.getItems().size());
+                log.info(
+                        "ItemRef removed from chest: chestId={}, itemId={}, removedAmount={}, remainingItems={}",
+                        chestId,
+                        itemId,
+                        removed.getAmount(),
+                        chest.getItems().size());
             } else {
                 log.warn("ItemRef not found in chest: chestId={}, itemId={}", chestId, itemId);
             }
@@ -406,9 +425,7 @@ public class WChestService {
      */
     public boolean addItemAtomic(String chestId, ItemRef itemRef) {
         Query query = new Query(Criteria.where("id").is(chestId));
-        Update update = new Update()
-                .push("items", itemRef)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().push("items", itemRef).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WChest.class);
         if (result.getModifiedCount() > 0) {
@@ -423,11 +440,9 @@ public class WChestService {
      * COW-safe: caller must pass the ID of a COW copy.
      */
     public boolean updateItemAmountAtomic(String chestId, String itemId, int newAmount) {
-        Query query = new Query(Criteria.where("id").is(chestId)
-                .and("items.itemId").is(itemId));
-        Update update = new Update()
-                .set("items.$.amount", newAmount)
-                .set("updatedAt", Instant.now());
+        Query query =
+                new Query(Criteria.where("id").is(chestId).and("items.itemId").is(itemId));
+        Update update = new Update().set("items.$.amount", newAmount).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WChest.class);
         if (result.getModifiedCount() > 0) {
@@ -442,11 +457,9 @@ public class WChestService {
      * COW-safe: caller must pass the ID of a COW copy.
      */
     public boolean incItemAmountAtomic(String chestId, String itemId, int delta) {
-        Query query = new Query(Criteria.where("id").is(chestId)
-                .and("items.itemId").is(itemId));
-        Update update = new Update()
-                .inc("items.$.amount", delta)
-                .set("updatedAt", Instant.now());
+        Query query =
+                new Query(Criteria.where("id").is(chestId).and("items.itemId").is(itemId));
+        Update update = new Update().inc("items.$.amount", delta).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WChest.class);
         if (result.getModifiedCount() > 0) {
@@ -496,11 +509,14 @@ public class WChestService {
      */
     @Transactional
     public boolean deleteChestById(String chestId) {
-        return repository.findById(chestId).map(chest -> {
-            repository.delete(chest);
-            log.debug("Chest deleted: id={}", chestId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findById(chestId)
+                .map(chest -> {
+                    repository.delete(chest);
+                    log.debug("Chest deleted: id={}", chestId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -515,9 +531,8 @@ public class WChestService {
         }
 
         // Resolve lookup worldId: editor instances use base world directly
-        String lookupWorldId = parsedWorldId.isEditorInstance()
-                ? parsedWorldId.toBaseWorldId().getId()
-                : worldId;
+        String lookupWorldId =
+                parsedWorldId.isEditorInstance() ? parsedWorldId.toBaseWorldId().getId() : worldId;
 
         // Check for existing entry
         var directEntry = repository.findByWorldIdAndName(lookupWorldId, name);
@@ -576,10 +591,7 @@ public class WChestService {
      */
     @Transactional
     public long deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WChest.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WChest.class);
         log.info("Deleted {} chests for world {}", result.getDeletedCount(), worldId);
         return result.getDeletedCount();
     }
@@ -628,8 +640,7 @@ public class WChestService {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} chests from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} chests from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 }

@@ -27,38 +27,14 @@ public class WorldLifeSettings {
 
     @PostConstruct
     private void init() {
-        simulationIntervalMs = settingsService.getInteger(
-                "life.simulationIntervalMs",
-                1000
-        );
-        chunkRefreshIntervalMs = settingsService.getInteger(
-                "life.chunkRefreshIntervalMs",
-                300000
-        );
-        chunkTtlMs = settingsService.getInteger(
-                "life.chunkTtlMs",
-                300000
-        );
-        chunkTtlCleanupIntervalMs = settingsService.getInteger(
-                "life.chunkTtlCleanupIntervalMs",
-                60000
-        );
-        ownershipHeartbeatIntervalMs = settingsService.getInteger(
-                "life.ownershipHeartbeatIntervalMs",
-                5000
-        );
-        ownershipStaleThresholdMs = settingsService.getInteger(
-                "life.ownershipStaleThresholdMs",
-                10000
-        );
-        orphanDetectionIntervalMs = settingsService.getInteger(
-                "life.orphanDetectionIntervalMs",
-                30000
-        );
-        pathwayIntervalMs = settingsService.getInteger(
-                "life.pathwayIntervalMs",
-                5000
-        );
+        simulationIntervalMs = settingsService.getInteger("life.simulationIntervalMs", 1000);
+        chunkRefreshIntervalMs = settingsService.getInteger("life.chunkRefreshIntervalMs", 300000);
+        chunkTtlMs = settingsService.getInteger("life.chunkTtlMs", 300000);
+        chunkTtlCleanupIntervalMs = settingsService.getInteger("life.chunkTtlCleanupIntervalMs", 60000);
+        ownershipHeartbeatIntervalMs = settingsService.getInteger("life.ownershipHeartbeatIntervalMs", 5000);
+        ownershipStaleThresholdMs = settingsService.getInteger("life.ownershipStaleThresholdMs", 10000);
+        orphanDetectionIntervalMs = settingsService.getInteger("life.orphanDetectionIntervalMs", 30000);
+        pathwayIntervalMs = settingsService.getInteger("life.pathwayIntervalMs", 5000);
     }
 
     /**

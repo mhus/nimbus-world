@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
+import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -24,21 +23,20 @@ import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
-
-import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
-import tools.jackson.databind.json.JsonMapper;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Job executor for creating composite images from hex grids.
@@ -80,9 +78,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             // Get worldId from job
             String worldId = job.getWorldId();
-            WorldId.of(worldId).orElseThrow(
-                    () -> new JobExecutionException("Invalid worldId: " + worldId)
-            );
+            WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
             WWorld world = worldService.getByWorldId(worldId).orElseThrow();
 
             // Extract required parameters
@@ -94,12 +90,18 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             int hexGridSize = world.getPublicData().getHexGridSize();
 
-            log.info("Creating composite images: worldId={}, compositionId={}, flatIdSuffix={}, flatSize={}, drawGridLines={}",
-                    worldId, compositionId, flatIdSuffix, hexGridSize, drawGridLines);
+            log.info(
+                    "Creating composite images: worldId={}, compositionId={}, flatIdSuffix={}, flatSize={}, drawGridLines={}",
+                    worldId,
+                    compositionId,
+                    flatIdSuffix,
+                    hexGridSize,
+                    drawGridLines);
 
             // Step 1: Load HexComposition from document to get FeatureHexGrids
             HexComposition composition = loadComposition(worldId, compositionId);
-            if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+            if (composition.getFeatureHexGridRegistry() == null
+                    || composition.getFeatureHexGridRegistry().isEmpty()) {
                 throw new JobExecutionException("No FeatureHexGrids found in composition: " + compositionId);
             }
 
@@ -108,7 +110,10 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                 flatIdSuffix = "genesis_" + composition.getEpoch() + "_";
             }
 
-            log.info("Loaded composition with {} FeatureHexGrids, epoch={}", composition.getFeatureHexGridRegistry().size(), composition.getEpoch());
+            log.info(
+                    "Loaded composition with {} FeatureHexGrids, epoch={}",
+                    composition.getFeatureHexGridRegistry().size(),
+                    composition.getEpoch());
 
             // Step 2: Extract coordinates from FeatureHexGrids
             Set<HexVector2> validCoordinates = new HashSet<>();
@@ -122,7 +127,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             // Step 3: Create filtered flat provider that only loads flats from FeatureHexGrids
             int epoch = composition.getEpoch();
-            FilteredFlatProvider flatProvider = new FilteredFlatProvider(flatService, worldId, flatIdSuffix, epoch, validCoordinates);
+            FilteredFlatProvider flatProvider =
+                    new FilteredFlatProvider(flatService, worldId, flatIdSuffix, epoch, validCoordinates);
 
             // Check that we have grids to render
             int gridCount = flatProvider.getCoordinates().size();
@@ -149,9 +155,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Failed to create composite images: " + result.getErrorMessage());
             }
 
-            log.info("Composite images created: {}x{} pixels, rendered {}/{} grids",
-                    result.getImageWidth(), result.getImageHeight(),
-                    result.getRenderedGridCount(), result.getTotalGridCount());
+            log.info(
+                    "Composite images created: {}x{} pixels, rendered {}/{} grids",
+                    result.getImageWidth(),
+                    result.getImageHeight(),
+                    result.getRenderedGridCount(),
+                    result.getTotalGridCount());
 
             // Convert images to PNG byte arrays
             byte[] levelImageBytes = convertImageToBytes(result.getLevelImage());
@@ -170,11 +179,14 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             // Build success result
             String resultData = String.format(
                     "Successfully created composite images: worldId=%s, compositionId=%s, grids=%d/%d, size=%dx%d, levelSize=%d bytes, materialSize=%d bytes",
-                    worldId, compositionId,
-                    result.getRenderedGridCount(), result.getTotalGridCount(),
-                    result.getImageWidth(), result.getImageHeight(),
-                    levelImageBytes.length, materialImageBytes.length
-            );
+                    worldId,
+                    compositionId,
+                    result.getRenderedGridCount(),
+                    result.getTotalGridCount(),
+                    result.getImageWidth(),
+                    result.getImageHeight(),
+                    levelImageBytes.length,
+                    materialImageBytes.length);
 
             log.info("Hex grid composite image creation completed successfully: jobId={}", job.getId());
 
@@ -236,8 +248,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
      */
     private HexComposition loadComposition(String worldId, String compositionId) throws JobExecutionException {
         try {
-            WorldId wid = WorldId.of(worldId)
-                    .orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
 
             Optional<WDocument> documentOpt = documentService.findByDocumentId(wid, COMPOSED_COLLECTION, compositionId);
             if (documentOpt.isEmpty()) {
@@ -257,14 +269,17 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             // Convert featureHexGrids List back to featureHexGridRegistry Map
             // (Jackson can't handle Map<String, FeatureHexGrid> directly, so we use a List for JSON)
-            if (composition.getFeatureHexGrids() != null && !composition.getFeatureHexGrids().isEmpty()) {
+            if (composition.getFeatureHexGrids() != null
+                    && !composition.getFeatureHexGrids().isEmpty()) {
                 Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> registry =
-                    composition.getFeatureHexGridRegistry();
-                for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid : composition.getFeatureHexGrids()) {
-                    String key =  TypeUtil.toStringHexCoord(grid.getCoordinate());
+                        composition.getFeatureHexGridRegistry();
+                for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid :
+                        composition.getFeatureHexGrids()) {
+                    String key = TypeUtil.toStringHexCoord(grid.getCoordinate());
                     registry.put(key, grid);
                 }
-                log.info("Converted {} FeatureHexGrids from list to registry after deserialization",
+                log.info(
+                        "Converted {} FeatureHexGrids from list to registry after deserialization",
                         composition.getFeatureHexGrids().size());
             }
 
@@ -280,11 +295,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     /**
      * Add overlays from composition (coordinates, biome names, points, villages).
      */
-    private void addOverlaysFromComposition(HexGridCompositeImageCreator creator,
-                                           HexComposition composition,
-                                           FilteredFlatProvider flatProvider,
-                                           Map<HexVector2, WHexGrid> hexGridsByCoord,
-                                           int hexGridSize) {
+    private void addOverlaysFromComposition(
+            HexGridCompositeImageCreator creator,
+            HexComposition composition,
+            FilteredFlatProvider flatProvider,
+            Map<HexVector2, WHexGrid> hexGridsByCoord,
+            int hexGridSize) {
         // Add coordinate and biome name text overlays
         addCoordinateTextOverlays(creator, composition, flatProvider, hexGridSize);
 
@@ -298,10 +314,11 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     /**
      * Adds text overlays showing coordinates and biome names for all grids.
      */
-    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator,
-                                          HexComposition composition,
-                                          FilteredFlatProvider flatProvider,
-                                          int flatSize) {
+    private void addCoordinateTextOverlays(
+            HexGridCompositeImageCreator creator,
+            HexComposition composition,
+            FilteredFlatProvider flatProvider,
+            int flatSize) {
         // Build map of coordinate to biome name
         Map<String, String> coordToBiomeName = new HashMap<>();
         if (composition.getFeatureHexGridRegistry() != null) {
@@ -314,7 +331,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                     biomeName = featureGrid.getParameters().get("biomeName");
 
                     // If no biomeName, try fillerType for filler grids
-                    if (biomeName == null && "true".equals(featureGrid.getParameters().get("filler"))) {
+                    if (biomeName == null
+                            && "true".equals(featureGrid.getParameters().get("filler"))) {
                         String fillerType = featureGrid.getParameters().get("fillerType");
                         if (fillerType != null) {
                             biomeName = fillerType.toLowerCase();
@@ -338,7 +356,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             // Create coordinate text overlay centered on grid (white color, scale 3)
             int coordTextWidth = coordText.length() * (5 + 1) * 3;
-            TextOverlay coordOverlay = new TextOverlay(coordText, centerX - coordTextWidth/2, centerY - 15, Color.WHITE, 3);
+            TextOverlay coordOverlay =
+                    new TextOverlay(coordText, centerX - coordTextWidth / 2, centerY - 15, Color.WHITE, 3);
             creator.addOverlay(coordOverlay);
 
             // Add biome name below coordinates if available
@@ -346,21 +365,25 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             String biomeName = coordToBiomeName.get(coordKey);
             if (biomeName != null) {
                 int biomeTextWidth = biomeName.length() * (5 + 1) * 2;
-                TextOverlay biomeOverlay = new TextOverlay(biomeName, centerX - biomeTextWidth/2, centerY + 5, Color.CYAN, 2);
+                TextOverlay biomeOverlay =
+                        new TextOverlay(biomeName, centerX - biomeTextWidth / 2, centerY + 5, Color.CYAN, 2);
                 creator.addOverlay(biomeOverlay);
             }
         }
 
-        log.info("Added coordinate text overlays for {} grids", flatProvider.getCoordinates().size());
+        log.info(
+                "Added coordinate text overlays for {} grids",
+                flatProvider.getCoordinates().size());
     }
 
     /**
      * Adds overlays for all composed points showing their positions and names.
      */
-    private void addPointOverlays(HexGridCompositeImageCreator creator,
-                                 HexComposition composition,
-                                 FilteredFlatProvider flatProvider,
-                                 int hexGridSize) {
+    private void addPointOverlays(
+            HexGridCompositeImageCreator creator,
+            HexComposition composition,
+            FilteredFlatProvider flatProvider,
+            int hexGridSize) {
         if (composition.getFeatures() == null) {
             return;
         }
@@ -369,7 +392,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         List<Point> points = composition.getFeatures().stream()
                 .filter(f -> f instanceof Point)
                 .map(f -> (Point) f)
-                .filter(p -> p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
+                .filter(p ->
+                        p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
                 .toList();
 
         if (points.isEmpty()) {
@@ -385,13 +409,17 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             // Get WFlat for this grid
             WFlat flat = flatProvider.getFlat(gridCoord);
             if (flat == null) {
-                log.warn("No WFlat found for point '{}' at grid [{},{}]",
-                        point.getName(), gridCoord.getQ(), gridCoord.getR());
+                log.warn(
+                        "No WFlat found for point '{}' at grid [{},{}]",
+                        point.getName(),
+                        gridCoord.getQ(),
+                        gridCoord.getR());
                 continue;
             }
 
             // Convert HexLocal position to absolute world coordinates
-            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), hexGridSize, gridCoord, hexGridSize);
+            int[] worldCoords = getPointWorldCoordinates(
+                    composed, flat.getSizeX(), flat.getSizeZ(), hexGridSize, gridCoord, hexGridSize);
             if (worldCoords == null) {
                 log.warn("Could not calculate world coordinates for point '{}'", point.getName());
                 continue;
@@ -406,7 +434,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             // Add TextOverlay with point name (yellow color, scale 3)
             String pointName = point.getName() != null ? point.getName() : "point";
             int textWidth = pointName.length() * (5 + 1) * 3;
-            TextOverlay textOverlay = new TextOverlay(pointName, worldX - textWidth/2, worldZ - 25, Color.YELLOW, 3);
+            TextOverlay textOverlay = new TextOverlay(pointName, worldX - textWidth / 2, worldZ - 25, Color.YELLOW, 3);
             creator.addOverlay(textOverlay);
 
             log.debug("Added overlay for point '{}' at world coords ({}, {})", pointName, worldX, worldZ);
@@ -416,9 +444,13 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     /**
      * Calculates world coordinates for a point from its HexLocal position.
      */
-    private int[] getPointWorldCoordinates(Point.PointComposed composed, int flatSizeX, int flatSizeZ,
-                                          int hexGridSize,
-                                          HexVector2 gridCoord, int flatSize) {
+    private int[] getPointWorldCoordinates(
+            Point.PointComposed composed,
+            int flatSizeX,
+            int flatSizeZ,
+            int hexGridSize,
+            HexVector2 gridCoord,
+            int flatSize) {
 
         // Get position string
         String positionString = null;
@@ -448,15 +480,14 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         int worldX = mountX + lx;
         int worldZ = mountZ + lz;
 
-        return new int[]{worldX, worldZ};
+        return new int[] {worldX, worldZ};
     }
 
     /**
      * Adds village slot overlays (cross + slot name) to the composite image creator.
      */
-    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator,
-                                       Map<HexVector2, WHexGrid> hexGridsByCoord,
-                                       int hexGridSize) {
+    private void addVillageSlotOverlays(
+            HexGridCompositeImageCreator creator, Map<HexVector2, WHexGrid> hexGridsByCoord, int hexGridSize) {
         if (hexGridsByCoord.isEmpty()) {
             return;
         }
@@ -475,7 +506,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         private final int epoch;
         private final Set<HexVector2> validCoordinates;
 
-        public FilteredFlatProvider(WFlatService flatService, String worldId, String flatIdPrefix, int epoch, Set<HexVector2> validCoordinates) {
+        public FilteredFlatProvider(
+                WFlatService flatService,
+                String worldId,
+                String flatIdPrefix,
+                int epoch,
+                Set<HexVector2> validCoordinates) {
             this.flatService = flatService;
             this.worldId = worldId;
             this.flatIdPrefix = flatIdPrefix;

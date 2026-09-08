@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WLease entities.
@@ -18,7 +17,8 @@ public interface WLeaseRepository extends MongoRepository<WLease, String> {
 
     List<WLease> findByWorldIdAndPlayerIdAndType(String worldId, String playerId, String type);
 
-    Optional<WLease> findByWorldIdAndPlayerIdAndTypeAndResourceId(String worldId, String playerId, String type, String resourceId);
+    Optional<WLease> findByWorldIdAndPlayerIdAndTypeAndResourceId(
+            String worldId, String playerId, String type, String resourceId);
 
     void deleteByLeaseId(String leaseId);
 

@@ -1,14 +1,12 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
-import de.mhus.nimbus.shared.annotations.TypeScript;
+import java.time.Instant;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
-import java.util.Map;
 
 /**
  * Document metadata without the large content field.

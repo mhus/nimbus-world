@@ -13,21 +13,23 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Provides terrain and world generation executors for the Job System.
  */
 @EnableMongoAuditing
-@EnableMongoRepositories(basePackages = {
-        "de.mhus.nimbus.world.generator",
-        "de.mhus.nimbus.world.shared",
-        "de.mhus.nimbus.world.ai",
-        "de.mhus.nimbus.shared"
-})
+@EnableMongoRepositories(
+        basePackages = {
+            "de.mhus.nimbus.world.generator",
+            "de.mhus.nimbus.world.shared",
+            "de.mhus.nimbus.world.ai",
+            "de.mhus.nimbus.shared"
+        })
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling
-@ComponentScan(basePackages = {
-        "de.mhus.nimbus.world.generator",
-        "de.mhus.nimbus.world.shared",
-        "de.mhus.nimbus.world.ai",
-        "de.mhus.nimbus.shared"
-})
+@ComponentScan(
+        basePackages = {
+            "de.mhus.nimbus.world.generator",
+            "de.mhus.nimbus.world.shared",
+            "de.mhus.nimbus.world.ai",
+            "de.mhus.nimbus.shared"
+        })
 public class WorldGeneratorApplication {
     public static void main(String[] args) {
         SpringApplication.run(WorldGeneratorApplication.class, args);

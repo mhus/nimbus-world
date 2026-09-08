@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.shared.session;
 import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import java.time.Instant;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,9 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.Map;
-
 /**
  * MongoDB Entity for Player Session State.
  * Persists player position and rotation for each world/player combination.
@@ -23,9 +22,7 @@ import java.util.Map;
  */
 @Document(collection = "w_player_sessions")
 @ActualSchemaVersion("1.0.0")
-@CompoundIndexes({
-        @CompoundIndex(name = "world_player_idx", def = "{ 'worldId': 1, 'playerId': 1 }", unique = true)
-})
+@CompoundIndexes({@CompoundIndex(name = "world_player_idx", def = "{ 'worldId': 1, 'playerId': 1 }", unique = true)})
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,7 +30,7 @@ import java.util.Map;
 public class WPlayerSession {
 
     @Id
-    private String id;  // MongoDB internal ID
+    private String id; // MongoDB internal ID
 
     /**
      * Full worldId with instance (e.g., "main:terra!abc123").
@@ -91,6 +88,7 @@ public class WPlayerSession {
     private String actor;
 
     private Instant createdAt;
+
     @Indexed
     private Instant updatedAt;
 

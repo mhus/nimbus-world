@@ -5,19 +5,18 @@ import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 /**
  * REST Controller for player-related operations in world-control.
@@ -40,16 +39,25 @@ public class PlayerController extends BaseEditorController {
      *
      * @return a 403 response on mismatch, or {@code null} when ownership is confirmed
      */
-    private ResponseEntity<?> verifyOwnership(HttpServletRequest request, String worldId, String userId, String characterId) {
+    private ResponseEntity<?> verifyOwnership(
+            HttpServletRequest request, String worldId, String userId, String characterId) {
         String sessionUserId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String sessionWorldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String sessionCharacterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
         if (Strings.isBlank(sessionUserId) || Strings.isBlank(sessionWorldId) || Strings.isBlank(sessionCharacterId)) {
             return ResponseEntity.status(403).body("No authenticated player session");
         }
-        if (!sessionUserId.equals(userId) || !sessionWorldId.equals(worldId) || !sessionCharacterId.equals(characterId)) {
-            log.warn("Denied cross-player access: session={}:{}:{} requested={}:{}:{}",
-                    sessionWorldId, sessionUserId, sessionCharacterId, worldId, userId, characterId);
+        if (!sessionUserId.equals(userId)
+                || !sessionWorldId.equals(worldId)
+                || !sessionCharacterId.equals(characterId)) {
+            log.warn(
+                    "Denied cross-player access: session={}:{}:{} requested={}:{}:{}",
+                    sessionWorldId,
+                    sessionUserId,
+                    sessionCharacterId,
+                    worldId,
+                    userId,
+                    characterId);
             return ResponseEntity.status(403).body("Access denied");
         }
         return null;
@@ -66,15 +74,13 @@ public class PlayerController extends BaseEditorController {
     @GetMapping("/playerinfo/{worldId}/{playerId}")
     @Operation(summary = "Get PlayerInfo by worldId and playerId")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "PlayerInfo found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Player not found")
+        @ApiResponse(responseCode = "200", description = "PlayerInfo found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Player not found")
     })
     public ResponseEntity<?> getPlayerInfo(
-            @Parameter(description = "World ID in format regionId:worldName")
-            @PathVariable String worldId,
-            @Parameter(description = "Player ID in format userId:characterId")
-            @PathVariable String playerId,
+            @Parameter(description = "World ID in format regionId:worldName") @PathVariable String worldId,
+            @Parameter(description = "Player ID in format userId:characterId") @PathVariable String playerId,
             HttpServletRequest request) {
 
         log.debug("GET playerinfo: worldId={}, playerId={}", worldId, playerId);
@@ -140,15 +146,13 @@ public class PlayerController extends BaseEditorController {
     @PutMapping("/playerinfo/{worldId}/{playerId}")
     @Operation(summary = "Update PlayerInfo by worldId and playerId")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "PlayerInfo updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Player not found")
+        @ApiResponse(responseCode = "200", description = "PlayerInfo updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Player not found")
     })
     public ResponseEntity<?> updatePlayerInfo(
-            @Parameter(description = "World ID in format regionId:worldName")
-            @PathVariable String worldId,
-            @Parameter(description = "Player ID in format userId:characterId")
-            @PathVariable String playerId,
+            @Parameter(description = "World ID in format regionId:worldName") @PathVariable String worldId,
+            @Parameter(description = "Player ID in format userId:characterId") @PathVariable String playerId,
             @RequestBody PlayerInfo playerInfo,
             HttpServletRequest request) {
 

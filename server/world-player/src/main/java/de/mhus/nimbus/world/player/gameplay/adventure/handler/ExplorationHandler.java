@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -9,9 +8,9 @@ import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Handles hex grid exploration tracking and fall damage.
@@ -56,15 +55,20 @@ public class ExplorationHandler {
             String playerId = session.getEntityId();
             if (playerId == null) return;
 
-            var existing = gameplay.getProgressService().findByWorldIdAndPlayerIdAndTypeAndQuest(
-                    worldId, playerId, "EXPLORED_HEX", hexKey);
+            var existing = gameplay.getProgressService()
+                    .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, "EXPLORED_HEX", hexKey);
 
             if (existing.isEmpty()) {
-                gameplay.getProgressService().save(worldId, playerId, "EXPLORED_HEX", hexKey, Map.of(
-                        "q", hexPos.getQ(),
-                        "r", hexPos.getR(),
-                        "discoveredAt", System.currentTimeMillis()
-                ));
+                gameplay.getProgressService()
+                        .save(
+                                worldId,
+                                playerId,
+                                "EXPLORED_HEX",
+                                hexKey,
+                                Map.of(
+                                        "q", hexPos.getQ(),
+                                        "r", hexPos.getR(),
+                                        "discoveredAt", System.currentTimeMillis()));
                 gameplay.getClientService().sendNotification(session, 3, "", "New Area Discovered", null);
                 log.info("Player {} discovered new hex {} in world {}", playerId, hexKey, worldId);
             }
@@ -81,21 +85,30 @@ public class ExplorationHandler {
      */
     public void handleFallDamage(PlayerSession session, AdventureData data, JsonNode messageData) {
         double fallHeight = messageData != null && messageData.has("fallHeight")
-                ? messageData.get("fallHeight").asDouble(0) : 0;
+                ? messageData.get("fallHeight").asDouble(0)
+                : 0;
         if (fallHeight <= 0) return;
 
         int safeFallHeight = AdventureSkills.SURVIVAL_ACROBATICS.getValue(data.getCachedSkills());
         if (fallHeight <= safeFallHeight) {
-            log.trace("Player {} fell {} blocks (safe: {}), no damage",
-                    session.getEntityId(), fallHeight, safeFallHeight);
+            log.trace(
+                    "Player {} fell {} blocks (safe: {}), no damage",
+                    session.getEntityId(),
+                    fallHeight,
+                    safeFallHeight);
             return;
         }
 
         double excessBlocks = fallHeight - safeFallHeight;
         double damage = FALL_DAMAGE_FACTOR * excessBlocks * excessBlocks;
 
-        log.debug("Player {} fell {} blocks (safe: {}, excess: {}), taking {} fall damage",
-                session.getEntityId(), fallHeight, safeFallHeight, excessBlocks, damage);
+        log.debug(
+                "Player {} fell {} blocks (safe: {}, excess: {}), taking {} fall damage",
+                session.getEntityId(),
+                fallHeight,
+                safeFallHeight,
+                excessBlocks,
+                damage);
 
         gameplay.getVitalsHandler().applyDamage(session, data, damage);
     }

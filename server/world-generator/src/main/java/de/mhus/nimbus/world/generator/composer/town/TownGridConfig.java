@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.Vector2Int;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Village configuration for a single HexGrid.

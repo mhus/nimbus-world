@@ -1,6 +1,11 @@
 package de.mhus.nimbus.shared.service;
 
-import tools.jackson.databind.ObjectMapper;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -8,14 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for exporting MongoDB collections to JSON files.
@@ -66,7 +64,11 @@ public class ExportService {
      * @throws IOException if file operations fail
      */
     public ExportResult exportCollection(String collectionName, Path outputFile, String worldId) throws IOException {
-        log.info("Starting export of collection '{}' to file: {} (worldId: {})", collectionName, outputFile, worldId == null || "*".equals(worldId) ? "all" : worldId);
+        log.info(
+                "Starting export of collection '{}' to file: {} (worldId: {})",
+                collectionName,
+                outputFile,
+                worldId == null || "*".equals(worldId) ? "all" : worldId);
 
         // Ensure parent directory exists
         Files.createDirectories(outputFile.getParent());
@@ -120,8 +122,12 @@ public class ExportService {
                 .outputFile(outputFile.toString())
                 .build();
 
-        log.info("Export completed: {} - {} entities exported, {} errors in {} ms",
-                collectionName, successCount, errorCount, duration);
+        log.info(
+                "Export completed: {} - {} entities exported, {} errors in {} ms",
+                collectionName,
+                successCount,
+                errorCount,
+                duration);
 
         return result;
     }

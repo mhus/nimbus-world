@@ -1,14 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.world.ai.model.AiChat;
-import de.mhus.nimbus.world.ai.model.AiModelService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,6 +7,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiModelService;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Offline tests for B1 catalog expansion. The AI chat is mocked (no network). */
 class RealityCatalogExpanderTest {
@@ -63,9 +62,9 @@ class RealityCatalogExpanderTest {
         ArgumentCaptor<String> promptCap = ArgumentCaptor.forClass(String.class);
         verify(chat).ask(promptCap.capture());
         String prompt = promptCap.getValue();
-        assertThat(prompt).contains("duskmoor");        // serialized current plan
+        assertThat(prompt).contains("duskmoor"); // serialized current plan
         assertThat(prompt).contains("Peat Spade");
-        assertThat(prompt).contains("one_up");           // super-items directive default
+        assertThat(prompt).contains("one_up"); // super-items directive default
     }
 
     @Test
@@ -78,7 +77,7 @@ class RealityCatalogExpanderTest {
         RealityPlanResult result = expander.expand(plan);
 
         assertThat(result.isSuccessful()).isTrue();
-        assertThat(result.getPlan()).isSameAs(plan);      // unchanged
+        assertThat(result.getPlan()).isSameAs(plan); // unchanged
         verify(aiModelService, never()).createChat(anyString(), any());
     }
 

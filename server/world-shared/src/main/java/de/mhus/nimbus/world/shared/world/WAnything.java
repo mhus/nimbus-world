@@ -1,10 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,9 +17,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
-import java.util.Optional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * MongoDB Entity for storing arbitrary data objects.
@@ -28,8 +27,10 @@ import java.util.Optional;
 @Document(collection = "w_anything")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_collection_name_idx",
-                       def = "{ 'worldId': 1, 'collection': 1, 'name': 1 }", unique = true)
+    @CompoundIndex(
+            name = "world_collection_name_idx",
+            def = "{ 'worldId': 1, 'collection': 1, 'name': 1 }",
+            unique = true)
 })
 @Data
 @Builder
@@ -158,9 +159,8 @@ public class WAnything implements Identifiable {
         return this;
     }
 
-    public  WAnything removeWorldPrefix() {
+    public WAnything removeWorldPrefix() {
         id = WorldCollection.removePrefix(id);
         return this;
     }
-
 }

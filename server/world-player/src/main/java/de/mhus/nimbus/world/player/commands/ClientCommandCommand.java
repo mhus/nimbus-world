@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.player.commands;
 
-import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.service.ClientService;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * ClientCommand - sends "scmd" (Server Command) message to client via WebSocket.
@@ -66,8 +65,7 @@ public class ClientCommandCommand implements Command {
             // Send via ClientService
             clientService.sendCommand(session, commandName, commandArgs);
 
-            log.debug("Sent client command: session={} cmd={} args={}",
-                    sessionId, commandName, commandArgs.size());
+            log.debug("Sent client command: session={} cmd={} args={}", sessionId, commandName, commandArgs.size());
 
             return CommandResult.success("Client command sent: " + commandName);
 

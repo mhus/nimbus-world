@@ -3,15 +3,14 @@ package de.mhus.nimbus.shared.service;
 import de.mhus.nimbus.shared.persistence.SchemaMigrator;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for managing and executing schema migrations on MongoDB entities.
@@ -59,17 +58,17 @@ public class SchemaMigrationService {
     private void initializeMigratorCache() {
         for (SchemaMigrator migrator : migrators) {
             String entityType = migrator.getEntityType();
-            migratorsByEntity
-                    .computeIfAbsent(entityType, k -> new TreeSet<>())
-                    .add(migrator);
+            migratorsByEntity.computeIfAbsent(entityType, k -> new TreeSet<>()).add(migrator);
 
-            log.debug("Registered migrator for {}: {} -> {}",
+            log.debug(
+                    "Registered migrator for {}: {} -> {}",
                     entityType,
                     migrator.getFromVersion(),
                     migrator.getToVersion());
         }
 
-        log.info("Initialized schema migration service with {} migrators for {} entity types",
+        log.info(
+                "Initialized schema migration service with {} migrators for {} entity types",
                 migrators.size(),
                 migratorsByEntity.size());
     }
@@ -83,10 +82,11 @@ public class SchemaMigrationService {
      * @return the migrated entity as JSON string
      * @throws MigrationException if migration fails or no migration path exists
      */
-    public String migrate(String entityJson, String entityType, SchemaVersion targetVersion, SchemaVersion currentVersion) throws MigrationException {
+    public String migrate(
+            String entityJson, String entityType, SchemaVersion targetVersion, SchemaVersion currentVersion)
+            throws MigrationException {
 
-        log.debug("Migrating {} from version {} to {}",
-                entityType, currentVersion, targetVersion);
+        log.debug("Migrating {} from version {} to {}", entityType, currentVersion, targetVersion);
 
         // Check if migration is needed
         if (currentVersion.equals(targetVersion)) {
@@ -99,15 +99,15 @@ public class SchemaMigrationService {
 
         if (migrationPath.isEmpty() && !currentVersion.equals(targetVersion)) {
             throw new MigrationException(String.format(
-                    "No migration path found for %s from version %s to %s",
-                    entityType, currentVersion, targetVersion));
+                    "No migration path found for %s from version %s to %s", entityType, currentVersion, targetVersion));
         }
 
         // Apply migrations sequentially
         String result = entityJson;
         for (SchemaMigrator migrator : migrationPath) {
             try {
-                log.debug("Applying migration {} -> {} for {}",
+                log.debug(
+                        "Applying migration {} -> {} for {}",
                         migrator.getFromVersion(),
                         migrator.getToVersion(),
                         entityType);
@@ -116,17 +116,15 @@ public class SchemaMigrationService {
                 result = updateSchemaVersion(result, migrator.getToVersion());
 
             } catch (Exception e) {
-                throw new MigrationException(String.format(
-                        "Migration failed for %s from %s to %s: %s",
-                        entityType,
-                        migrator.getFromVersion(),
-                        migrator.getToVersion(),
-                        e.getMessage()), e);
+                throw new MigrationException(
+                        String.format(
+                                "Migration failed for %s from %s to %s: %s",
+                                entityType, migrator.getFromVersion(), migrator.getToVersion(), e.getMessage()),
+                        e);
             }
         }
 
-        log.info("Successfully migrated {} from version {} to {}",
-                entityType, currentVersion, targetVersion);
+        log.info("Successfully migrated {} from version {} to {}", entityType, currentVersion, targetVersion);
 
         return result;
     }
@@ -139,9 +137,9 @@ public class SchemaMigrationService {
      * @param toVersion the target version
      * @return ordered list of migrators to apply
      */
-    private Set<SchemaMigrator> findMigrationPath(String entityType, SchemaVersion fromVersion, SchemaVersion toVersion) {
+    private Set<SchemaMigrator> findMigrationPath(
+            String entityType, SchemaVersion fromVersion, SchemaVersion toVersion) {
         Set<SchemaMigrator> entityMigrators = migratorsByEntity.getOrDefault(entityType, Collections.emptySet());
-
 
         Set<SchemaMigrator> path = new TreeSet<>();
         SchemaVersion currentVersion = fromVersion;
@@ -161,8 +159,11 @@ public class SchemaMigrationService {
 
         // Verify we reached the target version
         if (!currentVersion.equals(toVersion) && !path.isEmpty()) {
-            log.warn("Migration path for {} incomplete: reached {} instead of {}",
-                    entityType, currentVersion, toVersion);
+            log.warn(
+                    "Migration path for {} incomplete: reached {} instead of {}",
+                    entityType,
+                    currentVersion,
+                    toVersion);
             return Collections.emptySet();
         }
 
@@ -314,7 +315,8 @@ public class SchemaMigrationService {
      * @return the migrated entity as JSON string
      * @throws MigrationException if migration fails
      */
-    public String migrateToLatest(String entityJson, String entityType, SchemaVersion currentVersion) throws MigrationException {
+    public String migrateToLatest(String entityJson, String entityType, SchemaVersion currentVersion)
+            throws MigrationException {
         if (currentVersion == null) {
             currentVersion = SchemaVersion.NULL;
         }
@@ -322,8 +324,7 @@ public class SchemaMigrationService {
         var latestVersion = getLatestVersion(entityType);
         if (latestVersion == null) return entityJson; // No migrators for this entity
 
-        log.debug("Migrating {} from version {} to latest {}",
-                entityType, currentVersion, latestVersion);
+        log.debug("Migrating {} from version {} to latest {}", entityType, currentVersion, latestVersion);
 
         // Check if migration is needed
         if (currentVersion.equals(latestVersion)) {
@@ -372,9 +373,9 @@ public class SchemaMigrationService {
 
         // Check if migration is needed
         if (latestVersion == null || currentVersion.compareTo(latestVersion) >= 0) {
-            log.info("Storage {}:{} already at latest version {}",
-                    schema, storageId, latestVersion);
-            return new MigrationResult(storageId, schema, currentVersion, latestVersion, false, "Already at latest version");
+            log.info("Storage {}:{} already at latest version {}", schema, storageId, latestVersion);
+            return new MigrationResult(
+                    storageId, schema, currentVersion, latestVersion, false, "Already at latest version");
         }
 
         // Find migration path
@@ -392,7 +393,7 @@ public class SchemaMigrationService {
             tempFile = Files.createTempFile("nimbus-storage-migration-", ".tmp");
 
             try (InputStream input = storageService.load(storageId);
-                 OutputStream output = Files.newOutputStream(tempFile)) {
+                    OutputStream output = Files.newOutputStream(tempFile)) {
                 if (input == null) {
                     throw new MigrationException("Failed to load storage data");
                 }
@@ -404,12 +405,15 @@ public class SchemaMigrationService {
             for (SchemaMigrator migrator : migrationPath) {
                 Path nextFile = Files.createTempFile("nimbus-storage-migration-", ".tmp");
 
-                log.debug("Applying migration {} -> {} for storage {}",
-                        migrator.getFromVersion(), migrator.getToVersion(), storageId);
+                log.debug(
+                        "Applying migration {} -> {} for storage {}",
+                        migrator.getFromVersion(),
+                        migrator.getToVersion(),
+                        storageId);
 
                 try (InputStream input = Files.newInputStream(currentFile);
-                     InputStream migrated = migrator.migrateStream(input);
-                     OutputStream output = Files.newOutputStream(nextFile)) {
+                        InputStream migrated = migrator.migrateStream(input);
+                        OutputStream output = Files.newOutputStream(nextFile)) {
                     migrated.transferTo(output);
                 }
 
@@ -422,7 +426,8 @@ public class SchemaMigrationService {
 
             // Replace storage with migrated data
             try (InputStream finalInput = Files.newInputStream(currentFile)) {
-                StorageService.StorageInfo newInfo = storageService.replace(schema, latestVersion, storageId, finalInput);
+                StorageService.StorageInfo newInfo =
+                        storageService.replace(schema, latestVersion, storageId, finalInput);
 
                 if (newInfo == null) {
                     throw new MigrationException("Failed to replace storage data");
@@ -435,8 +440,8 @@ public class SchemaMigrationService {
                 Files.deleteIfExists(tempFile);
             }
 
-            log.info("Successfully migrated storage {} from version {} to {}",
-                    storageId, currentVersion, latestVersion);
+            log.info(
+                    "Successfully migrated storage {} from version {} to {}", storageId, currentVersion, latestVersion);
 
             return new MigrationResult(storageId, schema, currentVersion, latestVersion, true, "Migrated successfully");
 
@@ -477,8 +482,7 @@ public class SchemaMigrationService {
             SchemaVersion fromVersion,
             SchemaVersion toVersion,
             boolean migrated,
-            String message
-    ) {}
+            String message) {}
 
     /**
      * Exception thrown when schema migration fails.

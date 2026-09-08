@@ -5,31 +5,30 @@ import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.generated.types.ItemRef;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
-import de.mhus.nimbus.world.shared.world.WChestService;
+import de.mhus.nimbus.world.shared.world.TradePriceCalculator;
 import de.mhus.nimbus.world.shared.world.WChest;
+import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import de.mhus.nimbus.world.shared.world.WTraderService;
-import de.mhus.nimbus.world.shared.world.TradePriceCalculator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for trade widget operations.
@@ -57,9 +56,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
      */
     @GetMapping
     @Operation(summary = "Get trade shop items and prices via progress reference")
-    public ResponseEntity<?> getTradeShop(
-            @RequestParam String progressId,
-            HttpServletRequest request) {
+    public ResponseEntity<?> getTradeShop(@RequestParam String progressId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -98,8 +95,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         // Load backpack items with sell prices
         PlayerBackpack backpack = character.getBackpack();
         Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
-        List<Map<String, Object>> backpackItems = enrichBackpackItemsWithSellPrice(
-                parsedWorldId, itemIds, trader, character, worldId);
+        List<Map<String, Object>> backpackItems =
+                enrichBackpackItemsWithSellPrice(parsedWorldId, itemIds, trader, character, worldId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("worldId", worldId);
@@ -110,7 +107,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         result.put("shopItems", shopItems);
         result.put("backpackItems", backpackItems);
         result.put("silver", character.getSilver());
-        result.put("gold", userService.getByUsername(userId).map(u -> u.getGold()).orElse(0L));
+        result.put(
+                "gold", userService.getByUsername(userId).map(u -> u.getGold()).orElse(0L));
 
         return ResponseEntity.ok(result);
     }
@@ -120,9 +118,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
      */
     @PostMapping("/apply")
     @Operation(summary = "Apply a complete trade (buy + sell + gold exchange)")
-    public ResponseEntity<?> apply(
-            @RequestBody TradeApplyRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> apply(@RequestBody TradeApplyRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -259,8 +255,11 @@ public class PlayerTradeWidgetController extends BaseEditorController {
                 if (totalSellRevenue > 0) traderService.changeSilverAmount(trader.getId(), totalSellRevenue);
                 if (totalBuyCost > 0) characterService.changeSilver(character.getId(), totalBuyCost);
                 if (goldAmount > 0) userService.changeGold(userDbId, goldAmount);
-                log.error("Trade aborted: could not remove backpack item {}x{} for player={}",
-                        sell.itemId(), sell.amount(), userId);
+                log.error(
+                        "Trade aborted: could not remove backpack item {}x{} for player={}",
+                        sell.itemId(),
+                        sell.amount(),
+                        userId);
                 return bad("Could not remove item from backpack: " + sell.itemId());
             }
         }
@@ -274,7 +273,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
                     if (chestItem.getAmount() <= buy.amount()) {
                         chestService.removeItemAtomic(writeShopChest.getId(), buy.itemId());
                     } else {
-                        chestService.updateItemAmountAtomic(writeShopChest.getId(), buy.itemId(), chestItem.getAmount() - buy.amount());
+                        chestService.updateItemAmountAtomic(
+                                writeShopChest.getId(), buy.itemId(), chestItem.getAmount() - buy.amount());
                     }
                 }
             }
@@ -297,10 +297,12 @@ public class PlayerTradeWidgetController extends BaseEditorController {
                     if (existing != null) {
                         chestService.incItemAmountAtomic(poolChest.getId(), sell.itemId(), sell.amount());
                     } else {
-                        chestService.addItemAtomic(poolChest.getId(), ItemRef.builder()
-                                .itemId(sell.itemId())
-                                .amount(sell.amount())
-                                .build());
+                        chestService.addItemAtomic(
+                                poolChest.getId(),
+                                ItemRef.builder()
+                                        .itemId(sell.itemId())
+                                        .amount(sell.amount())
+                                        .build());
                     }
                 }
             }
@@ -317,8 +319,13 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             traderService.changeSilverAmount(trader.getId(), totalBuyCost);
         }
 
-        log.info("Trade applied: player={}, buyCost={}, sellRevenue={}, goldExchange={}, trader={}",
-                userId, totalBuyCost, totalSellRevenue, goldAmount, trader.getEntityId());
+        log.info(
+                "Trade applied: player={}, buyCost={}, sellRevenue={}, goldExchange={}, trader={}",
+                userId,
+                totalBuyCost,
+                totalSellRevenue,
+                goldAmount,
+                trader.getEntityId());
 
         notifyPlayer(worldId, request);
 
@@ -369,8 +376,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         return null;
     }
 
-    private List<Map<String, Object>> enrichTraderItems(WorldId parsedWorldId, List<ItemRef> items,
-                                                         WTrader trader, RCharacter character, String worldId) {
+    private List<Map<String, Object>> enrichTraderItems(
+            WorldId parsedWorldId, List<ItemRef> items, WTrader trader, RCharacter character, String worldId) {
         List<Map<String, Object>> enriched = new ArrayList<>();
         if (items == null) return enriched;
 
@@ -400,9 +407,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         return enriched;
     }
 
-    private List<Map<String, Object>> enrichBackpackItemsWithSellPrice(WorldId parsedWorldId,
-                                                                        Map<String, Integer> itemIds, WTrader trader,
-                                                                        RCharacter character, String worldId) {
+    private List<Map<String, Object>> enrichBackpackItemsWithSellPrice(
+            WorldId parsedWorldId, Map<String, Integer> itemIds, WTrader trader, RCharacter character, String worldId) {
         List<Map<String, Object>> items = new ArrayList<>();
         if (itemIds == null) return items;
 
@@ -447,19 +453,15 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         if (Strings.isBlank(sessionId)) return;
         var wSession = wSessionService.getWithPlayerUrl(sessionId);
         if (wSession.isEmpty() || Strings.isBlank(wSession.get().getPlayerUrl())) return;
-        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(),
-                "BackpackModified", List.of(), null);
+        worldClientService.sendPlayerCommand(
+                worldId, sessionId, wSession.get().getPlayerUrl(), "BackpackModified", List.of(), null);
     }
 
     // --- DTOs ---
 
     record TradeItem(String itemId, int amount) {}
-    record TradeApplyRequest(
-            String progressId,
-            List<TradeItem> buys,
-            List<TradeItem> sells,
-            Long goldExchange
-    ) {}
+
+    record TradeApplyRequest(String progressId, List<TradeItem> buys, List<TradeItem> sells, Long goldExchange) {}
 
     private static class TradeResolveResult {
         final WTrader trader;

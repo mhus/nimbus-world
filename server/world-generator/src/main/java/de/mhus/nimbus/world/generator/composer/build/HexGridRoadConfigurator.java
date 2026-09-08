@@ -1,25 +1,21 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import tools.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.area.Area;
-import de.mhus.nimbus.world.generator.composer.area.Composite;
-import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.WallConfigPart;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Phase 2: Assembles road={} JSON parameters on FeatureHexGrids from collected RoadConfigParts.
@@ -37,7 +33,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class HexGridRoadConfigurator {
 
-    private final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     /**
      * Index for fast lookup of Area grids by coordinate.
@@ -62,18 +60,21 @@ public class HexGridRoadConfigurator {
 
             // Use central FeatureHexGrid registry (single source of truth)
             // This includes all grids: Biomes (already registered), Structures, and Flows
-            if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+            if (composition.getFeatureHexGridRegistry() == null
+                    || composition.getFeatureHexGridRegistry().isEmpty()) {
                 log.warn("Central FeatureHexGrid registry is empty - cannot build GridIndex");
                 return new GridIndex(index, 0, overlapping);
             }
 
-            log.debug("Building GridIndex from central registry with {} grids",
-                composition.getFeatureHexGridRegistry().size());
+            log.debug(
+                    "Building GridIndex from central registry with {} grids",
+                    composition.getFeatureHexGridRegistry().size());
 
             // Build index directly from central registry
             // The central registry contains ALL FeatureHexGrids (Biomes, Structures, Fillers)
             // We use dummy Area for grids that don't have a real Area
-            for (Map.Entry<String, FeatureHexGrid> entry : composition.getFeatureHexGridRegistry().entrySet()) {
+            for (Map.Entry<String, FeatureHexGrid> entry :
+                    composition.getFeatureHexGridRegistry().entrySet()) {
                 String coordKey = entry.getKey();
                 FeatureHexGrid hexGrid = entry.getValue();
 
@@ -109,15 +110,16 @@ public class HexGridRoadConfigurator {
 
             // Log warnings if overlaps found
             if (overlappingCount > 0) {
-                log.warn("Found {} overlapping Area grids at coordinates: {}",
-                    overlappingCount, String.join(", ", overlapping));
+                log.warn(
+                        "Found {} overlapping Area grids at coordinates: {}",
+                        overlappingCount,
+                        String.join(", ", overlapping));
             }
 
             return gridIndex;
         }
 
-        private static int indexAreaGrids(Area area, Map<String, GridEntry> index,
-                                         List<String> overlapping) {
+        private static int indexAreaGrids(Area area, Map<String, GridEntry> index, List<String> overlapping) {
             // Only Structures have local hexGrids (Flows are not Areas)
             List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> hexGrids = null;
             if (area instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
@@ -140,8 +142,11 @@ public class HexGridRoadConfigurator {
                 // Check for overlaps (multiple areas at same coordinate)
                 if (index.containsKey(coordKey)) {
                     GridEntry existing = index.get(coordKey);
-                    log.debug("Area grid overlap at {}: {} vs {} (using latest)",
-                        coordKey, existing.getArea().getName(), area.getName());
+                    log.debug(
+                            "Area grid overlap at {}: {} vs {} (using latest)",
+                            coordKey,
+                            existing.getArea().getName(),
+                            area.getName());
                     overlapping.add(coordKey);
                     overlapCount++;
                 }
@@ -254,17 +259,20 @@ public class HexGridRoadConfigurator {
 
                     // Assemble road={} from RoadConfigParts (if any) OR existing road parameter
                     if (areaGrid.hasRoadConfigParts() || existingRoad != null) {
-                        int partCount = areaGrid.hasRoadConfigParts() ? areaGrid.getRoadConfigParts().size() : 0;
+                        int partCount = areaGrid.hasRoadConfigParts()
+                                ? areaGrid.getRoadConfigParts().size()
+                                : 0;
                         String roadJson = buildRoadJsonFromParts(areaGrid.getRoadConfigParts(), areaGrid, existingRoad);
                         areaGrid.addParameter("g_road", roadJson);
                         configured = true;
                         totalParts += partCount;
-                        log.debug("Assembled road={} from {} parts + existing={} at {} (area: {})",
-                            roadJson,
-                            partCount,
-                            existingRoad != null,
-                            coordKey,
-                            area.getName());
+                        log.debug(
+                                "Assembled road={} from {} parts + existing={} at {} (area: {})",
+                                roadJson,
+                                partCount,
+                                existingRoad != null,
+                                coordKey,
+                                area.getName());
                     }
 
                     // Assemble river={} from RiverConfigParts
@@ -274,8 +282,12 @@ public class HexGridRoadConfigurator {
                         areaGrid.addParameter("g_river", riverJson);
                         configured = true;
                         totalParts += riverPartCount;
-                        log.debug("Assembled river={} from {} parts at {} (area: {})",
-                            riverJson.length(), riverPartCount, coordKey, area.getName());
+                        log.debug(
+                                "Assembled river={} from {} parts at {} (area: {})",
+                                riverJson.length(),
+                                riverPartCount,
+                                coordKey,
+                                area.getName());
                     }
 
                     // Assemble wall={} from WallConfigParts
@@ -285,8 +297,12 @@ public class HexGridRoadConfigurator {
                         areaGrid.addParameter("g_wall", wallJson);
                         configured = true;
                         totalParts += wallPartCount;
-                        log.debug("Assembled wall={} from {} parts at {} (area: {})",
-                            wallJson.length(), wallPartCount, coordKey, area.getName());
+                        log.debug(
+                                "Assembled wall={} from {} parts at {} (area: {})",
+                                wallJson.length(),
+                                wallPartCount,
+                                coordKey,
+                                area.getName());
                     }
 
                     if (configured) {
@@ -302,29 +318,33 @@ public class HexGridRoadConfigurator {
                 }
             }
 
-            log.info("Road configuration complete: configured={}/{}, parts={}, skipped={}",
-                configuredGrids, totalGrids, totalParts, skippedGrids);
+            log.info(
+                    "Road configuration complete: configured={}/{}, parts={}, skipped={}",
+                    configuredGrids,
+                    totalGrids,
+                    totalParts,
+                    skippedGrids);
 
             return RoadConfigurationResult.builder()
-                .totalGrids(totalGrids)
-                .configuredGrids(configuredGrids)
-                .skippedGrids(skippedGrids)
-                .totalSegments(totalParts)
-                .success(errors.isEmpty())
-                .errors(errors)
-                .build();
+                    .totalGrids(totalGrids)
+                    .configuredGrids(configuredGrids)
+                    .skippedGrids(skippedGrids)
+                    .totalSegments(totalParts)
+                    .success(errors.isEmpty())
+                    .errors(errors)
+                    .build();
 
         } catch (Exception e) {
             log.error("Road configuration failed", e);
             return RoadConfigurationResult.builder()
-                .totalGrids(totalGrids)
-                .configuredGrids(configuredGrids)
-                .skippedGrids(skippedGrids)
-                .totalSegments(totalParts)
-                .success(false)
-                .errorMessage(e.getMessage())
-                .errors(errors)
-                .build();
+                    .totalGrids(totalGrids)
+                    .configuredGrids(configuredGrids)
+                    .skippedGrids(skippedGrids)
+                    .totalSegments(totalParts)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .errors(errors)
+                    .build();
         }
     }
 
@@ -373,19 +393,24 @@ public class HexGridRoadConfigurator {
                     existingRoadConfig = parsed;
                     log.debug("Parsed existing road parameter at {}: {}", grid.getPositionKey(), existingRoad);
                 } catch (Exception e) {
-                    log.warn("Failed to parse existing road parameter at {}: {}", grid.getPositionKey(), e.getMessage());
+                    log.warn(
+                            "Failed to parse existing road parameter at {}: {}", grid.getPositionKey(), e.getMessage());
                 }
             }
 
             // Separate CENTER parts from ROUTE parts
-            RoadConfigPart centerPart = roadParts != null ? roadParts.stream()
-                .filter(p -> p.getPartType() == RoadConfigPart.PartType.CENTER)
-                .findFirst()
-                .orElse(null) : null;
+            RoadConfigPart centerPart = roadParts != null
+                    ? roadParts.stream()
+                            .filter(p -> p.getPartType() == RoadConfigPart.PartType.CENTER)
+                            .findFirst()
+                            .orElse(null)
+                    : null;
 
-            List<RoadConfigPart> routeParts = roadParts != null ? roadParts.stream()
-                .filter(p -> p.getPartType() == RoadConfigPart.PartType.ROUTE)
-                .collect(Collectors.toList()) : new ArrayList<>();
+            List<RoadConfigPart> routeParts = roadParts != null
+                    ? roadParts.stream()
+                            .filter(p -> p.getPartType() == RoadConfigPart.PartType.ROUTE)
+                            .collect(Collectors.toList())
+                    : new ArrayList<>();
 
             // Priority: CENTER part > existing road config > default
             // Add CENTER configuration (plaza, lx, lz, level)
@@ -443,16 +468,16 @@ public class HexGridRoadConfigurator {
                 }
 
                 // Only write level if route parts don't have fromLevel/toLevel
-                boolean hasFromToLevels = routeParts.stream()
-                    .allMatch(p -> p.getFromLevel() != null && p.getToLevel() != null);
+                boolean hasFromToLevels =
+                        routeParts.stream().allMatch(p -> p.getFromLevel() != null && p.getToLevel() != null);
 
                 if (!hasFromToLevels) {
                     // Calculate level from route parts as fallback
                     Integer baseLevel = routeParts.stream()
-                        .map(RoadConfigPart::getLevel)
-                        .filter(level -> level != null)
-                        .findFirst()
-                        .orElse(95);
+                            .map(RoadConfigPart::getLevel)
+                            .filter(level -> level != null)
+                            .findFirst()
+                            .orElse(95);
                     roadConfig.put("level", baseLevel);
                 }
             }
@@ -480,15 +505,14 @@ public class HexGridRoadConfigurator {
                     }
                     // Convert EDGE to HexLocal format: "NORTH_EAST" -> "<NE 2>"
                     String edgeShort = convertEdgeToShortForm(sideKey);
-                    entry.put("position", String.format("<%s 2>", edgeShort));  // Default to middle (2/4)
+                    entry.put("position", String.format("<%s 2>", edgeShort)); // Default to middle (2/4)
                     addedSides.add(sideKey);
                 }
                 // Priority 3: Position-based routing - convert to HexLocal format
                 else if (part.getRouteLx() != null && part.getRouteLz() != null) {
                     // Convert lx/lz to HexLocal format: "<256;256>"
                     entry.put("position", String.format("<%d;%d>", part.getRouteLx(), part.getRouteLz()));
-                }
-                else {
+                } else {
                     log.warn("RoadConfigPart has neither position, side nor lx/lz at grid {}", grid.getPositionKey());
                     continue;
                 }
@@ -560,12 +584,12 @@ public class HexGridRoadConfigurator {
 
             // Separate FROM and TO parts
             List<RiverConfigPart> fromParts = riverParts.stream()
-                .filter(p -> p.getPartType() == RiverConfigPart.PartType.FROM)
-                .collect(Collectors.toList());
+                    .filter(p -> p.getPartType() == RiverConfigPart.PartType.FROM)
+                    .collect(Collectors.toList());
 
             List<RiverConfigPart> toParts = riverParts.stream()
-                .filter(p -> p.getPartType() == RiverConfigPart.PartType.TO)
-                .collect(Collectors.toList());
+                    .filter(p -> p.getPartType() == RiverConfigPart.PartType.TO)
+                    .collect(Collectors.toList());
 
             // Build from array
             List<Map<String, Object>> fromArray = new ArrayList<>();
@@ -588,8 +612,7 @@ public class HexGridRoadConfigurator {
                     }
                     entry.put("side", sideKey);
                     addedFromSides.add(sideKey);
-                }
-                else {
+                } else {
                     log.warn("RiverConfigPart (FROM) has neither position nor side at grid {}", grid.getPositionKey());
                     continue;
                 }
@@ -633,8 +656,7 @@ public class HexGridRoadConfigurator {
                     }
                     entry.put("side", sideKey);
                     addedToSides.add(sideKey);
-                }
-                else {
+                } else {
                     log.warn("RiverConfigPart (TO) has neither position nor side at grid {}", grid.getPositionKey());
                     continue;
                 }
@@ -701,12 +723,12 @@ public class HexGridRoadConfigurator {
 
             // Separate SIDE and GATE parts
             List<WallConfigPart> sideParts = wallParts.stream()
-                .filter(p -> p.getPartType() == WallConfigPart.PartType.SIDE)
-                .collect(Collectors.toList());
+                    .filter(p -> p.getPartType() == WallConfigPart.PartType.SIDE)
+                    .collect(Collectors.toList());
 
             List<WallConfigPart> gateParts = wallParts.stream()
-                .filter(p -> p.getPartType() == WallConfigPart.PartType.GATE)
-                .collect(Collectors.toList());
+                    .filter(p -> p.getPartType() == WallConfigPart.PartType.GATE)
+                    .collect(Collectors.toList());
 
             // Build segments array
             List<Map<String, Object>> segments = new ArrayList<>();
@@ -724,7 +746,7 @@ public class HexGridRoadConfigurator {
                     }
                     // Convert EDGE to HexLocal format: "NORTH_EAST" -> "<NE 2>"
                     String edgeShort = convertEdgeToShortForm(sideKey);
-                    entry.put("position", String.format("<%s 2>", edgeShort));  // Default to middle (2/4)
+                    entry.put("position", String.format("<%s 2>", edgeShort)); // Default to middle (2/4)
                     addedSides.add(sideKey);
                 }
                 // Position-based wall segment - use HexLocal position string directly
@@ -735,10 +757,12 @@ public class HexGridRoadConfigurator {
                 else if (part.getLx() != null && part.getLz() != null) {
                     // Convert lx/lz to HexLocal format: "<256;256>"
                     entry.put("position", String.format("<%d;%d>", part.getLx(), part.getLz()));
-                    log.warn("Using deprecated lx/lz for wall at grid {}: lx={}, lz={}",
-                        grid.getPositionKey(), part.getLx(), part.getLz());
-                }
-                else {
+                    log.warn(
+                            "Using deprecated lx/lz for wall at grid {}: lx={}, lz={}",
+                            grid.getPositionKey(),
+                            part.getLx(),
+                            part.getLz());
+                } else {
                     log.warn("WallConfigPart has no valid position at grid {}", grid.getPositionKey());
                     continue;
                 }
@@ -795,7 +819,6 @@ public class HexGridRoadConfigurator {
             return "{}";
         }
     }
-
 
     /**
      * Calculates road level based on grid terrain height + offset.

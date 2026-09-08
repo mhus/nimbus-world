@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.life.service;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
@@ -14,14 +12,15 @@ import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.world.WorldTimeService;
 import jakarta.annotation.PostConstruct;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Weather simulation service for active hex grid regions.
@@ -55,6 +54,7 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
      * Cached world data.
      */
     private final Map<String, WWorld> worldCache = new ConcurrentHashMap<>();
+
     private final Map<String, Integer> epochCache = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -73,7 +73,8 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
         int chunkSize = world.getPublicData() != null ? world.getPublicData().getChunkSize() : 16;
         if (hexGridSize <= 0) return;
 
-        Map<String, HexWeatherState> hexStates = worldWeatherStates.computeIfAbsent(wid, k -> new ConcurrentHashMap<>());
+        Map<String, HexWeatherState> hexStates =
+                worldWeatherStates.computeIfAbsent(wid, k -> new ConcurrentHashMap<>());
 
         // Determine hex grids for activated chunks
         Set<String> newHexKeys = new HashSet<>();
@@ -129,14 +130,19 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
                 try {
                     simulateHexWeather(worldId, hexEntry.getKey(), hexEntry.getValue(), currentTime);
                 } catch (Exception e) {
-                    log.error("Error simulating weather for hex {} in world {}: {}",
-                            hexEntry.getKey(), worldId, e.getMessage(), e);
+                    log.error(
+                            "Error simulating weather for hex {} in world {}: {}",
+                            hexEntry.getKey(),
+                            worldId,
+                            e.getMessage(),
+                            e);
                 }
             }
         }
     }
 
-    private void initializeHexWeather(String worldId, String hexKey, int epoch, Map<String, HexWeatherState> hexStates) {
+    private void initializeHexWeather(
+            String worldId, String hexKey, int epoch, Map<String, HexWeatherState> hexStates) {
         try {
             // Load weather descriptor from WHexGrid
             String descriptor = loadWeatherDescriptor(worldId, hexKey, epoch);
@@ -156,12 +162,15 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
             state.permanent = permanent;
 
             hexStates.put(hexKey, state);
-            log.info("Initialized weather for hex {} in world {}: base={}, permanent={}",
-                    hexKey, worldId, baseScenario, permanent);
+            log.info(
+                    "Initialized weather for hex {} in world {}: base={}, permanent={}",
+                    hexKey,
+                    worldId,
+                    baseScenario,
+                    permanent);
 
         } catch (Exception e) {
-            log.error("Failed to initialize weather for hex {} in world {}: {}",
-                    hexKey, worldId, e.getMessage(), e);
+            log.error("Failed to initialize weather for hex {} in world {}: {}", hexKey, worldId, e.getMessage(), e);
         }
     }
 
@@ -204,11 +213,15 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
         int hexR = Integer.parseInt(parts[1]);
 
         // Broadcast to clients
-        sessionCommandService.sendToHexGrid(worldId, hexQ, hexR,
-                "startEnvironmentScript", args);
+        sessionCommandService.sendToHexGrid(worldId, hexQ, hexR, "startEnvironmentScript", args);
 
-        log.info("Weather change in world {} hex {}: {} for {}s (params: {})",
-                worldId, hexKey, nextScenario, durationSeconds, params);
+        log.info(
+                "Weather change in world {} hex {}: {} for {}s (params: {})",
+                worldId,
+                hexKey,
+                nextScenario,
+                durationSeconds,
+                params);
     }
 
     /**
@@ -269,7 +282,8 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
         }
 
         // Weighted random selection
-        double totalWeight = weights.values().stream().mapToDouble(Double::doubleValue).sum();
+        double totalWeight =
+                weights.values().stream().mapToDouble(Double::doubleValue).sum();
         if (totalWeight <= 0) {
             return baseScenario;
         }
@@ -407,7 +421,8 @@ public class WeatherSimulationService implements MultiWorldChunkService.WorldChu
         return epochCache.computeIfAbsent(worldId, id -> {
             WorldId wid = WorldId.of(id).orElse(null);
             if (wid != null && wid.isInstance()) {
-                return worldInstanceService.findByInstanceIdWithValidation(wid.getId())
+                return worldInstanceService
+                        .findByInstanceIdWithValidation(wid.getId())
                         .map(instance -> instance.getEpoch())
                         .orElse(0);
             }

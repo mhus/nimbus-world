@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Flat terrain manipulator.
@@ -39,8 +38,12 @@ public class FlatTerrainManipulator implements FlatManipulator {
         // Clamp ground level to valid range
         groundLevel = Math.max(0, Math.min(255, groundLevel));
 
-        log.info("FlatTerrainManipulator: groundLevel={}, oceanLevel={}, unknownProtected={}, borderProtected={}",
-                groundLevel, flat.getSeaLevel(), flat.isUnknownProtected(), flat.isBorderProtected());
+        log.info(
+                "FlatTerrainManipulator: groundLevel={}, oceanLevel={}, unknownProtected={}, borderProtected={}",
+                groundLevel,
+                flat.getSeaLevel(),
+                flat.isUnknownProtected(),
+                flat.isBorderProtected());
 
         int oceanLevel = flat.getSeaLevel();
 
@@ -59,9 +62,7 @@ public class FlatTerrainManipulator implements FlatManipulator {
                 int currentLevel = flat.getLevel(flatX, flatZ);
 
                 // Calculate material based on height vs water level
-                int materialId = groundLevel <= oceanLevel
-                        ? FlatMaterialService.SAND
-                        : FlatMaterialService.GRASS;
+                int materialId = groundLevel <= oceanLevel ? FlatMaterialService.SAND : FlatMaterialService.GRASS;
 
                 // IMPORTANT: Set column FIRST, then level
                 // This is required for flats with unknownProtected=true (e.g. HexGrid flats)
@@ -77,15 +78,29 @@ public class FlatTerrainManipulator implements FlatManipulator {
 
                     // Log first few failures for debugging
                     if (failedLevelCount + failedColumnCount <= 5) {
-                        log.warn("Failed to set position ({},{}): currentColumn={}, currentLevel={}, columnSet={}, levelSet={}",
-                                flatX, flatZ, currentColumn, currentLevel, columnSet, levelSet);
+                        log.warn(
+                                "Failed to set position ({},{}): currentColumn={}, currentLevel={}, columnSet={}, levelSet={}",
+                                flatX,
+                                flatZ,
+                                currentColumn,
+                                currentLevel,
+                                columnSet,
+                                levelSet);
                     }
                 }
             }
         }
 
-        log.info("Flat terrain manipulated: region=({},{},{},{}), groundLevel={}, successful={}, failedColumn={}, failedLevel={}",
-                x, z, sizeX, sizeZ, groundLevel, successCount, failedColumnCount, failedLevelCount);
+        log.info(
+                "Flat terrain manipulated: region=({},{},{},{}), groundLevel={}, successful={}, failedColumn={}, failedLevel={}",
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                groundLevel,
+                successCount,
+                failedColumnCount,
+                failedLevelCount);
     }
 
     private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {

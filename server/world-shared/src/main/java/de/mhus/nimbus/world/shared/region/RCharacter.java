@@ -2,26 +2,23 @@ package de.mhus.nimbus.world.shared.region;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.PlayerInfo;
-import de.mhus.nimbus.generated.types.RegionItemInfo; // geändert
+// geändert
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
-import de.mhus.nimbus.shared.types.PlayerCharacter;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "r_characters")
 @ActualSchemaVersion("1.0.0")
@@ -38,14 +35,16 @@ public class RCharacter {
     @Indexed
     private String userId;
 
-    private String name;      // eindeutiger Name pro userId
+    private String name; // eindeutiger Name pro userId
 
     @CreatedDate
     private Instant createdAt;
+
     private Instant modifiedAt;
 
     @TypeScript(import_ = "PlayerInfo", importPath = "../../types/PlayerInfo")
     private PlayerInfo publicData;
+
     @TypeScript(import_ = "PlayerBackpack", importPath = "../../configs/EngineConfiguration")
     private PlayerBackpack backpack;
 
@@ -68,7 +67,8 @@ public class RCharacter {
     // Reputation per faction/group (e.g. "villagers" -> 10, "bandits" -> -5)
     private Map<String, Integer> reputation;
 
-    // Spell Words: word name -> XP (level derived from thresholds: 0-99=L0, 100-199=L1, 200-499=L2, 500-999=L3, 1000-1999=L4, 2000+=L5)
+    // Spell Words: word name -> XP (level derived from thresholds: 0-99=L0, 100-199=L1, 200-499=L2, 500-999=L3,
+    // 1000-1999=L4, 2000+=L5)
     private Map<String, Integer> spellWords;
 
     private Map<String, String> attributes; // neu: Attribute
@@ -79,19 +79,42 @@ public class RCharacter {
     @Indexed
     private String regionId; // neu: Region-Zuordnung
 
-    public RCharacter() { }
+    public RCharacter() {}
+
     public RCharacter(String userId, String regionId, String name) {
         this.userId = userId;
         this.regionId = regionId;
         this.name = name;
     }
 
-    public Map<String, Integer> getSkills() { if (skills == null) skills = new HashMap<>(); return skills; }
-    public Map<String, Integer> getReputation() { if (reputation == null) reputation = new HashMap<>(); return reputation; }
-    public Map<String, Double> getConstitution() { if (constitution == null) constitution = new HashMap<>(); return constitution; }
-    public Map<String, Integer> getSpellWords() { if (spellWords == null) spellWords = new HashMap<>(); return spellWords; }
-    public List<String> getBlockedPlayers() { if (blockedPlayers == null) blockedPlayers = new ArrayList<>(); return blockedPlayers; }
-    public boolean isPlayerBlocked(String entityId) { return blockedPlayers != null && blockedPlayers.contains(entityId); }
+    public Map<String, Integer> getSkills() {
+        if (skills == null) skills = new HashMap<>();
+        return skills;
+    }
+
+    public Map<String, Integer> getReputation() {
+        if (reputation == null) reputation = new HashMap<>();
+        return reputation;
+    }
+
+    public Map<String, Double> getConstitution() {
+        if (constitution == null) constitution = new HashMap<>();
+        return constitution;
+    }
+
+    public Map<String, Integer> getSpellWords() {
+        if (spellWords == null) spellWords = new HashMap<>();
+        return spellWords;
+    }
+
+    public List<String> getBlockedPlayers() {
+        if (blockedPlayers == null) blockedPlayers = new ArrayList<>();
+        return blockedPlayers;
+    }
+
+    public boolean isPlayerBlocked(String entityId) {
+        return blockedPlayers != null && blockedPlayers.contains(entityId);
+    }
 
     /**
      * Get constitution value for a category. Returns 1.0 if not set.
@@ -104,6 +127,7 @@ public class RCharacter {
         if (level < 0) level = 0;
         getSkills().put(skill, level);
     }
+
     public int incrementSkill(String skill, int delta) {
         int current = getSkills().getOrDefault(skill, 0);
         int next = Math.max(0, current + delta);
@@ -128,5 +152,4 @@ public class RCharacter {
         }
         modifiedAt = Instant.now();
     }
-
 }

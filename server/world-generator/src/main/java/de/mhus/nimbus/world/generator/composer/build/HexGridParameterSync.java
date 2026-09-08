@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.composer.build;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Synchronizes parameters from HexComposite model (FilledHexGrids) to WHexGrids.
@@ -33,9 +32,8 @@ public class HexGridParameterSync {
      * @param wHexGrids List of WHexGrids to update
      * @return Number of grids updated
      */
-    public int syncParametersToWHexGrids(HexComposition composition,
-                                         BiomePlacementResult placementResult,
-                                         List<WHexGrid> wHexGrids) {
+    public int syncParametersToWHexGrids(
+            HexComposition composition, BiomePlacementResult placementResult, List<WHexGrid> wHexGrids) {
         log.debug("Starting parameter sync from central FeatureHexGrid registry to WHexGrids");
 
         // Build index of WHexGrids by coordinate for fast lookup
@@ -81,7 +79,6 @@ public class HexGridParameterSync {
         return updatedCount;
     }
 
-
     /**
      * Syncs ALL parameters from FeatureHexGrid to WHexGrid.
      *
@@ -95,7 +92,8 @@ public class HexGridParameterSync {
      * @return true if any parameters were synced
      */
     private boolean syncFlowParameters(FeatureHexGrid featureHexGrid, WHexGrid wHexGrid, String sourceName) {
-        if (featureHexGrid.getParameters() == null || featureHexGrid.getParameters().isEmpty()) {
+        if (featureHexGrid.getParameters() == null
+                || featureHexGrid.getParameters().isEmpty()) {
             return false;
         }
 
@@ -135,10 +133,13 @@ public class HexGridParameterSync {
             } else {
                 // All other parameters: warn if overwriting, then set
                 if (existingValue != null && !existingValue.equals(value)) {
-                    log.warn("Overwriting parameter '{}' on WHexGrid {} (from: {}) - old: {}, new: {}",
-                        key, wHexGrid.getPosition(), sourceName,
-                        existingValue.length() > 50 ? existingValue.substring(0, 50) + "..." : existingValue,
-                        value.length() > 50 ? value.substring(0, 50) + "..." : value);
+                    log.warn(
+                            "Overwriting parameter '{}' on WHexGrid {} (from: {}) - old: {}, new: {}",
+                            key,
+                            wHexGrid.getPosition(),
+                            sourceName,
+                            existingValue.length() > 50 ? existingValue.substring(0, 50) + "..." : existingValue,
+                            value.length() > 50 ? value.substring(0, 50) + "..." : value);
                 }
                 wHexGrid.getParameters().put(key, value);
                 parameterCount++;
@@ -147,8 +148,11 @@ public class HexGridParameterSync {
         }
 
         if (synced) {
-            log.debug("Synced {} parameters to WHexGrid {} (from: {})",
-                parameterCount, wHexGrid.getPosition(), sourceName);
+            log.debug(
+                    "Synced {} parameters to WHexGrid {} (from: {})",
+                    parameterCount,
+                    wHexGrid.getPosition(),
+                    sourceName);
         }
 
         return synced;

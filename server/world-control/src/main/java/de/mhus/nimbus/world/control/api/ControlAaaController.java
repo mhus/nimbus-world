@@ -9,15 +9,14 @@ import de.mhus.nimbus.world.shared.dto.DevSessionLoginRequest;
 import de.mhus.nimbus.world.shared.dto.WorldInfoDto;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for Authentication, Authorization, and Access (AAA).
@@ -65,12 +64,12 @@ public class ControlAaaController extends BaseEditorController {
     public record DevLoginRequest(
             String worldId,
             String userId,
-            Boolean agent,       // Optional, defaults to false
-            String characterId,  // Required when agent=false
-            ActorRoles actor,    // Required when agent=false
-            String entryPoint,   // Optional: "last", "grid:q,r", or "world"
-            String instanceId    // Optional: existing instance ID for PLAYER rejoining
-    ) {
+            Boolean agent, // Optional, defaults to false
+            String characterId, // Required when agent=false
+            ActorRoles actor, // Required when agent=false
+            String entryPoint, // Optional: "last", "grid:q,r", or "world"
+            String instanceId // Optional: existing instance ID for PLAYER rejoining
+            ) {
         public boolean isAgent() {
             return agent != null && agent;
         }
@@ -90,8 +89,7 @@ public class ControlAaaController extends BaseEditorController {
     public ResponseEntity<?> getDevLoginData(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "100") int limit,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin - search={}, limit={}", search, limit);
@@ -103,8 +101,7 @@ public class ControlAaaController extends BaseEditorController {
 
         } catch (Exception e) {
             log.error("Failed to load worlds for dev login", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Failed to load worlds: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to load worlds: " + e.getMessage()));
         }
     }
 
@@ -122,8 +119,7 @@ public class ControlAaaController extends BaseEditorController {
     public ResponseEntity<?> getDevLoginUsers(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "100") int limit,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/users - search={}, limit={}", search, limit);
@@ -135,8 +131,7 @@ public class ControlAaaController extends BaseEditorController {
 
         } catch (Exception e) {
             log.error("Failed to load users for dev login", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Failed to load users: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to load users: " + e.getMessage()));
         }
     }
 
@@ -151,8 +146,7 @@ public class ControlAaaController extends BaseEditorController {
     @GetMapping("/devlogin/zones")
     public ResponseEntity<?> getDevLoginZones(
             @RequestParam String worldId,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/zones - worldId={}", worldId);
@@ -166,8 +160,7 @@ public class ControlAaaController extends BaseEditorController {
             return ResponseEntity.ok(zones);
         } catch (Exception e) {
             log.error("Failed to load zones", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Failed to load zones: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to load zones: " + e.getMessage()));
         }
     }
 
@@ -185,8 +178,7 @@ public class ControlAaaController extends BaseEditorController {
             @RequestParam String worldId,
             @RequestParam(required = false) String playerId,
             @RequestParam(required = false, defaultValue = "false") boolean all,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}, all={}", worldId, playerId, all);
@@ -200,8 +192,7 @@ public class ControlAaaController extends BaseEditorController {
             return ResponseEntity.ok(instances);
         } catch (Exception e) {
             log.error("Failed to load instances", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Failed to load instances: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to load instances: " + e.getMessage()));
         }
     }
 
@@ -218,8 +209,7 @@ public class ControlAaaController extends BaseEditorController {
     public ResponseEntity<?> getDevLoginCharacters(
             @RequestParam String userId,
             @RequestParam String worldId,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/characters - userId={}, worldId={}", userId, worldId);
@@ -233,8 +223,7 @@ public class ControlAaaController extends BaseEditorController {
 
         try {
             var characters = accessService.getCharactersForUserInWorld(userId, worldId);
-            log.debug("Returning {} characters for user={} in world={}",
-                characters.size(), userId, worldId);
+            log.debug("Returning {} characters for user={} in world={}", characters.size(), userId, worldId);
             return ResponseEntity.ok(characters);
 
         } catch (IllegalArgumentException e) {
@@ -243,8 +232,7 @@ public class ControlAaaController extends BaseEditorController {
 
         } catch (Exception e) {
             log.error("Failed to load characters for dev login", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Failed to load characters: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to load characters: " + e.getMessage()));
         }
     }
 
@@ -260,13 +248,16 @@ public class ControlAaaController extends BaseEditorController {
     @PostMapping("/devlogin")
     public ResponseEntity<?> devLogin(
             @RequestBody DevLoginRequest request,
-            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
-    ) {
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey) {
         var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
-        log.debug("POST /control/aaa/devlogin - worldId={}, userId={}, agent={}, characterId={}, actor={}",
-                request.worldId(), request.userId(), request.agent(),
-                request.characterId(), request.actor());
+        log.debug(
+                "POST /control/aaa/devlogin - worldId={}, userId={}, agent={}, characterId={}, actor={}",
+                request.worldId(),
+                request.userId(),
+                request.agent(),
+                request.characterId(),
+                request.actor());
 
         // ===== Validation =====
 
@@ -299,8 +290,7 @@ public class ControlAaaController extends BaseEditorController {
             DevLoginResponse response;
 
             if (request.isAgent()) {
-                log.debug("Executing agent login for user={} in world={}",
-                        request.userId(), request.worldId());
+                log.debug("Executing agent login for user={} in world={}", request.userId(), request.worldId());
 
                 DevAgentLoginRequest agentRequest = DevAgentLoginRequest.builder()
                         .worldId(request.worldId())
@@ -310,8 +300,13 @@ public class ControlAaaController extends BaseEditorController {
                 response = accessService.devAgentLogin(agentRequest);
 
             } else {
-                log.debug("Executing session login for user={} character={} actor={} entryPoint={} in world={}",
-                        request.userId(), request.characterId(), request.actor(), request.entryPoint(), request.worldId());
+                log.debug(
+                        "Executing session login for user={} character={} actor={} entryPoint={} in world={}",
+                        request.userId(),
+                        request.characterId(),
+                        request.actor(),
+                        request.entryPoint(),
+                        request.worldId());
 
                 DevSessionLoginRequest sessionRequest = DevSessionLoginRequest.builder()
                         .worldId(request.worldId())
@@ -325,8 +320,11 @@ public class ControlAaaController extends BaseEditorController {
                 response = accessService.devSessionLogin(sessionRequest);
             }
 
-            log.info("Dev login successful - worldId={}, userId={}, agent={}",
-                    request.worldId(), request.userId(), request.isAgent());
+            log.info(
+                    "Dev login successful - worldId={}, userId={}, agent={}",
+                    request.worldId(),
+                    request.userId(),
+                    request.isAgent());
 
             return ResponseEntity.ok(response);
 
@@ -338,14 +336,12 @@ public class ControlAaaController extends BaseEditorController {
         } catch (IllegalStateException e) {
             // Access denied, permission issues
             log.warn("Dev login access denied: {}", e.getMessage());
-            return ResponseEntity.status(403)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
             // Unexpected errors
             log.error("Dev login failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 
@@ -360,10 +356,7 @@ public class ControlAaaController extends BaseEditorController {
      * @return 200 OK if successful
      */
     @GetMapping("/authorize")
-    public ResponseEntity<?> authorize(
-            @RequestParam String token,
-            HttpServletResponse response
-    ) {
+    public ResponseEntity<?> authorize(@RequestParam String token, HttpServletResponse response) {
         log.debug("GET /control/aaa/authorize - validating token");
 
         try {
@@ -378,14 +371,12 @@ public class ControlAaaController extends BaseEditorController {
         } catch (IllegalStateException e) {
             // Session/access validation failures
             log.warn("Authorization failed: {}", e.getMessage());
-            return ResponseEntity.status(403)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
             // Unexpected errors
             log.error("Authorization failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 
@@ -411,8 +402,7 @@ public class ControlAaaController extends BaseEditorController {
 
         } catch (Exception e) {
             log.error("Status check failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 
@@ -435,8 +425,7 @@ public class ControlAaaController extends BaseEditorController {
 
         } catch (Exception e) {
             log.error("Logout failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 }

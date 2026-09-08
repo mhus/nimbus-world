@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * Service for managing MaterialDefinitions on WFlat instances.
@@ -45,45 +44,43 @@ public class FlatMaterialService {
     public static final String PALETTE_MIMBUS = "nimbus";
 
     // Preset material palettes with format: "blockDef|nextBlockDef|hasOcean"
-    private static final Map<String,Map<Integer,String>> PRESET_MATERIALS = Map.of(
-            PALETTE_MIMBUS, CastUtil.mapIntegerOfString(
-                    GRASS, "n:g@s:default||true",
-                    DIRT, "n:d@s:default||true",
-                    STONE, "n:s@s:default||true",
-                    SAND, "n:sa@s:default||true",
-                    WATER, "n:w@s:default||true",
-                    BEDROCK, "n:b@s:default||true",
-                    SNOW, "n:sn@s:default||true",
-                    INVISIBLE, "n:2@s:default||true",
-                    INVISIBLE_SOLID, "n:3@s:default||true",
-                    DESERT_SAND, "n:ds@s:default||true",
-                    STREET, "n:s@s:default||false",
-                    STREET_BORDER, "n:s@s:default||false",
-                    STREET_BRIDGE, "n:s@s:default||false",
-                    TRAIL, "n:s@s:default||false",
-                    TRAIL_BORDER, "n:s@s:default||false",
-                    TRAIL_BRIDGE, "n:s@s:default||false"
-            ),
-            PALETTE_LEGACY, CastUtil.mapIntegerOfString(
-                    GRASS, "w:310@s:default||true",        // old world
-                    DIRT, "w:279@s:default||true",         // old world
-                    STONE, "w:553@s:default||true",
-                    SAND, "w:520@s:default||true",
-                    WATER, "w:1008@s:default||true",
-                    BEDROCK, "w:127@s:default||true",
-                    SNOW, "w:537@s:default||true",
-                    INVISIBLE, "w:2@s:default||true",
-                    INVISIBLE_SOLID, "w:3@s:default||true",
-                    DESERT_SAND, "w:520@s:default||true",
-                    STREET, "n:s@s:default||false",
-                    STREET_BORDER, "w:553@s:default||false",
-                    STREET_BRIDGE, "w:553@s:default||false",
-                    TRAIL, "w:553@s:default||false",
-                    TRAIL_BORDER, "w:553@s:default||false",
-                    TRAIL_BRIDGE, "w:553@s:default||false"
-            )
-    );
-
+    private static final Map<String, Map<Integer, String>> PRESET_MATERIALS = Map.of(
+            PALETTE_MIMBUS,
+                    CastUtil.mapIntegerOfString(
+                            GRASS, "n:g@s:default||true",
+                            DIRT, "n:d@s:default||true",
+                            STONE, "n:s@s:default||true",
+                            SAND, "n:sa@s:default||true",
+                            WATER, "n:w@s:default||true",
+                            BEDROCK, "n:b@s:default||true",
+                            SNOW, "n:sn@s:default||true",
+                            INVISIBLE, "n:2@s:default||true",
+                            INVISIBLE_SOLID, "n:3@s:default||true",
+                            DESERT_SAND, "n:ds@s:default||true",
+                            STREET, "n:s@s:default||false",
+                            STREET_BORDER, "n:s@s:default||false",
+                            STREET_BRIDGE, "n:s@s:default||false",
+                            TRAIL, "n:s@s:default||false",
+                            TRAIL_BORDER, "n:s@s:default||false",
+                            TRAIL_BRIDGE, "n:s@s:default||false"),
+            PALETTE_LEGACY,
+                    CastUtil.mapIntegerOfString(
+                            GRASS, "w:310@s:default||true", // old world
+                            DIRT, "w:279@s:default||true", // old world
+                            STONE, "w:553@s:default||true",
+                            SAND, "w:520@s:default||true",
+                            WATER, "w:1008@s:default||true",
+                            BEDROCK, "w:127@s:default||true",
+                            SNOW, "w:537@s:default||true",
+                            INVISIBLE, "w:2@s:default||true",
+                            INVISIBLE_SOLID, "w:3@s:default||true",
+                            DESERT_SAND, "w:520@s:default||true",
+                            STREET, "n:s@s:default||false",
+                            STREET_BORDER, "w:553@s:default||false",
+                            STREET_BRIDGE, "w:553@s:default||false",
+                            TRAIL, "w:553@s:default||false",
+                            TRAIL_BORDER, "w:553@s:default||false",
+                            TRAIL_BRIDGE, "w:553@s:default||false"));
 
     private final WFlatService flatService;
 
@@ -98,13 +95,19 @@ public class FlatMaterialService {
      * @return Updated WFlat instance
      * @throws IllegalArgumentException if flat not found or materialId out of range
      */
-    public WFlat setMaterialDefinition(String flatId, int materialId, String blockDef,
-                                       String nextBlockDef, boolean hasOcean) {
-        log.debug("Setting material definition: flatId={}, materialId={}, blockDef={}, nextBlockDef={}, hasOcean={}",
-                flatId, materialId, blockDef, nextBlockDef, hasOcean);
+    public WFlat setMaterialDefinition(
+            String flatId, int materialId, String blockDef, String nextBlockDef, boolean hasOcean) {
+        log.debug(
+                "Setting material definition: flatId={}, materialId={}, blockDef={}, nextBlockDef={}, hasOcean={}",
+                flatId,
+                materialId,
+                blockDef,
+                nextBlockDef,
+                hasOcean);
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         // Validate materialId
@@ -150,7 +153,8 @@ public class FlatMaterialService {
         log.debug("Setting material definitions: flatId={}, count={}", flatId, properties.size());
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         int updated = 0;
@@ -199,8 +203,12 @@ public class FlatMaterialService {
                 flat.setMaterial(materialId, materialDef);
                 updated++;
 
-                log.debug("Set material {}: blockDef={}, nextBlockDef={}, hasOcean={}",
-                        materialId, blockDef, nextBlockDef, hasOcean);
+                log.debug(
+                        "Set material {}: blockDef={}, nextBlockDef={}, hasOcean={}",
+                        materialId,
+                        blockDef,
+                        nextBlockDef,
+                        hasOcean);
 
             } catch (NumberFormatException e) {
                 log.warn("Invalid material ID format: {}, skipping", materialIdStr);
@@ -231,7 +239,8 @@ public class FlatMaterialService {
         log.debug("Setting typed material definitions: flatId={}, count={}", flatId, materials.size());
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         int updated = 0;
@@ -275,7 +284,8 @@ public class FlatMaterialService {
         log.debug("Getting material definition: flatId={}, materialId={}", flatId, materialId);
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         return flat.getMaterial(materialId);
@@ -293,7 +303,8 @@ public class FlatMaterialService {
         log.debug("Removing material definition: flatId={}, materialId={}", flatId, materialId);
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         // Remove material by setting null
@@ -327,8 +338,8 @@ public class FlatMaterialService {
         // Get palette from presets
         Map<Integer, String> palette = PRESET_MATERIALS.get(paletteName);
         if (palette == null) {
-            throw new IllegalArgumentException("Palette not found: " + paletteName +
-                    ". Available palettes: " + PRESET_MATERIALS.keySet());
+            throw new IllegalArgumentException(
+                    "Palette not found: " + paletteName + ". Available palettes: " + PRESET_MATERIALS.keySet());
         }
 
         // Convert palette to MaterialDefinition map

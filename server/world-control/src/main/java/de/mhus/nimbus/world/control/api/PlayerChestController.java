@@ -5,10 +5,10 @@ import de.mhus.nimbus.generated.types.*;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
@@ -19,13 +19,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for player's own chests (bank and transfer).
@@ -51,9 +50,9 @@ public class PlayerChestController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get player's bank and transfer chests")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chests and backpack data returned"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Chests and backpack data returned"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
     public ResponseEntity<?> getChests(HttpServletRequest request) {
 
@@ -107,13 +106,11 @@ public class PlayerChestController extends BaseEditorController {
     @PostMapping("/to-backpack")
     @Operation(summary = "Move item from player chest to backpack")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item transferred"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Chest or character not found")
+        @ApiResponse(responseCode = "200", description = "Item transferred"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Chest or character not found")
     })
-    public ResponseEntity<?> toBackpack(
-            @RequestBody TransferRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> toBackpack(@RequestBody TransferRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -156,7 +153,8 @@ public class PlayerChestController extends BaseEditorController {
         if (chestItem.getAmount() <= transferAmount) {
             chestUpdated = chestService.removeItemAtomic(chest.getId(), body.itemId());
         } else {
-            chestUpdated = chestService.updateItemAmountAtomic(chest.getId(), body.itemId(), chestItem.getAmount() - transferAmount);
+            chestUpdated = chestService.updateItemAmountAtomic(
+                    chest.getId(), body.itemId(), chestItem.getAmount() - transferAmount);
         }
         if (!chestUpdated) {
             return bad("Failed to update chest (concurrent modification)");
@@ -169,22 +167,33 @@ public class PlayerChestController extends BaseEditorController {
             // the chest to avoid losing the item.
             boolean restored;
             if (chestItem.getAmount() <= transferAmount) {
-                restored = chestService.addItemAtomic(chest.getId(), ItemRef.builder()
-                        .itemId(body.itemId())
-                        .name(chestItem.getName())
-                        .texture(chestItem.getTexture())
-                        .amount(transferAmount)
-                        .build());
+                restored = chestService.addItemAtomic(
+                        chest.getId(),
+                        ItemRef.builder()
+                                .itemId(body.itemId())
+                                .name(chestItem.getName())
+                                .texture(chestItem.getTexture())
+                                .amount(transferAmount)
+                                .build());
             } else {
                 restored = chestService.incItemAmountAtomic(chest.getId(), body.itemId(), transferAmount);
             }
-            log.error("Backpack update failed after chest was modified; chest restore={}. chestId={}, itemId={}, amount={}",
-                    restored, chest.getId(), body.itemId(), transferAmount);
+            log.error(
+                    "Backpack update failed after chest was modified; chest restore={}. chestId={}, itemId={}, amount={}",
+                    restored,
+                    chest.getId(),
+                    body.itemId(),
+                    transferAmount);
             return bad("Failed to update backpack");
         }
 
-        log.info("Item transferred chest->backpack: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
-                worldId, userId, body.chestType(), body.itemId(), transferAmount);
+        log.info(
+                "Item transferred chest->backpack: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
+                worldId,
+                userId,
+                body.chestType(),
+                body.itemId(),
+                transferAmount);
 
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
@@ -196,13 +205,11 @@ public class PlayerChestController extends BaseEditorController {
     @PostMapping("/to-chest")
     @Operation(summary = "Move item from backpack to player chest")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item transferred"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Chest or character not found")
+        @ApiResponse(responseCode = "200", description = "Item transferred"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Chest or character not found")
     })
-    public ResponseEntity<?> toChest(
-            @RequestBody TransferRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> toChest(@RequestBody TransferRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -242,8 +249,8 @@ public class PlayerChestController extends BaseEditorController {
 
         // Check capacity
         if (chest.getCapacity() > 0 && chest.getItems().size() >= chest.getCapacity()) {
-            boolean existsInChest = chest.getItems().stream()
-                    .anyMatch(i -> i.getItemId().equals(body.itemId()));
+            boolean existsInChest =
+                    chest.getItems().stream().anyMatch(i -> i.getItemId().equals(body.itemId()));
             if (!existsInChest) {
                 return bad("Chest is full");
             }
@@ -278,13 +285,22 @@ public class PlayerChestController extends BaseEditorController {
             // Compensate: the backpack was already reduced, so return the amount
             // to the backpack to avoid losing the item.
             boolean restored = characterService.addBackpackItem(character.getId(), body.itemId(), transferAmount);
-            log.error("Chest update failed after backpack was modified; backpack restore={}. chestId={}, itemId={}, amount={}",
-                    restored, chest.getId(), body.itemId(), transferAmount);
+            log.error(
+                    "Chest update failed after backpack was modified; backpack restore={}. chestId={}, itemId={}, amount={}",
+                    restored,
+                    chest.getId(),
+                    body.itemId(),
+                    transferAmount);
             return bad("Failed to update chest");
         }
 
-        log.info("Item transferred backpack->chest: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
-                worldId, userId, body.chestType(), body.itemId(), transferAmount);
+        log.info(
+                "Item transferred backpack->chest: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
+                worldId,
+                userId,
+                body.chestType(),
+                body.itemId(),
+                transferAmount);
 
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
@@ -335,7 +351,8 @@ public class PlayerChestController extends BaseEditorController {
             log.warn("No player URL available for session {}, cannot notify player of backpack change", sessionId);
             return;
         }
-        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "BackpackModified", List.of(), null);
+        worldClientService.sendPlayerCommand(
+                worldId, sessionId, wSession.get().getPlayerUrl(), "BackpackModified", List.of(), null);
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {

@@ -5,6 +5,11 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.world.shared.world.EpochEntity;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,12 +21,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Layer entity - main registry for all layers.
  * References specific layer data (LayerTerrain or LayerModel).
@@ -29,11 +28,11 @@ import java.util.Map;
 @Document(collection = "w_layers")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
-        @CompoundIndex(name = "world_order_idx", def = "{ 'worldId': 1, 'order': 1 }"),
-        @CompoundIndex(name = "world_enabled_idx", def = "{ 'worldId': 1, 'enabled': 1 }"),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }"),
-        @CompoundIndex(name = "world_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }", unique = true)
+    @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
+    @CompoundIndex(name = "world_order_idx", def = "{ 'worldId': 1, 'order': 1 }"),
+    @CompoundIndex(name = "world_enabled_idx", def = "{ 'worldId': 1, 'enabled': 1 }"),
+    @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }"),
+    @CompoundIndex(name = "world_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -132,6 +131,4 @@ public class WLayer implements Identifiable, EpochEntity {
     public void touchUpdate() {
         updatedAt = Instant.now();
     }
-
-
 }

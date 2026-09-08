@@ -8,15 +8,14 @@ import de.mhus.nimbus.world.shared.workflow.OnSuccess;
 import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Day 4 workflow: Flora (and later Fauna) generation for all hex grids.
@@ -78,18 +77,21 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
                 GenesisConst.PHASES, phases,
-                GenesisConst.EPOCH, epochStr
-        );
+                GenesisConst.EPOCH, epochStr);
     }
 
     @Override
     public void start(WorkflowContext context) throws WorkflowException {
         context.updateWorkflowStatus("loadModel");
         String epoch = String.valueOf(context.getParameters().get(GenesisConst.EPOCH));
-        context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
-                "epoch", epoch
-        ));
+        context.enqueueJob(
+                "generator-generate-hexgrid-from-composite",
+                "",
+                Map.of(
+                        "documentId",
+                        (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                        "epoch",
+                        epoch));
     }
 
     @OnSuccess("loadModel")
@@ -129,8 +131,7 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
         int index = state.getCurrentIndex();
         int total = state.getCoordinates().size();
 
-        List<String> phases = Arrays.asList(
-                ((String) context.getParameters().get(GenesisConst.PHASES)).split(","));
+        List<String> phases = Arrays.asList(((String) context.getParameters().get(GenesisConst.PHASES)).split(","));
 
         if (index >= total) {
             int phaseIndex = phases.indexOf(phase);
@@ -150,8 +151,7 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
         }
 
         Day4ProcessingState.HexCoordinate coord = state.getCoordinates().get(index);
-        String gridLabel = String.format("Grid %d;%d (%d/%d)",
-                coord.getQ(), coord.getR(), index + 1, total);
+        String gridLabel = String.format("Grid %d;%d (%d/%d)", coord.getQ(), coord.getR(), index + 1, total);
 
         log.info("Processing phase '{}' for {}", phase, gridLabel);
 
@@ -159,32 +159,30 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
             case "floraAll" -> {
                 context.updateWorkflowStatus("generateFlora");
                 context.enqueueJob(
-                        HexGridFloraGeneratorJobExecutor.EXECUTOR_NAME, "", "",
+                        HexGridFloraGeneratorJobExecutor.EXECUTOR_NAME,
+                        "",
+                        "",
                         "Flora for " + gridLabel,
                         Map.of(
                                 "hexQ", String.valueOf(coord.getQ()),
-                                "hexR", String.valueOf(coord.getR())
-                        ));
+                                "hexR", String.valueOf(coord.getR())));
             }
             case "faunaAll" -> {
                 context.updateWorkflowStatus("generateFauna");
                 context.enqueueJob(
-                        HexGridFaunaGeneratorJobExecutor.EXECUTOR_NAME, "", "",
+                        HexGridFaunaGeneratorJobExecutor.EXECUTOR_NAME,
+                        "",
+                        "",
                         "Fauna for " + gridLabel,
                         Map.of(
                                 "hexQ", String.valueOf(coord.getQ()),
-                                "hexR", String.valueOf(coord.getR())
-                        ));
+                                "hexR", String.valueOf(coord.getR())));
             }
             case "waitForChunks" -> {
                 if (index == 0) {
                     context.updateWorkflowStatus("waitForDirtyChunks");
                     context.enqueueJob(
-                            WaitForDirtyChunksJobExecutor.EXECUTOR_NAME,
-                            "", null,
-                            "Wait for Dirty Chunks",
-                            Map.of()
-                    );
+                            WaitForDirtyChunksJobExecutor.EXECUTOR_NAME, "", null, "Wait for Dirty Chunks", Map.of());
                 } else {
                     state.setCurrentIndex(total);
                     context.addRecord(state);
@@ -213,8 +211,11 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
 
     private void advanceToNextInPhase(WorkflowContext context) throws WorkflowException {
         Day4ProcessingState state = getProcessingState(context);
-        log.info("Completed index {}/{} in phase '{}'",
-                state.getCurrentIndex() + 1, state.getCoordinates().size(), state.getCurrentPhase());
+        log.info(
+                "Completed index {}/{} in phase '{}'",
+                state.getCurrentIndex() + 1,
+                state.getCoordinates().size(),
+                state.getCurrentPhase());
 
         state.setCurrentIndex(state.getCurrentIndex() + 1);
         context.addRecord(state);
@@ -228,6 +229,5 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
-    }
+    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
 }

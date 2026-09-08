@@ -7,5 +7,4 @@ public interface SessionPingConsumer {
     }
 
     ACTION onSessionPing(PlayerSession session);
-
 }

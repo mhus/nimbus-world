@@ -99,9 +99,11 @@ public class EngineMapper {
                                 return null;
                             } else {
                                 log.error("Unknown enum value: {}", text);
-                                throw InvalidFormatException.from(p,
+                                throw InvalidFormatException.from(
+                                        p,
                                         "Cannot deserialize value '" + text + "' to enum " + enumClass.getSimpleName(),
-                                        text, enumClass);
+                                        text,
+                                        enumClass);
                             }
                         }
                     };
@@ -150,5 +152,4 @@ public class EngineMapper {
     public <T extends JsonNode> T valueToTree(Object fromValue) {
         return objectMapper.valueToTree(fromValue);
     }
-
 }

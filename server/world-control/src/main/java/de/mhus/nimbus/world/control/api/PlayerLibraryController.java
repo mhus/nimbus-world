@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -16,10 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for player library.
@@ -38,8 +37,8 @@ public class PlayerLibraryController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get library entries for current player")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Library entries found"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated")
+        @ApiResponse(responseCode = "200", description = "Library entries found"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated")
     })
     public ResponseEntity<?> getLibrary(HttpServletRequest request) {
 
@@ -56,15 +55,16 @@ public class PlayerLibraryController extends BaseEditorController {
 
         var items = entries.stream()
                 .sorted(Comparator.comparing(
-                        p -> p.getTitle() != null ? p.getTitle() : "",
-                        String.CASE_INSENSITIVE_ORDER))
+                        p -> p.getTitle() != null ? p.getTitle() : "", String.CASE_INSENSITIVE_ORDER))
                 .map(p -> Map.of(
                         "progressId", p.getProgressId() != null ? p.getProgressId() : "",
                         "title", p.getTitle() != null ? p.getTitle() : "",
-                        "document", p.getProgressData() != null && p.getProgressData().containsKey("document")
-                                ? String.valueOf(p.getProgressData().get("document")) : "",
-                        "createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : ""
-                ))
+                        "document",
+                                p.getProgressData() != null
+                                                && p.getProgressData().containsKey("document")
+                                        ? String.valueOf(p.getProgressData().get("document"))
+                                        : "",
+                        "createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : ""))
                 .toList();
 
         return ResponseEntity.ok(Map.of("items", items));

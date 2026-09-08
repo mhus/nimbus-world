@@ -1,22 +1,21 @@
 package de.mhus.nimbus.world.ai.tool;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingString;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * AI Tool for web search via Serper.dev API (Google results as JSON).
@@ -53,9 +52,7 @@ public class WebSearchToolService {
     }
 
     @Tool("Search the web for information about a topic. Returns titles, URLs, and snippets.")
-    public String searchWeb(
-            @P("Search query") String query
-    ) {
+    public String searchWeb(@P("Search query") String query) {
         if (!isAvailable()) {
             log.warn("Serper API key not configured");
             return "Error: Serper API key not configured";
@@ -63,9 +60,7 @@ public class WebSearchToolService {
         log.info("Searching Serper for: {}", query);
 
         try {
-            String requestBody = objectMapper.writeValueAsString(
-                    java.util.Map.of("q", query, "num", 5)
-            );
+            String requestBody = objectMapper.writeValueAsString(java.util.Map.of("q", query, "num", 5));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(SERPER_API_URL))
@@ -75,8 +70,7 @@ public class WebSearchToolService {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                     .build();
 
-            HttpResponse<String> response = httpClient
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
                 log.warn("Serper returned status {}: {}", response.statusCode(), response.body());

@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.life.util;
 
 import de.mhus.nimbus.world.shared.world.WEntity;
-
 import java.util.Map;
 
 /**
@@ -11,8 +10,7 @@ import java.util.Map;
  */
 public final class EntityServerData {
 
-    private EntityServerData() {
-    }
+    private EntityServerData() {}
 
     /**
      * Read a double value from the entity's server property map.

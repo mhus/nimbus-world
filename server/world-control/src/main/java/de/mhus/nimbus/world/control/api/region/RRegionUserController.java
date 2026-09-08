@@ -3,12 +3,11 @@ package de.mhus.nimbus.world.control.api.region;
 import de.mhus.nimbus.world.shared.access.RequireAgent;
 import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
+import java.net.URI;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.util.List;
 
 /**
  * Universe-to-sector endpoint for region management. Reachable only by the
@@ -30,7 +29,9 @@ public class RRegionUserController {
 
     // DTOs
     public record RegionRequest(String name, String maintainers) {}
+
     public record RegionResponse(String id, String name, boolean enabled, List<String> maintainers) {}
+
     public record MaintainerRequest(String userId) {}
 
     private RegionResponse toResponse(RRegion r) {
@@ -40,12 +41,14 @@ public class RRegionUserController {
 
     // LIST
     @GetMapping
-    public ResponseEntity<List<RegionResponse>> list(@RequestParam(name="name", required=false) String name,
-                                                     @RequestParam(name="enabled", required=false) Boolean enabled) {
+    public ResponseEntity<List<RegionResponse>> list(
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "enabled", required = false) Boolean enabled) {
         List<RegionResponse> out = service.listAll().stream()
                 .filter(r -> name == null || name.equals(r.getName()))
                 .filter(r -> enabled == null || r.isEnabled() == enabled)
-                .map(this::toResponse).toList();
+                .map(this::toResponse)
+                .toList();
         return ResponseEntity.ok(out);
     }
 
@@ -71,10 +74,13 @@ public class RRegionUserController {
 
     // UPDATE FULL inkl. enabled
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable String id, @RequestBody RegionRequest req,
-                                    @RequestParam(name="enabled", required=false) Boolean enabled) {
+    public ResponseEntity<?> update(
+            @PathVariable String id,
+            @RequestBody RegionRequest req,
+            @RequestParam(name = "enabled", required = false) Boolean enabled) {
         try {
-            if (service.getById(id).isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            if (service.getById(id).isEmpty())
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             RRegion updated = service.updateFull(id, req.name(), req.maintainers(), enabled);
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
@@ -113,7 +119,8 @@ public class RRegionUserController {
     // ADD MAINTAINER
     @PostMapping("/{id}/maintainers")
     public ResponseEntity<?> addMaintainer(@PathVariable String id, @RequestBody MaintainerRequest req) {
-        if (req.userId() == null || req.userId().isBlank()) return ResponseEntity.badRequest().body("userId blank");
+        if (req.userId() == null || req.userId().isBlank())
+            return ResponseEntity.badRequest().body("userId blank");
         try {
             RRegion updated = service.addMaintainer(id, req.userId().trim());
             return ResponseEntity.ok(toResponse(updated));

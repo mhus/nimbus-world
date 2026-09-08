@@ -4,22 +4,21 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
+import de.mhus.nimbus.world.shared.world.SAssetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for Asset license operations at /control/worlds/{worldId}/assetlicense
@@ -43,8 +42,8 @@ public class WorldAssetLicenseController extends BaseEditorController {
     @GetMapping("/{*path}")
     @Operation(summary = "Get asset license information")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "License info found or empty"),
-            @ApiResponse(responseCode = "404", description = "Asset not found")
+        @ApiResponse(responseCode = "200", description = "License info found or empty"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     public ResponseEntity<?> getLicenseInfo(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -56,9 +55,7 @@ public class WorldAssetLicenseController extends BaseEditorController {
 
         log.debug("GET asset license: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -69,8 +66,7 @@ public class WorldAssetLicenseController extends BaseEditorController {
                     "source", "",
                     "author", "",
                     "license", "",
-                    "licenseFixed", false
-            ));
+                    "licenseFixed", false));
         }
 
         SAsset asset = opt.get();
@@ -81,16 +77,14 @@ public class WorldAssetLicenseController extends BaseEditorController {
                     "source", "",
                     "author", "",
                     "license", "",
-                    "licenseFixed", false
-            ));
+                    "licenseFixed", false));
         }
 
         return ResponseEntity.ok(Map.of(
                 "source", metadata.getSource() != null ? metadata.getSource() : "",
                 "author", metadata.getAuthor() != null ? metadata.getAuthor() : "",
                 "license", metadata.getLicense() != null ? metadata.getLicense() : "",
-                "licenseFixed", metadata.getLicenseFixed() != null ? metadata.getLicenseFixed() : false
-        ));
+                "licenseFixed", metadata.getLicenseFixed() != null ? metadata.getLicenseFixed() : false));
     }
 
     /**
@@ -102,9 +96,9 @@ public class WorldAssetLicenseController extends BaseEditorController {
     @PutMapping("/{*path}")
     @Operation(summary = "Set asset license information")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "License info updated"),
-            @ApiResponse(responseCode = "404", description = "Asset not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+        @ApiResponse(responseCode = "200", description = "License info updated"),
+        @ApiResponse(responseCode = "404", description = "Asset not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> setLicenseInfo(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -117,9 +111,7 @@ public class WorldAssetLicenseController extends BaseEditorController {
 
         log.debug("SET asset license: worldId={}, path={}", worldId, path);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
         if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
@@ -150,15 +142,13 @@ public class WorldAssetLicenseController extends BaseEditorController {
                         "source", metadata.getSource() != null ? metadata.getSource() : "",
                         "author", metadata.getAuthor() != null ? metadata.getAuthor() : "",
                         "license", metadata.getLicense() != null ? metadata.getLicense() : "",
-                        "licenseFixed", true
-                ));
+                        "licenseFixed", true));
             } else {
                 return notFound("asset disappeared during update");
             }
         } catch (Exception e) {
             log.error("Error updating license info", e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Internal server error"));
+            return ResponseEntity.internalServerError().body(Map.of("error", "Internal server error"));
         }
     }
 }

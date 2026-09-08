@@ -1,27 +1,26 @@
 package de.mhus.nimbus.world.control.dialog;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
-import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Core dialog service: loads context, selects situations, evaluates nodes, advances dialog.
@@ -50,7 +49,8 @@ public class DialogService {
      */
     public DialogContext loadDialogContext(String leaseId, String worldId, String userId, String characterId) {
         // 1. Load and validate lease
-        WLease lease = leaseService.validate(leaseId, worldId, userId, "dialog")
+        WLease lease = leaseService
+                .validate(leaseId, worldId, userId, "dialog")
                 .orElseThrow(() -> new DialogException("Dialog lease not found or access denied"));
 
         String leasePlayerId = lease.getPlayerId();
@@ -71,13 +71,15 @@ public class DialogService {
         String playbookName = parts[1];
 
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(() -> new DialogException("Invalid worldId"));
-        String mainWorldId = parsedWorldId.isInstance() ? parsedWorldId.toMainWorld().getId() : worldId;
+        String mainWorldId =
+                parsedWorldId.isInstance() ? parsedWorldId.toMainWorld().getId() : worldId;
 
         WAnything playbookAnything = anythingService
                 .findByWorldIdAndCollectionAndName(mainWorldId, collection, playbookName)
                 .orElseThrow(() -> new DialogException("Playbook not found: " + playbookRef));
 
-        Playbook playbook = playbookAnything.getDataAs(Playbook.class)
+        Playbook playbook = playbookAnything
+                .getDataAs(Playbook.class)
                 .orElseThrow(() -> new DialogException("Failed to deserialize playbook"));
 
         // 3. Load NPC entity
@@ -92,10 +94,12 @@ public class DialogService {
         String npcPortrait = null;
 
         if (!Strings.isBlank(entityId)) {
-            npcEntity = entityService.findByWorldIdAndName(parsedWorldId, entityId).orElse(null);
+            npcEntity =
+                    entityService.findByWorldIdAndName(parsedWorldId, entityId).orElse(null);
             if (npcEntity != null) {
                 npcPortrait = npcEntity.getPortraitPath();
-                if (npcEntity.getPublicData() != null && npcEntity.getPublicData().getTitle() != null) {
+                if (npcEntity.getPublicData() != null
+                        && npcEntity.getPublicData().getTitle() != null) {
                     npcTitle = npcEntity.getPublicData().getTitle();
                 }
             }
@@ -130,16 +134,19 @@ public class DialogService {
         WProgress playerMemoryProgress = progressService
                 .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, leasePlayerId, "npc-memory", entityId)
                 .orElse(null);
-        Map<String, Object> playerMemory = playerMemoryProgress != null && playerMemoryProgress.getProgressData() != null
-                ? new HashMap<>(playerMemoryProgress.getProgressData())
-                : new HashMap<>();
+        Map<String, Object> playerMemory =
+                playerMemoryProgress != null && playerMemoryProgress.getProgressData() != null
+                        ? new HashMap<>(playerMemoryProgress.getProgressData())
+                        : new HashMap<>();
 
         // 7. Load character
-        var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+        var character = characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
                 .orElse(null);
 
         // 8. Load user language
-        String language = userService.getByUsername(userId)
+        String language = userService
+                .getByUsername(userId)
                 .map(u -> u.getLanguage())
                 .filter(l -> l != null && !l.isBlank())
                 .orElse(null);
@@ -191,7 +198,8 @@ public class DialogService {
         }
 
         // Sort by priority descending
-        active.sort(Comparator.comparingInt((SituationEntry e) -> e.situation().priority()).reversed());
+        active.sort(Comparator.comparingInt((SituationEntry e) -> e.situation().priority())
+                .reversed());
 
         SituationEntry primary = active.getFirst();
         ctx.setActiveSituation(primary.situation());
@@ -199,11 +207,7 @@ public class DialogService {
 
         // Background situations (lower priority, for AI context)
         ctx.setBackgroundSituations(
-                active.stream()
-                        .skip(1)
-                        .map(SituationEntry::situation)
-                        .collect(Collectors.toList())
-        );
+                active.stream().skip(1).map(SituationEntry::situation).collect(Collectors.toList()));
 
         // Handle situation transition (onEnter/onExit)
         String lastSituation = ctx.getPlayerMemory() != null
@@ -227,11 +231,13 @@ public class DialogService {
         }
 
         // Store situation in dialog lease
-        leaseService.setLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), "situation", primary.name());
+        leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), "situation", primary.name());
 
-        log.debug("Selected situation '{}' (priority {}) for playbook {}",
-                primary.name(), primary.situation().priority(), ctx.getPlaybookName());
+        log.debug(
+                "Selected situation '{}' (priority {}) for playbook {}",
+                primary.name(),
+                primary.situation().priority(),
+                ctx.getPlaybookName());
     }
 
     /**
@@ -278,8 +284,7 @@ public class DialogService {
                 freeTextEnabled,
                 finished,
                 buildVoiceInfo(ctx),
-                ctx.getNavigate()
-        );
+                ctx.getNavigate());
     }
 
     /**
@@ -297,7 +302,8 @@ public class DialogService {
         // Resolve option by original index (as sent by evaluateNode in OptionView.index)
         List<DialogOption> allOptions = currentNode.options();
         if (optionIndex < 0 || optionIndex >= allOptions.size()) {
-            throw new DialogException("Invalid option index: " + optionIndex + " (options count: " + allOptions.size() + ")");
+            throw new DialogException(
+                    "Invalid option index: " + optionIndex + " (options count: " + allOptions.size() + ")");
         }
 
         DialogOption selected = allOptions.get(optionIndex);
@@ -320,8 +326,7 @@ public class DialogService {
                     false,
                     true,
                     null,
-                    ctx.getNavigate()
-            );
+                    ctx.getNavigate());
         }
 
         // Get target node and execute its effects
@@ -333,8 +338,7 @@ public class DialogService {
         effectExecutor.executeAll(targetNode.effects(), ctx);
 
         // Update lease
-        leaseService.setLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), "currentNode", nextNodeId);
+        leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), "currentNode", nextNodeId);
 
         return evaluateNode(ctx, nextNodeId);
     }
@@ -348,10 +352,9 @@ public class DialogService {
 
         // Increment conversation count
         int count = ctx.getConversationCount() + 1;
-        progressService.setProgressDataValues(memory.getProgressId(), Map.of(
-                "conversationCount", count,
-                "lastVisit", Instant.now().toString()
-        ));
+        progressService.setProgressDataValues(
+                memory.getProgressId(),
+                Map.of("conversationCount", count, "lastVisit", Instant.now().toString()));
 
         // Notify world-life to resume entity movement
         sendDialogEnd(ctx);
@@ -373,7 +376,10 @@ public class DialogService {
             message.put("timestamp", System.currentTimeMillis());
             message.put("userId", playerId);
             redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
-            log.info("Sent dialog_start for entity {} by player {}", ctx.getNpcEntity().getName(), playerId);
+            log.info(
+                    "Sent dialog_start for entity {} by player {}",
+                    ctx.getNpcEntity().getName(),
+                    playerId);
         } catch (Exception e) {
             log.warn("Failed to send dialog_start: {}", e.getMessage());
         }
@@ -393,7 +399,10 @@ public class DialogService {
             message.put("timestamp", System.currentTimeMillis());
             message.put("userId", playerId);
             redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
-            log.info("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getName(), playerId);
+            log.info(
+                    "Sent dialog_end for entity {} by player {}",
+                    ctx.getNpcEntity().getName(),
+                    playerId);
         } catch (Exception e) {
             log.warn("Failed to send dialog_end: {}", e.getMessage());
         }
@@ -444,7 +453,8 @@ public class DialogService {
     VoiceInfo buildVoiceInfo(DialogContext ctx) {
         String lang = ctx.getLanguage() != null ? ctx.getLanguage() : "de";
         String gender = "D";
-        if (ctx.getNpcEntity() != null && ctx.getNpcEntity().getPublicData() != null
+        if (ctx.getNpcEntity() != null
+                && ctx.getNpcEntity().getPublicData() != null
                 && ctx.getNpcEntity().getPublicData().getGender() != null) {
             gender = ctx.getNpcEntity().getPublicData().getGender();
         }
@@ -465,9 +475,21 @@ public class DialogService {
 
         if (voiceDef != null && !voiceDef.isBlank()) {
             String[] parts = voiceDef.split(":");
-            if (parts.length > 0) try { voiceIndex = Integer.parseInt(parts[0]); } catch (NumberFormatException ignored) {}
-            if (parts.length > 1) try { rate = Double.parseDouble(parts[1]); } catch (NumberFormatException ignored) {}
-            if (parts.length > 2) try { pitch = Double.parseDouble(parts[2]); } catch (NumberFormatException ignored) {}
+            if (parts.length > 0)
+                try {
+                    voiceIndex = Integer.parseInt(parts[0]);
+                } catch (NumberFormatException ignored) {
+                }
+            if (parts.length > 1)
+                try {
+                    rate = Double.parseDouble(parts[1]);
+                } catch (NumberFormatException ignored) {
+                }
+            if (parts.length > 2)
+                try {
+                    pitch = Double.parseDouble(parts[2]);
+                } catch (NumberFormatException ignored) {
+                }
         }
 
         return new VoiceInfo(lang, gender, voiceIndex, rate, pitch);
@@ -493,9 +515,11 @@ public class DialogService {
 
         String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
         var saved = progressService.save(
-                ctx.getWorldId(), ctx.getPlayerId(), "npc-memory", entityId,
-                new HashMap<>(Map.of("conversationCount", 0))
-        );
+                ctx.getWorldId(),
+                ctx.getPlayerId(),
+                "npc-memory",
+                entityId,
+                new HashMap<>(Map.of("conversationCount", 0)));
         ctx.setPlayerMemoryProgress(saved);
         ctx.setPlayerMemory(new HashMap<>(saved.getProgressData()));
     }

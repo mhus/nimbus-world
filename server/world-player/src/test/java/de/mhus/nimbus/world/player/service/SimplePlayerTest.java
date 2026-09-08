@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.shared.types.PlayerId;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import tools.jackson.databind.ObjectMapper;
 
 public class SimplePlayerTest {
 

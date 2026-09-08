@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * A fully resolved step with merged parameters ready for execution.

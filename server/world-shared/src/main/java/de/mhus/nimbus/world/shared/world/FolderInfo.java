@@ -16,10 +16,4 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
  */
 @GenerateTypeScript("entities")
 public record FolderInfo(
-    String path,
-    String name,
-    int assetCount,
-    int totalAssetCount,
-    int subfolderCount,
-    String parentPath
-) {}
+        String path, String name, int assetCount, int totalAssetCount, int subfolderCount, String parentPath) {}

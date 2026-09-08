@@ -5,12 +5,6 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.SignatureException;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -18,6 +12,11 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import javax.crypto.SecretKey;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for creating and validating JWT tokens.
@@ -32,72 +31,70 @@ public class JwtService {
 
     private final KeyService keyService;
 
-    public String createTokenWithPrivateKey(@NonNull KeyType type,
-                                            @NonNull KeyIntent intent,
-                                            @NonNull String subject,
-                                            Map<String, Object> claims,
-                                            Instant expiresAt) {
+    public String createTokenWithPrivateKey(
+            @NonNull KeyType type,
+            @NonNull KeyIntent intent,
+            @NonNull String subject,
+            Map<String, Object> claims,
+            Instant expiresAt) {
         var privatekey = keyService.getLatestPrivateKey(type, intent).orElseThrow();
         return createTokenWithPrivateKey(privatekey, subject, claims, expiresAt);
     }
 
-        /**
-         * Creates a JWT token signed with an ECC private key (secp256r1). No symmetric fallback.
-         *
-         * @param subject  the subject claim (e.g., user id)
-         * @param claims   additional claims to include in the token
-         * @param expiresAt expiration time (null for no expiration)
-         * @return the signed JWT token string
-         * @throws IllegalArgumentException if the key cannot be found
-         */
-    public String createTokenWithPrivateKey(@NonNull PrivateKey key,
-                                            @NonNull String subject,
-                                            Map<String, Object> claims,
-                                            Instant expiresAt) {
+    /**
+     * Creates a JWT token signed with an ECC private key (secp256r1). No symmetric fallback.
+     *
+     * @param subject  the subject claim (e.g., user id)
+     * @param claims   additional claims to include in the token
+     * @param expiresAt expiration time (null for no expiration)
+     * @return the signed JWT token string
+     * @throws IllegalArgumentException if the key cannot be found
+     */
+    public String createTokenWithPrivateKey(
+            @NonNull PrivateKey key, @NonNull String subject, Map<String, Object> claims, Instant expiresAt) {
         if (!"EC".equalsIgnoreCase(key.getAlgorithm())) {
-            throw new IllegalArgumentException("Private key for key " + key + " is not ECC (EC). Found: " + key.getAlgorithm());
+            throw new IllegalArgumentException(
+                    "Private key for key " + key + " is not ECC (EC). Found: " + key.getAlgorithm());
         }
-        var builder = Jwts.builder()
-            .subject(subject)
-            .issuedAt(Date.from(Instant.now()));
+        var builder = Jwts.builder().subject(subject).issuedAt(Date.from(Instant.now()));
         if (claims != null && !claims.isEmpty()) builder.claims(claims);
         if (expiresAt != null) builder.expiration(Date.from(expiresAt));
         return builder.signWith(key).compact();
     }
-//
-//    /**
-//     * Creates a JWT token signed with a secret key from SyncKeyProvider (HMAC algorithm).
-//     *
-//     * @param keyId    the key id in format "owner:id" to locate the signing key
-//     * @param subject  the subject claim (e.g., user id)
-//     * @param claims   additional claims to include in the token
-//     * @param expiresAt expiration time (null for no expiration)
-//     * @return the signed JWT token string
-//     * @throws IllegalArgumentException if the key cannot be found
-//     */
-//    public String createTokenWithSyncKey(@NonNull String keyId,
-//                                          @NonNull String subject,
-//                                          Map<String, Object> claims,
-//                                          Instant expiresAt) {
-//        SecretKey key = keyService.getSecretKey(KeyType.UNIVERSE, keyId)
-//                .orElseThrow(() -> new IllegalArgumentException("Sync key not found: " + keyId));
-//
-//        var builder = Jwts.builder()
-//                .subject(subject)
-//                .issuedAt(Date.from(Instant.now()));
-//
-//        if (claims != null && !claims.isEmpty()) {
-//            builder.claims(claims);
-//        }
-//
-//        if (expiresAt != null) {
-//            builder.expiration(Date.from(expiresAt));
-//        }
-//
-//        return builder
-//                .signWith(key)
-//                .compact();
-//    }
+    //
+    //    /**
+    //     * Creates a JWT token signed with a secret key from SyncKeyProvider (HMAC algorithm).
+    //     *
+    //     * @param keyId    the key id in format "owner:id" to locate the signing key
+    //     * @param subject  the subject claim (e.g., user id)
+    //     * @param claims   additional claims to include in the token
+    //     * @param expiresAt expiration time (null for no expiration)
+    //     * @return the signed JWT token string
+    //     * @throws IllegalArgumentException if the key cannot be found
+    //     */
+    //    public String createTokenWithSyncKey(@NonNull String keyId,
+    //                                          @NonNull String subject,
+    //                                          Map<String, Object> claims,
+    //                                          Instant expiresAt) {
+    //        SecretKey key = keyService.getSecretKey(KeyType.UNIVERSE, keyId)
+    //                .orElseThrow(() -> new IllegalArgumentException("Sync key not found: " + keyId));
+    //
+    //        var builder = Jwts.builder()
+    //                .subject(subject)
+    //                .issuedAt(Date.from(Instant.now()));
+    //
+    //        if (claims != null && !claims.isEmpty()) {
+    //            builder.claims(claims);
+    //        }
+    //
+    //        if (expiresAt != null) {
+    //            builder.expiration(Date.from(expiresAt));
+    //        }
+    //
+    //        return builder
+    //                .signWith(key)
+    //                .compact();
+    //    }
 
     /**
      * Validates a JWT token using a sync key (HMAC algorithm).
@@ -107,8 +104,7 @@ public class JwtService {
      * @return optional containing the parsed claims if valid; empty if validation fails
      */
     public Optional<Jws<Claims>> validateTokenWithSyncKey(@NonNull String token, @NonNull String keyId) {
-        return keyService.getSecretKey(KeyType.UNIVERSE, keyId)
-                .flatMap(key -> parseToken(token, key));
+        return keyService.getSecretKey(KeyType.UNIVERSE, keyId).flatMap(key -> parseToken(token, key));
     }
 
     /**
@@ -117,7 +113,8 @@ public class JwtService {
      * @param token the JWT token string
      * @return optional containing the parsed claims if valid; empty if validation fails
      */
-    public Optional<Jws<Claims>> validateTokenWithPublicKey(@NonNull String token, KeyType type, @NonNull KeyIntent intent) {
+    public Optional<Jws<Claims>> validateTokenWithPublicKey(
+            @NonNull String token, KeyType type, @NonNull KeyIntent intent) {
 
         for (var publicKey : keyService.getPublicKeysForIntent(type, intent)) {
             Optional<Jws<Claims>> result = parseToken(token, publicKey);
@@ -137,13 +134,9 @@ public class JwtService {
         try {
             JwtParser parser;
             if (key instanceof SecretKey secretKey) {
-                parser = Jwts.parser()
-                        .verifyWith(secretKey)
-                        .build();
+                parser = Jwts.parser().verifyWith(secretKey).build();
             } else if (key instanceof PublicKey publicKey) {
-                parser = Jwts.parser()
-                        .verifyWith(publicKey)
-                        .build();
+                parser = Jwts.parser().verifyWith(publicKey).build();
             } else {
                 throw new IllegalArgumentException("Unsupported key type: " + key.getClass());
             }
@@ -163,9 +156,8 @@ public class JwtService {
                 KeyType.SECTOR,
                 KeyIntent.of(sectorServerId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 "sector:" + sectorServerId,
-                java.util.Map.of("sector", sectorServerId ),
-                java.time.Instant.now().plusSeconds(300)
-            );
+                java.util.Map.of("sector", sectorServerId),
+                java.time.Instant.now().plusSeconds(300));
     }
 
     public String createTokenForSectorServer(String sectorServerId) {
@@ -173,8 +165,7 @@ public class JwtService {
                 KeyType.SECTOR,
                 KeyIntent.of(sectorServerId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 "sectorServer:" + sectorServerId,
-                java.util.Map.of("sectorServer", sectorServerId ),
-                java.time.Instant.now().plusSeconds(300)
-        );
+                java.util.Map.of("sectorServer", sectorServerId),
+                java.time.Instant.now().plusSeconds(300));
     }
 }

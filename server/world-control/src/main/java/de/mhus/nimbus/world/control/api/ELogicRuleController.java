@@ -11,19 +11,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for Logic Rule CRUD operations.
@@ -44,8 +42,8 @@ public class ELogicRuleController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Logic Rules")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -55,11 +53,16 @@ public class ELogicRuleController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST logic rules: worldId={}, query={}, epoch={}, rulePackage={}, offset={}, limit={}", worldId, query, epoch, rulePackage, offset, limit);
+        log.debug(
+                "LIST logic rules: worldId={}, query={}, epoch={}, rulePackage={}, offset={}, limit={}",
+                worldId,
+                query,
+                epoch,
+                rulePackage,
+                offset,
+                limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -76,7 +79,8 @@ public class ELogicRuleController extends BaseEditorController {
         if (!Strings.isBlank(query)) {
             String lowerQuery = query.toLowerCase();
             all = all.stream()
-                    .filter(r -> r.getName() != null && r.getName().toLowerCase().contains(lowerQuery))
+                    .filter(r ->
+                            r.getName() != null && r.getName().toLowerCase().contains(lowerQuery))
                     .collect(Collectors.toList());
         }
 
@@ -89,11 +93,8 @@ public class ELogicRuleController extends BaseEditorController {
 
         int totalCount = all.size();
 
-        List<Map<String, Object>> ruleDtos = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> ruleDtos =
+                all.stream().skip(offset).limit(limit).map(this::toDto).collect(Collectors.toList());
 
         // Collect distinct packages from ALL rules (unfiltered) for dropdown
         List<String> packages = ruleService.findByWorldId(lookupWorldId).stream()
@@ -115,16 +116,14 @@ public class ELogicRuleController extends BaseEditorController {
     @GetMapping("/{id}")
     @Operation(summary = "Get Logic Rule by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Rule found"),
-            @ApiResponse(responseCode = "404", description = "Rule not found")
+        @ApiResponse(responseCode = "200", description = "Rule found"),
+        @ApiResponse(responseCode = "404", description = "Rule not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Rule identifier") @PathVariable String id) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -144,17 +143,15 @@ public class ELogicRuleController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Logic Rule")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Rule created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Rule name already exists")
+        @ApiResponse(responseCode = "201", description = "Rule created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Rule name already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @RequestBody Map<String, Object> request) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         String name = (String) request.get("name");
         if (Strings.isBlank(name)) {
@@ -190,17 +187,15 @@ public class ELogicRuleController extends BaseEditorController {
     @PutMapping("/{id}")
     @Operation(summary = "Update Logic Rule")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Rule updated"),
-            @ApiResponse(responseCode = "404", description = "Rule not found")
+        @ApiResponse(responseCode = "200", description = "Rule updated"),
+        @ApiResponse(responseCode = "404", description = "Rule not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Rule identifier") @PathVariable String id,
             @RequestBody Map<String, Object> request) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -268,16 +263,14 @@ public class ELogicRuleController extends BaseEditorController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Logic Rule")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Rule deleted"),
-            @ApiResponse(responseCode = "404", description = "Rule not found")
+        @ApiResponse(responseCode = "204", description = "Rule deleted"),
+        @ApiResponse(responseCode = "404", description = "Rule not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Rule identifier") @PathVariable String id) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -305,9 +298,7 @@ public class ELogicRuleController extends BaseEditorController {
      */
     @PostMapping("/test")
     @Operation(summary = "Test rule condition against live flags")
-    public ResponseEntity<?> testCondition(
-            @PathVariable String worldId,
-            @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> testCondition(@PathVariable String worldId, @RequestBody Map<String, Object> request) {
 
         String instanceId = (String) request.get("worldInstanceId");
         if (Strings.isBlank(instanceId)) {
@@ -325,9 +316,7 @@ public class ELogicRuleController extends BaseEditorController {
     @SuppressWarnings("unchecked")
     @PostMapping("/simulate")
     @Operation(summary = "Simulate rule with custom flags (sandbox)")
-    public ResponseEntity<?> simulate(
-            @PathVariable String worldId,
-            @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> simulate(@PathVariable String worldId, @RequestBody Map<String, Object> request) {
 
         String ruleId = (String) request.get("ruleId");
         if (Strings.isBlank(ruleId)) {
@@ -345,9 +334,7 @@ public class ELogicRuleController extends BaseEditorController {
      */
     @PostMapping("/execute")
     @Operation(summary = "Execute rule live on a world instance")
-    public ResponseEntity<?> execute(
-            @PathVariable String worldId,
-            @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> execute(@PathVariable String worldId, @RequestBody Map<String, Object> request) {
 
         String instanceId = (String) request.get("worldInstanceId");
         String ruleId = (String) request.get("ruleId");
@@ -357,18 +344,22 @@ public class ELogicRuleController extends BaseEditorController {
 
         // Delegate to world-life
         try {
-            worldClientService.sendLogicEvent(instanceId,
+            worldClientService.sendLogicEvent(
+                    instanceId,
                     List.of(), // no eval, execute is handled by world-life test endpoint
                     "execute:" + ruleId);
 
             // For now, return that we triggered execution.
             // A proper implementation would call the /life/logic/execute endpoint synchronously.
             return ResponseEntity.ok(Map.of(
-                    "mode", "execute",
-                    "worldInstanceId", instanceId,
-                    "ruleId", ruleId,
-                    "status", "delegated to world-life"
-            ));
+                    "mode",
+                    "execute",
+                    "worldInstanceId",
+                    instanceId,
+                    "ruleId",
+                    ruleId,
+                    "status",
+                    "delegated to world-life"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -408,9 +399,7 @@ public class ELogicRuleController extends BaseEditorController {
     private List<Integer> toIntList(Object value) {
         if (value == null) return new ArrayList<>();
         if (value instanceof List<?> list) {
-            return list.stream()
-                    .map(v -> ((Number) v).intValue())
-                    .collect(Collectors.toList());
+            return list.stream().map(v -> ((Number) v).intValue()).collect(Collectors.toList());
         }
         return new ArrayList<>();
     }
@@ -427,10 +416,8 @@ public class ELogicRuleController extends BaseEditorController {
                         Map<String, String> params = new java.util.LinkedHashMap<>();
                         Object rawParams = map.get("parameters");
                         if (rawParams instanceof Map<?, ?> paramMap) {
-                            paramMap.forEach((k, val) -> params.put(
-                                    String.valueOf(k),
-                                    val != null ? String.valueOf(val) : null
-                            ));
+                            paramMap.forEach((k, val) ->
+                                    params.put(String.valueOf(k), val != null ? String.valueOf(val) : null));
                         }
                         return LogicEffect.builder()
                                 .type((String) map.get("type"))

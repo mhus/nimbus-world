@@ -28,11 +28,15 @@ public class TsParser {
     private static final Pattern IMPORT_FROM = Pattern.compile("(?m)\\bimport\\s+[^;]*?from\\s*['\"]([^'\"]+)['\"];?");
     private static final Pattern IMPORT_SIDE_EFFECT = Pattern.compile("(?m)\\bimport\\s*['\"]([^'\"]+)['\"];?");
 
-    private static final Pattern DECL_INTERFACE = Pattern.compile("\\bexport\\s+interface\\s+([A-Za-z0-9_]+)\\b|\\binterface\\s+([A-Za-z0-9_]+)\\b");
+    private static final Pattern DECL_INTERFACE =
+            Pattern.compile("\\bexport\\s+interface\\s+([A-Za-z0-9_]+)\\b|\\binterface\\s+([A-Za-z0-9_]+)\\b");
     private static final Pattern DECL_ENUM = Pattern.compile("(?m)^\\s*(?:export\\s+)?enum\\s+([A-Za-z0-9_]+)\\s*\\{");
-    private static final Pattern DECL_CLASS = Pattern.compile("\\bexport\\s+class\\s+([A-Za-z0-9_]+)\\b|\\bclass\\s+([A-Za-z0-9_]+)\\b");
-    private static final Pattern DECL_TYPE = Pattern.compile("(?m)\\bexport\\s+type\\s+([A-Za-z0-9_]+)\\s*=|\\btype\\s+([A-Za-z0-9_]+)\\s*=");
-    public static final String DECL_STEP = "(?m)^[\\t ]*(public|private|protected)?[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(\\?)?[\\t ]*:[\\t ]*([^;\\r\\n]+?)\\s*;[\\t ]*(//.*)?[\\t ]*$";
+    private static final Pattern DECL_CLASS =
+            Pattern.compile("\\bexport\\s+class\\s+([A-Za-z0-9_]+)\\b|\\bclass\\s+([A-Za-z0-9_]+)\\b");
+    private static final Pattern DECL_TYPE =
+            Pattern.compile("(?m)\\bexport\\s+type\\s+([A-Za-z0-9_]+)\\s*=|\\btype\\s+([A-Za-z0-9_]+)\\s*=");
+    public static final String DECL_STEP =
+            "(?m)^[\\t ]*(public|private|protected)?[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(\\?)?[\\t ]*:[\\t ]*([^;\\r\\n]+?)\\s*;[\\t ]*(//.*)?[\\t ]*$";
 
     public TsModel parse(List<File> sourceDirs) throws IOException {
         TsModel model = new TsModel();
@@ -49,7 +53,7 @@ public class TsParser {
             // imports
             extractImports(src, ts);
             // declarations - pass both stripped and ORIGINAL (unstripped) source
-            extractDeclarations(src, content, ts);  // content is the original with comments!
+            extractDeclarations(src, content, ts); // content is the original with comments!
             model.addFile(ts);
         }
         // Post-processing: extract inline object types and create synthetic interfaces
@@ -74,7 +78,8 @@ public class TsParser {
 
     private String readFile(File f) throws IOException {
         StringBuilder sb = new StringBuilder();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+        try (BufferedReader r =
+                new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
                 sb.append(line).append('\n');
@@ -97,7 +102,8 @@ public class TsParser {
         Matcher m2 = IMPORT_SIDE_EFFECT.matcher(src);
         while (m2.find()) {
             String module = m2.group(1);
-            if (module != null && !file.getImports().contains(module)) file.getImports().add(module);
+            if (module != null && !file.getImports().contains(module))
+                file.getImports().add(module);
         }
     }
 
@@ -110,7 +116,8 @@ public class TsParser {
             int braceIdx = src.indexOf('{', n.startIndex);
             if (braceIdx > n.startIndex) {
                 String header = src.substring(n.startIndex, braceIdx);
-                java.util.regex.Matcher em = java.util.regex.Pattern.compile("\\bextends\\s+([^\\{]+)").matcher(header);
+                java.util.regex.Matcher em = java.util.regex.Pattern.compile("\\bextends\\s+([^\\{]+)")
+                        .matcher(header);
                 if (em.find()) {
                     String list = em.group(1);
                     if (list != null) {
@@ -159,7 +166,8 @@ public class TsParser {
                 if (eq >= 0) {
                     String rhs = decl.substring(eq + 1).trim();
                     // remove trailing semicolon if present (safeSub ends before ';' but keep safety)
-                    if (rhs.endsWith(";")) rhs = rhs.substring(0, rhs.length() - 1).trim();
+                    if (rhs.endsWith(";"))
+                        rhs = rhs.substring(0, rhs.length() - 1).trim();
                     // collapse multiple spaces
                     rhs = rhs.replaceAll("\n|\r", " ").trim();
                     d.target = rhs.isEmpty() ? null : rhs;
@@ -181,7 +189,8 @@ public class TsParser {
         extractPropertiesFromBodyWithOriginal(body, body, out);
     }
 
-    private void extractPropertiesFromBodyWithOriginal(String strippedBody, String originalBody, List<TsDeclarations.TsProperty> out) {
+    private void extractPropertiesFromBodyWithOriginal(
+            String strippedBody, String originalBody, List<TsDeclarations.TsProperty> out) {
         if (strippedBody == null || out == null) return;
 
         // First: Match single-line TS property declarations of the form: [visibility]? name[?]: type;
@@ -207,7 +216,8 @@ public class TsParser {
                         continue;
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
             String typeTxt = m.group(4) == null ? null : m.group(4).trim();
             // If type starts with an inline object '{', try to capture the full object literal up to matching '}'
@@ -250,8 +260,7 @@ public class TsParser {
         // Pattern: optional visibility, property name, optional '?', ':', optional whitespace, '{'
         // Example: "owner?: {"
         java.util.regex.Pattern multilinePat = java.util.regex.Pattern.compile(
-            "(?m)^[\\t ]*(public|private|protected)?[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(\\?)?[\\t ]*:[\\t ]*\\{"
-        );
+                "(?m)^[\\t ]*(public|private|protected)?[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(\\?)?[\\t ]*:[\\t ]*\\{");
 
         java.util.regex.Matcher m = multilinePat.matcher(body);
         while (m.find()) {
@@ -427,7 +436,8 @@ public class TsParser {
     private void extractEnumValuesFromBody(String body, List<String> out) {
         if (body == null || out == null) return;
         // Match enum member names: NAME [= ...] , or NAME at end
-        Pattern p = Pattern.compile("(?m)^[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(?:=[^,\\r\\n]+)?[\\t ]*(?:,[\\t ]*)?(?://.*)?$");
+        Pattern p = Pattern.compile(
+                "(?m)^[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(?:=[^,\\r\\n]+)?[\\t ]*(?:,[\\t ]*)?(?://.*)?$");
         Matcher m = p.matcher(body);
         while (m.find()) {
             String name = m.group(1);
@@ -436,7 +446,10 @@ public class TsParser {
             if (!Character.isJavaIdentifierStart(name.charAt(0))) continue;
             boolean ok = true;
             for (int i = 1; i < name.length(); i++) {
-                if (!Character.isJavaIdentifierPart(name.charAt(i))) { ok = false; break; }
+                if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+                    ok = false;
+                    break;
+                }
             }
             if (!ok) continue;
             out.add(name);
@@ -445,7 +458,8 @@ public class TsParser {
 
     private void extractEnumValuesAndAssignments(String body, List<TsDeclarations.TsEnumValue> out) {
         if (body == null || out == null) return;
-        Pattern p = Pattern.compile("(?m)^[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(?:=[\\t ]*(?:(['\"])(.*?)\\2|([^,\\r\\n]+)))?[\\t ]*(?:,[\\t ]*)?(?://.*)?$");
+        Pattern p = Pattern.compile(
+                "(?m)^[\\t ]*([A-Za-z_$][A-Za-z0-9_$]*)[\\t ]*(?:=[\\t ]*(?:(['\"])(.*?)\\2|([^,\\r\\n]+)))?[\\t ]*(?:,[\\t ]*)?(?://.*)?$");
         Matcher m = p.matcher(body);
         while (m.find()) {
             String name = m.group(1);
@@ -454,7 +468,10 @@ public class TsParser {
             if (!Character.isJavaIdentifierStart(name.charAt(0))) continue;
             boolean ok = true;
             for (int i = 1; i < name.length(); i++) {
-                if (!Character.isJavaIdentifierPart(name.charAt(i))) { ok = false; break; }
+                if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+                    ok = false;
+                    break;
+                }
             }
             if (!ok) continue;
 
@@ -486,7 +503,10 @@ public class TsParser {
         while (m.find()) {
             String n1 = m.group(1);
             String n2 = null;
-            try { n2 = m.group(2); } catch (Exception ignored) {}
+            try {
+                n2 = m.group(2);
+            } catch (Exception ignored) {
+            }
             String name = n1 != null ? n1 : n2;
             if (name == null) continue;
 
@@ -566,7 +586,8 @@ public class TsParser {
                         String syntheticName = generateSyntheticInterfaceName(iface.name, prop.name);
 
                         // Parse the inline object and create a new interface
-                        TsDeclarations.TsInterface syntheticInterface = parseInlineObjectType(syntheticName, trimmedType, file, newInterfaces);
+                        TsDeclarations.TsInterface syntheticInterface =
+                                parseInlineObjectType(syntheticName, trimmedType, file, newInterfaces);
                         if (syntheticInterface != null) {
                             newInterfaces.add(syntheticInterface);
 
@@ -579,7 +600,8 @@ public class TsParser {
                         String inlineObj = cleanedType.substring("Array<".length(), cleanedType.length() - 1);
                         String syntheticName = generateSyntheticInterfaceName(iface.name, prop.name);
 
-                        TsDeclarations.TsInterface syntheticInterface = parseInlineObjectType(syntheticName, inlineObj, file, newInterfaces);
+                        TsDeclarations.TsInterface syntheticInterface =
+                                parseInlineObjectType(syntheticName, inlineObj, file, newInterfaces);
                         if (syntheticInterface != null) {
                             newInterfaces.add(syntheticInterface);
                             prop.type = "Array<" + syntheticName + ">";
@@ -614,9 +636,8 @@ public class TsParser {
      * Example input: "{ area: Area; grid: HexVector2; }"
      * Recursively handles nested inline objects.
      */
-    private TsDeclarations.TsInterface parseInlineObjectType(String name, String objectType,
-                                                             TsSourceFile file,
-                                                             List<TsDeclarations.TsInterface> newInterfaces) {
+    private TsDeclarations.TsInterface parseInlineObjectType(
+            String name, String objectType, TsSourceFile file, List<TsDeclarations.TsInterface> newInterfaces) {
         if (objectType == null || !objectType.contains(":")) return null;
 
         TsDeclarations.TsInterface iface = new TsDeclarations.TsInterface();
@@ -686,7 +707,8 @@ public class TsParser {
             // Check if this property has a nested inline object
             if (isNestedInline) {
                 String nestedName = generateSyntheticInterfaceName(name, namePart);
-                TsDeclarations.TsInterface nestedInterface = parseInlineObjectType(nestedName, typePart, file, newInterfaces);
+                TsDeclarations.TsInterface nestedInterface =
+                        parseInlineObjectType(nestedName, typePart, file, newInterfaces);
                 if (nestedInterface != null) {
                     newInterfaces.add(nestedInterface);
                     typePart = nestedName;
@@ -696,7 +718,8 @@ public class TsParser {
             else if (typePart.startsWith("Array<{") && typePart.endsWith("}>")) {
                 String inlineObj = typePart.substring("Array<".length(), typePart.length() - 1);
                 String nestedName = generateSyntheticInterfaceName(name, namePart);
-                TsDeclarations.TsInterface nestedInterface = parseInlineObjectType(nestedName, inlineObj, file, newInterfaces);
+                TsDeclarations.TsInterface nestedInterface =
+                        parseInlineObjectType(nestedName, inlineObj, file, newInterfaces);
                 if (nestedInterface != null) {
                     newInterfaces.add(nestedInterface);
                     typePart = "Array<" + nestedName + ">";

@@ -3,14 +3,13 @@ package de.mhus.nimbus.world.life.logic;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 /**
  * Effect handler that executes another rule by package and name.
@@ -34,9 +33,8 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
     private final LogicSpelService spelService;
     private final LogicEffectRegistry effectRegistry;
 
-    public LogicRuleApplyHandler(WLogicRuleService ruleService,
-                                 LogicSpelService spelService,
-                                 @Lazy LogicEffectRegistry effectRegistry) {
+    public LogicRuleApplyHandler(
+            WLogicRuleService ruleService, LogicSpelService spelService, @Lazy LogicEffectRegistry effectRegistry) {
         this.ruleService = ruleService;
         this.spelService = spelService;
         this.effectRegistry = effectRegistry;
@@ -50,14 +48,15 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
             return Set.of();
         }
 
-        String targetPackage = parameters.getOrDefault("rulePackage",
-                context.getRulePackage() != null ? context.getRulePackage() : "default");
+        String targetPackage = parameters.getOrDefault(
+                "rulePackage", context.getRulePackage() != null ? context.getRulePackage() : "default");
 
         String worldId = context.getWorldId();
 
         // Find the target rule by worldId and name
         // Rules are stored with the base worldId, but we look up by the full worldId first
-        WLogicRule targetRule = ruleService.findByWorldIdAndName(worldId, ruleName).orElse(null);
+        WLogicRule targetRule =
+                ruleService.findByWorldIdAndName(worldId, ruleName).orElse(null);
         if (targetRule == null) {
             log.warn("apply_rule: rule '{}' not found for worldId={}", ruleName, worldId);
             return Set.of();
@@ -70,16 +69,15 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
 
         // Check the target rule's condition
         String rulePackage = targetRule.getRulePackage() != null ? targetRule.getRulePackage() : "default";
-        boolean conditionMet = spelService.evaluateCondition(
-                targetRule.getSpelCondition(), context.getFlags(), rulePackage);
+        boolean conditionMet =
+                spelService.evaluateCondition(targetRule.getSpelCondition(), context.getFlags(), rulePackage);
 
         if (!conditionMet) {
             log.debug("apply_rule: condition not met for rule '{}'", ruleName);
             return Set.of();
         }
 
-        log.debug("apply_rule: executing rule '{}' (package={}) for worldId={}",
-                ruleName, rulePackage, worldId);
+        log.debug("apply_rule: executing rule '{}' (package={}) for worldId={}", ruleName, rulePackage, worldId);
 
         // Execute the target rule's effects
         String previousPackage = context.getRulePackage();

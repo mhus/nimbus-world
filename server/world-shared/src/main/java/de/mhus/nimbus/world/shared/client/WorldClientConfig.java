@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.shared.client;
 
 import de.mhus.nimbus.world.shared.access.AccessService;
+import java.io.IOException;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -12,9 +14,6 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.time.Duration;
 
 /**
  * Configuration for inter-server REST communication.
@@ -31,8 +30,7 @@ public class WorldClientConfig {
     @ConditionalOnMissingBean(name = "worldRestTemplate")
     public RestTemplate worldRestTemplate(WorldClientSettings properties, RestTemplateBuilder builder) {
         // RestTemplate with automatic Bearer token authentication
-        return builder
-                .connectTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
+        return builder.connectTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
                 .readTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
                 .additionalInterceptors(new BearerTokenInterceptor(accessService))
                 .build();
@@ -47,10 +45,8 @@ public class WorldClientConfig {
         private final AccessService accessService;
 
         @Override
-        public ClientHttpResponse intercept(
-                HttpRequest request,
-                byte[] body,
-                ClientHttpRequestExecution execution) throws IOException {
+        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
+                throws IOException {
 
             // Get world token from AccessService
             try {

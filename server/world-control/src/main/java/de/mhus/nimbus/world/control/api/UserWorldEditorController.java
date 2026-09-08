@@ -7,18 +7,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/world/user/world")
@@ -30,7 +28,14 @@ public class UserWorldEditorController {
     private final WWorldService worldService;
 
     public record CreateChildWorldRequest(String worldId, Boolean enabled, Boolean publicFlag) {}
-    public record UpdateChildWorldRequest(Boolean enabled, Boolean publicFlag, Set<String> editor, Set<String> player, Set<String> supporter, Set<String> owners) {}
+
+    public record UpdateChildWorldRequest(
+            Boolean enabled,
+            Boolean publicFlag,
+            Set<String> editor,
+            Set<String> player,
+            Set<String> supporter,
+            Set<String> owners) {}
 
     private String currentUserId(HttpServletRequest req) {
         Object attr = req.getAttribute(de.mhus.nimbus.world.shared.access.AccessFilterBase.ATTR_USER_ID);
@@ -38,7 +43,9 @@ public class UserWorldEditorController {
     }
 
     @GetMapping
-    @Operation(summary = "Child/Main World abrufen", description = "Lädt Welt falls Berechtigung (owner oder publicFlag)")
+    @Operation(
+            summary = "Child/Main World abrufen",
+            description = "Lädt Welt falls Berechtigung (owner oder publicFlag)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Gefunden"),
         @ApiResponse(responseCode = "400", description = "Validierungsfehler"),
@@ -50,17 +57,19 @@ public class UserWorldEditorController {
         String userId = currentUserId(req);
         if (userId == null) return unauthorized();
         Optional<WWorld> opt = worldService.getByWorldId(worldIdStr);
-        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","world not found"));
+        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "world not found"));
         WWorld w = opt.get();
         // Zugriff: Owner darf immer; publicFlag erlaubt Zugriff; andere nicht
         if (!w.getOwner().contains(userId) && !w.isPublicFlag()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","access denied"));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "access denied"));
         }
         return ResponseEntity.ok(worldToMap(w));
     }
 
     @PostMapping
-    @Operation(summary = "Child World erstellen", description = "Erstellt eine Child World unter einer Main World (owner-Recht erforderlich)")
+    @Operation(
+            summary = "Child World erstellen",
+            description = "Erstellt eine Child World unter einer Main World (owner-Recht erforderlich)")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Erstellt"),
         @ApiResponse(responseCode = "400", description = "Validierungsfehler"),
@@ -73,13 +82,18 @@ public class UserWorldEditorController {
         if (userId == null) return unauthorized();
         if (req.worldId() == null || req.worldId().isBlank()) return bad("worldId blank");
         WorldId worldId;
-        try { worldId = WorldId.of(req.worldId()).get(); } catch (NoSuchElementException e) { return bad(e.getMessage()); }
+        try {
+            worldId = WorldId.of(req.worldId()).get();
+        } catch (NoSuchElementException e) {
+            return bad(e.getMessage());
+        }
         if (worldId.isMain()) return bad("world must not be main (needs zone)");
         // Haupt-Welt laden
         Optional<WWorld> mainOpt = worldService.getByWorldId(worldId);
         if (mainOpt.isEmpty()) return bad("main world not found: " + worldId);
         WWorld main = mainOpt.get();
-        if (!main.getOwner().contains(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","not an owner of main world"));
+        if (!main.getOwner().contains(userId))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not an owner of main world"));
         try {
             worldId = WorldId.of(req.worldId()).get(); // nochmal parsen um sicherzugehen
             WWorld created = worldService.createWorld(worldId, main.getPublicData());
@@ -106,18 +120,24 @@ public class UserWorldEditorController {
         @ApiResponse(responseCode = "403", description = "Kein Zugriff"),
         @ApiResponse(responseCode = "404", description = "Nicht gefunden")
     })
-    public ResponseEntity<?> update(@RequestParam String worldIdStr, @RequestBody UpdateChildWorldRequest req, HttpServletRequest http) {
+    public ResponseEntity<?> update(
+            @RequestParam String worldIdStr, @RequestBody UpdateChildWorldRequest req, HttpServletRequest http) {
         String userId = currentUserId(http);
         if (userId == null) return unauthorized();
         WorldId worldId;
-        try { worldId = WorldId.of(worldIdStr).get(); } catch (NoSuchElementException e) { return bad(e.getMessage()); }
+        try {
+            worldId = WorldId.of(worldIdStr).get();
+        } catch (NoSuchElementException e) {
+            return bad(e.getMessage());
+        }
         if (worldId.isMain()) return bad("cannot update main world here");
         Optional<WWorld> opt = worldService.getByWorldId(worldIdStr);
-        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","world not found"));
+        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "world not found"));
         WWorld existing = opt.get();
         Optional<WWorld> mainOpt = worldService.getByWorldId(worldId.getId());
         if (mainOpt.isEmpty()) return bad("main world not found: " + worldId);
-        if (!mainOpt.get().getOwner().contains(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","not owner of main world"));
+        if (!mainOpt.get().getOwner().contains(userId))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not owner of main world"));
         worldService.updateWorld(worldId, w -> {
             if (req.enabled() != null) w.setEnabled(req.enabled());
             if (req.publicFlag() != null) w.setPublicFlag(req.publicFlag());
@@ -131,7 +151,9 @@ public class UserWorldEditorController {
     }
 
     @DeleteMapping
-    @Operation(summary = "Child World löschen", description = "Löscht eine Child World (owner der Main World erforderlich)")
+    @Operation(
+            summary = "Child World löschen",
+            description = "Löscht eine Child World (owner der Main World erforderlich)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Gelöscht"),
         @ApiResponse(responseCode = "400", description = "Validierungsfehler"),
@@ -144,29 +166,38 @@ public class UserWorldEditorController {
         String userId = currentUserId(http);
         if (userId == null) return unauthorized();
         WorldId worldId;
-        try { worldId = WorldId.of(worldIdStr).get(); } catch (NoSuchElementException e) { return bad(e.getMessage()); }
+        try {
+            worldId = WorldId.of(worldIdStr).get();
+        } catch (NoSuchElementException e) {
+            return bad(e.getMessage());
+        }
         if (worldId.isMain()) return bad("cannot delete main world here");
         Optional<WWorld> opt = worldService.getByWorldId(worldIdStr);
-        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","world not found"));
+        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "world not found"));
         Optional<WWorld> mainOpt = worldService.getByWorldId(worldId.getId());
         if (mainOpt.isEmpty()) return bad("main world not found: " + worldId);
-        if (!mainOpt.get().getOwner().contains(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","not owner of main world"));
+        if (!mainOpt.get().getOwner().contains(userId))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not owner of main world"));
         boolean deleted = worldService.deleteWorld(worldId);
         if (deleted) return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error","delete failed"));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "delete failed"));
     }
 
-    private Map<String,Object> worldToMap(WWorld w) {
+    private Map<String, Object> worldToMap(WWorld w) {
         return Map.of(
                 "worldId", w.getWorldId(),
                 "enabled", w.isEnabled(),
                 "publicFlag", w.isPublicFlag(),
                 "owner", w.getOwner(),
                 "editor", w.getEditor(),
-                "player", w.getPlayer()
-        );
+                "player", w.getPlayer());
     }
 
-    private ResponseEntity<?> bad(String msg) { return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", msg)); }
-    private ResponseEntity<?> unauthorized() { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","unauthorized")); }
+    private ResponseEntity<?> bad(String msg) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", msg));
+    }
+
+    private ResponseEntity<?> unauthorized() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "unauthorized"));
+    }
 }

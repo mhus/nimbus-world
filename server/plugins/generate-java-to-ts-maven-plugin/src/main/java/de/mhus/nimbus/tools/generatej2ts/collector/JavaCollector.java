@@ -4,8 +4,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import de.mhus.nimbus.tools.generatej2ts.model.JavaClassModel;
 import de.mhus.nimbus.tools.generatej2ts.parser.JavaAstParser;
-import org.apache.maven.plugin.logging.Log;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -17,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import org.apache.maven.plugin.logging.Log;
 
 /**
  * Sammelt alle Java-Dateien im inputDirectory, die eine Top-Level Klasse/Enum
@@ -100,7 +99,11 @@ public class JavaCollector {
                 if (!annotated && !allowedByForce) continue;
 
                 JavaClassModel model = JavaAstParser.toModel(cu, td);
-                if (log != null) log.info("JavaCollector: model parsed -> " + (model.getPackageName() == null ? model.getName() : (model.getPackageName() + "." + model.getName())));
+                if (log != null)
+                    log.info("JavaCollector: model parsed -> "
+                            + (model.getPackageName() == null
+                                    ? model.getName()
+                                    : (model.getPackageName() + "." + model.getName())));
                 result.add(model);
 
                 // follow: versuche referenzierte Typen von Feldern nachzuladen
@@ -117,7 +120,8 @@ public class JavaCollector {
                                         boolean has = false;
                                         for (TypeDeclaration<?> td2 : refCu.getTypes()) {
                                             if (JavaAstParser.hasGenerateTypeScriptAnnotation(td2)) {
-                                                has = true; break;
+                                                has = true;
+                                                break;
                                             }
                                         }
                                         if (has) {
@@ -127,7 +131,8 @@ public class JavaCollector {
                                             forceInclude.add(refFile.getAbsolutePath());
                                         }
                                     } catch (Exception e) {
-                                        if (log != null) log.warn("Follow-Parsefehler bei " + refFile + ": " + e.getMessage());
+                                        if (log != null)
+                                            log.warn("Follow-Parsefehler bei " + refFile + ": " + e.getMessage());
                                     }
                                 }
                             }

@@ -12,17 +12,15 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages all active player WebSocket sessions.
@@ -67,11 +65,12 @@ public class SessionManager {
     @Lazy
     private GameplayService gameplayService;
 
-    public SessionManager(WSessionService wSessionService,
-                         LocationService locationService,
-                         de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
-                         WWorldService worldService,
-                         WWorldInstanceService worldInstanceService) {
+    public SessionManager(
+            WSessionService wSessionService,
+            LocationService locationService,
+            de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
+            WWorldService worldService,
+            WWorldInstanceService worldInstanceService) {
         this.wSessionService = wSessionService;
         this.locationService = locationService;
         this.worldClientService = worldClientService;
@@ -127,10 +126,7 @@ public class SessionManager {
 
                 // Notify world-control for instance cleanup (fire-and-forget)
                 if (session.getWorldId() != null && session.getEntityId() != null) {
-                    worldClientService.notifySessionClosed(
-                            session.getWorldId().getId(),
-                            session.getEntityId()
-                    );
+                    worldClientService.notifySessionClosed(session.getWorldId().getId(), session.getEntityId());
                 }
             }
 
@@ -149,7 +145,8 @@ public class SessionManager {
             try {
                 consumer.onSessionClosed(session);
             } catch (Exception e) {
-                log.error("SessionClosedConsumer failed: {}", consumer.getClass().getSimpleName(), e);
+                log.error(
+                        "SessionClosedConsumer failed: {}", consumer.getClass().getSimpleName(), e);
             }
         }
     }
@@ -162,7 +159,10 @@ public class SessionManager {
             try {
                 consumer.onSessionAuthenticated(session);
             } catch (Exception e) {
-                log.error("SessionAuthenticatedConsumer failed: {}", consumer.getClass().getSimpleName(), e);
+                log.error(
+                        "SessionAuthenticatedConsumer failed: {}",
+                        consumer.getClass().getSimpleName(),
+                        e);
             }
         }
     }
@@ -184,10 +184,7 @@ public class SessionManager {
 
                 // Notify world-control for instance cleanup (fire-and-forget)
                 if (session.getWorldId() != null && session.getEntityId() != null) {
-                    worldClientService.notifySessionClosed(
-                            session.getWorldId().getId(),
-                            session.getEntityId()
-                    );
+                    worldClientService.notifySessionClosed(session.getWorldId().getId(), session.getEntityId());
                 }
             }
 
@@ -226,7 +223,13 @@ public class SessionManager {
         return sessionsByWebSocketId.size();
     }
 
-    public void authenticateSession(PlayerSession session, String worldSessionId, WorldId worldId, PlayerData playerData, ClientType clientType, String actor) {
+    public void authenticateSession(
+            PlayerSession session,
+            String worldSessionId,
+            WorldId worldId,
+            PlayerData playerData,
+            ClientType clientType,
+            String actor) {
         var worldSessionX = wSessionService.get(worldSessionId);
         if (worldSessionX.isEmpty()) {
             log.warn("WSession not found for authentication: sessionId={}", worldSessionId);
@@ -235,13 +238,19 @@ public class SessionManager {
         }
         var worldSession = worldSessionX.get();
         if (worldSession.getStatus() != WSessionStatus.WAITING) {
-            log.warn("WSession not in WAITING state for authentication: sessionId={} status={}", worldSessionId, worldSession.getStatus());
+            log.warn(
+                    "WSession not in WAITING state for authentication: sessionId={} status={}",
+                    worldSessionId,
+                    worldSession.getStatus());
             session.setStatus(PlayerSession.SessionStatus.DEPRECATED);
             return;
         }
         if (!worldSession.getWorldId().equals(worldId.toString())) {
-            log.warn("WSession worldId mismatch for authentication: sessionId={} expected={} actual={}",
-                    worldSessionId, worldSession.getWorldId(), worldId);
+            log.warn(
+                    "WSession worldId mismatch for authentication: sessionId={} expected={} actual={}",
+                    worldSessionId,
+                    worldSession.getWorldId(),
+                    worldId);
             session.setStatus(PlayerSession.SessionStatus.DEPRECATED);
             return;
         }
@@ -289,8 +298,11 @@ public class SessionManager {
         movementBroadcastListener.subscribeToWorld(worldId.getId());
         epochSwitchListener.subscribeToWorld(worldId.getId());
 
-        log.debug("Session authenticated and subscribed to broadcasts: sessionId={}, worldId={}, actor={}",
-                worldSessionId, worldId.getId(), actor);
+        log.debug(
+                "Session authenticated and subscribed to broadcasts: sessionId={}, worldId={}, actor={}",
+                worldSessionId,
+                worldId.getId(),
+                actor);
 
         // Notify SessionAuthenticatedConsumers (e.g., start persistence tick thread)
         notifySessionAuthenticated(session);

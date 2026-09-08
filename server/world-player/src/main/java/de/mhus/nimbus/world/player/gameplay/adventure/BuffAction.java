@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
@@ -9,10 +8,10 @@ import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Buff action that applies instant vital changes and timed max-value buffs.
@@ -48,13 +47,30 @@ public class BuffAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (shortcutKey != null) return false;
         return applyBuff(session, serverInfo, null);
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (shortcutKey != null) return false;
         if (entity == null || entity.getServer() == null) return false;
         return applyBuff(session, entity.getServer(), null);
@@ -76,7 +92,13 @@ public class BuffAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 
@@ -105,9 +127,11 @@ public class BuffAction implements GameplayAction {
         applied |= applyInstantAdd(data, "stamina", params.get("stamina"));
 
         // Timed regen buffs
-        applied |= applyTimedEffect(data, session, "health.regen", params.get("health_regen"), duration, source, texture);
+        applied |=
+                applyTimedEffect(data, session, "health.regen", params.get("health_regen"), duration, source, texture);
         applied |= applyTimedEffect(data, session, "mana.regen", params.get("mana_regen"), duration, source, texture);
-        applied |= applyTimedEffect(data, session, "stamina.regen", params.get("stamina_regen"), duration, source, texture);
+        applied |= applyTimedEffect(
+                data, session, "stamina.regen", params.get("stamina_regen"), duration, source, texture);
 
         // Timed max value buffs
         applied |= applyTimedEffect(data, session, "health.max", params.get("max_health"), duration, source, texture);
@@ -120,8 +144,7 @@ public class BuffAction implements GameplayAction {
 
             // Flash the item texture on screen
             if (texture != null && !texture.isBlank()) {
-                adventure.getClientService().sendCommand(session, "flashImage",
-                        List.of(texture, "500", "0.5"));
+                adventure.getClientService().sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
             }
 
             log.info("Applied buff to player {}: {}", session.getEntityId(), describeParams(params));
@@ -156,9 +179,14 @@ public class BuffAction implements GameplayAction {
         return true;
     }
 
-    private boolean applyTimedEffect(AdventureData data, PlayerSession session,
-                                      String stat, String valueStr, double duration,
-                                      String source, String texture) {
+    private boolean applyTimedEffect(
+            AdventureData data,
+            PlayerSession session,
+            String stat,
+            String valueStr,
+            double duration,
+            String source,
+            String texture) {
         if (valueStr == null || valueStr.isBlank()) return false;
         double amount = parseDouble(valueStr, 0);
         if (amount <= 0 || duration <= 0) return false;
@@ -175,8 +203,9 @@ public class BuffAction implements GameplayAction {
 
         if (texture != null && !texture.isBlank()) {
             long durationMs = (long) (duration * 1000);
-            adventure.getClientService().sendCommand(session, "effect",
-                    List.of("add", texture, String.valueOf(durationMs)));
+            adventure
+                    .getClientService()
+                    .sendCommand(session, "effect", List.of("add", texture, String.valueOf(durationMs)));
         }
 
         return true;
@@ -184,7 +213,19 @@ public class BuffAction implements GameplayAction {
 
     private String describeParams(Map<String, String> params) {
         var sb = new StringBuilder();
-        for (String key : List.of("thirst", "hunger", "health", "mana", "stamina", "health_regen", "mana_regen", "stamina_regen", "max_health", "max_mana", "max_stamina", "duration")) {
+        for (String key : List.of(
+                "thirst",
+                "hunger",
+                "health",
+                "mana",
+                "stamina",
+                "health_regen",
+                "mana_regen",
+                "stamina_regen",
+                "max_health",
+                "max_mana",
+                "max_stamina",
+                "duration")) {
             String val = params.get(key);
             if (val != null && !val.isBlank()) {
                 if (!sb.isEmpty()) sb.append(", ");

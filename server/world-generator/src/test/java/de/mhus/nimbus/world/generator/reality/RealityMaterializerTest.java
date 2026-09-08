@@ -1,18 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.generated.types.EntityModel;
-import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WDocumentService;
-import de.mhus.nimbus.world.shared.world.WEntityModelService;
-import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -22,10 +9,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import de.mhus.nimbus.generated.types.EntityModel;
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
+import de.mhus.nimbus.world.shared.world.WEntityModelService;
+import de.mhus.nimbus.world.shared.world.WLogicRule;
+import de.mhus.nimbus.world.shared.world.WLogicRuleService;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 /** Unit tests for the Stage-D materializers (lore/rules/creatures). Backing services are mocked. */
 class RealityMaterializerTest {
 
-    private final WorldId region = WorldId.of(WorldId.COLLECTION_REGION, "reality_it").orElseThrow();
+    private final WorldId region =
+            WorldId.of(WorldId.COLLECTION_REGION, "reality_it").orElseThrow();
 
     // ---- D1 Lore ----
 

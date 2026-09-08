@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.control.service;
 
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Service for managing world editor settings per user.
@@ -34,17 +33,14 @@ public class EditSettingsService {
      * @return The settings (existing or newly created)
      */
     public WWorldEditSettings getOrCreateSettings(String worldId, String userId) {
-        return repository.findByWorldIdAndUserId(worldId, userId)
-                .orElseGet(() -> {
-                    WWorldEditSettings settings = WWorldEditSettings.builder()
-                            .worldId(worldId)
-                            .userId(userId)
-                            .build();
-                    settings.touchCreate();
-                    WWorldEditSettings saved = repository.save(settings);
-                    log.info("Created new editor settings: worldId={}, userId={}", worldId, userId);
-                    return saved;
-                });
+        return repository.findByWorldIdAndUserId(worldId, userId).orElseGet(() -> {
+            WWorldEditSettings settings =
+                    WWorldEditSettings.builder().worldId(worldId).userId(userId).build();
+            settings.touchCreate();
+            WWorldEditSettings saved = repository.save(settings);
+            log.info("Created new editor settings: worldId={}, userId={}", worldId, userId);
+            return saved;
+        });
     }
 
     /**

@@ -9,19 +9,18 @@ import de.mhus.nimbus.world.shared.world.WLogicStateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/control/worlds/{worldId}/logic-states")
@@ -41,8 +40,7 @@ public class ELogicStateController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -52,34 +50,28 @@ public class ELogicStateController extends BaseEditorController {
         if (!Strings.isBlank(query)) {
             String lowerQuery = query.toLowerCase();
             all = all.stream()
-                    .filter(f -> f.getName() != null && f.getName().toLowerCase().contains(lowerQuery))
+                    .filter(f ->
+                            f.getName() != null && f.getName().toLowerCase().contains(lowerQuery))
                     .collect(Collectors.toList());
         }
 
         int totalCount = all.size();
 
-        List<Map<String, Object>> dtos = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> dtos =
+                all.stream().skip(offset).limit(limit).map(this::toDto).collect(Collectors.toList());
 
         return ResponseEntity.ok(Map.of(
                 "flags", dtos,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get Logic State by ID")
-    public ResponseEntity<?> get(
-            @PathVariable String worldId,
-            @PathVariable String id) {
+    public ResponseEntity<?> get(@PathVariable String worldId, @PathVariable String id) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -94,12 +86,9 @@ public class ELogicStateController extends BaseEditorController {
 
     @PostMapping
     @Operation(summary = "Create new Logic State definition")
-    public ResponseEntity<?> create(
-            @PathVariable String worldId,
-            @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> create(@PathVariable String worldId, @RequestBody Map<String, Object> request) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         String name = (String) request.get("name");
         if (Strings.isBlank(name)) return bad("name required");
@@ -128,12 +117,9 @@ public class ELogicStateController extends BaseEditorController {
     @PutMapping("/{id}")
     @Operation(summary = "Update Logic State definition")
     public ResponseEntity<?> update(
-            @PathVariable String worldId,
-            @PathVariable String id,
-            @RequestBody Map<String, Object> request) {
+            @PathVariable String worldId, @PathVariable String id, @RequestBody Map<String, Object> request) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -166,12 +152,9 @@ public class ELogicStateController extends BaseEditorController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Logic State definition")
-    public ResponseEntity<?> delete(
-            @PathVariable String worldId,
-            @PathVariable String id) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, @PathVariable String id) {
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 

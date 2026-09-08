@@ -13,32 +13,69 @@ public class TypeScriptType {
     private final Set<String> imports = new HashSet<>();
     private String subfolder; // from @GenerateTypeScript on Java side
     private String sourceFqn; // fully-qualified Java source class name (package + name)
-    private String fileName;  // optional target filename (e.g. "Custom.ts")
+    private String fileName; // optional target filename (e.g. "Custom.ts")
     // Nested enums that should be emitted into the same file (followed inner enums)
     private final List<TypeScriptNestedEnum> nestedEnums = new ArrayList<>();
     // Top-Level Konstanten (aus static final Feldern)
     private final List<TypeScriptConstant> constants = new ArrayList<>();
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public TypeScriptKind getKind() { return kind; }
-    public void setKind(TypeScriptKind kind) { this.kind = kind; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public List<TypeScriptField> getFields() { return fields; }
-    public List<String> getEnumValues() { return enumValues; }
-    public Set<String> getImports() { return imports; }
+    public TypeScriptKind getKind() {
+        return kind;
+    }
 
-    public String getSubfolder() { return subfolder; }
-    public void setSubfolder(String subfolder) { this.subfolder = subfolder; }
+    public void setKind(TypeScriptKind kind) {
+        this.kind = kind;
+    }
 
-    public String getSourceFqn() { return sourceFqn; }
-    public void setSourceFqn(String sourceFqn) { this.sourceFqn = sourceFqn; }
+    public List<TypeScriptField> getFields() {
+        return fields;
+    }
 
-    public String getFileName() { return fileName; }
-    public void setFileName(String fileName) { this.fileName = fileName; }
+    public List<String> getEnumValues() {
+        return enumValues;
+    }
 
-    public List<TypeScriptNestedEnum> getNestedEnums() { return nestedEnums; }
+    public Set<String> getImports() {
+        return imports;
+    }
 
-    public List<TypeScriptConstant> getConstants() { return constants; }
+    public String getSubfolder() {
+        return subfolder;
+    }
+
+    public void setSubfolder(String subfolder) {
+        this.subfolder = subfolder;
+    }
+
+    public String getSourceFqn() {
+        return sourceFqn;
+    }
+
+    public void setSourceFqn(String sourceFqn) {
+        this.sourceFqn = sourceFqn;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public List<TypeScriptNestedEnum> getNestedEnums() {
+        return nestedEnums;
+    }
+
+    public List<TypeScriptConstant> getConstants() {
+        return constants;
+    }
 }

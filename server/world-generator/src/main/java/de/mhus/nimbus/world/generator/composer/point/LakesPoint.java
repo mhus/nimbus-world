@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * LakesPoint represents a lake system positioned at a specific point.
@@ -104,21 +103,25 @@ public class LakesPoint extends Point {
      * @param context The composition context
      */
     public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
-        log.debug("Configuring HexGrid for LakesPoint '{}' at [{},{}] with hexGridSize: {}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
+        log.debug(
+                "Configuring HexGrid for LakesPoint '{}' at [{},{}] with hexGridSize: {}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                hexGridSize);
 
         // Create lakes configuration
         LakesConfig config = LakesConfig.builder()
-            .lakesName(getName())
-            .lakesTitle(getTitle())
-            .mainLakeRadius(mainLakeRadius)
-            .mainLakeDepth(mainLakeDepth)
-            .smallLakes(smallLakes)
-            .smallLakeMinRadius(smallLakeMinRadius)
-            .smallLakeMaxRadius(smallLakeMaxRadius)
-            .scatterDistance(scatterDistance)
-            .seed(seed != null ? seed : System.currentTimeMillis())
-            .build();
+                .lakesName(getName())
+                .lakesTitle(getTitle())
+                .mainLakeRadius(mainLakeRadius)
+                .mainLakeDepth(mainLakeDepth)
+                .smallLakes(smallLakes)
+                .smallLakeMinRadius(smallLakeMinRadius)
+                .smallLakeMaxRadius(smallLakeMaxRadius)
+                .scatterDistance(scatterDistance)
+                .seed(seed != null ? seed : System.currentTimeMillis())
+                .build();
 
         // Serialize to JSON
         String configJson = serializeToJson(config);
@@ -127,17 +130,23 @@ public class LakesPoint extends Point {
         FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
         if (grid == null) {
-            log.error("LakesPoint '{}' cannot configure grid [{},{}] - registry access failed",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error(
+                    "LakesPoint '{}' cannot configure grid [{},{}] - registry access failed",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
         // Add g_lakes parameter as aspect (with collision check)
         String existingLakes = grid.getParameters().get("g_lakes");
         if (existingLakes != null && !existingLakes.isBlank()) {
-            log.warn("LakesPoint '{}' - grid [{},{}] already has g_lakes parameter! " +
-                "Another aspect already defined lakes here. Skipping this LakesPoint.",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.warn(
+                    "LakesPoint '{}' - grid [{},{}] already has g_lakes parameter! "
+                            + "Another aspect already defined lakes here. Skipping this LakesPoint.",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
@@ -153,8 +162,13 @@ public class LakesPoint extends Point {
             grid.getParameters().putAll(parameters);
         }
 
-        log.debug("LakesPoint '{}' configured on grid [{},{}] with mainRadius={}, smallLakes={}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), mainLakeRadius, smallLakes);
+        log.debug(
+                "LakesPoint '{}' configured on grid [{},{}] with mainRadius={}, smallLakes={}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                mainLakeRadius,
+                smallLakes);
     }
 
     /**
@@ -162,8 +176,7 @@ public class LakesPoint extends Point {
      */
     private String serializeToJson(LakesConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize LakesConfig to JSON", e);
@@ -182,16 +195,18 @@ public class LakesPoint extends Point {
      */
     private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.error("LakesPoint '{}' has no composition context - cannot access grid registry",
-                getName());
+            log.error("LakesPoint '{}' has no composition context - cannot access grid registry", getName());
             return null;
         }
 
         // Get grid from central registry (will be created if not exists)
         FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.debug("LakesPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        log.debug(
+                "LakesPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR());
 
         return grid;
     }

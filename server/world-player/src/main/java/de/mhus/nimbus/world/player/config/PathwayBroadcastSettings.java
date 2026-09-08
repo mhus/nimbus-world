@@ -18,18 +18,9 @@ public class PathwayBroadcastSettings {
 
     @PostConstruct
     private void init() {
-        pathwayBroadcastIntervalMs = settingsService.getInteger(
-                "player.pathwayBroadcastIntervalMs",
-                100
-        );
-        entityUpdateTimeoutMs = settingsService.getInteger(
-                "player.entityUpdateTimeoutMs",
-                200
-        );
-        pathwayPredictionTimeMs = settingsService.getInteger(
-                "player.pathwayPredictionTimeMs",
-                100
-        );
+        pathwayBroadcastIntervalMs = settingsService.getInteger("player.pathwayBroadcastIntervalMs", 100);
+        entityUpdateTimeoutMs = settingsService.getInteger("player.entityUpdateTimeoutMs", 200);
+        pathwayPredictionTimeMs = settingsService.getInteger("player.pathwayPredictionTimeMs", 100);
     }
 
     /**

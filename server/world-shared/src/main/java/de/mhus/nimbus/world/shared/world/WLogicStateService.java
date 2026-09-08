@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Owner service for {@link WLogicStateDef} entities (Logic Machine state definitions).
@@ -90,8 +89,7 @@ public class WLogicStateService {
             repository.save(target);
             flagCount++;
         }
-        log.info("Duplicated {} state definitions from {} to {}",
-                flagCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} state definitions from {} to {}", flagCount, sourceWorldId, targetWorldId);
         return flagCount;
     }
 }

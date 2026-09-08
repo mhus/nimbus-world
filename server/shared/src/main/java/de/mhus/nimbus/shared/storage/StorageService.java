@@ -1,7 +1,6 @@
 package de.mhus.nimbus.shared.storage;
 
 import de.mhus.nimbus.shared.types.SchemaVersion;
-
 import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
@@ -10,13 +9,14 @@ import java.util.List;
  * Abstraktion eines externen Speichers (aktuell Dateisystem). Große Assets werden hier gespeichert.
  */
 public abstract class StorageService {
-//
-//    public StorageInfo store(String worldId, String path, InputStream stream) {
-//        return store(null, null, worldId, path, stream);
-//    }
+    //
+    //    public StorageInfo store(String worldId, String path, InputStream stream) {
+    //        return store(null, null, worldId, path, stream);
+    //    }
 
     /** Speichert Daten und liefert eine Storage-Id. */
-    public abstract StorageInfo store(String schema, SchemaVersion schemaVersion, String worldId, String path, InputStream stream);
+    public abstract StorageInfo store(
+            String schema, SchemaVersion schemaVersion, String worldId, String path, InputStream stream);
 
     /** Lädt Daten anhand der Storage-Id. */
     public abstract InputStream load(String storageId);
@@ -39,7 +39,8 @@ public abstract class StorageService {
      * @param stream New data stream
      * @return New StorageInfo data
      */
-    public abstract StorageInfo update(String schema, SchemaVersion schemaVersion, String storageId, InputStream stream);
+    public abstract StorageInfo update(
+            String schema, SchemaVersion schemaVersion, String storageId, InputStream stream);
 
     /**
      * Replace existing stored data with the same storageId.
@@ -51,7 +52,8 @@ public abstract class StorageService {
      * @param stream New data stream
      * @return New StorageInfo data
      */
-    public abstract StorageInfo replace(String schema, SchemaVersion schemaVersion, String storageId, InputStream stream);
+    public abstract StorageInfo replace(
+            String schema, SchemaVersion schemaVersion, String storageId, InputStream stream);
 
     public abstract StorageInfo info(String storageId);
 
@@ -111,7 +113,7 @@ public abstract class StorageService {
      * Raw schema metadata (schema name and version) as stored on a chunk, kept as
      * plain strings without {@link SchemaVersion} normalization.
      */
-    public record StoredSchema(String schema, String schemaVersion) { }
+    public record StoredSchema(String schema, String schemaVersion) {}
 
     /**
      * Read the raw schema metadata from the first chunk (index 0) of a storage
@@ -131,7 +133,14 @@ public abstract class StorageService {
         }
     }
 
-    public record StorageInfo(String id, long size, Date createdAt, String worldId, String path, String schema, SchemaVersion schemaVersion) { }
+    public record StorageInfo(
+            String id,
+            long size,
+            Date createdAt,
+            String worldId,
+            String path,
+            String schema,
+            SchemaVersion schemaVersion) {}
 
     /**
      * Paged result of a {@link #listFinal(String, int, int)} query.
@@ -139,7 +148,5 @@ public abstract class StorageService {
      * @param items the storage metadata of the requested page
      * @param total the total number of matching objects across all pages
      */
-    public record StorageListResult(List<StorageInfo> items, long total) { }
-
+    public record StorageListResult(List<StorageInfo> items, long total) {}
 }
-

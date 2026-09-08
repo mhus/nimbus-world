@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.control.service;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.world.shared.session.EditState;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Roughens block offsets between neighboring cube blocks.
@@ -48,12 +47,12 @@ public class RoughBlockOperation {
 
         // Define the 6 neighbor positions (cardinal directions)
         int[][] neighbors = {
-                {centerX + 1, centerY, centerZ}, // East
-                {centerX - 1, centerY, centerZ}, // West
-                {centerX, centerY, centerZ + 1}, // South
-                {centerX, centerY, centerZ - 1}, // North
-                {centerX, centerY + 1, centerZ}, // Up
-                {centerX, centerY - 1, centerZ}  // Down
+            {centerX + 1, centerY, centerZ}, // East
+            {centerX - 1, centerY, centerZ}, // West
+            {centerX, centerY, centerZ + 1}, // South
+            {centerX, centerY, centerZ - 1}, // North
+            {centerX, centerY + 1, centerZ}, // Up
+            {centerX, centerY - 1, centerZ} // Down
         };
 
         // Process each direction

@@ -1,22 +1,21 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -25,18 +24,20 @@ public class DocumentTools implements McpToolBean {
 
     private final WDocumentService documentService;
 
-    @Tool(name = "list_documents", description = "List documents by worldId and collection. Returns metadata without content.")
+    @Tool(
+            name = "list_documents",
+            description = "List documents by worldId and collection. Returns metadata without content.")
     public Map<String, Object> listDocuments(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
-            @ToolParam(description = "Collection name (e.g. 'generator_instructions', 'generator_translations')") String collection) {
+            @ToolParam(description = "Collection name (e.g. 'generator_instructions', 'generator_translations')")
+                    String collection) {
         log.debug("MCP: List documents: worldId={}, collection={}", worldId, collection);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(collection)) {
             throw new McpToolException("worldId and collection are required");
         }
 
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         List<WDocument> docs = documentService.findByCollection(wid, collection);
 
@@ -58,11 +59,12 @@ public class DocumentTools implements McpToolBean {
                 "worldId", worldId,
                 "collection", collection,
                 "count", results.size(),
-                "documents", results
-        );
+                "documents", results);
     }
 
-    @Tool(name = "get_document", description = "Get a document by worldId, collection and documentId. Returns full content.")
+    @Tool(
+            name = "get_document",
+            description = "Get a document by worldId, collection and documentId. Returns full content.")
     public Map<String, Object> getDocument(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
             @ToolParam(description = "Collection name") String collection,
@@ -73,14 +75,13 @@ public class DocumentTools implements McpToolBean {
             throw new McpToolException("worldId, collection, and documentId are required");
         }
 
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         Optional<WDocument> docOpt = documentService.findByDocumentId(wid, collection, documentId);
 
         if (docOpt.isEmpty()) {
-            throw new McpToolException("Document not found: worldId=" + worldId
-                    + ", collection=" + collection + ", documentId=" + documentId);
+            throw new McpToolException("Document not found: worldId=" + worldId + ", collection=" + collection
+                    + ", documentId=" + documentId);
         }
 
         WDocument doc = docOpt.get();
@@ -99,7 +100,10 @@ public class DocumentTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "search_readme", description = "Search README/HowTo documents by title or content. Documents are stored in the Nimbus shared collection under collection 'mcp'.")
+    @Tool(
+            name = "search_readme",
+            description =
+                    "Search README/HowTo documents by title or content. Documents are stored in the Nimbus shared collection under collection 'mcp'.")
     public Map<String, Object> searchReadme(
             @ToolParam(description = "Search query for title or content") String query) {
         log.debug("MCP: Search readme: query={}", query);
@@ -116,10 +120,10 @@ public class DocumentTools implements McpToolBean {
         String queryLower = query.toLowerCase();
         List<WDocument> filtered = allDocs.stream()
                 .filter(doc -> {
-                    boolean matchTitle = doc.getTitle() != null &&
-                            doc.getTitle().toLowerCase().contains(queryLower);
-                    boolean matchContent = doc.getContent() != null &&
-                            doc.getContent().toLowerCase().contains(queryLower);
+                    boolean matchTitle = doc.getTitle() != null
+                            && doc.getTitle().toLowerCase().contains(queryLower);
+                    boolean matchContent = doc.getContent() != null
+                            && doc.getContent().toLowerCase().contains(queryLower);
                     return matchTitle || matchContent;
                 })
                 .collect(Collectors.toList());
@@ -139,13 +143,13 @@ public class DocumentTools implements McpToolBean {
         return Map.of(
                 "documents", results,
                 "count", results.size(),
-                "query", query
-        );
+                "query", query);
     }
 
-    @Tool(name = "get_readme", description = "Get a specific README/HowTo document by name. Returns the full document including content.")
-    public Map<String, Object> getReadme(
-            @ToolParam(description = "Document name (technical identifier)") String name) {
+    @Tool(
+            name = "get_readme",
+            description = "Get a specific README/HowTo document by name. Returns the full document including content.")
+    public Map<String, Object> getReadme(@ToolParam(description = "Document name (technical identifier)") String name) {
         log.debug("MCP: Get readme: name={}", name);
 
         if (Strings.isBlank(name)) {

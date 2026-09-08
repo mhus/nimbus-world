@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WDocument;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for showing a document to a player.
@@ -64,21 +63,24 @@ public class ShowDocumentAction extends AbstractGamplayAction {
 
         // Acquire lease for document access
         String playerId = session.getEntityId();
-        var lease = basic.getLeaseService().acquire(
-                worldId.getId(),
-                playerId,
-                collection,
-                documentRef,
-                doc.getTitle(),
-                Map.of("document", documentRef)
-        );
+        var lease = basic.getLeaseService()
+                .acquire(
+                        worldId.getId(),
+                        playerId,
+                        collection,
+                        documentRef,
+                        doc.getTitle(),
+                        Map.of("document", documentRef));
 
         // Send openComponent command to client
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("document", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("document", lease.getLeaseId()));
 
-        log.debug("Sent show.document to player {}: document={}, collection={}, leaseId={}",
-                playerId, documentRef, collection, lease.getLeaseId());
+        log.debug(
+                "Sent show.document to player {}: document={}, collection={}, leaseId={}",
+                playerId,
+                documentRef,
+                collection,
+                lease.getLeaseId());
         return true;
     }
 }

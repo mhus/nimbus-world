@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * StructuresIndex provides access to structure/building definitions indexed by style and kind.
@@ -58,16 +57,22 @@ public class StructuresIndex {
         // Check if style exists in index
         Map<String, List<BuildingDefinition>> styleMap = buildings.get(normalizedStyle);
         if (styleMap == null) {
-            log.debug("No buildings found for style='{}' kind='{}' (available styles: {})",
-                style, kind, buildings.keySet());
+            log.debug(
+                    "No buildings found for style='{}' kind='{}' (available styles: {})",
+                    style,
+                    kind,
+                    buildings.keySet());
             return new ArrayList<>();
         }
 
         // Check if kind exists for this style
         List<BuildingDefinition> kindList = styleMap.get(normalizedKind);
         if (kindList == null) {
-            log.debug("No buildings found for style='{}' kind='{}' (available kinds for style: {})",
-                style, kind, styleMap.keySet());
+            log.debug(
+                    "No buildings found for style='{}' kind='{}' (available kinds for style: {})",
+                    style,
+                    kind,
+                    styleMap.keySet());
             return new ArrayList<>();
         }
 
@@ -96,9 +101,7 @@ public class StructuresIndex {
         }
 
         // Flatten all kinds into a single list
-        return styleMap.values().stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        return styleMap.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
 
     /**
@@ -137,8 +140,11 @@ public class StructuresIndex {
         // Add the building
         kindList.add(building);
 
-        log.debug("Added building to index: {} (style={}, kind={})",
-            building.getBuildingId(), building.getStyle(), building.getKind());
+        log.debug(
+                "Added building to index: {} (style={}, kind={})",
+                building.getBuildingId(),
+                building.getStyle(),
+                building.getKind());
     }
 
     /**
@@ -168,9 +174,9 @@ public class StructuresIndex {
      */
     public int getTotalBuildingCount() {
         return buildings.values().stream()
-            .flatMap(styleMap -> styleMap.values().stream())
-            .mapToInt(List::size)
-            .sum();
+                .flatMap(styleMap -> styleMap.values().stream())
+                .mapToInt(List::size)
+                .sum();
     }
 
     /**

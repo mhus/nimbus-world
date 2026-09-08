@@ -2,16 +2,15 @@ package de.mhus.nimbus.world.generator.composer.filler;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
-import lombok.extern.slf4j.Slf4j;
-
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills gaps between biomes that belong to the same continent.
@@ -37,9 +36,7 @@ public class ContinentFiller {
      * @param placementResult Placement result from BiomeComposer
      * @return Number of continent fill grids added
      */
-    public int fill(HexComposition composition,
-                    Set<String> existingCoords,
-                    BiomePlacementResult placementResult) {
+    public int fill(HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
 
         log.debug("Starting ContinentFiller");
 
@@ -51,8 +48,7 @@ public class ContinentFiller {
         Map<String, Continent> continentMap = new HashMap<>();
         for (Continent continent : composition.getContinents()) {
             continentMap.put(continent.getContinentId(), continent);
-            log.debug("Continent: {} (type={})",
-                continent.getContinentId(), continent.getBiomeType());
+            log.debug("Continent: {} (type={})", continent.getContinentId(), continent.getBiomeType());
         }
 
         Map<String, List<HexVector2>> continentFills = new HashMap<>();
@@ -75,7 +71,8 @@ public class ContinentFiller {
                 continue;
             }
 
-            log.debug("Continent '{}': computing convex hull for {} biome grids", continentId, allContinentCoords.size());
+            log.debug(
+                    "Continent '{}': computing convex hull for {} biome grids", continentId, allContinentCoords.size());
 
             // Compute convex hull of all biome coordinates
             List<double[]> hull = computeConvexHull(allContinentCoords);
@@ -140,16 +137,18 @@ public class ContinentFiller {
             HexVector2 center = calculateCenter(coords);
 
             PlacedBiome placedFiller = PlacedBiome.builder()
-                .biome(continentBiome)
-                .coordinates(coords)
-                .center(center)
-                .actualSize(coords.size())
-                .build();
+                    .biome(continentBiome)
+                    .coordinates(coords)
+                    .center(center)
+                    .actualSize(coords.size())
+                    .build();
 
             placementResult.getPlacedBiomes().add(placedFiller);
 
-            log.debug("Filled {} grids for continent '{}' (FeatureHexGrids in central registry)",
-                    coords.size(), continentId);
+            log.debug(
+                    "Filled {} grids for continent '{}' (FeatureHexGrids in central registry)",
+                    coords.size(),
+                    continentId);
             totalFilled += coords.size();
         }
 
@@ -167,7 +166,7 @@ public class ContinentFiller {
     private double[] hexToFloat(HexVector2 hex) {
         double x = hex.getQ() + (hex.getR() % 2 != 0 ? 0.5 : 0);
         double z = hex.getR() * 0.75;
-        return new double[]{x, z};
+        return new double[] {x, z};
     }
 
     /**
@@ -292,8 +291,8 @@ public class ContinentFiller {
         }
 
         return HexVector2.builder()
-            .q(sumQ / coords.size())
-            .r(sumR / coords.size())
-            .build();
+                .q(sumQ / coords.size())
+                .r(sumR / coords.size())
+                .build();
     }
 }

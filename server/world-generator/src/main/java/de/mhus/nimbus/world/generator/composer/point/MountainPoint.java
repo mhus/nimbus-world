@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * MountainPoint represents a single mountain positioned at a specific point.
@@ -105,21 +104,25 @@ public class MountainPoint extends Point {
      * @param context The composition context
      */
     public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
-        log.debug("Configuring HexGrid for MountainPoint '{}' at [{},{}] with hexGridSize: {}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
+        log.debug(
+                "Configuring HexGrid for MountainPoint '{}' at [{},{}] with hexGridSize: {}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                hexGridSize);
 
         // Create mountain configuration
         MountainConfig config = MountainConfig.builder()
-            .mountainName(getName())
-            .mountainTitle(getTitle())
-            .radius(radius)
-            .peakHeight(peakHeight)
-            .baseHeight(baseHeight)
-            .seed(seed != null ? seed : System.currentTimeMillis())
-            .material(material)
-            .roughness(roughness)
-            .crater(crater)
-            .build();
+                .mountainName(getName())
+                .mountainTitle(getTitle())
+                .radius(radius)
+                .peakHeight(peakHeight)
+                .baseHeight(baseHeight)
+                .seed(seed != null ? seed : System.currentTimeMillis())
+                .material(material)
+                .roughness(roughness)
+                .crater(crater)
+                .build();
 
         // Serialize to JSON
         String configJson = serializeToJson(config);
@@ -128,17 +131,23 @@ public class MountainPoint extends Point {
         FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
         if (grid == null) {
-            log.error("MountainPoint '{}' cannot configure grid [{},{}] - registry access failed",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error(
+                    "MountainPoint '{}' cannot configure grid [{},{}] - registry access failed",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
         // Add g_mountain parameter as aspect (with collision check)
         String existingMountain = grid.getParameters().get("g_mountain");
         if (existingMountain != null && !existingMountain.isBlank()) {
-            log.warn("MountainPoint '{}' - grid [{},{}] already has g_mountain parameter! " +
-                "Another aspect already defined a mountain here. Skipping this MountainPoint.",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.warn(
+                    "MountainPoint '{}' - grid [{},{}] already has g_mountain parameter! "
+                            + "Another aspect already defined a mountain here. Skipping this MountainPoint.",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
@@ -154,8 +163,13 @@ public class MountainPoint extends Point {
             grid.getParameters().putAll(parameters);
         }
 
-        log.debug("MountainPoint '{}' configured on grid [{},{}] with radius={}, height={}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), radius, peakHeight);
+        log.debug(
+                "MountainPoint '{}' configured on grid [{},{}] with radius={}, height={}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                radius,
+                peakHeight);
     }
 
     /**
@@ -163,8 +177,7 @@ public class MountainPoint extends Point {
      */
     private String serializeToJson(MountainConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize MountainConfig to JSON", e);
@@ -183,16 +196,18 @@ public class MountainPoint extends Point {
      */
     private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.error("MountainPoint '{}' has no composition context - cannot access grid registry",
-                getName());
+            log.error("MountainPoint '{}' has no composition context - cannot access grid registry", getName());
             return null;
         }
 
         // Get grid from central registry (will be created if not exists)
         FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.debug("MountainPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        log.debug(
+                "MountainPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR());
 
         return grid;
     }

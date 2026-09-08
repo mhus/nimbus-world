@@ -16,12 +16,12 @@ public class ServerSettings {
 
     @Value("${nimbus.server.websocketUrl:}")
     private String websocketUrl;
+
     @Value("${nimbus.server.controlsBaseUrl:}")
     private String controlsBaseUrl;
 
     @PostConstruct
-    private void init() {
-    }
+    private void init() {}
 
     /**
      * WebSocket URL for client connection.
@@ -55,9 +55,6 @@ public class ServerSettings {
     }
 
     public String getControlsBaseUrl() {
-        return Strings.isBlank(controlsBaseUrl) ?
-                "http://localhost:3002/controls"
-                :
-                controlsBaseUrl;
+        return Strings.isBlank(controlsBaseUrl) ? "http://localhost:3002/controls" : controlsBaseUrl;
     }
 }

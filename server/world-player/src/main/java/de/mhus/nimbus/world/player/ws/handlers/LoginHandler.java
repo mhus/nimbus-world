@@ -1,15 +1,12 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.service.PlayerService;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -19,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles login messages from clients.
@@ -89,7 +89,8 @@ public class LoginHandler implements MessageHandler {
             sendLoginResponse(session, message.getI(), false, "Invalid player", null, null);
             return;
         }
-        var player = playerService.getPlayer(playerId.get(), webClientType, worldIdOpt.get().getRegionId());
+        var player = playerService.getPlayer(
+                playerId.get(), webClientType, worldIdOpt.get().getRegionId());
         if (player.isEmpty()) {
             log.warn("Player not found: {}, login failed", playerId.get());
             sendLoginResponse(session, message.getI(), false, "Player not found", null, null);
@@ -104,7 +105,8 @@ public class LoginHandler implements MessageHandler {
         }
         var world = worldOpt.get();
 
-        sessionManager.authenticateSession(session, existingSessionId, worldIdOpt.get(), player.get(), webClientType, actor);
+        sessionManager.authenticateSession(
+                session, existingSessionId, worldIdOpt.get(), player.get(), webClientType, actor);
 
         if (!session.isAuthenticated()) {
             sendLoginResponse(session, message.getI(), false, "Invalid credentials", null, null);
@@ -117,12 +119,21 @@ public class LoginHandler implements MessageHandler {
         // Send successful response with world data
         sendLoginResponse(session, message.getI(), true, null, actualSessionId, world);
 
-        log.info("Login successful: user={}, sessionId={}, worldId={}",
-                playerId.get(), actualSessionId, worldIdOpt.get());
+        log.info(
+                "Login successful: user={}, sessionId={}, worldId={}",
+                playerId.get(),
+                actualSessionId,
+                worldIdOpt.get());
     }
 
-    private void sendLoginResponse(PlayerSession session, String requestId, boolean success,
-                                   String errorMessage, String sessionId, WWorld world) throws Exception {
+    private void sendLoginResponse(
+            PlayerSession session,
+            String requestId,
+            boolean success,
+            String errorMessage,
+            String sessionId,
+            WWorld world)
+            throws Exception {
         ObjectNode data = objectMapper.createObjectNode();
         data.put("success", success);
 
@@ -153,11 +164,8 @@ public class LoginHandler implements MessageHandler {
             data.put("errorMessage", errorMessage != null ? errorMessage : "Authentication failed");
         }
 
-        NetworkMessage response = NetworkMessage.builder()
-                .r(requestId)
-                .t("loginResponse")
-                .d(data)
-                .build();
+        NetworkMessage response =
+                NetworkMessage.builder().r(requestId).t("loginResponse").d(data).build();
 
         String json = objectMapper.writeValueAsString(response);
         session.sendMessage(new TextMessage(json));

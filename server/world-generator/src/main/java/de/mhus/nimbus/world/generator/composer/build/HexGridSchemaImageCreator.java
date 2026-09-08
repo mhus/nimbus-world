@@ -1,26 +1,24 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import tools.jackson.databind.json.JsonMapper;
+import javax.imageio.ImageIO;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Creates a schematic overview image showing which hex grids are filled with which biomes.
@@ -66,7 +64,9 @@ public class HexGridSchemaImageCreator {
     private static final Color TOWN_SLOT_CROSS_COLOR = new Color(255, 80, 80);
     private static final Color TOWN_SLOT_LABEL_COLOR = new Color(255, 255, 100);
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     private final HexComposition composition;
 
@@ -113,8 +113,14 @@ public class HexGridSchemaImageCreator {
             int imageWidth = (bounds.maxX - bounds.minX) + 2 * PADDING;
             int imageHeight = (bounds.maxZ - bounds.minZ) + 2 * PADDING;
 
-            log.debug("Schema image size: {}x{}, bounds x=[{},{}] z=[{},{}]",
-                imageWidth, imageHeight, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ);
+            log.debug(
+                    "Schema image size: {}x{}, bounds x=[{},{}] z=[{},{}]",
+                    imageWidth,
+                    imageHeight,
+                    bounds.minX,
+                    bounds.maxX,
+                    bounds.minZ,
+                    bounds.maxZ);
 
             BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
 
@@ -165,25 +171,25 @@ public class HexGridSchemaImageCreator {
             File outputFile = null;
             if (outputDirectory != null && imageName != null) {
                 outputFile = saveImage(image, outputDirectory, imageName + "-schema.png");
-                log.debug("Saved schema image: {} ({}x{} pixels)",
-                    outputFile.getAbsolutePath(), imageWidth, imageHeight);
+                log.debug(
+                        "Saved schema image: {} ({}x{} pixels)", outputFile.getAbsolutePath(), imageWidth, imageHeight);
             }
 
             return SchemaImageResult.builder()
-                .image(image)
-                .imageWidth(imageWidth)
-                .imageHeight(imageHeight)
-                .renderedGridCount(renderedCount)
-                .outputFile(outputFile)
-                .success(true)
-                .build();
+                    .image(image)
+                    .imageWidth(imageWidth)
+                    .imageHeight(imageHeight)
+                    .renderedGridCount(renderedCount)
+                    .outputFile(outputFile)
+                    .success(true)
+                    .build();
 
         } catch (Exception e) {
             log.error("Failed to create schema image", e);
             return SchemaImageResult.builder()
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -384,7 +390,8 @@ public class HexGridSchemaImageCreator {
             g.setFont(flowFont);
             FontMetrics fm = g.getFontMetrics();
 
-            String flowLabel = flow.getName() != null ? flow.getName() : flow.getType().name();
+            String flowLabel =
+                    flow.getName() != null ? flow.getName() : flow.getType().name();
             int textWidth = fm.stringWidth(flowLabel);
             // Offset label slightly above the line
             int labelY = mid[1] - fontSize;
@@ -408,7 +415,8 @@ public class HexGridSchemaImageCreator {
         List<Point> points = composition.getFeatures().stream()
                 .filter(f -> f instanceof Point)
                 .map(f -> (Point) f)
-                .filter(p -> p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
+                .filter(p ->
+                        p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
                 .toList();
 
         if (points.isEmpty()) return;
@@ -509,8 +517,11 @@ public class HexGridSchemaImageCreator {
                     slotCount++;
                 }
             } catch (Exception e) {
-                log.warn("Failed to parse g_village for grid [{},{}]: {}",
-                    hexGrid.getCoordinate().getQ(), hexGrid.getCoordinate().getR(), e.getMessage());
+                log.warn(
+                        "Failed to parse g_village for grid [{},{}]: {}",
+                        hexGrid.getCoordinate().getQ(),
+                        hexGrid.getCoordinate().getR(),
+                        e.getMessage());
             }
         }
 
@@ -527,7 +538,7 @@ public class HexGridSchemaImageCreator {
         int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
         int imgX = cartesian[0] - bounds.minX + PADDING;
         int imgZ = bounds.maxZ - cartesian[1] + PADDING;
-        return new int[]{imgX, imgZ};
+        return new int[] {imgX, imgZ};
     }
 
     private Color getFlowColor(FlowType type) {
@@ -567,7 +578,8 @@ public class HexGridSchemaImageCreator {
 
     private String getBiomeLabel(FeatureHexGrid hexGrid) {
         // Prefer sourceBiomeName, fallback to biomeType parameter, then name
-        if (hexGrid.getSourceBiomeName() != null && !hexGrid.getSourceBiomeName().isBlank()) {
+        if (hexGrid.getSourceBiomeName() != null
+                && !hexGrid.getSourceBiomeName().isBlank()) {
             return hexGrid.getSourceBiomeName();
         }
         if (hexGrid.getParameters() != null) {

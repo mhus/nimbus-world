@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.control.service.sync;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Confines external-resource file paths to a configured base directory to

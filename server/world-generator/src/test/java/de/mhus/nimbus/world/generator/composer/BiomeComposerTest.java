@@ -1,21 +1,18 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -24,8 +21,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests BiomeComposer with visualization
@@ -59,16 +58,18 @@ public class BiomeComposerTest {
         // WHexGrids are no longer in BiomePlacementResult - they're created later by HexGridGenerator
         assertNotNull(result.getComposition().getFeatureHexGridRegistry());
 
-        log.info("Placed {} biomes resulting in {} FeatureHexGrids (WHexGrids created later by HexGridGenerator)",
-            result.getPlacedBiomes().size(),
-            result.getComposition().getFeatureHexGridRegistry().size());
+        log.info(
+                "Placed {} biomes resulting in {} FeatureHexGrids (WHexGrids created later by HexGridGenerator)",
+                result.getPlacedBiomes().size(),
+                result.getComposition().getFeatureHexGridRegistry().size());
 
         // Log details
         for (PlacedBiome placed : result.getPlacedBiomes()) {
-            log.info("Biome '{}': {} hexes at center {}",
-                placed.getBiome().getName(),
-                placed.getCoordinates().size(),
-                placed.getCenter());
+            log.info(
+                    "Biome '{}': {} hexes at center {}",
+                    placed.getBiome().getName(),
+                    placed.getCoordinates().size(),
+                    placed.getCenter());
         }
 
         // Visualize
@@ -87,8 +88,9 @@ public class BiomeComposerTest {
         assertTrue(result.isSuccess(), "Composition should succeed");
         assertEquals(5, result.getPlacedBiomes().size(), "Should place all 5 biomes");
 
-        log.info("Total FeatureHexGrids created: {} (WHexGrids will be created later by HexGridGenerator)",
-            result.getComposition().getFeatureHexGridRegistry().size());
+        log.info(
+                "Total FeatureHexGrids created: {} (WHexGrids will be created later by HexGridGenerator)",
+                result.getComposition().getFeatureHexGridRegistry().size());
 
         // Visualize
         visualizeComposition(result, "complex-composition");
@@ -119,9 +121,9 @@ public class BiomeComposerTest {
 
         // Biome 1: Forest at origin
         Biome forest = Biome.builder()
-            .type(BiomeType.FOREST)
-            .parameters(new HashMap<>())
-            .build();
+                .type(BiomeType.FOREST)
+                .parameters(new HashMap<>())
+                .build();
         forest.setName("Central Forest");
         forest.setShape(AreaShape.CIRCLE);
         forest.setSizeFrom(3);
@@ -144,9 +146,9 @@ public class BiomeComposerTest {
 
         // Biome 2: Mountains to the north
         Biome mountains = Biome.builder()
-            .type(BiomeType.MOUNTAINS)
-            .parameters(new HashMap<>())
-            .build();
+                .type(BiomeType.MOUNTAINS)
+                .parameters(new HashMap<>())
+                .build();
         mountains.setName("Northern Mountains");
         mountains.setShape(AreaShape.LINE);
         mountains.setSizeFrom(4);
@@ -179,24 +181,24 @@ public class BiomeComposerTest {
         List<Biome> biomes = new ArrayList<>();
 
         // Center: Plains
-        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
-            3, 5, Direction.N, 0, 0, 0, "origin", 10));
+        biomes.add(createBiome(
+                "Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE, 3, 5, Direction.N, 0, 0, 0, "origin", 10));
 
         // North: Mountains
-        biomes.add(createBiome("North Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
-            5, 7, Direction.N, 0, 6, 8, "origin", 9));
+        biomes.add(createBiome(
+                "North Mountains", BiomeType.MOUNTAINS, AreaShape.LINE, 5, 7, Direction.N, 0, 6, 8, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("East Forest", BiomeType.FOREST, AreaShape.CIRCLE,
-            4, 6, Direction.E, 120, 6, 8, "origin", 8));
+        biomes.add(createBiome(
+                "East Forest", BiomeType.FOREST, AreaShape.CIRCLE, 4, 6, Direction.E, 120, 6, 8, "origin", 8));
 
         // South: Swamp
-        biomes.add(createBiome("South Swamp", BiomeType.SWAMP, AreaShape.CIRCLE,
-            3, 5, Direction.S, 180, 6, 8, "origin", 7));
+        biomes.add(createBiome(
+                "South Swamp", BiomeType.SWAMP, AreaShape.CIRCLE, 3, 5, Direction.S, 180, 6, 8, "origin", 7));
 
         // West: Desert
-        biomes.add(createBiome("West Desert", BiomeType.DESERT, AreaShape.CIRCLE,
-            4, 5, Direction.W, 300, 6, 8, "origin", 6));
+        biomes.add(createBiome(
+                "West Desert", BiomeType.DESERT, AreaShape.CIRCLE, 4, 5, Direction.W, 300, 6, 8, "origin", 6));
 
         composition.setFeatures(new ArrayList<>(biomes));
         return composition;
@@ -210,14 +212,13 @@ public class BiomeComposerTest {
         List<Biome> biomes = new ArrayList<>();
 
         // Three biomes with overlapping ranges
-        biomes.add(createBiome("Center", BiomeType.PLAINS, AreaShape.CIRCLE,
-            5, 7, Direction.N, 0, 0, 0, "origin", 10));
+        biomes.add(createBiome("Center", BiomeType.PLAINS, AreaShape.CIRCLE, 5, 7, Direction.N, 0, 0, 0, "origin", 10));
 
-        biomes.add(createBiome("Near 1", BiomeType.FOREST, AreaShape.CIRCLE,
-            4, 6, Direction.NE, 60, 3, 5, "origin", 9));
+        biomes.add(
+                createBiome("Near 1", BiomeType.FOREST, AreaShape.CIRCLE, 4, 6, Direction.NE, 60, 3, 5, "origin", 9));
 
-        biomes.add(createBiome("Near 2", BiomeType.MOUNTAINS, AreaShape.CIRCLE,
-            4, 6, Direction.E, 120, 3, 5, "origin", 8));
+        biomes.add(createBiome(
+                "Near 2", BiomeType.MOUNTAINS, AreaShape.CIRCLE, 4, 6, Direction.E, 120, 3, 5, "origin", 8));
 
         composition.setFeatures(new ArrayList<>(biomes));
         return composition;
@@ -226,15 +227,19 @@ public class BiomeComposerTest {
     /**
      * Helper to create a biome and prepare it for composition
      */
-    private Biome createBiome(String name, BiomeType type, AreaShape shape,
-                              int sizeFrom, int sizeTo,
-                              Direction direction, int angle,
-                              int distFrom, int distTo,
-                              String anchor, int priority) {
-        Biome biome = Biome.builder()
-            .type(type)
-            .parameters(new HashMap<>())
-            .build();
+    private Biome createBiome(
+            String name,
+            BiomeType type,
+            AreaShape shape,
+            int sizeFrom,
+            int sizeTo,
+            Direction direction,
+            int angle,
+            int distFrom,
+            int distTo,
+            String anchor,
+            int priority) {
+        Biome biome = Biome.builder().type(type).parameters(new HashMap<>()).build();
         biome.setName(name);
         biome.setShape(shape);
         biome.setSizeFrom(sizeFrom);
@@ -242,12 +247,12 @@ public class BiomeComposerTest {
 
         // Create RelativePosition (not PreparedPosition - that's calculated)
         RelativePosition pos = RelativePosition.builder()
-            .direction(direction)
-            .distanceFrom(distFrom)
-            .distanceTo(distTo)
-            .anchor(anchor)
-            .priority(priority)
-            .build();
+                .direction(direction)
+                .distanceFrom(distFrom)
+                .distanceTo(distTo)
+                .anchor(anchor)
+                .priority(priority)
+                .build();
 
         biome.setPositions(Arrays.asList(pos));
 
@@ -306,13 +311,13 @@ public class BiomeComposerTest {
 
         // Define colors for biome types
         Map<BiomeType, Color> biomeColors = new HashMap<>();
-        biomeColors.put(BiomeType.PLAINS, new Color(144, 238, 144));  // Light green
-        biomeColors.put(BiomeType.FOREST, new Color(34, 139, 34));    // Forest green
+        biomeColors.put(BiomeType.PLAINS, new Color(144, 238, 144)); // Light green
+        biomeColors.put(BiomeType.FOREST, new Color(34, 139, 34)); // Forest green
         biomeColors.put(BiomeType.MOUNTAINS, new Color(139, 137, 137)); // Gray
-        biomeColors.put(BiomeType.DESERT, new Color(244, 164, 96));   // Sandy brown
-        biomeColors.put(BiomeType.SWAMP, new Color(85, 107, 47));     // Dark olive green
-        biomeColors.put(BiomeType.OCEAN, new Color(30, 144, 255));    // Dodger blue
-        biomeColors.put(BiomeType.TOWN, new Color(178, 34, 34));      // Firebrick
+        biomeColors.put(BiomeType.DESERT, new Color(244, 164, 96)); // Sandy brown
+        biomeColors.put(BiomeType.SWAMP, new Color(85, 107, 47)); // Dark olive green
+        biomeColors.put(BiomeType.OCEAN, new Color(30, 144, 255)); // Dodger blue
+        biomeColors.put(BiomeType.TOWN, new Color(178, 34, 34)); // Firebrick
 
         // Draw hexes
         for (PlacedBiome placed : result.getPlacedBiomes()) {

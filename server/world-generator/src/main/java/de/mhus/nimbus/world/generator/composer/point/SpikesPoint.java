@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * SpikesPoint represents a field of spikes positioned at a specific point.
@@ -38,18 +37,18 @@ public class SpikesPoint extends Point {
      * Density of spikes - affects spacing and clustering
      */
     public enum Density {
-        LOW,      // Sparse, wide spacing (15-20 blocks)
-        MEDIUM,   // Normal spacing (10-15 blocks)
-        HIGH      // Dense, close spacing (5-10 blocks)
+        LOW, // Sparse, wide spacing (15-20 blocks)
+        MEDIUM, // Normal spacing (10-15 blocks)
+        HIGH // Dense, close spacing (5-10 blocks)
     }
 
     /**
      * Amount of spikes - total number of spikes
      */
     public enum Amount {
-        FEW,      // 3-10 spikes
-        NORMAL,   // 10-30 spikes
-        MANY      // 30-50 spikes
+        FEW, // 3-10 spikes
+        NORMAL, // 10-30 spikes
+        MANY // 30-50 spikes
     }
 
     /**
@@ -152,25 +151,29 @@ public class SpikesPoint extends Point {
      * @param context The composition context
      */
     public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
-        log.debug("Configuring HexGrid for SpikesPoint '{}' at [{},{}] with hexGridSize: {}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
+        log.debug(
+                "Configuring HexGrid for SpikesPoint '{}' at [{},{}] with hexGridSize: {}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                hexGridSize);
 
         // Create spikes configuration
         SpikesConfig config = SpikesConfig.builder()
-            .spikesName(getName())
-            .spikesTitle(getTitle())
-            .density(density)
-            .amount(amount)
-            .baseHeight(baseHeight)
-            .minHeight(minHeight)
-            .maxHeight(maxHeight)
-            .minWidth(minWidth)
-            .maxWidth(maxWidth)
-            .distributionRadius(distributionRadius)
-            .seed(seed != null ? seed : System.currentTimeMillis())
-            .material(material)
-            .taperFactor(taperFactor)
-            .build();
+                .spikesName(getName())
+                .spikesTitle(getTitle())
+                .density(density)
+                .amount(amount)
+                .baseHeight(baseHeight)
+                .minHeight(minHeight)
+                .maxHeight(maxHeight)
+                .minWidth(minWidth)
+                .maxWidth(maxWidth)
+                .distributionRadius(distributionRadius)
+                .seed(seed != null ? seed : System.currentTimeMillis())
+                .material(material)
+                .taperFactor(taperFactor)
+                .build();
 
         // Serialize to JSON
         String configJson = serializeToJson(config);
@@ -179,17 +182,23 @@ public class SpikesPoint extends Point {
         FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
         if (grid == null) {
-            log.error("SpikesPoint '{}' cannot configure grid [{},{}] - registry access failed",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error(
+                    "SpikesPoint '{}' cannot configure grid [{},{}] - registry access failed",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
         // Add g_spikes parameter as aspect (with collision check)
         String existingSpikes = grid.getParameters().get("g_spikes");
         if (existingSpikes != null && !existingSpikes.isBlank()) {
-            log.warn("SpikesPoint '{}' - grid [{},{}] already has g_spikes parameter! " +
-                "Another aspect already defined spikes here. Skipping this SpikesPoint.",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.warn(
+                    "SpikesPoint '{}' - grid [{},{}] already has g_spikes parameter! "
+                            + "Another aspect already defined spikes here. Skipping this SpikesPoint.",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
@@ -205,8 +214,13 @@ public class SpikesPoint extends Point {
             grid.getParameters().putAll(parameters);
         }
 
-        log.debug("SpikesPoint '{}' configured on grid [{},{}] with density={}, amount={}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), density, amount);
+        log.debug(
+                "SpikesPoint '{}' configured on grid [{},{}] with density={}, amount={}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                density,
+                amount);
     }
 
     /**
@@ -214,8 +228,7 @@ public class SpikesPoint extends Point {
      */
     private String serializeToJson(SpikesConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize SpikesConfig to JSON", e);
@@ -234,16 +247,18 @@ public class SpikesPoint extends Point {
      */
     private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.error("SpikesPoint '{}' has no composition context - cannot access grid registry",
-                getName());
+            log.error("SpikesPoint '{}' has no composition context - cannot access grid registry", getName());
             return null;
         }
 
         // Get grid from central registry (will be created if not exists)
         FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.debug("SpikesPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        log.debug(
+                "SpikesPoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR());
 
         return grid;
     }

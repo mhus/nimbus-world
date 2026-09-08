@@ -9,14 +9,14 @@ package de.mhus.nimbus.world.shared.world;
  */
 public record WorldTime(
         int era,
-        int year,       // 1-based
-        int month,      // 1-based
-        int day,        // 1-based
-        int hour,       // 0-based (0..hoursPerDay-1)
-        int minute,     // 0-based (0..minutesPerHour-1)
-        String daySection,  // "morning"|"day"|"evening"|"night"
-        long totalMinutes   // raw world-minutes since era start
-) {
+        int year, // 1-based
+        int month, // 1-based
+        int day, // 1-based
+        int hour, // 0-based (0..hoursPerDay-1)
+        int minute, // 0-based (0..minutesPerHour-1)
+        String daySection, // "morning"|"day"|"evening"|"night"
+        long totalMinutes // raw world-minutes since era start
+        ) {
 
     /**
      * Check if this time is after or equal to the given hour of day.
@@ -65,10 +65,21 @@ public record WorldTime(
         return daySection != null && daySection.equals(section);
     }
 
-    public boolean isMorning() { return "morning".equals(daySection); }
-    public boolean isDay()     { return "day".equals(daySection); }
-    public boolean isEvening() { return "evening".equals(daySection); }
-    public boolean isNight()   { return "night".equals(daySection); }
+    public boolean isMorning() {
+        return "morning".equals(daySection);
+    }
+
+    public boolean isDay() {
+        return "day".equals(daySection);
+    }
+
+    public boolean isEvening() {
+        return "evening".equals(daySection);
+    }
+
+    public boolean isNight() {
+        return "night".equals(daySection);
+    }
 
     /**
      * Format as string: "@era, @year.month.day, hour:minute"

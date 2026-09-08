@@ -7,15 +7,15 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.behavior.BehaviorRegistry;
 import de.mhus.nimbus.world.life.behavior.CombatBehaviorHandler;
 import de.mhus.nimbus.world.life.behavior.EntityBehavior;
+import de.mhus.nimbus.world.life.behavior.RemotePathwayQueue;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
-import de.mhus.nimbus.world.life.util.EntityServerData;
-import de.mhus.nimbus.world.life.behavior.RemotePathwayQueue;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
 import de.mhus.nimbus.world.life.redis.RemoteCombatFeedbackPublisher;
 import de.mhus.nimbus.world.life.redis.RemoteEntityActivationPublisher;
-import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
+import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
+import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
@@ -28,28 +28,27 @@ import de.mhus.nimbus.world.shared.world.EntitySchedulePhase;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WEntityType;
-import de.mhus.nimbus.world.shared.world.WorldTimeService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.world.shared.world.WorldTimeService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Main entity simulation service.
@@ -124,8 +123,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Get cached WWorld for a worldId. Loads from DB on first access.
      */
     private WWorld getCachedWorld(WorldId worldId) {
-        return worldCache.computeIfAbsent(worldId, id ->
-                worldService.getByWorldId(id).orElse(null));
+        return worldCache.computeIfAbsent(
+                worldId, id -> worldService.getByWorldId(id).orElse(null));
     }
 
     /**
@@ -135,7 +134,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private int getWorldEpoch(WorldId worldId) {
         return worldEpoches.computeIfAbsent(worldId, id -> {
             if (id.isInstance()) {
-                return worldInstanceService.findByInstanceIdWithValidation(id.getId())
+                return worldInstanceService
+                        .findByInstanceIdWithValidation(id.getId())
                         .map(instance -> instance.getEpoch())
                         .orElse(0);
             }
@@ -190,17 +190,15 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     public void onChunksActivated(WorldId worldId, Set<ChunkCoordinate> added) {
         if (added == null || added.isEmpty()) return;
 
-        Set<String> chunkKeys = added.stream()
-                .map(ChunkCoordinate::toKey)
-                .collect(Collectors.toSet());
+        Set<String> chunkKeys = added.stream().map(ChunkCoordinate::toKey).collect(Collectors.toSet());
 
         int epoch = getWorldEpoch(worldId);
         List<WEntity> entities = entityService.findEnabledByChunks(worldId, chunkKeys, epoch);
 
-        Map<String, SimulationState> worldStates = worldSimulationStates
-                .computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
-        Map<String, Set<String>> chunkRefs = entityActiveChunkRefs
-                .computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
+        Map<String, SimulationState> worldStates =
+                worldSimulationStates.computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
+        Map<String, Set<String>> chunkRefs =
+                entityActiveChunkRefs.computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
 
         List<SimulationState> newlyLoaded = new ArrayList<>();
         for (WEntity entity : entities) {
@@ -225,8 +223,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         if (!newlyLoaded.isEmpty()) {
-            log.info("World {}: Chunk activation loaded {} new entities ({} chunks activated)",
-                    worldId, newlyLoaded.size(), added.size());
+            log.info(
+                    "World {}: Chunk activation loaded {} new entities ({} chunks activated)",
+                    worldId,
+                    newlyLoaded.size(),
+                    added.size());
             // Notify remote servers about REMOTE entity activations
             for (SimulationState s : newlyLoaded) {
                 remoteEntityActivationPublisher.publishActivate(worldId, s.getEntity());
@@ -263,16 +264,18 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 pathway.ifPresent(pathways::add);
 
             } catch (Exception e) {
-                log.warn("World {}: Failed to generate initial pathway for entity {}: {}",
-                        worldId, entityId, e.getMessage());
+                log.warn(
+                        "World {}: Failed to generate initial pathway for entity {}: {}",
+                        worldId,
+                        entityId,
+                        e.getMessage());
             }
         }
 
         if (!pathways.isEmpty()) {
             Set<ChunkCoordinate> affectedChunks = calculateAffectedChunks(world, pathways);
             pathwayPublisher.publishPathways(worldId, pathways, affectedChunks);
-            log.info("World {}: Published {} initial pathways for newly loaded entities",
-                    worldId, pathways.size());
+            log.info("World {}: Published {} initial pathways for newly loaded entities", worldId, pathways.size());
         }
     }
 
@@ -280,9 +283,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     public void onChunksDeactivated(WorldId worldId, Set<ChunkCoordinate> removed) {
         if (removed == null || removed.isEmpty()) return;
 
-        Set<String> removedKeys = removed.stream()
-                .map(ChunkCoordinate::toKey)
-                .collect(Collectors.toSet());
+        Set<String> removedKeys = removed.stream().map(ChunkCoordinate::toKey).collect(Collectors.toSet());
 
         Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
         Map<String, Set<String>> chunkRefs = entityActiveChunkRefs.get(worldId);
@@ -331,8 +332,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         if (!entitiesToUnload.isEmpty()) {
-            log.info("World {}: Chunk deactivation unloaded {} entities ({} chunks removed)",
-                    worldId, entitiesToUnload.size(), removed.size());
+            log.info(
+                    "World {}: Chunk deactivation unloaded {} entities ({} chunks removed)",
+                    worldId,
+                    entitiesToUnload.size(),
+                    removed.size());
         }
     }
 
@@ -373,15 +377,20 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         if (activeChunks.isEmpty()) {
             if (diagnosticTick && !simulationStates.isEmpty()) {
-                log.info("World {}: DIAG no active chunks, {} entities in memory but not simulated",
-                        worldId, simulationStates.size());
+                log.info(
+                        "World {}: DIAG no active chunks, {} entities in memory but not simulated",
+                        worldId,
+                        simulationStates.size());
             }
             return;
         }
 
         if (diagnosticTick) {
-            log.info("World {}: DIAG {} active chunks, {} entities loaded",
-                    worldId, activeChunks.size(), simulationStates.size());
+            log.info(
+                    "World {}: DIAG {} active chunks, {} entities loaded",
+                    worldId,
+                    activeChunks.size(),
+                    simulationStates.size());
         }
 
         List<EntityPathway> newPathways = new ArrayList<>();
@@ -427,8 +436,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         if (diagnosticTick) {
-            log.info("World {}: DIAG tick result: {} pathways, skipped: {} ownership, {} no-pathway",
-                    worldId, newPathways.size(), skippedOwnership, skippedNoPathway);
+            log.info(
+                    "World {}: DIAG tick result: {} pathways, skipped: {} ownership, {} no-pathway",
+                    worldId,
+                    newPathways.size(),
+                    skippedOwnership,
+                    skippedNoPathway);
         }
 
         // Publish pathways to Redis
@@ -436,15 +449,20 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             Set<ChunkCoordinate> affectedChunks = calculateAffectedChunks(world, newPathways);
             pathwayPublisher.publishPathways(worldId, newPathways, affectedChunks);
 
-            log.debug("World {}: Generated {} pathways, affecting {} chunks, Entities: {}",
-                    worldId, newPathways.size(), affectedChunks.size(), newPathways.stream().map(p -> p.getEntityId()).toList());
+            log.debug(
+                    "World {}: Generated {} pathways, affecting {} chunks, Entities: {}",
+                    worldId,
+                    newPathways.size(),
+                    affectedChunks.size(),
+                    newPathways.stream().map(p -> p.getEntityId()).toList());
         }
     }
 
     /**
      * Simulate a single entity and generate pathway if needed.
      */
-    private Optional<EntityPathway> simulateEntity(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+    private Optional<EntityPathway> simulateEntity(
+            WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
 
         // Handle death/respawn lifecycle
         if (state.getLifecycleState() != SimulationState.LifecycleState.ALIVE) {
@@ -459,7 +477,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             } else {
                 // Generate combat pathway
                 int epoch = getWorldEpoch(worldId);
-                EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
+                EntityPathway combatPathway =
+                        combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
                 if (combatPathway != null) {
                     return finishPathway(entity, state, combatPathway, currentTime, worldId);
                 }
@@ -497,8 +516,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     /**
      * Finalize a pathway: update entity position, state, and return as Optional.
      */
-    private Optional<EntityPathway> finishPathway(WEntity entity, SimulationState state,
-                                                   EntityPathway pathway, long currentTime, WorldId worldId) {
+    private Optional<EntityPathway> finishPathway(
+            WEntity entity, SimulationState state, EntityPathway pathway, long currentTime, WorldId worldId) {
         List<Waypoint> waypoints = pathway.getWaypoints();
         if (waypoints != null && !waypoints.isEmpty()) {
             Waypoint lastWaypoint = waypoints.get(waypoints.size() - 1);
@@ -513,7 +532,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         state.setCurrentPathway(pathway);
         state.updatePathwayEndTime();
 
-        log.trace("Generated pathway for entity {}: {} waypoints",
+        log.trace(
+                "Generated pathway for entity {}: {} waypoints",
                 entity.getName(),
                 pathway.getWaypoints() != null ? pathway.getWaypoints().size() : 0);
 
@@ -524,17 +544,17 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Handle lifecycle transitions for dead/gone entities.
      * DEAD → (fade time) → GONE → (respawn time) → ALIVE
      */
-    private Optional<EntityPathway> handleLifecycleTick(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+    private Optional<EntityPathway> handleLifecycleTick(
+            WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
         long elapsed = currentTime - state.getLifecycleTimestamp();
         String entityId = entity.getName();
 
         if (state.getLifecycleState() == SimulationState.LifecycleState.DEAD) {
             if (elapsed >= state.getFadeTimeMs()) {
                 // Fade time over → send gone, transition to GONE
-                entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,
-                        Map.of(EntityStatusPublisher.GONE, 1), null);
-                entityStateRedisService.setLifecycle(worldId.getId(), entityId,
-                        EntityStateRedisService.LIFECYCLE_GONE);
+                entityStatusPublisher.publishStatusUpdate(
+                        worldId.getId(), entityId, Map.of(EntityStatusPublisher.GONE, 1), null);
+                entityStateRedisService.setLifecycle(worldId.getId(), entityId, EntityStateRedisService.LIFECYCLE_GONE);
                 state.setLifecycleState(SimulationState.LifecycleState.GONE);
                 state.setLifecycleTimestamp(currentTime);
                 log.info("World {}: Entity {} gone after death fade", worldId, entityId);
@@ -600,8 +620,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         // Notify remote servers about respawn
         if (entity.getType() == WEntityType.REMOTE && entity.getPosition() != null) {
-            remoteCombatFeedbackPublisher.publishRespawned(worldId, entityId,
-                    entity.getPosition().getX(), entity.getPosition().getY(), entity.getPosition().getZ());
+            remoteCombatFeedbackPublisher.publishRespawned(
+                    worldId,
+                    entityId,
+                    entity.getPosition().getX(),
+                    entity.getPosition().getY(),
+                    entity.getPosition().getZ());
         }
 
         log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
@@ -680,9 +704,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Create an idle pathway that keeps the entity at its current position.
      */
     private EntityPathway createIdlePathway(WEntity entity, long currentTime, long durationMs) {
-        var pos = entity.getPosition() != null ? entity.getPosition()
+        var pos = entity.getPosition() != null
+                ? entity.getPosition()
                 : de.mhus.nimbus.shared.utils.TypeUtil.vector3(0.0, 0.0, 0.0);
-        var rot = entity.getRotation() != null ? entity.getRotation()
+        var rot = entity.getRotation() != null
+                ? entity.getRotation()
                 : de.mhus.nimbus.generated.types.Rotation.builder().y(0).build();
         return de.mhus.nimbus.generated.types.EntityPathway.builder()
                 .entityId(entity.getName())
@@ -702,8 +728,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                                 .target(pos)
                                 .rotation(rot)
                                 .pose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
-                                .build()
-                ))
+                                .build()))
                 .isLooping(false)
                 .idlePose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
                 .build();
@@ -757,8 +782,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             }
 
             if (!multiWorldChunkService.isChunkActive(worldId, entityChunk)) {
-                log.trace("Entity {} chunk not active in world {}, not claiming: chunk {}",
-                        entityId, worldId, entityChunk);
+                log.trace(
+                        "Entity {} chunk not active in world {}, not claiming: chunk {}",
+                        entityId,
+                        worldId,
+                        entityChunk);
                 return;
             }
 
@@ -819,7 +847,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         onChunksActivated(worldId, activeChunks);
 
-        int count = worldSimulationStates.containsKey(worldId) ? worldSimulationStates.get(worldId).size() : 0;
+        int count = worldSimulationStates.containsKey(worldId)
+                ? worldSimulationStates.get(worldId).size()
+                : 0;
         log.info("World {}: Reloaded {} entities from {} active chunks", worldId, count, activeChunks.size());
         return count;
     }
@@ -836,7 +866,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         long currentTime = System.currentTimeMillis();
         int epoch = getWorldEpoch(worldId);
-        EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
+        EntityPathway combatPathway =
+                combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
         if (combatPathway == null) return;
 
         finishPathway(entity, state, combatPathway, currentTime, worldId);
@@ -848,8 +879,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             pathwayPublisher.publishPathways(worldId, List.of(combatPathway), chunks);
         }
 
-        log.debug("World {}: Immediate combat tick for entity {} (spread reaction)",
-                worldId, entity.getName());
+        log.debug("World {}: Immediate combat tick for entity {} (spread reaction)", worldId, entity.getName());
     }
 
     /**
@@ -886,9 +916,13 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 neighborState.setCombatStrategy(neighborState.getCombatData().getCombatStrategy());
                 neighborState.enterCombat(attackerEntityId, sessionId, now);
                 triggerImmediateCombatTick(worldId, neighborState);
-                log.info("World {}: Combat spread from {} to {} (dist={}, radius={})",
-                        worldId, attackedEntityId, neighborState.getEntity().getName(),
-                        String.format("%.1f", dist), spreadRadius);
+                log.info(
+                        "World {}: Combat spread from {} to {} (dist={}, radius={})",
+                        worldId,
+                        attackedEntityId,
+                        neighborState.getEntity().getName(),
+                        String.format("%.1f", dist),
+                        spreadRadius);
             }
         }
     }
@@ -899,7 +933,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      */
     private Vector3 getCurrentEntityPosition(SimulationState state) {
         var pathway = state.getCurrentPathway();
-        if (pathway != null && pathway.getWaypoints() != null && !pathway.getWaypoints().isEmpty()) {
+        if (pathway != null
+                && pathway.getWaypoints() != null
+                && !pathway.getWaypoints().isEmpty()) {
             var waypoints = pathway.getWaypoints();
             long now = System.currentTimeMillis();
 
@@ -915,9 +951,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 if (now >= from.getTimestamp() && now < to.getTimestamp()) {
                     double t = (double) (now - from.getTimestamp()) / (to.getTimestamp() - from.getTimestamp());
                     return Vector3.builder()
-                            .x(from.getTarget().getX() + (to.getTarget().getX() - from.getTarget().getX()) * t)
-                            .y(from.getTarget().getY() + (to.getTarget().getY() - from.getTarget().getY()) * t)
-                            .z(from.getTarget().getZ() + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
+                            .x(from.getTarget().getX()
+                                    + (to.getTarget().getX() - from.getTarget().getX()) * t)
+                            .y(from.getTarget().getY()
+                                    + (to.getTarget().getY() - from.getTarget().getY()) * t)
+                            .z(from.getTarget().getZ()
+                                    + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
                             .build();
                 }
             }
@@ -935,9 +974,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     }
 
     public int getEntityCount() {
-        return worldSimulationStates.values().stream()
-                .mapToInt(Map::size)
-                .sum();
+        return worldSimulationStates.values().stream().mapToInt(Map::size).sum();
     }
 
     public Map<WorldId, Integer> getEntityCountPerWorld() {
@@ -970,7 +1007,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                     publishHealthStatus(worldId, entity.getName(), health);
                 }
 
-                log.debug("Initialized combat data for entity {}: health={}, strategy={}, weapon={}",
+                log.debug(
+                        "Initialized combat data for entity {}: health={}, strategy={}, weapon={}",
                         entity.getName(),
                         health != null ? health.getBase() : "none",
                         combatData.getCombatStrategy(),
@@ -996,8 +1034,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (worldId == null) return;
         var weaponOpt = itemService.findByItemId(worldId, weaponId);
         if (weaponOpt.isEmpty()) {
-            log.warn("Weapon item '{}' not found for entity {} — falling back to fist",
-                    weaponId, entity.getName());
+            log.warn("Weapon item '{}' not found for entity {} — falling back to fist", weaponId, entity.getName());
             combatData.setWeaponItemId(CombatConstants.FIST_ITEM_ID);
             return;
         }
@@ -1022,8 +1059,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         VitalValue health = combatData.getVital("health");
         double healthBefore = health != null ? health.getCurrent() : 0;
 
-        boolean died = baseEffectProcessor.processTick(
-                combatData, deltaSeconds, outgoingDeltas, worldId.getId(), entityId);
+        boolean died =
+                baseEffectProcessor.processTick(combatData, deltaSeconds, outgoingDeltas, worldId.getId(), entityId);
 
         // Publish outgoing deltas
         if (!outgoingDeltas.isEmpty()) {
@@ -1075,12 +1112,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         String entityId = state.getEntity().getName();
 
         // Publish death status to clients
-        entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,
-                Map.of("health", 0.0, "healthMax", 0.0, "death", 1), null);
+        entityStatusPublisher.publishStatusUpdate(
+                worldId.getId(), entityId, Map.of("health", 0.0, "healthMax", 0.0, "death", 1), null);
 
         // Store lifecycle and attackers (loot-eligible players) in Redis for cross-pod access
-        entityStateRedisService.updateState(worldId.getId(), entityId,
-                EntityStateRedisService.LIFECYCLE_DEAD, 0.0, 0.0);
+        entityStateRedisService.updateState(
+                worldId.getId(), entityId, EntityStateRedisService.LIFECYCLE_DEAD, 0.0, 0.0);
         entityStateRedisService.setLooters(worldId.getId(), entityId, state.getAttackers());
 
         // Remove pathway from Redis so entity stops moving on clients
@@ -1088,7 +1125,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         // Notify remote servers about death
         if (state.getEntity().getType() == WEntityType.REMOTE) {
-            String killerId = state.getAttackers().isEmpty() ? null : state.getAttackers().iterator().next();
+            String killerId = state.getAttackers().isEmpty()
+                    ? null
+                    : state.getAttackers().iterator().next();
             remoteCombatFeedbackPublisher.publishDied(worldId, entityId, killerId);
         }
 
@@ -1097,8 +1136,10 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         state.setLifecycleTimestamp(System.currentTimeMillis());
         state.setCurrentPathway(null);
 
-        log.info("World {}: Entity {} died, fade time {}s, respawn time {}s, attackers: {}",
-                worldId, entityId,
+        log.info(
+                "World {}: Entity {} died, fade time {}s, respawn time {}s, attackers: {}",
+                worldId,
+                entityId,
                 state.getFadeTimeMs() / 1000,
                 state.getRespawnTimeMs() / 1000,
                 state.getAttackers());
@@ -1121,10 +1162,13 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 if (teamOpt.isPresent()) {
                     String teamId = teamOpt.get().getTeamId();
                     if (creditedTeamIds.add(teamId)) {
-                        teamService.incrementParameterAtomic(teamId,
-                                de.mhus.nimbus.world.shared.team.TeamParameter.KILLS, 1);
-                        log.debug("World {}: Credited kill to team {} for attacker {}",
-                                worldId, teamId, attackerPlayerId);
+                        teamService.incrementParameterAtomic(
+                                teamId, de.mhus.nimbus.world.shared.team.TeamParameter.KILLS, 1);
+                        log.debug(
+                                "World {}: Credited kill to team {} for attacker {}",
+                                worldId,
+                                teamId,
+                                attackerPlayerId);
                     }
                 }
             }
@@ -1154,12 +1198,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         // Only reference a chunk that is actually active, otherwise the entity
         // could never be unloaded (no deactivation event would ever remove it).
-        boolean chunkActive = multiWorldChunkService.getActiveChunks(worldId).stream()
-                .anyMatch(c -> newChunk.equals(c.toKey()));
+        boolean chunkActive =
+                multiWorldChunkService.getActiveChunks(worldId).stream().anyMatch(c -> newChunk.equals(c.toKey()));
         if (chunkActive) {
             entityChunks.add(newChunk);
-            log.trace("World {}: entity {} moved into active chunk {}, tracking it",
-                    worldId, entity.getName(), newChunk);
+            log.trace(
+                    "World {}: entity {} moved into active chunk {}, tracking it", worldId, entity.getName(), newChunk);
         }
     }
 }

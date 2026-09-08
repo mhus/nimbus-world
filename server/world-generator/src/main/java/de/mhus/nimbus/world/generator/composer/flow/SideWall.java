@@ -1,16 +1,14 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * SideWall creates walls along specific sides of a biome or point.

@@ -2,18 +2,17 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.point.Point;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Generates synthetic external connection points for villages.
@@ -35,8 +34,8 @@ public class TownExternalConnectionGenerator {
      * @param placementResult Biome placement result with grid-to-biome mapping
      * @return Generation result with created connection points
      */
-    public GenerationResult generateExternalConnections(HexComposition composition,
-                                                        BiomePlacementResult placementResult) {
+    public GenerationResult generateExternalConnections(
+            HexComposition composition, BiomePlacementResult placementResult) {
         log.debug("Starting external connection point generation for villages");
 
         GenerationResult result = new GenerationResult();
@@ -71,8 +70,10 @@ public class TownExternalConnectionGenerator {
             // (marked as precomposed=true, so PointComposer will skip them)
             composition.getFeatures().addAll(villagePoints);
 
-            log.info("Generated {} external connection points for village '{}'",
-                    villagePoints.size(), village.getName());
+            log.info(
+                    "Generated {} external connection points for village '{}'",
+                    villagePoints.size(),
+                    village.getName());
         }
 
         log.info("External connection generation complete: {} points created", result.getTotalPoints());
@@ -86,12 +87,12 @@ public class TownExternalConnectionGenerator {
      * @param placementResult Biome placement result for finding biomeId
      * @return List of generated connection points
      */
-    private List<TownConnectionPoint> generateForVillage(Town village,
-                                                         BiomePlacementResult placementResult) {
+    private List<TownConnectionPoint> generateForVillage(Town village, BiomePlacementResult placementResult) {
         List<TownConnectionPoint> points = new ArrayList<>();
 
         // Get village districts to determine size
-        int districtCount = village.getDistricts() != null ? village.getDistricts().size() : 0;
+        int districtCount =
+                village.getDistricts() != null ? village.getDistricts().size() : 0;
         if (districtCount == 0) {
             log.warn("Village '{}' has no districts, skipping external connection generation", village.getName());
             return points;
@@ -99,8 +100,11 @@ public class TownExternalConnectionGenerator {
 
         // Determine number of external points based on district count
         int externalPointCount = determineExternalPointCount(districtCount);
-        log.debug("Village '{}' with {} districts will get {} external connection points",
-                village.getName(), districtCount, externalPointCount);
+        log.debug(
+                "Village '{}' with {} districts will get {} external connection points",
+                village.getName(),
+                districtCount,
+                externalPointCount);
 
         // Get village center from HexGrids (absolute coordinates in world)
         // The village's HexGrids have already been positioned in absolute world coordinates
@@ -122,8 +126,11 @@ public class TownExternalConnectionGenerator {
 
             // Check if neighbor grid is suitable (not occupied by village itself)
             if (!isGridSuitable(neighborGrid, village)) {
-                log.warn("Neighbor grid [{},{}] in direction {} is not suitable for external connection point, skipping",
-                        neighborGrid.getQ(), neighborGrid.getR(), direction);
+                log.warn(
+                        "Neighbor grid [{},{}] in direction {} is not suitable for external connection point, skipping",
+                        neighborGrid.getQ(),
+                        neighborGrid.getR(),
+                        direction);
                 continue;
             }
 
@@ -133,8 +140,10 @@ public class TownExternalConnectionGenerator {
             // Find which biome this neighbor grid belongs to
             String biomeId = findBiomeForGrid(neighborGrid, placementResult);
             if (biomeId == null) {
-                log.warn("Could not find biome for neighbor grid [{},{}], connection point may not work properly",
-                        neighborGrid.getQ(), neighborGrid.getR());
+                log.warn(
+                        "Could not find biome for neighbor grid [{},{}], connection point may not work properly",
+                        neighborGrid.getQ(),
+                        neighborGrid.getR());
             }
 
             // Create external connection point
@@ -161,19 +170,17 @@ public class TownExternalConnectionGenerator {
             // Use opposite direction to place point on the edge facing back toward village
             de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge = getOppositeEdge(direction);
 
-            composed.setHexLocalEdgeVector(
-                    new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(
-                            edge,
-                            2, // numerator (center of edge)
-                            de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER // denominator
-                    )
-            );
+            composed.setHexLocalEdgeVector(new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(
+                    edge,
+                    2, // numerator (center of edge)
+                    de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER // denominator
+                    ));
 
             // IMPORTANT: Also set legacy fields for FlowComposer/TerrainPathFinder compatibility
             // FlowComposer uses placedCoordinate to set flow start/end points
             // TerrainPathFinder needs placedCoordinate/placedLx/placedLz to find paths
             composed.setPlacedCoordinate(neighborGrid);
-            composed.setPlacedLx(0);  // Center of grid (will be overridden by HexLocalEdgeVector for rendering)
+            composed.setPlacedLx(0); // Center of grid (will be overridden by HexLocalEdgeVector for rendering)
             composed.setPlacedLz(0);
             composed.setPlacedInBiome(biomeId);
 
@@ -181,8 +188,13 @@ public class TownExternalConnectionGenerator {
 
             points.add(point);
 
-            log.debug("Created external connection point '{}' at grid [{},{}] direction {} (internal: {})",
-                    point.getName(), neighborGrid.getQ(), neighborGrid.getR(), direction, internalPointName);
+            log.debug(
+                    "Created external connection point '{}' at grid [{},{}] direction {} (internal: {})",
+                    point.getName(),
+                    neighborGrid.getQ(),
+                    neighborGrid.getR(),
+                    direction,
+                    internalPointName);
         }
 
         return points;
@@ -212,18 +224,19 @@ public class TownExternalConnectionGenerator {
      */
     private Direction[] distributeDirections(int count) {
         // All 8 possible directions in clockwise order
-        Direction[] all = {Direction.N, Direction.NE, Direction.E, Direction.SE,
-                Direction.S, Direction.SW, Direction.W, Direction.NW};
+        Direction[] all = {
+            Direction.N, Direction.NE, Direction.E, Direction.SE, Direction.S, Direction.SW, Direction.W, Direction.NW
+        };
 
         if (count == 2) {
             // Opposite sides: N, S
-            return new Direction[]{Direction.N, Direction.S};
+            return new Direction[] {Direction.N, Direction.S};
         } else if (count == 4) {
             // Cardinal directions: N, E, S, W
-            return new Direction[]{Direction.N, Direction.E, Direction.S, Direction.W};
+            return new Direction[] {Direction.N, Direction.E, Direction.S, Direction.W};
         } else if (count == 6) {
             // Skip two directions (E, W) for better distribution
-            return new Direction[]{Direction.N, Direction.NE, Direction.SE, Direction.S, Direction.SW, Direction.NW};
+            return new Direction[] {Direction.N, Direction.NE, Direction.SE, Direction.S, Direction.SW, Direction.NW};
         }
 
         // Fallback: return first 'count' directions
@@ -254,8 +267,7 @@ public class TownExternalConnectionGenerator {
 
         // Fallback: use first grid coordinate
         HexVector2 firstCoord = village.getHexGrids().get(0).getCoordinate();
-        log.debug("No 'center' grid found, using first grid position [{},{}]",
-                firstCoord.getQ(), firstCoord.getR());
+        log.debug("No 'center' grid found, using first grid position [{},{}]", firstCoord.getQ(), firstCoord.getR());
         return firstCoord;
     }
 
@@ -287,19 +299,19 @@ public class TownExternalConnectionGenerator {
         // Note: District grids use pointy-top, but WHexGrid.EDGE is defined for flat-top
         // We use the closest available edge
         switch (direction) {
-            case N:  // North neighbor: use SW edge (closest to south)
+            case N: // North neighbor: use SW edge (closest to south)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST;
             case NE: // Northeast neighbor: use SW edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST;
-            case E:  // East neighbor: use W edge (opposite)
+            case E: // East neighbor: use W edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST;
             case SE: // Southeast neighbor: use NW edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_WEST;
-            case S:  // South neighbor: use NE edge (closest to north)
+            case S: // South neighbor: use NE edge (closest to north)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST;
             case SW: // Southwest neighbor: use NE edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST;
-            case W:  // West neighbor: use E edge (opposite)
+            case W: // West neighbor: use E edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.EAST;
             case NW: // Northwest neighbor: use SE edge (opposite)
                 return de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST;
@@ -318,15 +330,24 @@ public class TownExternalConnectionGenerator {
     private int[] getAxialOffset(Direction direction) {
         // Pointy-top hexagon offsets. North = r+ = Z+ in 3D world.
         switch (direction) {
-            case N:  return new int[]{0, 1};
-            case NE: return new int[]{1, 1};
-            case E:  return new int[]{1, 0};
-            case SE: return new int[]{1, -1};
-            case S:  return new int[]{0, -1};
-            case SW: return new int[]{-1, -1};
-            case W:  return new int[]{-1, 0};
-            case NW: return new int[]{-1, 1};
-            default: return new int[]{0, 0};
+            case N:
+                return new int[] {0, 1};
+            case NE:
+                return new int[] {1, 1};
+            case E:
+                return new int[] {1, 0};
+            case SE:
+                return new int[] {1, -1};
+            case S:
+                return new int[] {0, -1};
+            case SW:
+                return new int[] {-1, -1};
+            case W:
+                return new int[] {-1, 0};
+            case NW:
+                return new int[] {-1, 1};
+            default:
+                return new int[] {0, 0};
         }
     }
 
@@ -348,8 +369,11 @@ public class TownExternalConnectionGenerator {
         for (FeatureHexGrid grid : village.getHexGrids()) {
             HexVector2 gridPos = grid.getCoordinate();
             if (gridPos.getQ() == gridCoord.getQ() && gridPos.getR() == gridCoord.getR()) {
-                log.debug("Grid [{},{}] is occupied by village district '{}', not suitable",
-                        gridCoord.getQ(), gridCoord.getR(), grid.getName());
+                log.debug(
+                        "Grid [{},{}] is occupied by village district '{}', not suitable",
+                        gridCoord.getQ(),
+                        gridCoord.getR(),
+                        grid.getName());
                 return false;
             }
         }

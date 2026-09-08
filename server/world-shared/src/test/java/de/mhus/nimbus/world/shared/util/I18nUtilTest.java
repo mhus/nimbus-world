@@ -1,9 +1,9 @@
 package de.mhus.nimbus.world.shared.util;
 
-import org.junit.jupiter.api.Test;
-
 import static de.mhus.nimbus.world.shared.util.I18nUtil.*;
 import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 class I18nUtilTest {
 
@@ -11,14 +11,12 @@ class I18nUtilTest {
 
     @Test
     void encodeSimple() {
-        assertThat(encode(EN, "Hello", DE, "Hallo"))
-                .isEqualTo("¶en=Hello&de=Hallo");
+        assertThat(encode(EN, "Hello", DE, "Hallo")).isEqualTo("¶en=Hello&de=Hallo");
     }
 
     @Test
     void encodeSingleLanguage() {
-        assertThat(encode(EN, "Hello"))
-                .isEqualTo("¶en=Hello");
+        assertThat(encode(EN, "Hello")).isEqualTo("¶en=Hello");
     }
 
     @Test
@@ -42,16 +40,14 @@ class I18nUtilTest {
 
     @Test
     void encodeOddPairsThrows() {
-        assertThatThrownBy(() -> encode("en", "Hello", "de"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> encode("en", "Hello", "de")).isInstanceOf(IllegalArgumentException.class);
     }
 
     // --- builder ---
 
     @Test
     void builderSimple() {
-        assertThat(builder().en("Hello").de("Hallo").build())
-                .isEqualTo("¶en=Hello&de=Hallo");
+        assertThat(builder().en("Hello").de("Hallo").build()).isEqualTo("¶en=Hello&de=Hallo");
     }
 
     @Test
@@ -69,8 +65,16 @@ class I18nUtilTest {
     @Test
     void builderAllLanguages() {
         String result = builder()
-                .en("en").de("de").fr("fr").es("es")
-                .it("it").pt("pt").ja("ja").zh("zh").ko("ko").ru("ru")
+                .en("en")
+                .de("de")
+                .fr("fr")
+                .es("es")
+                .it("it")
+                .pt("pt")
+                .ja("ja")
+                .zh("zh")
+                .ko("ko")
+                .ru("ru")
                 .build();
         assertThat(decode("ko", result)).isEqualTo("ko");
         assertThat(decode("ru", result)).isEqualTo("ru");

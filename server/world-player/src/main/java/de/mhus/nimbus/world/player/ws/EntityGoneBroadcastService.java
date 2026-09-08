@@ -1,17 +1,15 @@
 package de.mhus.nimbus.world.player.ws;
 
-import de.mhus.nimbus.generated.types.EntityStatusUpdate;
+import static de.mhus.nimbus.world.shared.redis.EntityStatusPublisher.GONE;
+
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-
-import static de.mhus.nimbus.world.shared.redis.EntityStatusPublisher.GONE;
 
 /**
  * Service that broadcasts entity death status when a session is closed.
@@ -42,8 +40,9 @@ public class EntityGoneBroadcastService implements SessionClosedConsumer {
         }
 
         if (session.getLastPosition() == null) {
-            log.debug("Session closed without last position, skipping death broadcast for entity {}",
-                session.getEntityId());
+            log.debug(
+                    "Session closed without last position, skipping death broadcast for entity {}",
+                    session.getEntityId());
             return;
         }
 
@@ -63,21 +62,18 @@ public class EntityGoneBroadcastService implements SessionClosedConsumer {
 
             // Broadcast death status to chunk
             entityStatusPublisher.publishStatusUpdateToChunk(
-                worldId,
-                entityId,
-                goneStatus,
-                cx,
-                cz,
-                session.getSessionId() // Originating session (will be filtered out, but that's OK)
-            );
+                    worldId,
+                    entityId,
+                    goneStatus,
+                    cx,
+                    cz,
+                    session.getSessionId() // Originating session (will be filtered out, but that's OK)
+                    );
 
-            log.info("Broadcasted death status for entity {} at chunk ({}, {}) in world {}",
-                entityId, cx, cz, worldId);
+            log.info("Broadcasted death status for entity {} at chunk ({}, {}) in world {}", entityId, cx, cz, worldId);
 
         } catch (Exception e) {
-            log.error("Failed to broadcast death status for session {}",
-                session.getSessionId(), e);
+            log.error("Failed to broadcast death status for session {}", session.getSessionId(), e);
         }
     }
 }
-

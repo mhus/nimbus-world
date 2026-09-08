@@ -1,15 +1,13 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.util.ArrayList;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Optional;
 
 /**
  * RemoveSelectionBlockManipulator - Removes the current ModelSelector from WSession.
@@ -47,8 +45,7 @@ public class RemoveSelectionBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Removes the current ModelSelector from WSession. " +
-                "Example: {\"remove-selection\": {}}";
+        return "Removes the current ModelSelector from WSession. " + "Example: {\"remove-selection\": {}}";
     }
 
     @Override

@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
+import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
+
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
@@ -15,19 +14,18 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Optional;
-
-import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
-import tools.jackson.databind.json.JsonMapper;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Job executor for creating schematic overview images from hex grid compositions.
@@ -61,24 +59,28 @@ public class HexGridSchemaImageJobExecutor implements JobExecutor {
             log.info("Starting hex grid schema image creation: jobId={}", job.getId());
 
             String worldId = job.getWorldId();
-            WorldId.of(worldId).orElseThrow(
-                    () -> new JobExecutionException("Invalid worldId: " + worldId)
-            );
+            WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
             WWorld world = worldService.getByWorldId(worldId).orElseThrow();
 
             String compositionId = getRequiredParameter(job, "compositionId");
             int hexGridSize = world.getPublicData().getHexGridSize();
 
-            log.info("Creating schema image: worldId={}, compositionId={}, hexGridSize={}",
-                    worldId, compositionId, hexGridSize);
+            log.info(
+                    "Creating schema image: worldId={}, compositionId={}, hexGridSize={}",
+                    worldId,
+                    compositionId,
+                    hexGridSize);
 
             // Load HexComposition from document
             HexComposition composition = loadComposition(worldId, compositionId);
-            if (composition.getFeatureHexGrids() == null || composition.getFeatureHexGrids().isEmpty()) {
+            if (composition.getFeatureHexGrids() == null
+                    || composition.getFeatureHexGrids().isEmpty()) {
                 throw new JobExecutionException("No featureHexGrids found in composition: " + compositionId);
             }
 
-            log.info("Loaded composition with {} featureHexGrids", composition.getFeatureHexGrids().size());
+            log.info(
+                    "Loaded composition with {} featureHexGrids",
+                    composition.getFeatureHexGrids().size());
 
             // Create schema image
             HexGridSchemaImageCreator creator = HexGridSchemaImageCreator.builder()
@@ -92,8 +94,11 @@ public class HexGridSchemaImageJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Failed to create schema image: " + result.getErrorMessage());
             }
 
-            log.info("Schema image created: {}x{} pixels, {} grids",
-                    result.getImageWidth(), result.getImageHeight(), result.getRenderedGridCount());
+            log.info(
+                    "Schema image created: {}x{} pixels, {} grids",
+                    result.getImageWidth(),
+                    result.getImageHeight(),
+                    result.getRenderedGridCount());
 
             // Store in archive
             byte[] imageBytes = convertImageToBytes(result.getImage());
@@ -104,11 +109,12 @@ public class HexGridSchemaImageJobExecutor implements JobExecutor {
 
             String resultData = String.format(
                     "Successfully created schema image: worldId=%s, compositionId=%s, grids=%d, size=%dx%d, bytes=%d",
-                    worldId, compositionId,
+                    worldId,
+                    compositionId,
                     result.getRenderedGridCount(),
-                    result.getImageWidth(), result.getImageHeight(),
-                    imageBytes.length
-            );
+                    result.getImageWidth(),
+                    result.getImageHeight(),
+                    imageBytes.length);
 
             log.info("Hex grid schema image creation completed: jobId={}", job.getId());
             return JobResult.success(resultData);
@@ -138,8 +144,8 @@ public class HexGridSchemaImageJobExecutor implements JobExecutor {
 
     private HexComposition loadComposition(String worldId, String compositionId) throws JobExecutionException {
         try {
-            WorldId wid = WorldId.of(worldId)
-                    .orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
 
             Optional<WDocument> documentOpt = documentService.findByDocumentId(wid, COMPOSED_COLLECTION, compositionId);
             if (documentOpt.isEmpty()) {
@@ -157,7 +163,8 @@ public class HexGridSchemaImageJobExecutor implements JobExecutor {
             HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
 
             // Convert featureHexGrids List back to featureHexGridRegistry Map
-            if (composition.getFeatureHexGrids() != null && !composition.getFeatureHexGrids().isEmpty()) {
+            if (composition.getFeatureHexGrids() != null
+                    && !composition.getFeatureHexGrids().isEmpty()) {
                 var registry = composition.getFeatureHexGridRegistry();
                 for (var grid : composition.getFeatureHexGrids()) {
                     String key = TypeUtil.toStringHexCoord(grid.getCoordinate());

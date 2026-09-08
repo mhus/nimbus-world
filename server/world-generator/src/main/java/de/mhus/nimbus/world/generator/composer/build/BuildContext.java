@@ -56,18 +56,13 @@ public class BuildContext {
      * Creates a minimal context with just worldId and seed
      */
     public static BuildContext of(String worldId, Long seed) {
-        return BuildContext.builder()
-            .worldId(worldId)
-            .seed(seed)
-            .build();
+        return BuildContext.builder().worldId(worldId).seed(seed).build();
     }
 
     /**
      * Creates a minimal context with just worldId (seed from timestamp)
      */
     public static BuildContext of(String worldId) {
-        return BuildContext.builder()
-            .worldId(worldId)
-            .build();
+        return BuildContext.builder().worldId(worldId).build();
     }
 }

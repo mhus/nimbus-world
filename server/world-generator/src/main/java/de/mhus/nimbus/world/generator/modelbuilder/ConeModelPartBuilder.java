@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import de.mhus.nimbus.world.generator.blocks.generator.EditBlockPainter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Builds a cone of blocks upward from the cursor position.
@@ -81,7 +80,14 @@ public class ConeModelPartBuilder implements ModelPartBuilder {
             }
         }
 
-        log.debug("cone: painted {} blocks, height={}, baseRadius={}, tipRadius={} at ({},{},{})",
-                painted, height, baseRadius, tipRadius, cx, cy, cz);
+        log.debug(
+                "cone: painted {} blocks, height={}, baseRadius={}, tipRadius={} at ({},{},{})",
+                painted,
+                height,
+                baseRadius,
+                tipRadius,
+                cx,
+                cy,
+                cz);
     }
 }

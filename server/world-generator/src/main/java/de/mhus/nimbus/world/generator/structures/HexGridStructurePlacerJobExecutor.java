@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.structures;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.StructuresGeneratorService;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
@@ -14,12 +14,11 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Job executor for placing structures on a single hex grid.
@@ -74,13 +73,15 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
             log.info("Placing structures for hex {},{} epoch {} in world {}", hexQ, hexR, epoch, worldId);
 
             // Load world
-            WWorld world = worldService.getByWorldId(worldId)
+            WWorld world = worldService
+                    .getByWorldId(worldId)
                     .orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
 
             // Load hex grid
             String position = hexQ + ";" + hexR;
             HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
-            WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+            WHexGrid hexGrid = hexGridService
+                    .findByWorldIdAndPosition(worldId, hexPos)
                     .orElseThrow(() -> new JobExecutionException("HexGrid not found: " + position));
 
             // Load flat for coordinate mapping
@@ -93,7 +94,8 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
             // Clear existing structures in this hex grid before placing new ones
             // Step 1: Delete WLayerModel documents whose mount point is inside the hex
             // Step 2: Clear projected terrain chunks for the structures layer in this hex
-            WLayer structuresLayer = layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
+            WLayer structuresLayer =
+                    layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
             if (structuresLayer != null) {
                 HexVector2 hexCoord = HexVector2.builder().q(hexQ).r(hexR).build();
                 int cleared = structuresService.clearStructuresInHexGrid(hexCoord, structuresLayer, world);
@@ -117,8 +119,12 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
                     .build()
                     .placeStructures();
 
-            log.info("Structure placement complete for hex {},{}: placed={}, skipped={}, errors={}",
-                    hexQ, hexR, result.getPlacedCount(), result.getSkipped(),
+            log.info(
+                    "Structure placement complete for hex {},{}: placed={}, skipped={}, errors={}",
+                    hexQ,
+                    hexR,
+                    result.getPlacedCount(),
+                    result.getSkipped(),
                     result.getErrors() != null ? result.getErrors().size() : 0);
 
             if (!result.isSuccess()) {
@@ -126,7 +132,8 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
             }
 
             // Step 4: Sync new models to terrain (without dirty chunk marking)
-            WLayer currentStructuresLayer = layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
+            WLayer currentStructuresLayer =
+                    layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
             if (currentStructuresLayer != null) {
                 HexVector2 hexCoord = HexVector2.builder().q(hexQ).r(hexR).build();
                 structuresService.syncLayerModelsToTerrain(world, currentStructuresLayer, hexCoord);

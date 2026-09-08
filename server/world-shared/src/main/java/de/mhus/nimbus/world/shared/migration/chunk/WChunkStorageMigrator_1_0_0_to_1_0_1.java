@@ -30,12 +30,7 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
 
     @Override
     public String migrate(String entityJson) throws Exception {
-        if (!Strings.CS.containsAny(
-                entityJson,
-                "rotationX"
-                ,"rotationY"
-                ,"textures"
-        )) return entityJson;
+        if (!Strings.CS.containsAny(entityJson, "rotationX", "rotationY", "textures")) return entityJson;
 
         var json = mapper.readTree(entityJson);
 
@@ -70,9 +65,10 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Verarbeitet die Sichtbarkeits-Modifikatoren
      */
-    public static void processVisibilityModifiers(tools.jackson.databind.JsonNode blockNode,
-                                                   tools.jackson.databind.JsonNode visibility,
-                                                   EngineMapper mapper) {
+    public static void processVisibilityModifiers(
+            tools.jackson.databind.JsonNode blockNode,
+            tools.jackson.databind.JsonNode visibility,
+            EngineMapper mapper) {
         processRotationFix(blockNode, visibility, mapper);
         processTextureFix(visibility);
     }
@@ -80,11 +76,16 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Behandelt die Rotation-Korrektur: verschiebt rotationX/Y vom visibility-Modifier zum Block
      */
-    private static void processRotationFix(tools.jackson.databind.JsonNode blockNode,
-                                          tools.jackson.databind.JsonNode visibility,
-                                          EngineMapper mapper) {
-        double rotationX = visibility.get("rotationX") != null ? visibility.get("rotationX").asDouble(0) : 0;
-        double rotationY = visibility.get("rotationY") != null ? visibility.get("rotationY").asDouble(0) : 0;
+    private static void processRotationFix(
+            tools.jackson.databind.JsonNode blockNode,
+            tools.jackson.databind.JsonNode visibility,
+            EngineMapper mapper) {
+        double rotationX = visibility.get("rotationX") != null
+                ? visibility.get("rotationX").asDouble(0)
+                : 0;
+        double rotationY = visibility.get("rotationY") != null
+                ? visibility.get("rotationY").asDouble(0)
+                : 0;
 
         if (rotationX != 0 || rotationY != 0) {
             // Apply rotation to block, remove from modifier
@@ -122,8 +123,9 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Verarbeitet textuelle Textur-Werte
      */
-    private static void processTextualTexture(tools.jackson.databind.JsonNode texturesMap,
-                                             java.util.Map.Entry<String, tools.jackson.databind.JsonNode> textureEntry) {
+    private static void processTextualTexture(
+            tools.jackson.databind.JsonNode texturesMap,
+            java.util.Map.Entry<String, tools.jackson.databind.JsonNode> textureEntry) {
         String textureStr = textureEntry.getValue().asText();
         if (!textureStr.startsWith("w/")) {
             // Add prefix 'w/'

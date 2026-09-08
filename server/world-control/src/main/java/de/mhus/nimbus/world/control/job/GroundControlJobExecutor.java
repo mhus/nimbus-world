@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.control.service.GroundControlService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Job executor for ground control operations.
@@ -85,8 +84,14 @@ public class GroundControlJobExecutor implements JobExecutor {
         int sides = parseIntParameter(params, "sides", GroundControlService.SIDE_ALL);
         boolean cleanupBlocks = parseBooleanParameter(params, "cleanupBlocks", true);
 
-        log.info("check-ground: worldId={} layerDataId={} cx={} cz={} sides={} cleanup={}",
-                worldId, layerDataId, cx, cz, sides, cleanupBlocks);
+        log.info(
+                "check-ground: worldId={} layerDataId={} cx={} cz={} sides={} cleanup={}",
+                worldId,
+                layerDataId,
+                cx,
+                cz,
+                sides,
+                cleanupBlocks);
 
         boolean modified = groundControlService.checkGround(worldId, layerDataId, cx, cz, sides, cleanupBlocks);
 
@@ -95,7 +100,8 @@ public class GroundControlJobExecutor implements JobExecutor {
         return JobResult.success(msg);
     }
 
-    private JobResult executeCheckHexGridGround(String worldId, Map<String, String> params) throws JobExecutionException {
+    private JobResult executeCheckHexGridGround(String worldId, Map<String, String> params)
+            throws JobExecutionException {
         int epoch = requireIntParam(params, "epoch");
         int q = requireIntParam(params, "hexQ");
         int r = requireIntParam(params, "hexR");
@@ -104,7 +110,8 @@ public class GroundControlJobExecutor implements JobExecutor {
 
         int modified = groundControlService.checkHexGridGround(worldId, epoch, q, r);
 
-        String msg = String.format("check-hex-grid-ground hex (%d,%d) epoch=%d: %d chunks modified", q, r, epoch, modified);
+        String msg =
+                String.format("check-hex-grid-ground hex (%d,%d) epoch=%d: %d chunks modified", q, r, epoch, modified);
         log.info(msg);
         return JobResult.success(msg);
     }
@@ -114,8 +121,12 @@ public class GroundControlJobExecutor implements JobExecutor {
         int sides = parseIntParameter(params, "sides", GroundControlService.SIDE_ALL);
         boolean cleanupBlocks = parseBooleanParameter(params, "cleanupBlocks", true);
 
-        log.info("check-layer-ground: worldId={} layerDataId={} sides={} cleanup={}",
-                worldId, layerDataId, sides, cleanupBlocks);
+        log.info(
+                "check-layer-ground: worldId={} layerDataId={} sides={} cleanup={}",
+                worldId,
+                layerDataId,
+                sides,
+                cleanupBlocks);
 
         int modified = groundControlService.checkLayerGround(worldId, layerDataId, sides, cleanupBlocks);
 

@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -35,8 +34,7 @@ public enum RoadType {
                 return type;
             }
         }
-        throw new IllegalArgumentException(
-            "Invalid roadType: '" + value + "'. Valid values are: " +
-            Arrays.stream(values()).map(RoadType::getValue).collect(Collectors.joining(", ")));
+        throw new IllegalArgumentException("Invalid roadType: '" + value + "'. Valid values are: "
+                + Arrays.stream(values()).map(RoadType::getValue).collect(Collectors.joining(", ")));
     }
 }

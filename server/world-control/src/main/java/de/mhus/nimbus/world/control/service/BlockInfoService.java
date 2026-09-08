@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.service;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3Int;
@@ -14,6 +13,7 @@ import de.mhus.nimbus.world.shared.world.WChunkInfo;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -21,9 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Map;
-import java.util.Optional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for loading block information with layer metadata.
@@ -37,6 +35,7 @@ public class BlockInfoService {
     @Lazy
     @Autowired
     private EditService editService;
+
     private final WLayerService layerService;
     private final WChunkService chunkService;
     private final WorldRedisService redisService;
@@ -105,7 +104,8 @@ public class BlockInfoService {
         if (block == null) {
             block = loadBlockFromChunk(worldId, x, y, z);
             readOnly = Strings.isBlank(layerName); // will copy it into layer
-            log.debug("Loaded block from WChunk: pos=({},{},{}) readOnly={} layerName={}", x, y, z, readOnly, layerName);
+            log.debug(
+                    "Loaded block from WChunk: pos=({},{},{}) readOnly={} layerName={}", x, y, z, readOnly, layerName);
         }
 
         // Default to air if still not found
@@ -167,8 +167,13 @@ public class BlockInfoService {
             de.mhus.nimbus.world.shared.layer.LayerBlock layerBlock = cache.getBlock();
 
             if (layerBlock == null || layerBlock.getBlock() == null) {
-                log.warn("WEditCache entry has no block data: worldId={} layerDataId={} pos=({},{},{})",
-                        worldId, layerDataId, x, y, z);
+                log.warn(
+                        "WEditCache entry has no block data: worldId={} layerDataId={} pos=({},{},{})",
+                        worldId,
+                        layerDataId,
+                        x,
+                        y,
+                        z);
                 return null;
             }
 
@@ -176,18 +181,18 @@ public class BlockInfoService {
 
             // Verify Y coordinate matches (WEditCache now uses X,Y,Z as key)
             if (block.getPosition() != null && block.getPosition().getY() != y) {
-                log.debug("WEditCache block Y coordinate mismatch: expected={} actual={}",
-                        y, block.getPosition().getY());
+                log.debug(
+                        "WEditCache block Y coordinate mismatch: expected={} actual={}",
+                        y,
+                        block.getPosition().getY());
                 return null;
             }
 
-            log.debug("Found block in WEditCache: pos=({},{},{}) blockTypeId={}",
-                    x, y, z, block.getBlockTypeId());
+            log.debug("Found block in WEditCache: pos=({},{},{}) blockTypeId={}", x, y, z, block.getBlockTypeId());
             return block;
 
         } catch (Exception e) {
-            log.warn("Failed to load block from WEditCache at pos ({},{},{}): {}",
-                    x, y, z, e.getMessage());
+            log.warn("Failed to load block from WEditCache at pos ({},{},{}): {}", x, y, z, e.getMessage());
             return null;
         }
     }
@@ -270,8 +275,7 @@ public class BlockInfoService {
      */
     private Block loadBlockFromModelLayer(String worldId, String layerDataId, WLayer layer, int x, int y, int z) {
         // Load model content
-        Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt =
-                layerService.loadModelById(layerDataId);
+        Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt = layerService.loadModelById(layerDataId);
 
         if (modelOpt.isEmpty()) {
             return null;
@@ -294,7 +298,9 @@ public class BlockInfoService {
                 Block block = layerBlock.getBlock();
                 if (block != null && block.getPosition() != null) {
                     Vector3Int pos = block.getPosition();
-                    if ((int) pos.getX() == relativeX && (int) pos.getY() == relativeY && (int) pos.getZ() == relativeZ) {
+                    if ((int) pos.getX() == relativeX
+                            && (int) pos.getY() == relativeY
+                            && (int) pos.getZ() == relativeZ) {
                         // Create new block with absolute position
                         Block absoluteBlock = Block.builder()
                                 .position(Vector3Int.builder().x(x).y(y).z(z).build())
@@ -344,19 +350,19 @@ public class BlockInfoService {
         if (chunkData.getBlocks() != null) {
             for (Block block : chunkData.getBlocks()) {
                 Vector3Int pos = block.getPosition();
-                if (pos != null &&
-                    pos.getX() == x &&
-                    pos.getY() == y &&
-                    pos.getZ() == z) {
-                    log.debug("Found block in chunk: pos=({},{},{}) blockTypeId={}",
-                            x, y, z, block.getBlockTypeId());
+                if (pos != null && pos.getX() == x && pos.getY() == y && pos.getZ() == z) {
+                    log.debug("Found block in chunk: pos=({},{},{}) blockTypeId={}", x, y, z, block.getBlockTypeId());
                     return block;
                 }
             }
         }
 
-        log.debug("Block not found in chunk: pos=({},{},{}) totalBlocks={}",
-                x, y, z, chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
+        log.debug(
+                "Block not found in chunk: pos=({},{},{}) totalBlocks={}",
+                x,
+                y,
+                z,
+                chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
         return null;
     }
 
@@ -364,16 +370,9 @@ public class BlockInfoService {
      * Create air block at position.
      */
     private Block createAirBlock(int x, int y, int z) {
-        Vector3Int position = Vector3Int.builder()
-                .x(x)
-                .y(y)
-                .z(z)
-                .build();
+        Vector3Int position = Vector3Int.builder().x(x).y(y).z(z).build();
 
-        Block block = Block.builder()
-                .blockTypeId("air")
-                .position(position)
-                .build();
+        Block block = Block.builder().blockTypeId("air").position(position).build();
 
         return block;
     }

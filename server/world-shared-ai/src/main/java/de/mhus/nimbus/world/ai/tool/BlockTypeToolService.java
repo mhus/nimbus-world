@@ -5,13 +5,12 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * AI Tool Service for block type management.
@@ -46,7 +45,8 @@ public class BlockTypeToolService {
      * @param worldId The world identifier (required)
      * @return Formatted list of all block types (shared first, then region, then world)
      */
-    @Tool("Lookup all block types - searches across shared, region, and world collections. Returns all available block types with shared types first.")
+    @Tool(
+            "Lookup all block types - searches across shared, region, and world collections. Returns all available block types with shared types first.")
     public String lookupAllBlockTypes(String worldId) {
         log.info("AI Tool: lookupAllBlockTypes - worldId={}", worldId);
 
@@ -55,9 +55,8 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WBlockType> blockTypes = blockTypeService.lookupBlockTypes(wid);
 
             if (blockTypes.isEmpty()) {
@@ -65,16 +64,17 @@ public class BlockTypeToolService {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d block type(s) (shared, region, world):\n\n",
-                    blockTypes.size()));
+            result.append(String.format("Found %d block type(s) (shared, region, world):\n\n", blockTypes.size()));
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
                 result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
-                    result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
-                    result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
+                    result.append(String.format(
+                            "Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                    result.append(String.format(
+                            "Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
                     if (publicData.getDescription() != null) {
                         result.append(String.format("Description: %s\n", publicData.getDescription()));
                     }
@@ -102,7 +102,8 @@ public class BlockTypeToolService {
      * @param query The search query to filter block types (required)
      * @return Formatted list of matching block types (shared first, then region, then world)
      */
-    @Tool("Lookup block types by query - searches across shared, region, and world collections. Filters by query in block ID, title, and description. Returns matching block types with shared types first.")
+    @Tool(
+            "Lookup block types by query - searches across shared, region, and world collections. Filters by query in block ID, title, and description. Returns matching block types with shared types first.")
     public String lookupBlockTypesByQuery(String worldId, String query) {
         log.info("AI Tool: lookupBlockTypesByQuery - worldId={}, query={}", worldId, query);
 
@@ -115,26 +116,28 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WBlockType> blockTypes = blockTypeService.lookupBlockTypesByQuery(wid, query);
 
             if (blockTypes.isEmpty()) {
-                return String.format("No block types found matching query '%s' in any collection (shared, region, world)", query);
+                return String.format(
+                        "No block types found matching query '%s' in any collection (shared, region, world)", query);
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d block type(s) matching '%s' (shared, region, world):\n\n",
-                    blockTypes.size(), query));
+            result.append(String.format(
+                    "Found %d block type(s) matching '%s' (shared, region, world):\n\n", blockTypes.size(), query));
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
                 result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
-                    result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
-                    result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
+                    result.append(String.format(
+                            "Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                    result.append(String.format(
+                            "Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
                     if (publicData.getDescription() != null) {
                         result.append(String.format("Description: %s\n", publicData.getDescription()));
                     }
@@ -161,7 +164,8 @@ public class BlockTypeToolService {
      * @param blockId The block identifier (required)
      * @return Complete block type information or error message
      */
-    @Tool("Get block type by ID - retrieves complete information about a specific block type. Searches only in the specified worldId.")
+    @Tool(
+            "Get block type by ID - retrieves complete information about a specific block type. Searches only in the specified worldId.")
     public String getBlockTypeById(String worldId, String blockId) {
         log.info("AI Tool: getBlockTypeById - worldId={}, blockId={}", worldId, blockId);
 
@@ -174,9 +178,8 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             Optional<WBlockType> blockTypeOpt = blockTypeService.findByBlockId(wid, blockId);
 
             if (blockTypeOpt.isEmpty()) {
@@ -192,14 +195,18 @@ public class BlockTypeToolService {
             result.append(String.format("Enabled: %s\n", blockType.isEnabled()));
 
             if (publicData != null) {
-                result.append(String.format("\nTitle: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
-                result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
+                result.append(String.format(
+                        "\nTitle: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                result.append(
+                        String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
                 result.append(String.format("Initial Status: %d\n", publicData.getInitialStatus()));
                 if (publicData.getDescription() != null) {
                     result.append(String.format("Description: %s\n", publicData.getDescription()));
                 }
-                if (publicData.getModifiers() != null && !publicData.getModifiers().isEmpty()) {
-                    result.append(String.format("Modifiers: %d defined\n", publicData.getModifiers().size()));
+                if (publicData.getModifiers() != null
+                        && !publicData.getModifiers().isEmpty()) {
+                    result.append(String.format(
+                            "Modifiers: %d defined\n", publicData.getModifiers().size()));
                 }
             }
 
@@ -223,7 +230,8 @@ public class BlockTypeToolService {
      * @param worldId The world identifier (required)
      * @return Formatted list of block types in the specific world
      */
-    @Tool("Search block types in world - searches only in the specific worldId collection. Returns all block types available in that world.")
+    @Tool(
+            "Search block types in world - searches only in the specific worldId collection. Returns all block types available in that world.")
     public String searchBlockTypesInWorld(String worldId) {
         log.info("AI Tool: searchBlockTypesInWorld - worldId={}", worldId);
 
@@ -232,9 +240,8 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WBlockType> blockTypes = blockTypeService.findByWorldId(wid);
 
             if (blockTypes.isEmpty()) {
@@ -242,15 +249,16 @@ public class BlockTypeToolService {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d block type(s) in worldId '%s':\n\n",
-                    blockTypes.size(), worldId));
+            result.append(String.format("Found %d block type(s) in worldId '%s':\n\n", blockTypes.size(), worldId));
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
                 result.append(String.format("Block ID: %s\n", blockType.getName()));
                 if (publicData != null) {
-                    result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
-                    result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
+                    result.append(String.format(
+                            "Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                    result.append(String.format(
+                            "Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
                     if (publicData.getDescription() != null) {
                         result.append(String.format("Description: %s\n", publicData.getDescription()));
                     }
@@ -278,7 +286,8 @@ public class BlockTypeToolService {
      * @param query The search query to filter block types (required)
      * @return Formatted list of matching block types in the specific world
      */
-    @Tool("Search block types by query in world - searches only in the specific worldId collection. Filters by query in block ID, title, and description.")
+    @Tool(
+            "Search block types by query in world - searches only in the specific worldId collection. Filters by query in block ID, title, and description.")
     public String searchBlockTypesByQueryInWorld(String worldId, String query) {
         log.info("AI Tool: searchBlockTypesByQueryInWorld - worldId={}, query={}", worldId, query);
 
@@ -291,9 +300,8 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WBlockType> blockTypes = blockTypeService.findByWorldIdAndQuery(wid, query);
 
             if (blockTypes.isEmpty()) {
@@ -301,15 +309,17 @@ public class BlockTypeToolService {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d block type(s) matching '%s' in worldId '%s':\n\n",
-                    blockTypes.size(), query, worldId));
+            result.append(String.format(
+                    "Found %d block type(s) matching '%s' in worldId '%s':\n\n", blockTypes.size(), query, worldId));
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
                 result.append(String.format("Block ID: %s\n", blockType.getName()));
                 if (publicData != null) {
-                    result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
-                    result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
+                    result.append(String.format(
+                            "Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                    result.append(String.format(
+                            "Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
                     if (publicData.getDescription() != null) {
                         result.append(String.format("Description: %s\n", publicData.getDescription()));
                     }
@@ -335,7 +345,8 @@ public class BlockTypeToolService {
      * @param worldId The world identifier (required)
      * @return Formatted list of enabled block types
      */
-    @Tool("List enabled block types - returns all enabled block types across shared, region, and world collections. Only includes types that can be used.")
+    @Tool(
+            "List enabled block types - returns all enabled block types across shared, region, and world collections. Only includes types that can be used.")
     public String listEnabledBlockTypes(String worldId) {
         log.info("AI Tool: listEnabledBlockTypes - worldId={}", worldId);
 
@@ -344,32 +355,31 @@ public class BlockTypeToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Get all block types from lookup (shared, region, world)
             List<WBlockType> allBlockTypes = blockTypeService.lookupBlockTypes(wid);
 
             // Filter only enabled ones
-            List<WBlockType> enabledBlockTypes = allBlockTypes.stream()
-                    .filter(WBlockType::isEnabled)
-                    .collect(Collectors.toList());
+            List<WBlockType> enabledBlockTypes =
+                    allBlockTypes.stream().filter(WBlockType::isEnabled).collect(Collectors.toList());
 
             if (enabledBlockTypes.isEmpty()) {
                 return "No enabled block types found in any collection (shared, region, world)";
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d enabled block type(s) (shared, region, world):\n\n",
-                    enabledBlockTypes.size()));
+            result.append(String.format(
+                    "Found %d enabled block type(s) (shared, region, world):\n\n", enabledBlockTypes.size()));
 
             for (WBlockType blockType : enabledBlockTypes) {
                 BlockType publicData = blockType.getPublicData();
                 result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
-                    result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
+                    result.append(String.format(
+                            "Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
                     if (publicData.getDescription() != null) {
                         result.append(String.format("Description: %s\n", publicData.getDescription()));
                     }

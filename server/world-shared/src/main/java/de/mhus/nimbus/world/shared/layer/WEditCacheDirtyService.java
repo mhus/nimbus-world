@@ -2,9 +2,11 @@ package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
+import java.time.Duration;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -13,11 +15,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing WEditCacheDirty entities.
@@ -119,8 +116,9 @@ public class WEditCacheDirtyService {
      */
     @Transactional
     public long deleteByWorldId(String worldId) {
-        long deleted = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)), WEditCacheDirty.class).getDeletedCount();
+        long deleted = mongoTemplate
+                .remove(new Query(Criteria.where("worldId").is(worldId)), WEditCacheDirty.class)
+                .getDeletedCount();
         log.info("Deleted {} edit cache dirty markers for world {}", deleted, worldId);
         return deleted;
     }
@@ -145,13 +143,11 @@ public class WEditCacheDirtyService {
     @ConditionalOnProperty(
             value = "nimbus.services.edit-cache-processing",
             havingValue = "true",
-            matchIfMissing = false
-    )
-
+            matchIfMissing = false)
     public void processEditCacheDirty() {
         try {
-            List<WEditCacheDirty> dirtyEntries = dirtyRepository.findAllByOrderByCreatedAtAsc(
-                    PageRequest.of(0, MAX_ENTRIES_PER_CYCLE));
+            List<WEditCacheDirty> dirtyEntries =
+                    dirtyRepository.findAllByOrderByCreatedAtAsc(PageRequest.of(0, MAX_ENTRIES_PER_CYCLE));
 
             if (dirtyEntries.isEmpty()) {
                 log.trace("No dirty edit cache entries to process");
@@ -170,8 +166,10 @@ public class WEditCacheDirtyService {
                 String lockToken = lockService.acquireGenericLock(lockKey, LOCK_TTL);
 
                 if (lockToken == null) {
-                    log.debug("Layer is locked by another pod, skipping: worldId={}, layerDataId={}",
-                            dirty.getWorldId(), dirty.getLayerDataId());
+                    log.debug(
+                            "Layer is locked by another pod, skipping: worldId={}, layerDataId={}",
+                            dirty.getWorldId(),
+                            dirty.getLayerDataId());
                     skipped++;
                     continue;
                 }
@@ -180,8 +178,11 @@ public class WEditCacheDirtyService {
                     processLayer(dirty.getWorldId(), dirty.getLayerDataId());
                     processed++;
                 } catch (Exception e) {
-                    log.error("Error processing dirty layer: worldId={}, layerDataId={}",
-                            dirty.getWorldId(), dirty.getLayerDataId(), e);
+                    log.error(
+                            "Error processing dirty layer: worldId={}, layerDataId={}",
+                            dirty.getWorldId(),
+                            dirty.getLayerDataId(),
+                            e);
                     failed++;
                 } finally {
                     lockService.releaseGenericLock(lockKey, lockToken);
@@ -189,8 +190,12 @@ public class WEditCacheDirtyService {
             }
 
             if (processed > 0 || failed > 0) {
-                log.info("Edit cache dirty processing cycle: processed={} skipped={} failed={} remaining={}",
-                        processed, skipped, failed, dirtyEntries.size() - processed - skipped - failed);
+                log.info(
+                        "Edit cache dirty processing cycle: processed={} skipped={} failed={} remaining={}",
+                        processed,
+                        skipped,
+                        failed,
+                        dirtyEntries.size() - processed - skipped - failed);
             }
 
         } catch (Exception e) {
@@ -228,9 +233,8 @@ public class WEditCacheDirtyService {
         // Convert to base worldId for all layer/terrain/chunk operations.
         // EditCache is stored with instance worldId (e.g. "earth616:westview::x0"),
         // but WLayer, WLayerTerrain, WLayerModel, WDirtyChunk use the base worldId.
-        String baseWorldId = WorldId.of(worldId)
-                .map(wid -> wid.toBaseWorldId().getId())
-                .orElse(worldId);
+        String baseWorldId =
+                WorldId.of(worldId).map(wid -> wid.toBaseWorldId().getId()).orElse(worldId);
 
         // Get affected chunks for marking dirty after merge
         Set<String> affectedChunks = cachedBlocks.stream()
@@ -254,9 +258,13 @@ public class WEditCacheDirtyService {
             int editorEpoch = parsedWorldId.getEditorEpoch();
             List<Integer> layerEpoches = layer.getEpoches();
             if (layerEpoches != null && !layerEpoches.isEmpty() && !layerEpoches.contains(editorEpoch)) {
-                log.warn("Epoch mismatch: editor instance epoch {} not in layer epoches {} for layer '{}' (layerDataId={}). " +
-                         "Blocks from a different epoch are being merged into this layer!",
-                        editorEpoch, layerEpoches, layerName, layerDataId);
+                log.warn(
+                        "Epoch mismatch: editor instance epoch {} not in layer epoches {} for layer '{}' (layerDataId={}). "
+                                + "Blocks from a different epoch are being merged into this layer!",
+                        editorEpoch,
+                        layerEpoches,
+                        layerName,
+                        layerDataId);
             }
         }
 
@@ -276,15 +284,20 @@ public class WEditCacheDirtyService {
         log.debug("Deleted {} cached blocks after merge", deletedCount);
 
         // Mark affected chunks as dirty for regeneration (use base worldId)
-        dirtyChunkService.markChunksDirty(baseWorldId, new ArrayList<>(affectedChunks),
-                "edit_cache_applied:layer=" + layerDataId);
+        dirtyChunkService.markChunksDirty(
+                baseWorldId, new ArrayList<>(affectedChunks), "edit_cache_applied:layer=" + layerDataId);
         log.debug("Marked {} chunks as dirty", affectedChunks.size());
 
         // Remove dirty flag (dirty entries use original worldId)
         clearDirty(worldId, layerDataId);
 
-        log.info("Successfully processed dirty layer: worldId={} (base={}), layerDataId={}, blocks={}, chunks={}",
-                worldId, baseWorldId, layerDataId, cachedBlocks.size(), affectedChunks.size());
+        log.info(
+                "Successfully processed dirty layer: worldId={} (base={}), layerDataId={}, blocks={}, chunks={}",
+                worldId,
+                baseWorldId,
+                layerDataId,
+                cachedBlocks.size(),
+                affectedChunks.size());
     }
 
     /**
@@ -323,9 +336,8 @@ public class WEditCacheDirtyService {
         log.info("Discard changes requested: worldId={}, layerDataId={}", worldId, layerDataId);
 
         // Convert to base worldId for chunk operations
-        String baseWorldId = WorldId.of(worldId)
-                .map(wid -> wid.toBaseWorldId().getId())
-                .orElse(worldId);
+        String baseWorldId =
+                WorldId.of(worldId).map(wid -> wid.toBaseWorldId().getId()).orElse(worldId);
 
         // Get affected chunks before deleting (EditCache uses original worldId)
         List<WEditCache> cachedBlocks = cacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
@@ -339,8 +351,8 @@ public class WEditCacheDirtyService {
 
         // Mark affected chunks dirty to trigger refresh on clients (use base worldId)
         if (!affectedChunks.isEmpty()) {
-            dirtyChunkService.markChunksDirty(baseWorldId, new ArrayList<>(affectedChunks),
-                    "edit_cache_discarded:layer=" + layerDataId);
+            dirtyChunkService.markChunksDirty(
+                    baseWorldId, new ArrayList<>(affectedChunks), "edit_cache_discarded:layer=" + layerDataId);
             log.debug("Marked {} chunks dirty for refresh", affectedChunks.size());
         }
 
@@ -349,8 +361,13 @@ public class WEditCacheDirtyService {
             clearDirty(worldId, layerDataId);
         }
 
-        log.info("Discarded {} cached blocks for layer: worldId={} (base={}), layerDataId={}, chunks={}",
-                deletedCount, worldId, baseWorldId, layerDataId, affectedChunks.size());
+        log.info(
+                "Discarded {} cached blocks for layer: worldId={} (base={}), layerDataId={}, chunks={}",
+                deletedCount,
+                worldId,
+                baseWorldId,
+                layerDataId,
+                affectedChunks.size());
 
         return deletedCount;
     }
@@ -376,8 +393,7 @@ public class WEditCacheDirtyService {
 
         // Group cached blocks by modelName
         Map<String, List<WEditCache>> blocksByModel = cachedBlocks.stream()
-                .collect(Collectors.groupingBy(cache ->
-                    cache.getModelName() != null ? cache.getModelName() : ""));
+                .collect(Collectors.groupingBy(cache -> cache.getModelName() != null ? cache.getModelName() : ""));
 
         log.debug("Merging blocks into {} models: total blocks={}", blocksByModel.size(), cachedBlocks.size());
 
@@ -419,10 +435,16 @@ public class WEditCacheDirtyService {
 
         // Regenerate WLayerTerrain for affected models
         if (!affectedModelIds.isEmpty()) {
-            log.info("Regenerating terrain for {} affected models: layerDataId={}", affectedModelIds.size(), layerDataId);
+            log.info(
+                    "Regenerating terrain for {} affected models: layerDataId={}",
+                    affectedModelIds.size(),
+                    layerDataId);
             int chunksRegenerated = layerService.recreateTerrainForModels(worldId, layerDataId, affectedModelIds, true);
-            log.info("Terrain regeneration completed: layerDataId={} models={} chunks={}",
-                    layerDataId, affectedModelIds.size(), chunksRegenerated);
+            log.info(
+                    "Terrain regeneration completed: layerDataId={} models={} chunks={}",
+                    layerDataId,
+                    affectedModelIds.size(),
+                    chunksRegenerated);
         }
     }
 
@@ -435,8 +457,13 @@ public class WEditCacheDirtyService {
      */
     private void mergeBlocksIntoSingleModel(String worldId, WLayerModel model, List<WEditCache> cachedBlocks) {
         WLayerModel finalModel = model;
-        log.debug("Merging blocks into model: modelId={}, mountPoint=({},{},{}), rotation={}",
-                model.getId(), model.getMountX(), model.getMountY(), model.getMountZ(), model.getRotation());
+        log.debug(
+                "Merging blocks into model: modelId={}, mountPoint=({},{},{}), rotation={}",
+                model.getId(),
+                model.getMountX(),
+                model.getMountY(),
+                model.getMountZ(),
+                model.getRotation());
 
         // Build position index of existing blocks
         List<LayerBlock> content = model.getContent();
@@ -448,7 +475,8 @@ public class WEditCacheDirtyService {
         Map<String, LayerBlock> blockIndex = new HashMap<>();
         for (LayerBlock layerBlock : content) {
             if (layerBlock.getBlock() != null && layerBlock.getBlock().getPosition() != null) {
-                de.mhus.nimbus.generated.types.Vector3Int pos = layerBlock.getBlock().getPosition();
+                de.mhus.nimbus.generated.types.Vector3Int pos =
+                        layerBlock.getBlock().getPosition();
                 String posKey = pos.getX() + ":" + pos.getY() + ":" + pos.getZ();
                 blockIndex.put(posKey, layerBlock);
             }
@@ -470,8 +498,7 @@ public class WEditCacheDirtyService {
                     model.getMountX(),
                     model.getMountY(),
                     model.getMountZ(),
-                    model.getRotation()
-            );
+                    model.getRotation());
 
             // Create new block with relative position
             de.mhus.nimbus.generated.types.Block transformedBlock = cloneBlockWithPosition(block, relativePos);
@@ -501,8 +528,12 @@ public class WEditCacheDirtyService {
             m.setContent(newContent);
         });
 
-        log.info("Merged blocks into model: modelId={}, added={}, updated={}, total={}",
-                model.getId(), added, updated, newContent.size());
+        log.info(
+                "Merged blocks into model: modelId={}, added={}, updated={}, total={}",
+                model.getId(),
+                added,
+                updated,
+                newContent.size());
     }
 
     /**
@@ -519,9 +550,7 @@ public class WEditCacheDirtyService {
      * @return Relative coordinates
      */
     private de.mhus.nimbus.generated.types.Vector3Int worldToLayerCoordinates(
-            int worldX, int worldY, int worldZ,
-            int mountX, int mountY, int mountZ,
-            int rotation) {
+            int worldX, int worldY, int worldZ, int mountX, int mountY, int mountZ, int rotation) {
 
         // 1. Subtract mount point to get offset from mount
         int offsetX = worldX - mountX;
@@ -556,11 +585,11 @@ public class WEditCacheDirtyService {
 
         // Inverse rotation: apply opposite rotation
         return switch (rot) {
-            case 0 -> new int[]{x, z};          // No rotation
-            case 1 -> new int[]{z, -x};         // 90° counter-clockwise (inverse of 90° CW)
-            case 2 -> new int[]{-x, -z};        // 180° (inverse of 180°)
-            case 3 -> new int[]{-z, x};         // 270° counter-clockwise (inverse of 270° CW)
-            default -> new int[]{x, z};
+            case 0 -> new int[] {x, z}; // No rotation
+            case 1 -> new int[] {z, -x}; // 90° counter-clockwise (inverse of 90° CW)
+            case 2 -> new int[] {-x, -z}; // 180° (inverse of 180°)
+            case 3 -> new int[] {-z, x}; // 270° counter-clockwise (inverse of 270° CW)
+            default -> new int[] {x, z};
         };
     }
 
@@ -572,8 +601,7 @@ public class WEditCacheDirtyService {
      * @return Cloned block with new position
      */
     private de.mhus.nimbus.generated.types.Block cloneBlockWithPosition(
-            de.mhus.nimbus.generated.types.Block original,
-            de.mhus.nimbus.generated.types.Vector3Int newPosition) {
+            de.mhus.nimbus.generated.types.Block original, de.mhus.nimbus.generated.types.Vector3Int newPosition) {
 
         de.mhus.nimbus.generated.types.Block cloned = new de.mhus.nimbus.generated.types.Block();
         cloned.setBlockTypeId(original.getBlockTypeId());
@@ -600,11 +628,10 @@ public class WEditCacheDirtyService {
      */
     private void mergeBlocksIntoLayerTerrain(String worldId, String layerDataId, List<WEditCache> cachedBlocks) {
         // Group cached blocks by chunk
-        Map<String, List<WEditCache>> blocksByChunk = cachedBlocks.stream()
-                .collect(Collectors.groupingBy(WEditCache::getChunk));
+        Map<String, List<WEditCache>> blocksByChunk =
+                cachedBlocks.stream().collect(Collectors.groupingBy(WEditCache::getChunk));
 
-        log.debug("Merging blocks into terrain: chunks={}, totalBlocks={}",
-                blocksByChunk.size(), cachedBlocks.size());
+        log.debug("Merging blocks into terrain: chunks={}, totalBlocks={}", blocksByChunk.size(), cachedBlocks.size());
 
         int chunksProcessed = 0;
         int blocksAdded = 0;
@@ -637,7 +664,8 @@ public class WEditCacheDirtyService {
             Map<String, LayerBlock> blockIndex = new HashMap<>();
             for (LayerBlock layerBlock : blocks) {
                 if (layerBlock.getBlock() != null && layerBlock.getBlock().getPosition() != null) {
-                    de.mhus.nimbus.generated.types.Vector3Int pos = layerBlock.getBlock().getPosition();
+                    de.mhus.nimbus.generated.types.Vector3Int pos =
+                            layerBlock.getBlock().getPosition();
                     String posKey = pos.getX() + ":" + pos.getY() + ":" + pos.getZ();
                     blockIndex.put(posKey, layerBlock);
                 }
@@ -686,7 +714,12 @@ public class WEditCacheDirtyService {
             log.trace("Merged chunk {}: blocks={}", chunkKey, newBlocks.size());
         }
 
-        log.info("Merged blocks into terrain: layerDataId={}, chunks={}, added={}, updated={}, removed={}",
-                layerDataId, chunksProcessed, blocksAdded, blocksUpdated, blocksRemoved);
+        log.info(
+                "Merged blocks into terrain: layerDataId={}, chunks={}, added={}, updated={}, removed={}",
+                layerDataId,
+                chunksProcessed,
+                blocksAdded,
+                blocksUpdated,
+                blocksRemoved);
     }
 }

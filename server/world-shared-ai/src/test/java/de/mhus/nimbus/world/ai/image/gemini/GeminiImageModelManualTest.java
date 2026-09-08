@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.ai.image.gemini;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import de.mhus.nimbus.world.ai.image.AiImage;
 import de.mhus.nimbus.world.ai.image.AiImageOptions;
 import de.mhus.nimbus.world.ai.image.BackgroundRemover;
 import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import tools.jackson.databind.ObjectMapper;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Manual, network-dependent test for real Gemini image generation with transparency.
@@ -38,8 +37,7 @@ class GeminiImageModelManualTest {
     @Test
     void generatesItemIconWithRealTransparency() throws Exception {
         String apiKey = System.getenv("GEMINI_API_KEY");
-        assumeTrue(apiKey != null && !apiKey.isBlank(),
-                "GEMINI_API_KEY not set – skipping manual Gemini image test");
+        assumeTrue(apiKey != null && !apiKey.isBlank(), "GEMINI_API_KEY not set – skipping manual Gemini image test");
 
         AiImageOptions options = AiImageOptions.builder()
                 .width(1024)
@@ -48,11 +46,16 @@ class GeminiImageModelManualTest {
                 .build();
 
         GeminiImageModelImpl model = new GeminiImageModelImpl(
-                "gemini:" + MODEL, MODEL, apiKey, options,
-                new ObjectMapper(), new SimpleRateLimiter(15), BackgroundRemover.DEFAULT_THRESHOLD);
+                "gemini:" + MODEL,
+                MODEL,
+                apiKey,
+                options,
+                new ObjectMapper(),
+                new SimpleRateLimiter(15),
+                BackgroundRemover.DEFAULT_THRESHOLD);
 
-        AiImage image = model.generate(
-                "A single medieval iron sword game item icon, hand-painted fantasy style with a bold"
+        AiImage image =
+                model.generate("A single medieval iron sword game item icon, hand-painted fantasy style with a bold"
                         + " dark outline, centered, filling most of the frame.");
 
         assertThat(image.hasBytes()).as("image bytes returned").isTrue();
@@ -63,13 +66,15 @@ class GeminiImageModelManualTest {
         Files.createDirectories(outDir);
         Path outFile = outDir.resolve("gemini_transparent_sword.png");
         Files.write(outFile, image.getBytes());
-        System.out.println("Wrote " + image.getWidth() + "x" + image.getHeight()
-                + " PNG to " + outFile.toAbsolutePath());
+        System.out.println(
+                "Wrote " + image.getWidth() + "x" + image.getHeight() + " PNG to " + outFile.toAbsolutePath());
 
         // Verify REAL transparency: an alpha channel plus actually-transparent border pixels.
         BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(image.getBytes()));
         assertThat(decoded).isNotNull();
-        assertThat(decoded.getColorModel().hasAlpha()).as("PNG has an alpha channel").isTrue();
+        assertThat(decoded.getColorModel().hasAlpha())
+                .as("PNG has an alpha channel")
+                .isTrue();
 
         int w = decoded.getWidth();
         int h = decoded.getHeight();

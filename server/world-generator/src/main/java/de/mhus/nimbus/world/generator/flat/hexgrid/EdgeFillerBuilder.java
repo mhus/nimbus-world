@@ -3,9 +3,8 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * EdgeFiller manipulator builder.
@@ -88,17 +87,16 @@ public class EdgeFillerBuilder extends HexGridBuilder {
             HexGridFlatFiller flatFiller = new HexGridFlatFiller(flat, context);
             flatFiller.fillFlat();
         }
-
     }
 
     @Override
     protected int getDefaultOffset() {
-        return 0;  // EdgeFiller doesn't use land offset
+        return 0; // EdgeFiller doesn't use land offset
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 0;  // EdgeFiller doesn't use land level
+        return 0; // EdgeFiller doesn't use land level
     }
 
     @Override

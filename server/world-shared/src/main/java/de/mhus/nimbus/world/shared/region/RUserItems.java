@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.shared.region;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import java.time.Instant;
+import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,10 +12,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Entity for storing user items per region.
@@ -48,7 +46,14 @@ public class RUserItems {
     @LastModifiedDate
     private Instant updatedAt;
 
-    public RUserItems(String userId, String regionId, String itemId, Integer amount, String texture, String name, Set<String> labels) {
+    public RUserItems(
+            String userId,
+            String regionId,
+            String itemId,
+            Integer amount,
+            String texture,
+            String name,
+            Set<String> labels) {
         this.userId = userId;
         this.regionId = regionId;
         this.itemId = itemId;

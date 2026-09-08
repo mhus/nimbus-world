@@ -4,17 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import java.util.List;
 
 @Data
 @SuperBuilder
@@ -111,21 +110,21 @@ public abstract class Area extends Feature {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AreaComposed {
-        private Integer calculatedSizeFrom;  // Resolved from size enum (deprecated - use sizeQ/sizeR)
-        private Integer calculatedSizeTo;    // Resolved from size enum (deprecated - use sizeQ/sizeR)
-        private HexVector2 placedCenter;     // Where this area was actually placed
-        private List<HexVector2> assignedCoordinates;  // Actual coordinates assigned
-        private List<PreparedPosition> preparedPositions;  // Resolved positions with angles
+        private Integer calculatedSizeFrom; // Resolved from size enum (deprecated - use sizeQ/sizeR)
+        private Integer calculatedSizeTo; // Resolved from size enum (deprecated - use sizeQ/sizeR)
+        private HexVector2 placedCenter; // Where this area was actually placed
+        private List<HexVector2> assignedCoordinates; // Actual coordinates assigned
+        private List<PreparedPosition> preparedPositions; // Resolved positions with angles
 
         // 2D dimensions of the biome
-        private Integer sizeQ;  // Actual size in Q direction (number of hexes)
-        private Integer sizeR;  // Actual size in R direction (number of hexes)
+        private Integer sizeQ; // Actual size in Q direction (number of hexes)
+        private Integer sizeR; // Actual size in R direction (number of hexes)
 
         // Bounds of the biome
-        private Integer minQ;   // Minimum Q coordinate
-        private Integer maxQ;   // Maximum Q coordinate
-        private Integer minR;   // Minimum R coordinate
-        private Integer maxR;   // Maximum R coordinate
+        private Integer minQ; // Minimum Q coordinate
+        private Integer maxQ; // Maximum Q coordinate
+        private Integer minR; // Minimum R coordinate
+        private Integer maxR; // Maximum R coordinate
     }
 
     @JsonIgnore
@@ -185,7 +184,7 @@ public abstract class Area extends Feature {
         prepared.setDistanceFrom(position.getEffectiveDistanceFrom());
         prepared.setDistanceTo(position.getEffectiveDistanceTo());
         prepared.setAnchor(position.getAnchor());
-        prepared.setPriority(position.getPriority());  // priority has default value 5
+        prepared.setPriority(position.getPriority()); // priority has default value 5
         return prepared;
     }
 
@@ -198,14 +197,14 @@ public abstract class Area extends Feature {
         // NE(0°), E(60°), SE(120°), SW(180°), W(240°), NW(300°)
         // N and S are mapped to nearest hex directions
         return switch (direction) {
-            case N -> 330;    // North (top spike) → rounds to NW/NE
-            case NE -> 0;     // Northeast: top-right side
-            case E -> 60;     // East: right side
-            case SE -> 120;   // Southeast: bottom-right side
-            case S -> 150;    // South (bottom spike) → rounds to SE/SW
-            case SW -> 180;   // Southwest: bottom-left side
-            case W -> 240;    // West: left side
-            case NW -> 300;   // Northwest: top-left side
+            case N -> 330; // North (top spike) → rounds to NW/NE
+            case NE -> 0; // Northeast: top-right side
+            case E -> 60; // East: right side
+            case SE -> 120; // Southeast: bottom-right side
+            case S -> 150; // South (bottom spike) → rounds to SE/SW
+            case SW -> 180; // Southwest: bottom-left side
+            case W -> 240; // West: left side
+            case NW -> 300; // Northwest: top-left side
         };
     }
 

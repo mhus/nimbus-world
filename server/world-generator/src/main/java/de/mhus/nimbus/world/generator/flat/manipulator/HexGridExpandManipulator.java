@@ -2,17 +2,16 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
-import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Manipulator to expand the editable HexGrid area.
@@ -45,8 +44,7 @@ public class HexGridExpandManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.info("Starting hex-grid expansion: flat={}, parameters={}", flat.getFlatId(), parameters);
 
         // Get expandBy parameter
@@ -63,14 +61,16 @@ public class HexGridExpandManipulator implements FlatManipulator {
             throw new IllegalStateException("No hex grid assigned to flat: " + flat.getFlatId());
         }
 
-        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(flat.getWorldId(), hexGridPos)
+        WHexGrid hexGrid = hexGridService
+                .findByWorldIdAndPosition(flat.getWorldId(), hexGridPos)
                 .orElse(null);
         if (hexGrid == null) {
             log.warn("Hex grid not found in database, using flat's hex grid position only: {}", hexGridPos);
         }
 
         // Load world to get hexGridSize
-        WWorld world = worldService.getByWorldId(flat.getWorldId())
+        WWorld world = worldService
+                .getByWorldId(flat.getWorldId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + flat.getWorldId()));
 
         int gridSize = world.getPublicData().getHexGridSize();
@@ -123,7 +123,8 @@ public class HexGridExpandManipulator implements FlatManipulator {
                 int hexCheckZ = worldZ + 10;
 
                 // Check if this position is inside the EXPANDED HexGrid
-                boolean isInExpandedHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, expandedGridSize);
+                boolean isInExpandedHex =
+                        HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, expandedGridSize);
 
                 if (isInExpandedHex) {
                     // Position is inside expanded hex: change from NOT_SET (0) to NOT_SET_MUTABLE (255)
@@ -138,8 +139,14 @@ public class HexGridExpandManipulator implements FlatManipulator {
         // Re-enable protection
         flat.setUnknownProtected(wasProtected);
 
-        log.info("Hex-grid expansion completed: flat={}, expandedBy={}, newlyEditable={}, alreadyEditable={}, outsideExpanded={}, unknownProtected={}",
-                flat.getFlatId(), expandBy, expandedCount, alreadyEditableCount, outsideCount, wasProtected);
+        log.info(
+                "Hex-grid expansion completed: flat={}, expandedBy={}, newlyEditable={}, alreadyEditable={}, outsideExpanded={}, unknownProtected={}",
+                flat.getFlatId(),
+                expandBy,
+                expandedCount,
+                alreadyEditableCount,
+                outsideCount,
+                wasProtected);
     }
 
     /**

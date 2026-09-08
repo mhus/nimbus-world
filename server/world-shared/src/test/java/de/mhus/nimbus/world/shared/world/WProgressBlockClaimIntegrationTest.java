@@ -1,7 +1,21 @@
 package de.mhus.nimbus.world.shared.world;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import de.mhus.nimbus.shared.config.SchemaAwareMongoConfig;
 import de.mhus.nimbus.world.shared.redis.BlockStatusPublisher;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,21 +36,6 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 /**
  * Proves the exclusiveness the collect gameplay relies on, against a real MongoDB.
  *
@@ -46,8 +45,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
  */
 @DataMongoTest
 @Testcontainers
-@Import({WProgressBlockClaimIntegrationTest.TestConfig.class, SchemaAwareMongoConfig.class,
-        WProgressService.class, WProgressIndexInitializer.class})
+@Import({
+    WProgressBlockClaimIntegrationTest.TestConfig.class,
+    SchemaAwareMongoConfig.class,
+    WProgressService.class,
+    WProgressIndexInitializer.class
+})
 class WProgressBlockClaimIntegrationTest {
 
     private static final String WORLD_ID = "w:test";
@@ -58,8 +61,7 @@ class WProgressBlockClaimIntegrationTest {
     @Configuration
     @EnableAutoConfiguration
     @EnableMongoRepositories(basePackageClasses = WProgressRepository.class)
-    static class TestConfig {
-    }
+    static class TestConfig {}
 
     @Container
     static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0").withExposedPorts(27017);
@@ -90,8 +92,10 @@ class WProgressBlockClaimIntegrationTest {
 
     @Test
     void theFirstClaimWinsAndTheSecondFails() {
-        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS)).isTrue();
-        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS)).isFalse();
+        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS))
+                .isTrue();
+        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS))
+                .isFalse();
 
         verify(blockStatusPublisher).publishStatusChange(WORLD_ID, CHUNK, BLOCK, STATUS);
     }
@@ -101,7 +105,8 @@ class WProgressBlockClaimIntegrationTest {
         progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS);
         progressService.removeBlockStatus(WORLD_ID, CHUNK, BLOCK);
 
-        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS)).isTrue();
+        assertThat(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS))
+                .isTrue();
     }
 
     /**
@@ -112,8 +117,8 @@ class WProgressBlockClaimIntegrationTest {
     @Test
     void onlyOneOfManyConcurrentClaimsOnAFreshChunkWins() throws Exception {
         int threads = 16;
-        List<Boolean> results = runConcurrently(threads,
-                () -> progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS));
+        List<Boolean> results =
+                runConcurrently(threads, () -> progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS));
 
         assertThat(results).containsOnlyOnce(true);
         assertThat(countChunkDocuments("block-status")).isOne();
@@ -123,8 +128,8 @@ class WProgressBlockClaimIntegrationTest {
     void onlyOneOfManyConcurrentClaimsOnAnExistingChunkWins() throws Exception {
         progressService.setBlockStatus(WORLD_ID, CHUNK, "other,block,key", "open");
 
-        List<Boolean> results = runConcurrently(16,
-                () -> progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS));
+        List<Boolean> results =
+                runConcurrently(16, () -> progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS));
 
         assertThat(results).containsOnlyOnce(true);
     }
@@ -139,8 +144,16 @@ class WProgressBlockClaimIntegrationTest {
 
     @Test
     void theUniqueIndexLeavesRealPlayerProgressAlone() {
-        WProgress first = WProgress.builder().worldId(WORLD_ID).playerId("player-1").type("achievement").build();
-        WProgress second = WProgress.builder().worldId(WORLD_ID).playerId("player-1").type("achievement").build();
+        WProgress first = WProgress.builder()
+                .worldId(WORLD_ID)
+                .playerId("player-1")
+                .type("achievement")
+                .build();
+        WProgress second = WProgress.builder()
+                .worldId(WORLD_ID)
+                .playerId("player-1")
+                .type("achievement")
+                .build();
 
         mongoTemplate.insert(first);
         mongoTemplate.insert(second);
@@ -155,7 +168,8 @@ class WProgressBlockClaimIntegrationTest {
     void aStatusSetBySomebodyElseSurvivesTheReset() {
         progressService.setBlockStatus(WORLD_ID, CHUNK, BLOCK, "open");
 
-        assertThat(progressService.claimRemoveBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS)).isFalse();
+        assertThat(progressService.claimRemoveBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS))
+                .isFalse();
         assertThat(readStatus(BLOCK)).isEqualTo("open");
     }
 
@@ -163,7 +177,8 @@ class WProgressBlockClaimIntegrationTest {
     void theExpectedStatusIsRemovedAndPublished() {
         progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS);
 
-        assertThat(progressService.claimRemoveBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS)).isTrue();
+        assertThat(progressService.claimRemoveBlockStatus(WORLD_ID, CHUNK, BLOCK, STATUS))
+                .isTrue();
         assertThat(readStatus(BLOCK)).isNull();
         verify(blockStatusPublisher).publishStatusChange(WORLD_ID, CHUNK, BLOCK, null);
     }
@@ -197,7 +212,8 @@ class WProgressBlockClaimIntegrationTest {
         assertThat(expired).containsExactly(new WBlockCooldown(CHUNK, BLOCK, 1_000L, null));
         assertThat(expired.getFirst().hasStatus()).isFalse();
 
-        assertThat(progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L)).isTrue();
+        assertThat(progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L))
+                .isTrue();
     }
 
     @Test
@@ -214,8 +230,8 @@ class WProgressBlockClaimIntegrationTest {
     void onlyOneSweeperClaimsAnExpiredCooldown() throws Exception {
         progressService.setBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L, STATUS);
 
-        List<Boolean> results = runConcurrently(8,
-                () -> progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L));
+        List<Boolean> results =
+                runConcurrently(8, () -> progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L));
 
         assertThat(results).containsOnlyOnce(true);
     }
@@ -225,7 +241,8 @@ class WProgressBlockClaimIntegrationTest {
         progressService.setBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L, STATUS);
         progressService.setBlockCooldown(WORLD_ID, CHUNK, BLOCK, 9_000L, STATUS);
 
-        assertThat(progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L)).isFalse();
+        assertThat(progressService.claimExpiredBlockCooldown(WORLD_ID, CHUNK, BLOCK, 1_000L))
+                .isFalse();
         assertThat(progressService.findExpiredBlockCooldowns(WORLD_ID, 10_000L))
                 .containsExactly(new WBlockCooldown(CHUNK, BLOCK, 9_000L, STATUS));
     }
@@ -299,15 +316,26 @@ class WProgressBlockClaimIntegrationTest {
     }
 
     private long countChunkDocuments(String type) {
-        return mongoTemplate.count(new Query(Criteria.where("worldId").is(WORLD_ID)
-                .and("playerId").is("world")
-                .and("type").is(type)), WProgress.class);
+        return mongoTemplate.count(
+                new Query(Criteria.where("worldId")
+                        .is(WORLD_ID)
+                        .and("playerId")
+                        .is("world")
+                        .and("type")
+                        .is(type)),
+                WProgress.class);
     }
 
     private String readStatus(String blockKey) {
-        Document document = mongoTemplate.findOne(new Query(Criteria.where("worldId").is(WORLD_ID)
-                .and("playerId").is("world")
-                .and("type").is("block-status")), Document.class, "w_progress");
+        Document document = mongoTemplate.findOne(
+                new Query(Criteria.where("worldId")
+                        .is(WORLD_ID)
+                        .and("playerId")
+                        .is("world")
+                        .and("type")
+                        .is("block-status")),
+                Document.class,
+                "w_progress");
         if (document == null) return null;
         Document progressData = document.get("progressData", Document.class);
         return progressData != null ? progressData.getString(blockKey) : null;

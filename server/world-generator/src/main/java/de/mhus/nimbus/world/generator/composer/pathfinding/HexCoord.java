@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.pathfinding;
 
 import de.mhus.nimbus.world.generator.composer.town.DistrictGrid;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * Represents a hex coordinate in the village pathfinding system.
@@ -69,8 +68,7 @@ public class HexCoord {
     /**
      * Constructor for edge transition point.
      */
-    public HexCoord(DistrictGrid district, int localQ, int localR, int x, int z,
-                    EdgeSide edgeSide, int edgeIndex) {
+    public HexCoord(DistrictGrid district, int localQ, int localR, int x, int z, EdgeSide edgeSide, int edgeIndex) {
         this(district, localQ, localR, x, z);
         this.isEdge = true;
         this.edgeSide = edgeSide;
@@ -154,10 +152,10 @@ public class HexCoord {
     @Override
     public String toString() {
         if (isEdge) {
-            return String.format("HexCoord[%s:edge_%s_%d (%d,%d)]",
-                    districtName, edgeSide, edgeIndex, x, z);
+            return String.format("HexCoord[%s:edge_%s_%d (%d,%d)]", districtName, edgeSide, edgeIndex, x, z);
         }
-        return String.format("HexCoord[%s:(%d,%d) local=(%d,%d) cart=(%d,%d) type=%s]",
+        return String.format(
+                "HexCoord[%s:(%d,%d) local=(%d,%d) cart=(%d,%d) type=%s]",
                 districtName, districtQ, districtR, localQ, localR, x, z, type);
     }
 }

@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -10,10 +13,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing WDocument entities.
@@ -136,7 +135,11 @@ public class WDocumentService {
                     results.add(doc);
                 }
             }
-            log.debug("Found {} documents in region collection={}, collection={}", regionDocs.size(), regionCollection, collection);
+            log.debug(
+                    "Found {} documents in region collection={}, collection={}",
+                    regionDocs.size(),
+                    regionCollection,
+                    collection);
         }
 
         // 3. Search in '@shared:collection'
@@ -149,7 +152,11 @@ public class WDocumentService {
                 results.add(doc);
             }
         }
-        log.debug("Found {} documents in shared collection={}, collection={}", sharedDocs.size(), sharedCollection, collection);
+        log.debug(
+                "Found {} documents in shared collection={}, collection={}",
+                sharedDocs.size(),
+                sharedCollection,
+                collection);
 
         log.debug("Total documents found: {} (from {} unique sources)", results.size(), uniqueIds.size());
         return results;
@@ -173,7 +180,8 @@ public class WDocumentService {
             throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
-        WDocument document = repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
+        WDocument document = repository
+                .findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
                 .orElseGet(() -> {
                     WDocument neu = WDocument.builder()
                             .worldId(worldId.getId())
@@ -181,7 +189,11 @@ public class WDocumentService {
                             .documentId(documentId)
                             .build();
                     neu.touchCreate();
-                    log.debug("Creating new WDocument: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
+                    log.debug(
+                            "Creating new WDocument: worldId={}, collection={}, documentId={}",
+                            worldId,
+                            collection,
+                            documentId);
                     return neu;
                 });
 
@@ -193,10 +205,15 @@ public class WDocumentService {
             Optional<WDocument> existingByName = repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
                     worldId.getId(), collection, document.getName());
 
-            if (existingByName.isPresent() && !existingByName.get().getDocumentId().equals(documentId)) {
-                log.info("Document with name '{}' already exists in worldId={}, collection={} (documentId={}). " +
-                        "Updating existing document instead of creating duplicate.",
-                        document.getName(), worldId, collection, existingByName.get().getDocumentId());
+            if (existingByName.isPresent()
+                    && !existingByName.get().getDocumentId().equals(documentId)) {
+                log.info(
+                        "Document with name '{}' already exists in worldId={}, collection={} (documentId={}). "
+                                + "Updating existing document instead of creating duplicate.",
+                        document.getName(),
+                        worldId,
+                        collection,
+                        existingByName.get().getDocumentId());
 
                 // Use the existing document and apply the updater to it
                 document = existingByName.get();
@@ -223,13 +240,19 @@ public class WDocumentService {
             WDocument documentToSave = doc;
 
             if (!Strings.isBlank(doc.getName())) {
-                Optional<WDocument> existingByName = repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
-                        doc.getWorldId(), doc.getCollection(), doc.getName());
+                Optional<WDocument> existingByName =
+                        repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
+                                doc.getWorldId(), doc.getCollection(), doc.getName());
 
-                if (existingByName.isPresent() && !existingByName.get().getDocumentId().equals(doc.getDocumentId())) {
-                    log.info("Document with name '{}' already exists in worldId={}, collection={} (documentId={}). " +
-                            "Updating existing document instead of creating duplicate.",
-                            doc.getName(), doc.getWorldId(), doc.getCollection(), existingByName.get().getDocumentId());
+                if (existingByName.isPresent()
+                        && !existingByName.get().getDocumentId().equals(doc.getDocumentId())) {
+                    log.info(
+                            "Document with name '{}' already exists in worldId={}, collection={} (documentId={}). "
+                                    + "Updating existing document instead of creating duplicate.",
+                            doc.getName(),
+                            doc.getWorldId(),
+                            doc.getCollection(),
+                            existingByName.get().getDocumentId());
 
                     // Use the existing document and copy data from the new one
                     documentToSave = existingByName.get();
@@ -259,17 +282,23 @@ public class WDocumentService {
      * Update a document.
      */
     @Transactional
-    public Optional<WDocument> update(WorldId worldId, String collection, String documentId, Consumer<WDocument> updater) {
+    public Optional<WDocument> update(
+            WorldId worldId, String collection, String documentId, Consumer<WDocument> updater) {
         if (worldId.isInstance() && !worldId.isEditorInstance()) {
             throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
-        return repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
+        return repository
+                .findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
                 .map(document -> {
                     updater.accept(document);
                     document.touchUpdate();
                     WDocument saved = repository.save(document);
-                    log.debug("Updated WDocument: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
+                    log.debug(
+                            "Updated WDocument: worldId={}, collection={}, documentId={}",
+                            worldId,
+                            collection,
+                            documentId);
                     return saved;
                 });
     }
@@ -283,12 +312,18 @@ public class WDocumentService {
             throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
-        return repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
+        return repository
+                .findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
                 .map(document -> {
                     repository.delete(document);
-                    log.debug("Deleted WDocument: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
+                    log.debug(
+                            "Deleted WDocument: worldId={}, collection={}, documentId={}",
+                            worldId,
+                            collection,
+                            documentId);
                     return true;
-                }).orElse(false);
+                })
+                .orElse(false);
     }
 
     /**
@@ -356,10 +391,7 @@ public class WDocumentService {
      */
     @Transactional
     public int deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WDocument.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WDocument.class);
         log.info("Deleted {} documents for world {}", result.getDeletedCount(), worldId);
         return (int) result.getDeletedCount();
     }
@@ -423,13 +455,10 @@ public class WDocumentService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WDocument.class, "document", worldId,
-                doc -> {
-                    String documentId = doc.getString("documentId");
-                    return documentId != null ? doc.getString("worldId") + "|" + documentId : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WDocument.class, "document", worldId, doc -> {
+            String documentId = doc.getString("documentId");
+            return documentId != null ? doc.getString("worldId") + "|" + documentId : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -454,7 +483,8 @@ public class WDocumentService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndDocumentId(String worldId, String documentId) {
         String collectionName = mongoTemplate.getCollectionName(WDocument.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("documentId").is(documentId));
+        Query query = new Query(
+                Criteria.where("worldId").is(worldId).and("documentId").is(documentId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -466,8 +496,10 @@ public class WDocumentService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WDocument.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("documentId").is(doc.getString("documentId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("documentId")
+                .is(doc.getString("documentId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

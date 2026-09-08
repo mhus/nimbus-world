@@ -14,19 +14,17 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import jakarta.annotation.PostConstruct;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor that generates AI descriptions for assets without descriptions.
@@ -65,8 +63,12 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
         timeoutSeconds = settingsService.getInteger("asset.description.timeout-seconds", 120);
         maxChars = settingsService.getInteger("asset.description.max-chars", 1000);
 
-        log.info("Asset description generation settings initialized: maxTokens={}, temperature={}, timeoutSeconds={}, maxChars={}",
-                maxTokens.get(), temperature.get(), timeoutSeconds.get(), maxChars.get());
+        log.info(
+                "Asset description generation settings initialized: maxTokens={}, temperature={}, timeoutSeconds={}, maxChars={}",
+                maxTokens.get(),
+                temperature.get(),
+                timeoutSeconds.get(),
+                maxChars.get());
     }
 
     @Override
@@ -218,8 +220,7 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
 
         String resultMessage = String.format(
                 "Processed %d/%d assets: %d generated, %d skipped, %d errors",
-                processed, assets.size(), generated, skipped, errors
-        );
+                processed, assets.size(), generated, skipped, errors);
 
         log.info("Asset description generation completed: {}", resultMessage);
         return JobResult.success(resultMessage);
@@ -235,10 +236,10 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
      */
     private boolean processAsset(SAsset asset, AiChat aiChat, boolean forceRegeneration) throws Exception {
         // Check if description already exists (unless force regeneration)
-        if (!forceRegeneration &&
-            asset.getPublicData() != null &&
-            asset.getPublicData().getDescription() != null &&
-            !asset.getPublicData().getDescription().isBlank()) {
+        if (!forceRegeneration
+                && asset.getPublicData() != null
+                && asset.getPublicData().getDescription() != null
+                && !asset.getPublicData().getDescription().isBlank()) {
             log.debug("Asset already has description: {}", asset.getPath());
             return false;
         }
@@ -291,13 +292,18 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
             metadata = new AssetMetadata();
         }
 
-        String action = (metadata.getDescription() != null && !metadata.getDescription().isBlank())
-                ? "Regenerated" : "Generated";
+        String action =
+                (metadata.getDescription() != null && !metadata.getDescription().isBlank())
+                        ? "Regenerated"
+                        : "Generated";
         metadata.setDescription(description);
 
         assetService.updateMetadata(asset, metadata);
-        log.info("{} description for asset: {} - \"{}\"",
-                action, asset.getPath(), description.substring(0, Math.min(50, description.length())));
+        log.info(
+                "{} description for asset: {} - \"{}\"",
+                action,
+                asset.getPath(),
+                description.substring(0, Math.min(50, description.length())));
 
         return true;
     }
@@ -325,12 +331,10 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
      */
     private String buildDescriptionPrompt(String filename) {
         return String.format(
-                "Analyze this game asset image (filename: '%s') and generate a concise, single-sentence description (maximum %d characters). " +
-                "Describe what you see in the image - the visual appearance, colors, shapes, and what game element it represents. " +
-                "Return ONLY the complete description text, no quotes, no additional explanation.",
-                filename,
-                maxChars.get()
-        );
+                "Analyze this game asset image (filename: '%s') and generate a concise, single-sentence description (maximum %d characters). "
+                        + "Describe what you see in the image - the visual appearance, colors, shapes, and what game element it represents. "
+                        + "Return ONLY the complete description text, no quotes, no additional explanation.",
+                filename, maxChars.get());
     }
 
     /**
@@ -368,9 +372,9 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
                 .maxTokens(maxTokens.get())
                 .timeoutSeconds(timeoutSeconds.get())
                 .systemMessage(String.format(
-                        "You are a helpful assistant that generates concise descriptions for game assets. " +
-                        "Keep descriptions under %d characters and focus on the asset's visual appearance and purpose. " +
-                        "Always complete your sentences. Return ONLY the description text.",
+                        "You are a helpful assistant that generates concise descriptions for game assets. "
+                                + "Keep descriptions under %d characters and focus on the asset's visual appearance and purpose. "
+                                + "Always complete your sentences. Return ONLY the description text.",
                         maxChars.get()))
                 .build();
     }

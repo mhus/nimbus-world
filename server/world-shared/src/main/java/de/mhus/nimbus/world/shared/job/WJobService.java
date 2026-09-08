@@ -2,6 +2,12 @@ package de.mhus.nimbus.world.shared.job;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -13,13 +19,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-
 /**
  * Service for job management.
  * Provides CRUD operations and job state transitions.
@@ -29,11 +28,7 @@ import java.util.function.Consumer;
  * No COW for branches - jobs are independent per world/branch.
  */
 @Service
-@ConditionalOnProperty(
-        value = "nimbus.services.job-service",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.job-service", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class WJobService {
@@ -43,22 +38,36 @@ public class WJobService {
     private final MongoTemplate mongoTemplate;
 
     @Transactional
-    public WJob createJob(String worldId, String executor, String title, String type,
-                          Map<String, String> parameters) {
+    public WJob createJob(String worldId, String executor, String title, String type, Map<String, String> parameters) {
         return createJob(worldId, executor, title, type, parameters, null, null, 5, 0, null, null);
     }
 
     @Transactional
-    public WJob createJob(String worldId, String executor, String title, String type,
-                          Map<String, String> parameters, int priority, int maxRetries) {
+    public WJob createJob(
+            String worldId,
+            String executor,
+            String title,
+            String type,
+            Map<String, String> parameters,
+            int priority,
+            int maxRetries) {
         return createJob(worldId, executor, title, type, parameters, null, null, priority, maxRetries, null, null);
     }
 
     @Transactional
     @NotNull
-    public WJob createJob(String worldId, String executor, String title, String type,
-                          Map<String, String> parameters, String location, String parent, int priority, int maxRetries,
-                          NextJob onSuccess, NextJob onError) {
+    public WJob createJob(
+            String worldId,
+            String executor,
+            String title,
+            String type,
+            Map<String, String> parameters,
+            String location,
+            String parent,
+            int priority,
+            int maxRetries,
+            NextJob onSuccess,
+            NextJob onError) {
 
         WJob job = WJob.builder()
                 .executor(executor)
@@ -93,8 +102,14 @@ public class WJobService {
         job.touchCreate();
         WJob saved = jobRepository.save(job);
 
-        log.info("Created job: id={} world={} executor={} title={} type={} priority={}",
-                saved.getId(), worldId, job.getExecutor(), job.getTitle(), job.getType(), job.getPriority());
+        log.info(
+                "Created job: id={} world={} executor={} title={} type={} priority={}",
+                saved.getId(),
+                worldId,
+                job.getExecutor(),
+                job.getTitle(),
+                job.getType(),
+                job.getPriority());
 
         return saved;
     }
@@ -124,8 +139,7 @@ public class WJobService {
 
     @Transactional(readOnly = true)
     public List<WJob> getPendingJobs() {
-        return jobRepository.findByStatusAndEnabledOrderByPriorityDescCreatedAtAsc(
-                JobStatus.PENDING.name(), true);
+        return jobRepository.findByStatusAndEnabledOrderByPriorityDescCreatedAtAsc(JobStatus.PENDING.name(), true);
     }
 
     /**
@@ -134,8 +148,7 @@ public class WJobService {
      */
     public boolean markJobRunning(String jobId) {
         Instant now = Instant.now();
-        Query query = new Query(Criteria.where("id").is(jobId)
-                .and("status").is(JobStatus.PENDING.name()));
+        Query query = new Query(Criteria.where("id").is(jobId).and("status").is(JobStatus.PENDING.name()));
         Update update = new Update()
                 .set("status", JobStatus.RUNNING.name())
                 .set("startedAt", now)
@@ -156,9 +169,7 @@ public class WJobService {
     public boolean markJobAsync(String jobId, String asyncResult) {
         Instant now = Instant.now();
         Query query = new Query(Criteria.where("id").is(jobId));
-        Update update = new Update()
-                .set("async", asyncResult)
-                .set("modifiedAt", now);
+        Update update = new Update().set("async", asyncResult).set("modifiedAt", now);
 
         var result = mongoTemplate.updateFirst(query, update, WJob.class);
         if (result.getModifiedCount() > 0) {
@@ -175,8 +186,7 @@ public class WJobService {
      */
     public boolean markJobCompleted(String jobId, String resultData) {
         Instant now = Instant.now();
-        Query query = new Query(Criteria.where("id").is(jobId)
-                .and("status").is(JobStatus.RUNNING.name()));
+        Query query = new Query(Criteria.where("id").is(jobId).and("status").is(JobStatus.RUNNING.name()));
         Update update = new Update()
                 .set("status", JobStatus.COMPLETED.name())
                 .set("completedAt", now)
@@ -187,8 +197,7 @@ public class WJobService {
         if (result.getModifiedCount() > 0) {
             log.info("Job completed: id={}", jobId);
             // Schedule follow-up job if configured (needs full job for onSuccess config)
-            jobRepository.findById(jobId).ifPresent(job ->
-                    scheduleNextJob(job, job.getOnSuccess(), resultData, null));
+            jobRepository.findById(jobId).ifPresent(job -> scheduleNextJob(job, job.getOnSuccess(), resultData, null));
             return true;
         }
         log.warn("markJobCompleted failed: jobId={} - not found or not RUNNING", jobId);
@@ -203,8 +212,7 @@ public class WJobService {
         Instant now = Instant.now();
 
         // First: atomically set FAILED, increment retryCount, set error
-        Query query = new Query(Criteria.where("id").is(jobId)
-                .and("status").is(JobStatus.RUNNING.name()));
+        Query query = new Query(Criteria.where("id").is(jobId).and("status").is(JobStatus.RUNNING.name()));
         Update update = new Update()
                 .set("status", JobStatus.FAILED.name())
                 .set("completedAt", now)
@@ -223,15 +231,19 @@ public class WJobService {
         if (jobOpt.isPresent()) {
             WJob job = jobOpt.get();
             if (job.canRetry()) {
-                Query retryQuery = new Query(Criteria.where("id").is(jobId)
-                        .and("status").is(JobStatus.FAILED.name()));
+                Query retryQuery =
+                        new Query(Criteria.where("id").is(jobId).and("status").is(JobStatus.FAILED.name()));
                 Update retryUpdate = new Update()
                         .set("status", JobStatus.PENDING.name())
                         .unset("startedAt")
                         .set("modifiedAt", Instant.now());
                 mongoTemplate.updateFirst(retryQuery, retryUpdate, WJob.class);
-                log.info("Job failed, retrying: id={} retry={}/{} error={}",
-                        jobId, job.getRetryCount(), job.getMaxRetries(), errorMessage);
+                log.info(
+                        "Job failed, retrying: id={} retry={}/{} error={}",
+                        jobId,
+                        job.getRetryCount(),
+                        job.getMaxRetries(),
+                        errorMessage);
             } else {
                 log.error("Job failed: id={} error={}", jobId, errorMessage);
                 scheduleNextJob(job, job.getOnError(), null, errorMessage);
@@ -272,11 +284,8 @@ public class WJobService {
      * Atomically soft-delete a job.
      */
     public boolean deleteJob(String jobId) {
-        Query query = new Query(Criteria.where("id").is(jobId)
-                .and("enabled").is(true));
-        Update update = new Update()
-                .set("enabled", false)
-                .set("modifiedAt", Instant.now());
+        Query query = new Query(Criteria.where("id").is(jobId).and("enabled").is(true));
+        Update update = new Update().set("enabled", false).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WJob.class);
         if (result.getModifiedCount() > 0) {
@@ -299,9 +308,7 @@ public class WJobService {
     @Transactional(readOnly = true)
     public List<WJob> findJobsForCleanup(Instant cutoffTime) {
         return jobRepository.findByStatusInAndCompletedAtBefore(
-                List.of(JobStatus.COMPLETED.name(), JobStatus.FAILED.name()),
-                cutoffTime
-        );
+                List.of(JobStatus.COMPLETED.name(), JobStatus.FAILED.name()), cutoffTime);
     }
 
     @Transactional(readOnly = true)
@@ -342,11 +349,11 @@ public class WJobService {
                     String title = job.getTitle();
                     String type = job.getType();
                     String status = job.getStatus();
-                    return (id != null && id.toLowerCase().contains(lowerQuery)) ||
-                            (executor != null && executor.toLowerCase().contains(lowerQuery)) ||
-                            (title != null && title.toLowerCase().contains(lowerQuery)) ||
-                            (type != null && type.toLowerCase().contains(lowerQuery)) ||
-                            (status != null && status.toLowerCase().contains(lowerQuery));
+                    return (id != null && id.toLowerCase().contains(lowerQuery))
+                            || (executor != null && executor.toLowerCase().contains(lowerQuery))
+                            || (title != null && title.toLowerCase().contains(lowerQuery))
+                            || (type != null && type.toLowerCase().contains(lowerQuery))
+                            || (status != null && status.toLowerCase().contains(lowerQuery));
                 })
                 .toList();
     }
@@ -361,8 +368,7 @@ public class WJobService {
     @Transactional(readOnly = true)
     public void cleanup(long retentionHours) {
         try {
-            Instant cutoffTime = Instant.now()
-                    .minus(retentionHours, ChronoUnit.HOURS);
+            Instant cutoffTime = Instant.now().minus(retentionHours, ChronoUnit.HOURS);
 
             log.debug("Starting job cleanup: cutoff={}", cutoffTime);
 
@@ -387,8 +393,7 @@ public class WJobService {
                 }
             }
 
-            log.info("Job cleanup completed: deleted={} failed={} cutoff={}",
-                    deleted, failed, cutoffTime);
+            log.info("Job cleanup completed: deleted={} failed={} cutoff={}", deleted, failed, cutoffTime);
 
         } catch (Exception e) {
             log.error("Error during job cleanup", e);
@@ -397,22 +402,25 @@ public class WJobService {
 
     @Transactional
     public void processJob(WJob job) {
-        log.debug("Processing job: id={} world={} executor={} type={}",
-                job.getId(), job.getWorldId(), job.getExecutor(), job.getType());
+        log.debug(
+                "Processing job: id={} world={} executor={} type={}",
+                job.getId(),
+                job.getWorldId(),
+                job.getExecutor(),
+                job.getType());
 
         markJobRunning(job.getId());
 
-        JobExecutor executor = executorRegistry.getExecutor(job.getExecutor())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Executor not found: " + job.getExecutor()));
+        JobExecutor executor = executorRegistry
+                .getExecutor(job.getExecutor())
+                .orElseThrow(() -> new IllegalStateException("Executor not found: " + job.getExecutor()));
 
         try {
             JobExecutor.JobResult result = executor.execute(job);
 
             if (result.async()) {
                 markJobAsync(job.getId(), result.resultData());
-            } else
-            if (result.successful()) {
+            } else if (result.successful()) {
                 markJobCompleted(job.getId(), result.resultData());
             } else {
                 markJobFailed(job.getId(), result.errorMessage());
@@ -452,8 +460,7 @@ public class WJobService {
         try {
             // Merge user-defined parameters with automatic parameters
             java.util.Map<String, String> parameters = new java.util.HashMap<>(
-                    nextJobConfig.getParameters() != null ? nextJobConfig.getParameters() : java.util.Map.of()
-            );
+                    nextJobConfig.getParameters() != null ? nextJobConfig.getParameters() : java.util.Map.of());
 
             // Add automatic parameters from the completed job
             parameters.put(JobExecutor.PREVIOUS_JOB_ID, completedJob.getId());
@@ -465,7 +472,8 @@ public class WJobService {
             }
 
             // Create the next job with the same worldId
-            String nextJobTitle = "Follow-up: " + (nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor());
+            String nextJobTitle = "Follow-up: "
+                    + (nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor());
             WJob nextJob = createJob(
                     completedJob.getWorldId(),
                     nextJobConfig.getExecutor(),
@@ -477,15 +485,20 @@ public class WJobService {
                     5,
                     0,
                     null,
-                    null
-            );
+                    null);
 
-            log.info("Scheduled follow-up job: nextJobId={} previousJobId={} executor={}",
-                    nextJob.getId(), completedJob.getId(), nextJobConfig.getExecutor());
+            log.info(
+                    "Scheduled follow-up job: nextJobId={} previousJobId={} executor={}",
+                    nextJob.getId(),
+                    completedJob.getId(),
+                    nextJobConfig.getExecutor());
 
         } catch (Exception e) {
-            log.error("Failed to schedule follow-up job for completed job: {} - error: {}",
-                    completedJob.getId(), e.getMessage(), e);
+            log.error(
+                    "Failed to schedule follow-up job for completed job: {} - error: {}",
+                    completedJob.getId(),
+                    e.getMessage(),
+                    e);
         }
     }
 
@@ -518,11 +531,8 @@ public class WJobService {
      * Only updates if the job currently belongs to the specified worldId.
      */
     public boolean emigrateToWorld(String worldId, String jobId, String newWorldId) {
-        Query query = new Query(Criteria.where("id").is(jobId)
-                .and("worldId").is(worldId));
-        Update update = new Update()
-                .set("worldId", newWorldId)
-                .set("modifiedAt", Instant.now());
+        Query query = new Query(Criteria.where("id").is(jobId).and("worldId").is(worldId));
+        Update update = new Update().set("worldId", newWorldId).set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WJob.class);
         if (result.getModifiedCount() > 0) {

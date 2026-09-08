@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.genesis;
 
 import de.mhus.nimbus.world.shared.workflow.JournalRecord;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder

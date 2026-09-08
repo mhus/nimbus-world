@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.world.shared.region.RCharacterService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for managing spell word definitions and player spell word state.
@@ -78,8 +77,7 @@ public class SpellWordService {
      */
     @Transactional(readOnly = true)
     public Optional<SpellWordDefinition> findDefinitionData(String regionWorldId, String wordName) {
-        return findDefinition(regionWorldId, wordName)
-                .flatMap(a -> a.getDataAs(SpellWordDefinition.class));
+        return findDefinition(regionWorldId, wordName).flatMap(a -> a.getDataAs(SpellWordDefinition.class));
     }
 
     // ── Player Spell Words ──────────────────────────────────────────────
@@ -131,9 +129,6 @@ public class SpellWordService {
         if (spellWords == null) return Collections.emptyMap();
         return spellWords.entrySet().stream()
                 .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> RCharacterService.calculateSpellWordLevel(e.getValue())
-                ));
+                        Map.Entry::getKey, e -> RCharacterService.calculateSpellWordLevel(e.getValue())));
     }
-
 }

@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.control.commands;
 import de.mhus.nimbus.world.control.service.EditService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * EditBlockTrigger command - triggered by engine when block selected.
@@ -44,13 +43,7 @@ public class EditBlockTriggerCommand implements Command {
             String command = args.size() >= 4 ? args.get(3) : null;
 
             // Update selected block in Redis
-            editService.doAction(
-                    context.getWorldId(),
-                    sessionId,
-                    x, y, z,
-                    command,
-                    args
-            );
+            editService.doAction(context.getWorldId(), sessionId, x, y, z, command, args);
 
             return CommandResult.success("Block selected at (" + x + "," + y + "," + z + ")");
 
@@ -69,6 +62,6 @@ public class EditBlockTriggerCommand implements Command {
 
     @Override
     public boolean requiresSession() {
-        return false;  // sessionId in context is sufficient
+        return false; // sessionId in context is sufficient
     }
 }

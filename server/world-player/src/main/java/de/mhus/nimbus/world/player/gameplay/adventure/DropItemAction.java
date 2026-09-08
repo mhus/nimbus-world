@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
@@ -9,11 +8,10 @@ import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action: drop.item
@@ -35,9 +33,18 @@ public class DropItemAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId,
-                                     String blockAction, JsonNode params, String userAction, String shortcutKey,
-                                     Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (shortcutKey == null) {
             log.debug("drop.item requires a shortcut key");
             return false;
@@ -97,9 +104,16 @@ public class DropItemAction implements GameplayAction {
         }
 
         // Check if target position is free (no existing item)
-        var existingItem = adventure.getItemPositionService().getItemAt(session.getWorldId(), targetX, targetY, targetZ, session.getEpoch());
+        var existingItem = adventure
+                .getItemPositionService()
+                .getItemAt(session.getWorldId(), targetX, targetY, targetZ, session.getEpoch());
         if (existingItem.isPresent()) {
-            log.debug("Position ({},{},{}) already occupied by item {}", targetX, targetY, targetZ, existingItem.get().getItemId());
+            log.debug(
+                    "Position ({},{},{}) already occupied by item {}",
+                    targetX,
+                    targetY,
+                    targetZ,
+                    existingItem.get().getItemId());
             adventure.getClientService().sendNotification(session, 0, "", "Position occupied", null);
             return false;
         }
@@ -134,8 +148,12 @@ public class DropItemAction implements GameplayAction {
         // Play sound at block position
         String soundValue = serverInfo != null ? serverInfo.get("sound") : null;
         String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_ITEM_DROP);
-        adventure.getClientService().sendCommand(session, "playSoundAtPosition",
-                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
+        adventure
+                .getClientService()
+                .sendCommand(
+                        session,
+                        "playSoundAtPosition",
+                        List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
         String title = itemData != null && itemData.getTitle() != null ? itemData.getTitle() : itemId;
         String texture = itemData != null ? itemData.getTexture() : null;
@@ -146,7 +164,13 @@ public class DropItemAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         return false;
     }
 
@@ -156,7 +180,13 @@ public class DropItemAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 }

@@ -16,6 +16,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -24,8 +25,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/map")
@@ -69,7 +68,8 @@ public class PlayerMapController extends BaseEditorController {
             return bad("World has no hex grid configured");
         }
 
-        var session = playerSessionService.loadSession(worldId, playerId.getId()).orElse(null);
+        var session =
+                playerSessionService.loadSession(worldId, playerId.getId()).orElse(null);
         if (session == null || session.getPosition() == null) {
             return notFound("Player session not found");
         }
@@ -78,10 +78,8 @@ public class PlayerMapController extends BaseEditorController {
         int worldX = (int) Math.round(pos.getX());
         int worldZ = (int) Math.round(pos.getZ());
 
-        HexVector2 hexPos = HexMathUtil.flatToHex(
-                Vector2Int.builder().x(worldX).z(worldZ).build(),
-                hexGridSize
-        );
+        HexVector2 hexPos =
+                HexMathUtil.flatToHex(Vector2Int.builder().x(worldX).z(worldZ).build(), hexGridSize);
 
         var hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos).orElse(null);
 
@@ -102,11 +100,7 @@ public class PlayerMapController extends BaseEditorController {
 
     @GetMapping("/hex")
     @Operation(summary = "Get hex grid info for a specific hex position")
-    public ResponseEntity<?> getHex(
-            HttpServletRequest request,
-            @RequestParam int q,
-            @RequestParam int r
-    ) {
+    public ResponseEntity<?> getHex(HttpServletRequest request, @RequestParam int q, @RequestParam int r) {
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
@@ -141,7 +135,8 @@ public class PlayerMapController extends BaseEditorController {
         return ResponseEntity.ok(result);
     }
 
-    private Map<String, Object> buildHexInfo(String worldId, String playerId, HexVector2 hexPos, WHexGrid hexGrid, int hexGridSize) {
+    private Map<String, Object> buildHexInfo(
+            String worldId, String playerId, HexVector2 hexPos, WHexGrid hexGrid, int hexGridSize) {
         WorldId wid = WorldId.of(worldId).orElse(null);
 
         // Load the player's explored hexes once, then check membership in-memory,
@@ -214,7 +209,10 @@ public class PlayerMapController extends BaseEditorController {
      * Path pattern: map/{q}_{r}/{epoch}_level.png
      */
     private String resolveMapImage(WorldId wid, HexVector2 hexPos, WHexGrid hexGrid) {
-        if (wid == null || hexGrid == null || hexGrid.getEpoches() == null || hexGrid.getEpoches().isEmpty()) {
+        if (wid == null
+                || hexGrid == null
+                || hexGrid.getEpoches() == null
+                || hexGrid.getEpoches().isEmpty()) {
             return EMPTY_MAP_IMAGE;
         }
 

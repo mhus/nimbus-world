@@ -12,13 +12,12 @@ import de.mhus.nimbus.world.shared.world.WEntityModelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/character")
@@ -92,8 +91,7 @@ public class PlayerCharacterController extends BaseEditorController {
             portraits.add(Map.of(
                     "path", asset.getPath(),
                     "name", asset.getName(),
-                    "category", "male"
-            ));
+                    "category", "male"));
         }
 
         var femaleResult = assetService.searchAssets(SHARED_PUBLIC, PORTRAITS_FEMALE, "png", 0, 200);
@@ -101,8 +99,7 @@ public class PlayerCharacterController extends BaseEditorController {
             portraits.add(Map.of(
                     "path", asset.getPath(),
                     "name", asset.getName(),
-                    "category", "female"
-            ));
+                    "category", "female"));
         }
 
         var commonResult = assetService.searchAssets(SHARED_PUBLIC, PORTRAITS_COMMON, "png", 0, 200);
@@ -110,22 +107,18 @@ public class PlayerCharacterController extends BaseEditorController {
             portraits.add(Map.of(
                     "path", asset.getPath(),
                     "name", asset.getName(),
-                    "category", "common"
-            ));
+                    "category", "common"));
         }
 
         return ResponseEntity.ok(Map.of(
                 "portraits", portraits,
                 "defaultPortrait", PORTRAIT_DEFAULT,
-                "assetPrefix", PORTRAIT_ASSET_PREFIX
-        ));
+                "assetPrefix", PORTRAIT_ASSET_PREFIX));
     }
 
     @PutMapping("/title")
     @Operation(summary = "Update character display title")
-    public ResponseEntity<?> updateTitle(
-            @RequestBody UpdateTitleRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updateTitle(@RequestBody UpdateTitleRequest body, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -161,9 +154,7 @@ public class PlayerCharacterController extends BaseEditorController {
 
     @PutMapping("/gender")
     @Operation(summary = "Update character gender")
-    public ResponseEntity<?> updateGender(
-            @RequestBody UpdateGenderRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updateGender(@RequestBody UpdateGenderRequest body, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -199,9 +190,7 @@ public class PlayerCharacterController extends BaseEditorController {
 
     @PutMapping("/portrait")
     @Operation(summary = "Update character portrait")
-    public ResponseEntity<?> updatePortrait(
-            @RequestBody UpdatePortraitRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updatePortrait(@RequestBody UpdatePortraitRequest body, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -256,7 +245,8 @@ public class PlayerCharacterController extends BaseEditorController {
             String modelPath = pd.getModelPath() != null ? pd.getModelPath() : "";
             var modifierMapping = pd.getModelModifierMapping();
             List<String> modifierKeys = modifierMapping != null ? new ArrayList<>(modifierMapping.keySet()) : List.of();
-            Map<String, String> modifierMappingMap = modifierMapping != null ? new HashMap<>(modifierMapping) : Map.of();
+            Map<String, String> modifierMappingMap =
+                    modifierMapping != null ? new HashMap<>(modifierMapping) : Map.of();
 
             Map<String, Object> model = new HashMap<>();
             model.put("id", modelId);
@@ -273,9 +263,7 @@ public class PlayerCharacterController extends BaseEditorController {
 
     @PutMapping("/model")
     @Operation(summary = "Update character avatar model")
-    public ResponseEntity<?> updateModel(
-            @RequestBody UpdateModelRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updateModel(@RequestBody UpdateModelRequest body, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -314,9 +302,7 @@ public class PlayerCharacterController extends BaseEditorController {
 
     @PutMapping("/modifiers")
     @Operation(summary = "Update character model modifiers")
-    public ResponseEntity<?> updateModifiers(
-            @RequestBody UpdateModifiersRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updateModifiers(@RequestBody UpdateModifiersRequest body, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -358,12 +344,18 @@ public class PlayerCharacterController extends BaseEditorController {
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
-        return characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        return characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
     }
 
     record UpdateTitleRequest(String title) {}
+
     record UpdateGenderRequest(String gender) {}
+
     record UpdatePortraitRequest(String portraitPath) {}
+
     record UpdateModelRequest(String thirdPersonModelId) {}
+
     record UpdateModifiersRequest(Map<String, String> modifiers) {}
 }

@@ -14,16 +14,15 @@ import de.mhus.nimbus.world.shared.workflow.WorkflowJobExecutor;
 import de.mhus.nimbus.world.shared.workflow.WorkflowService;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Genesis Workflow - Orchestrates complete world generation from instructions.
@@ -70,9 +69,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
             throw new WorkflowException(null, "Parameter 'instructions' is required");
         }
 
-        return Map.of(
-                PARAM_INSTRUCTIONS, instructions
-        );
+        return Map.of(PARAM_INSTRUCTIONS, instructions);
     }
 
     @Override
@@ -83,7 +80,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         // Get region from context worldId
         WorldId contextWorld = WorldId.of(context.getWorldId())
-            .orElseThrow(() -> new WorkflowException(null, "Invalid context worldId: " + context.getWorldId()));
+                .orElseThrow(() -> new WorkflowException(null, "Invalid context worldId: " + context.getWorldId()));
         String regionId = contextWorld.getCollectionRegion();
 
         // Try to generate a valid and unique world name
@@ -122,9 +119,10 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         // Check if we found a valid name
         if (worldName == null) {
-            throw new WorkflowException(null,
-                "Failed to generate a valid and unique world name after " + maxAttempts + " attempts. " +
-                "Rejected names: " + String.join(", ", rejectedNames));
+            throw new WorkflowException(
+                    null,
+                    "Failed to generate a valid and unique world name after " + maxAttempts + " attempts. "
+                            + "Rejected names: " + String.join(", ", rejectedNames));
         }
 
         // Make variables effectively final for use in lambdas
@@ -137,7 +135,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         // Save instructions as document in the NEW world
         WorldId newWorld = WorldId.of(finalNewWorldId)
-            .orElseThrow(() -> new WorkflowException(null, "Failed to create WorldId: " + finalNewWorldId));
+                .orElseThrow(() -> new WorkflowException(null, "Failed to create WorldId: " + finalNewWorldId));
 
         String instructionsDocId = UUID.randomUUID().toString();
         documentService.save(newWorld, INSTRUCTIONS_COLLECTION, instructionsDocId, doc -> {
@@ -153,12 +151,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
         // Start Day1: Create World
         context.updateWorkflowStatus("day1WorldCreate");
         context.enqueueJob(
-            WorkflowJobExecutor.NAME,
-            "genesis-day1-world-create",
-            locationService.getApplicationServiceName(),
-            "Day1: Create World " + finalWorldName,
-            Map.of(GenesisConst.WORLD_ID, finalNewWorldId)
-        );
+                WorkflowJobExecutor.NAME,
+                "genesis-day1-world-create",
+                locationService.getApplicationServiceName(),
+                "Day1: Create World " + finalWorldName,
+                Map.of(GenesisConst.WORLD_ID, finalNewWorldId));
     }
 
     @OnSuccess("day1WorldCreate")
@@ -186,12 +183,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
         // location format: serviceName or serviceName:worldId
         context.updateWorkflowStatus("day2Planning");
         context.enqueueJob(
-            WorkflowJobExecutor.NAME,
-            "genesis-day2-planning",
-            locationService.getApplicationServiceName(),
-            "Day2: Planning",
-            Map.of(GenesisConst.INSTRUCTIONS_DOCUMENT_ID, instructionsDocId)
-        );
+                WorkflowJobExecutor.NAME,
+                "genesis-day2-planning",
+                locationService.getApplicationServiceName(),
+                "Day2: Planning",
+                Map.of(GenesisConst.INSTRUCTIONS_DOCUMENT_ID, instructionsDocId));
     }
 
     @OnSuccess("day2Planning")
@@ -200,8 +196,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         // Extract composition document ID from Day2 result
         String compositionDocId = context.getJobResultString("documentId")
-                .orElseThrow(() -> new WorkflowException(null,
-                        "Day2Planning did not return 'documentId' in result"));
+                .orElseThrow(() -> new WorkflowException(null, "Day2Planning did not return 'documentId' in result"));
 
         // Store composition document ID in journal
         context.addRecord(new CompositionDocIdRecord(compositionDocId));
@@ -215,12 +210,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
         // location format: serviceName or serviceName:worldId
         context.updateWorkflowStatus("day3Generation");
         context.enqueueJob(
-            WorkflowJobExecutor.NAME,
-            "genesis-day3-generation",
-            locationService.getApplicationServiceName(),
-            "Day3: Generation",
-            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId)
-        );
+                WorkflowJobExecutor.NAME,
+                "genesis-day3-generation",
+                locationService.getApplicationServiceName(),
+                "Day3: Generation",
+                Map.of(GenesisConst.COMPOSITION_ID, compositionDocId));
     }
 
     @OnSuccess("day3Generation")
@@ -235,13 +229,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         context.updateWorkflowStatus("day4FloraFauna");
         context.enqueueJob(
-            WorkflowJobExecutor.NAME,
-            "genesis-day4-flora-fauna",
-            locationService.getApplicationServiceName(),
-            "Day4: Flora & Fauna",
-            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId,
-                   GenesisConst.EPOCH, "0")
-        );
+                WorkflowJobExecutor.NAME,
+                "genesis-day4-flora-fauna",
+                locationService.getApplicationServiceName(),
+                "Day4: Flora & Fauna",
+                Map.of(GenesisConst.COMPOSITION_ID, compositionDocId, GenesisConst.EPOCH, "0"));
     }
 
     @OnSuccess("day4FloraFauna")
@@ -256,13 +248,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         context.updateWorkflowStatus("day5Environment");
         context.enqueueJob(
-            WorkflowJobExecutor.NAME,
-            "genesis-day5-environment",
-            locationService.getApplicationServiceName(),
-            "Day5: Environment",
-            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId,
-                   GenesisConst.EPOCH, "0")
-        );
+                WorkflowJobExecutor.NAME,
+                "genesis-day5-environment",
+                locationService.getApplicationServiceName(),
+                "Day5: Environment",
+                Map.of(GenesisConst.COMPOSITION_ID, compositionDocId, GenesisConst.EPOCH, "0"));
     }
 
     @OnSuccess("day5Environment")
@@ -288,8 +278,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
                 "worldId", newWorldId,
                 "worldName", worldName,
                 "instructionsDocId", instructionsDocId,
-                "compositionDocId", compositionDocId
-        ));
+                "compositionDocId", compositionDocId));
     }
 
     /**
@@ -300,20 +289,23 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
      * @param rejectedNames List of previously rejected names to avoid
      * @param attempt Current attempt number
      */
-    private String generateWorldName(String instructions, List<String> rejectedNames, int attempt) throws WorkflowException {
-        log.info("Generating world name from instructions (length: {} chars), attempt: {}", instructions.length(), attempt);
+    private String generateWorldName(String instructions, List<String> rejectedNames, int attempt)
+            throws WorkflowException {
+        log.info(
+                "Generating world name from instructions (length: {} chars), attempt: {}",
+                instructions.length(),
+                attempt);
 
         // Create AI chat model with slightly higher temperature for retries
-        double temperature = 0.7 + (attempt - 1) * 0.05;  // Increase creativity with each attempt
+        double temperature = 0.7 + (attempt - 1) * 0.05; // Increase creativity with each attempt
         AiChatOptions options = AiChatOptions.builder()
-                .temperature(Math.min(temperature, 1.0))  // Cap at 1.0
-                .maxTokens(100)    // Short response - just a name
+                .temperature(Math.min(temperature, 1.0)) // Cap at 1.0
+                .maxTokens(100) // Short response - just a name
                 .build();
 
         Optional<AiChat> chatOpt = aiModelService.createChat("default:chat", options);
         if (chatOpt.isEmpty()) {
-            throw new WorkflowException(null,
-                "AI model not available. Cannot generate world name.");
+            throw new WorkflowException(null, "AI model not available. Cannot generate world name.");
         }
 
         AiChat chat = chatOpt.get();
@@ -362,8 +354,8 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         // Clean response (remove any surrounding whitespace or quotes)
         String worldName = response.trim()
-                .replaceAll("^[\"']|[\"']$", "")  // Remove surrounding quotes
-                .replaceAll("\\s+", "_");         // Replace spaces with underscores
+                .replaceAll("^[\"']|[\"']$", "") // Remove surrounding quotes
+                .replaceAll("\\s+", "_"); // Replace spaces with underscores
 
         log.info("Generated world name: {}", worldName);
         return worldName;

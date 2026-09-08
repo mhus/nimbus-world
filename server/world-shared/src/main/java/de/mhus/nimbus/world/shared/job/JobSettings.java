@@ -26,30 +26,12 @@ public class JobSettings {
 
     @PostConstruct
     private void init() {
-        processingEnabled = settingsService.getBoolean(
-                "job.processingEnabled",
-                false
-        );
-        processingIntervalMs = settingsService.getInteger(
-                "job.processingIntervalMs",
-                5000
-        );
-        maxJobsPerCycle = settingsService.getInteger(
-                "job.maxJobsPerCycle",
-                10
-        );
-        cleanupEnabled = settingsService.getBoolean(
-                "job.cleanupEnabled",
-                true
-        );
-        cleanupIntervalMs = settingsService.getInteger(
-                "job.cleanupIntervalMs",
-                3600000
-        );
-        retentionHours = settingsService.getInteger(
-                "job.retentionHours",
-                24
-        );
+        processingEnabled = settingsService.getBoolean("job.processingEnabled", false);
+        processingIntervalMs = settingsService.getInteger("job.processingIntervalMs", 5000);
+        maxJobsPerCycle = settingsService.getInteger("job.maxJobsPerCycle", 10);
+        cleanupEnabled = settingsService.getBoolean("job.cleanupEnabled", true);
+        cleanupIntervalMs = settingsService.getInteger("job.cleanupIntervalMs", 3600000);
+        retentionHours = settingsService.getInteger("job.retentionHours", 24);
     }
 
     /**
@@ -101,5 +83,4 @@ public class JobSettings {
     public long getRetentionHours() {
         return retentionHours.get();
     }
-
 }

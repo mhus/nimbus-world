@@ -10,12 +10,11 @@ import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Smooth Block Painter.
@@ -77,13 +76,12 @@ public class SmoothBlockPainterProvider implements BlockPainterProvider {
             public void paint(EditCachePainter painter, int x, int y, int z) {
                 // Create block
                 Block block = Block.builder()
-                        .position(
-                                de.mhus.nimbus.generated.types.Vector3Int.builder()
-                                        .x(x)
-                                        .y(y)
-                                        .z(z)
-                                        .build()
-                        ).build();
+                        .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                                .x(x)
+                                .y(y)
+                                .z(z)
+                                .build())
+                        .build();
 
                 // Fill block with BlockDef (sets blockTypeId)
                 BlockDef blockDef = painter.getBlockDef();
@@ -91,8 +89,8 @@ public class SmoothBlockPainterProvider implements BlockPainterProvider {
 
                 // Check if block type is CUBE shape (for offset application)
                 String worldIdStr = painter.getWorld().getWorldId();
-                de.mhus.nimbus.shared.types.WorldId worldId = de.mhus.nimbus.shared.types.WorldId.of(worldIdStr)
-                        .orElse(null);
+                de.mhus.nimbus.shared.types.WorldId worldId =
+                        de.mhus.nimbus.shared.types.WorldId.of(worldIdStr).orElse(null);
                 boolean isCubeShape = (worldId != null) && isCubeBlock(worldId, block.getBlockTypeId());
 
                 // Apply smooth offsets if block is CUBE shape and smoothness is configured
@@ -115,13 +113,13 @@ public class SmoothBlockPainterProvider implements BlockPainterProvider {
                 }
 
                 // Save block
-                painter.getEditService().doSetAndSendBlock(
-                        painter.getWorld(),
-                        painter.getLayerDataId(),
-                        painter.getModelName(),
-                        block,
-                        painter.getGroupId()
-                );
+                painter.getEditService()
+                        .doSetAndSendBlock(
+                                painter.getWorld(),
+                                painter.getLayerDataId(),
+                                painter.getModelName(),
+                                block,
+                                painter.getGroupId());
 
                 // Add block to ModelSelector if context is available
                 if (painter.getContext() != null && painter.getContext().getModelSelector() != null) {
@@ -150,10 +148,7 @@ public class SmoothBlockPainterProvider implements BlockPainterProvider {
         BlockType blockType = blockTypeCache.get(cacheKey);
         if (blockType == null) {
             // Load from service
-            Optional<WBlockType> wBlockTypeOpt = blockTypeService.findByBlockId(
-                    worldId,
-                    blockTypeId
-            );
+            Optional<WBlockType> wBlockTypeOpt = blockTypeService.findByBlockId(worldId, blockTypeId);
 
             if (wBlockTypeOpt.isEmpty()) {
                 log.debug("BlockType not found: {}", blockTypeId);

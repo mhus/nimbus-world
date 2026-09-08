@@ -1,23 +1,22 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WEntityModel;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -27,15 +26,16 @@ public class EntityModelTools implements McpToolBean {
     private final WEntityModelService entityModelService;
     private final ObjectMapper objectMapper;
 
-    @Tool(name = "list_entity_models", description = "List all entity models for a world/region. Returns modelId, title, type, poseType, gender, modelPath, and enabled status.")
+    @Tool(
+            name = "list_entity_models",
+            description =
+                    "List all entity models for a world/region. Returns modelId, title, type, poseType, gender, modelPath, and enabled status.")
     public Map<String, Object> listEntityModels(
             @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Optional search query to filter by modelId", required = false) String query) {
         log.debug("MCP: List entity models: worldId={}, query={}", worldId, query);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         List<WEntityModel> models;
         if (query != null && !query.isBlank()) {
@@ -44,14 +44,15 @@ public class EntityModelTools implements McpToolBean {
             models = entityModelService.findByWorldId(wid);
         }
 
-        List<Map<String, Object>> dtos = models.stream()
-                .map(this::toModelDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> dtos = models.stream().map(this::toModelDto).collect(Collectors.toList());
 
         return Map.of("models", dtos, "count", dtos.size());
     }
 
-    @Tool(name = "create_entity_model", description = "Create or update a WEntityModel from a JSON definition. The JSON should contain the full EntityModel publicData (id, type, modelPath, scale, poseMapping, dimensions, etc.).")
+    @Tool(
+            name = "create_entity_model",
+            description =
+                    "Create or update a WEntityModel from a JSON definition. The JSON should contain the full EntityModel publicData (id, type, modelPath, scale, poseMapping, dimensions, etc.).")
     public Map<String, Object> createEntityModel(
             @ToolParam(description = "World ID or region collection (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Model ID (unique identifier, e.g. 'bull', 'farmer')") String modelId,
@@ -60,9 +61,7 @@ public class EntityModelTools implements McpToolBean {
             @ToolParam(description = "Description", required = false) String description) {
         log.debug("MCP: Create entity model: worldId={}, modelId={}", worldId, modelId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
         if (!wid.isCollection()) {
             wid = wid.toCollection();
         }
@@ -82,16 +81,21 @@ public class EntityModelTools implements McpToolBean {
         return Map.of("status", "ok", "model", toModelDto(saved));
     }
 
-    @Tool(name = "import_entity_models_from_directory", description = "Import multiple WEntityModel definitions from JSON files in a local directory. Each JSON file should contain a full EntityModel definition.")
+    @Tool(
+            name = "import_entity_models_from_directory",
+            description =
+                    "Import multiple WEntityModel definitions from JSON files in a local directory. Each JSON file should contain a full EntityModel definition.")
     public Map<String, Object> importEntityModelsFromDirectory(
             @ToolParam(description = "World ID or region collection (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Absolute path to directory containing JSON files") String directoryPath,
-            @ToolParam(description = "Optional modelPath prefix override. If set, replaces the modelPath prefix in each JSON (e.g. 'models/' to use 'models/<filename>.glb')", required = false) String modelPathPrefix) {
+            @ToolParam(
+                            description =
+                                    "Optional modelPath prefix override. If set, replaces the modelPath prefix in each JSON (e.g. 'models/' to use 'models/<filename>.glb')",
+                            required = false)
+                    String modelPathPrefix) {
         log.debug("MCP: Import entity models from directory: worldId={}, dir={}", worldId, directoryPath);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
         if (!wid.isCollection()) {
             wid = wid.toCollection();
         }
@@ -105,8 +109,8 @@ public class EntityModelTools implements McpToolBean {
         List<String> errors = new ArrayList<>();
 
         try (var files = Files.list(dir)) {
-            var jsonFiles = files
-                    .filter(f -> f.getFileName().toString().toLowerCase().endsWith(".json"))
+            var jsonFiles = files.filter(
+                            f -> f.getFileName().toString().toLowerCase().endsWith(".json"))
                     .sorted()
                     .toList();
 
@@ -123,15 +127,16 @@ public class EntityModelTools implements McpToolBean {
                     if (modelId == null || modelId.isBlank()) {
                         // Fallback: derive from filename
                         String fileName = jsonFile.getFileName().toString();
-                        modelId = fileName.substring(0, fileName.lastIndexOf('.')).toLowerCase()
-                                .replace(' ', '-').replace('_', '-');
+                        modelId = fileName.substring(0, fileName.lastIndexOf('.'))
+                                .toLowerCase()
+                                .replace(' ', '-')
+                                .replace('_', '-');
                     }
 
                     // Override modelPath if prefix is provided
                     if (modelPathPrefix != null && !modelPathPrefix.isBlank()) {
                         // Find the GLB file name from the original path or from the JSON file name
-                        String glbFileName = jsonFile.getFileName().toString()
-                                .replace(".json", ".glb");
+                        String glbFileName = jsonFile.getFileName().toString().replace(".json", ".glb");
                         String prefix = modelPathPrefix.endsWith("/") ? modelPathPrefix : modelPathPrefix + "/";
                         entityModel.setModelPath(prefix + glbFileName);
                     }
@@ -140,8 +145,8 @@ public class EntityModelTools implements McpToolBean {
 
                     var saved = entityModelService.save(wid, modelId, entityModel);
                     // Derive title from modelId
-                    String title = modelId.substring(0, 1).toUpperCase() + modelId.substring(1)
-                            .replace('-', ' ').replace('_', ' ');
+                    String title = modelId.substring(0, 1).toUpperCase()
+                            + modelId.substring(1).replace('-', ' ').replace('_', ' ');
                     saved.setTitle(title);
 
                     imported.add(toModelDto(saved));

@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Ocean Block Manipulator - fills an area with ocean blocks at a specific level.
@@ -67,10 +66,10 @@ public class OceanBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Fills an area with ocean blocks at a specific level. " +
-                "Only places blocks where no other blocks exist. " +
-                "Parameters: position {x,y,z}, width, depth, level (optional, default: world.waterLevel), blockType (optional, default: n:o). " +
-                "Example: {\"ocean\": {\"transform\": \"position\", \"width\": 100, \"depth\": 100}}";
+        return "Fills an area with ocean blocks at a specific level. "
+                + "Only places blocks where no other blocks exist. "
+                + "Parameters: position {x,y,z}, width, depth, level (optional, default: world.waterLevel), blockType (optional, default: n:o). "
+                + "Example: {\"ocean\": {\"transform\": \"position\", \"width\": 100, \"depth\": 100}}";
     }
 
     @Override
@@ -160,8 +159,15 @@ public class OceanBlockManipulator implements BlockManipulator {
         }
 
         // Fill ocean area
-        log.info("Generating ocean: pos=({},{},{}), width={}, depth={}, level={}, blockType={}",
-                x, y, z, width, depth, level, blockType);
+        log.info(
+                "Generating ocean: pos=({},{},{}), width={}, depth={}, level={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                depth,
+                level,
+                blockType);
 
         painter.rectangleY(x, level, z, width, depth);
 
@@ -169,7 +175,8 @@ public class OceanBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated ocean: %d blocks (%dx%d at level %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated ocean: %d blocks (%dx%d at level %d) at (%d,%d,%d)",
                 blockCount, width, depth, level, x, y, z);
 
         log.info(message);

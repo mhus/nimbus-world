@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Sharp peak manipulator.
@@ -45,8 +44,7 @@ public class SharpPeakManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting sharp peak manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -108,8 +106,13 @@ public class SharpPeakManipulator implements FlatManipulator {
         // Factor 0.1 means very light smoothing
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.1);
 
-        log.info("Sharp peak manipulation completed: centerX={}, centerZ={}, radius={}, height={}, steepness={}",
-                centerX, centerZ, radius, height, steepness);
+        log.info(
+                "Sharp peak manipulation completed: centerX={}, centerZ={}, radius={}, height={}, steepness={}",
+                centerX,
+                centerZ,
+                radius,
+                height,
+                steepness);
     }
 
     // Parameter parsing helper methods
@@ -121,8 +124,7 @@ public class SharpPeakManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -134,8 +136,7 @@ public class SharpPeakManipulator implements FlatManipulator {
         try {
             return Double.parseDouble(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid double parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -147,8 +148,7 @@ public class SharpPeakManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

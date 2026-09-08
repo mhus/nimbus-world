@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.HashMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
 
 /**
  * Swamp biome with wetland terrain and water-filled valleys.
@@ -59,10 +58,10 @@ public class SwampBiome extends Biome {
      * Formula: water fills from valley bottom (minLevel) to minLevel + swampDepth
      */
     public enum SwampDepth {
-        SHALLOW(2, 5, 8, 0.6),    // Shallow puddles, low terrain
-        MEDIUM(3, 5, 10, 0.7),    // Medium pools, moderate terrain [Default]
-        DEEP(5, 5, 12, 0.8),      // Deep pools, varied terrain
-        BOG(4, 3, 6, 0.5);        // Bog - very low and flat
+        SHALLOW(2, 5, 8, 0.6), // Shallow puddles, low terrain
+        MEDIUM(3, 5, 10, 0.7), // Medium pools, moderate terrain [Default]
+        DEEP(5, 5, 12, 0.8), // Deep pools, varied terrain
+        BOG(4, 3, 6, 0.5); // Bog - very low and flat
 
         private final int swampDepth;
         private final int aboveSeaLevel;
@@ -120,11 +119,17 @@ public class SwampBiome extends Biome {
 
         // Apply ground type materials if specified
         if (groundType == null) {
-            groundType = GroundType.SWAMPY;  // Swamps default to SWAMPY ground type
+            groundType = GroundType.SWAMPY; // Swamps default to SWAMPY ground type
         }
         groundType.applyToParameters(getParameters());
 
-        log.debug("Applied SwampBiome defaults for '{}': depth={}, swampDepth={}, landLevel={}, landOffset={}, groundType={}",
-            getName(), depth, depth.getSwampDepth(), depth.getAboveSeaLevel(), depth.getLandOffset(), groundType);
+        log.debug(
+                "Applied SwampBiome defaults for '{}': depth={}, swampDepth={}, landLevel={}, landOffset={}, groundType={}",
+                getName(),
+                depth,
+                depth.getSwampDepth(),
+                depth.getAboveSeaLevel(),
+                depth.getLandOffset(),
+                groundType);
     }
 }

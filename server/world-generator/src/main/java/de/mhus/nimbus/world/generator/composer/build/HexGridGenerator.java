@@ -10,11 +10,10 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
 
 /**
  * Generates WHexGrid database entities from FeatureHexGrid configurations.
@@ -71,8 +70,8 @@ public class HexGridGenerator {
 
             for (Feature feature : featuresToProcess) {
                 try {
-                    FeatureGenerationResult featureResult = generateHexGridsForFeature(
-                        feature, composition.getWorldId());
+                    FeatureGenerationResult featureResult =
+                            generateHexGridsForFeature(feature, composition.getWorldId());
 
                     createdGrids += featureResult.getCreatedCount();
                     skippedGrids += featureResult.getSkippedCount();
@@ -81,42 +80,44 @@ public class HexGridGenerator {
                         feature.setStatus(FeatureStatus.CREATED);
                         processedFeatures++;
                     } else {
-                        errors.add("Feature " + feature.getName() + ": " +
-                            featureResult.getErrorMessage());
+                        errors.add("Feature " + feature.getName() + ": " + featureResult.getErrorMessage());
                     }
 
                 } catch (Exception e) {
-                    log.error("Failed to generate HexGrids for feature: {}",
-                        feature.getName(), e);
+                    log.error("Failed to generate HexGrids for feature: {}", feature.getName(), e);
                     errors.add("Feature " + feature.getName() + ": " + e.getMessage());
                 }
             }
 
             composition.touch();
 
-            log.info("HexGrid generation complete: created={}, skipped={}, processed={}/{}",
-                createdGrids, skippedGrids, processedFeatures, totalFeatures);
+            log.info(
+                    "HexGrid generation complete: created={}, skipped={}, processed={}/{}",
+                    createdGrids,
+                    skippedGrids,
+                    processedFeatures,
+                    totalFeatures);
 
             return resultBuilder
-                .totalFeatures(totalFeatures)
-                .processedFeatures(processedFeatures)
-                .createdGrids(createdGrids)
-                .skippedGrids(skippedGrids)
-                .success(errors.isEmpty())
-                .errors(errors)
-                .build();
+                    .totalFeatures(totalFeatures)
+                    .processedFeatures(processedFeatures)
+                    .createdGrids(createdGrids)
+                    .skippedGrids(skippedGrids)
+                    .success(errors.isEmpty())
+                    .errors(errors)
+                    .build();
 
         } catch (Exception e) {
             log.error("HexGrid generation failed", e);
             return resultBuilder
-                .totalFeatures(totalFeatures)
-                .processedFeatures(processedFeatures)
-                .createdGrids(createdGrids)
-                .skippedGrids(skippedGrids)
-                .success(false)
-                .errorMessage(e.getMessage())
-                .errors(errors)
-                .build();
+                    .totalFeatures(totalFeatures)
+                    .processedFeatures(processedFeatures)
+                    .createdGrids(createdGrids)
+                    .skippedGrids(skippedGrids)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .errors(errors)
+                    .build();
         }
     }
 
@@ -138,8 +139,7 @@ public class HexGridGenerator {
      * @return Result with created and skipped counts
      */
     private FeatureGenerationResult generateHexGridsForFeature(Feature feature, String worldId) {
-        log.debug("Generating HexGrids for feature: {} (status={})",
-            feature.getName(), feature.getStatus());
+        log.debug("Generating HexGrids for feature: {} (status={})", feature.getName(), feature.getStatus());
 
         int createdCount = 0;
         int skippedCount = 0;
@@ -156,18 +156,20 @@ public class HexGridGenerator {
 
             if (hexGridConfigs == null || hexGridConfigs.isEmpty()) {
                 // Not an error - Biomes don't have local hexGrids
-                log.debug("Feature {} has no local HexGrid configurations (may use central registry)", feature.getName());
+                log.debug(
+                        "Feature {} has no local HexGrid configurations (may use central registry)", feature.getName());
                 return FeatureGenerationResult.builder()
-                    .createdCount(0)
-                    .skippedCount(0)
-                    .success(true)
-                    .build();
+                        .createdCount(0)
+                        .skippedCount(0)
+                        .success(true)
+                        .build();
             }
 
             for (FeatureHexGrid config : hexGridConfigs) {
                 String positionKey = config.getPositionKey();
                 boolean existing = !hexGridService
-                    .findAllByWorldIdAndPosition(worldId, config.getCoordinate()).isEmpty();
+                        .findAllByWorldIdAndPosition(worldId, config.getCoordinate())
+                        .isEmpty();
 
                 if (existing) {
                     log.debug("HexGrid already exists at {}, skipping", positionKey);
@@ -186,19 +188,19 @@ public class HexGridGenerator {
             }
 
             return FeatureGenerationResult.builder()
-                .createdCount(createdCount)
-                .skippedCount(skippedCount)
-                .success(true)
-                .build();
+                    .createdCount(createdCount)
+                    .skippedCount(skippedCount)
+                    .success(true)
+                    .build();
 
         } catch (Exception e) {
             log.error("Failed to generate HexGrids for feature: {}", feature.getName(), e);
             return FeatureGenerationResult.builder()
-                .createdCount(createdCount)
-                .skippedCount(skippedCount)
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .createdCount(createdCount)
+                    .skippedCount(skippedCount)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -211,14 +213,13 @@ public class HexGridGenerator {
      * @param worldId The world ID
      * @return WHexGrid ready to be persisted
      */
-    private WHexGrid createWHexGridFromConfig(FeatureHexGrid config, Feature feature,
-                                              String worldId) {
+    private WHexGrid createWHexGridFromConfig(FeatureHexGrid config, Feature feature, String worldId) {
         HexGrid publicData = new HexGrid();
         publicData.setPosition(config.getCoordinate());
-        publicData.setName(config.getName() != null ? config.getName() :
-            generateDefaultName(config.getCoordinate(), feature));
-        publicData.setDescription(config.getDescription() != null ? config.getDescription() :
-            generateDefaultDescription(feature));
+        publicData.setName(
+                config.getName() != null ? config.getName() : generateDefaultName(config.getCoordinate(), feature));
+        publicData.setDescription(
+                config.getDescription() != null ? config.getDescription() : generateDefaultDescription(feature));
 
         Map<String, String> parameters = new HashMap<>();
         if (config.getParameters() != null) {
@@ -235,13 +236,13 @@ public class HexGridGenerator {
         }
 
         WHexGrid hexGrid = WHexGrid.builder()
-            .worldId(worldId)
-            .position(config.getPositionKey())
-            .publicData(publicData)
-            .parameters(parameters)
-            .areas(areas)
-            .enabled(true)
-            .build();
+                .worldId(worldId)
+                .position(config.getPositionKey())
+                .publicData(publicData)
+                .parameters(parameters)
+                .areas(areas)
+                .enabled(true)
+                .build();
 
         hexGrid.touchCreate();
         hexGrid.syncPositionKey();
@@ -369,7 +370,12 @@ public class HexGridGenerator {
         // Build road configuration JSON
         StringBuilder json = new StringBuilder("{");
         json.append("\"lx\":256,\"lz\":256,"); // Default center point
-        json.append("\"level\":").append(roadSegments.get(0).getLevel() != null ? roadSegments.get(0).getLevel() : 95).append(",");
+        json.append("\"level\":")
+                .append(
+                        roadSegments.get(0).getLevel() != null
+                                ? roadSegments.get(0).getLevel()
+                                : 95)
+                .append(",");
         json.append("\"route\":[");
 
         boolean first = true;
@@ -384,7 +390,9 @@ public class HexGridGenerator {
             if (segment.getToSide() != null) {
                 json.append("\"toSide\":\"").append(segment.getToSide().name()).append("\",");
             }
-            json.append("\"width\":").append(segment.getWidth() != null ? segment.getWidth() : 4).append(",");
+            json.append("\"width\":")
+                    .append(segment.getWidth() != null ? segment.getWidth() : 4)
+                    .append(",");
             json.append("\"level\":").append(segment.getLevel() != null ? segment.getLevel() : 95);
             if (segment.getType() != null) {
                 json.append(",\"type\":\"").append(segment.getType()).append("\"");
@@ -420,8 +428,12 @@ public class HexGridGenerator {
 
                 json.append("{");
                 json.append("\"side\":\"").append(segment.getFromSide().name()).append("\",");
-                json.append("\"width\":").append(segment.getWidth() != null ? segment.getWidth() : 6).append(",");
-                json.append("\"depth\":").append(segment.getDepth() != null ? segment.getDepth() : 3).append(",");
+                json.append("\"width\":")
+                        .append(segment.getWidth() != null ? segment.getWidth() : 6)
+                        .append(",");
+                json.append("\"depth\":")
+                        .append(segment.getDepth() != null ? segment.getDepth() : 3)
+                        .append(",");
                 json.append("\"level\":").append(segment.getLevel() != null ? segment.getLevel() : 50);
                 json.append("}");
             }
@@ -437,8 +449,12 @@ public class HexGridGenerator {
 
                 json.append("{");
                 json.append("\"side\":\"").append(segment.getToSide().name()).append("\",");
-                json.append("\"width\":").append(segment.getWidth() != null ? segment.getWidth() : 6).append(",");
-                json.append("\"depth\":").append(segment.getDepth() != null ? segment.getDepth() : 3).append(",");
+                json.append("\"width\":")
+                        .append(segment.getWidth() != null ? segment.getWidth() : 6)
+                        .append(",");
+                json.append("\"depth\":")
+                        .append(segment.getDepth() != null ? segment.getDepth() : 3)
+                        .append(",");
                 json.append("\"level\":").append(segment.getLevel() != null ? segment.getLevel() : 50);
                 json.append("}");
             }
@@ -472,7 +488,9 @@ public class HexGridGenerator {
 
             json.append("{");
             if (segment.getFromSide() != null) {
-                json.append("\"fromSide\":\"").append(segment.getFromSide().name()).append("\",");
+                json.append("\"fromSide\":\"")
+                        .append(segment.getFromSide().name())
+                        .append("\",");
             }
             if (segment.getToSide() != null) {
                 json.append("\"toSide\":\"").append(segment.getToSide().name()).append("\",");

@@ -4,6 +4,8 @@ import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -12,9 +14,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Service for managing item positions in the world.
@@ -66,13 +65,15 @@ public class WItemPositionService {
         Vector3 position = itemBlockRef.getPosition();
         // Editor instances: write directly to base world (no COW)
         WorldId lookupWorld = worldId.isEditorInstance() ? worldId.toBaseWorldId() : worldId;
-        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId())
+        WWorld world = worldService
+                .getByWorldId(worldId.toBaseWorldId().getId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
-        String chunk = world.getChunkKey((int)position.getX(), (int)position.getZ());
+        String chunk = world.getChunkKey((int) position.getX(), (int) position.getZ());
 
         // For player instance worlds: write to instance layer (COW)
         // For editor instances: write to base world
-        WItemPosition itemPosition = repository.findByWorldIdAndItemId(lookupWorld.getId(), itemId)
+        WItemPosition itemPosition = repository
+                .findByWorldIdAndItemId(lookupWorld.getId(), itemId)
                 .orElseGet(() -> {
                     WItemPosition neu = WItemPosition.builder()
                             .worldId(lookupWorld.getId())
@@ -81,8 +82,7 @@ public class WItemPositionService {
                             .enabled(true)
                             .build();
                     neu.touchCreate();
-                    log.debug("Creating new item position: world={}, itemId={}, chunk={}",
-                            worldId, itemId, chunk);
+                    log.debug("Creating new item position: world={}, itemId={}, chunk={}", worldId, itemId, chunk);
                     return neu;
                 });
 
@@ -92,8 +92,7 @@ public class WItemPositionService {
         itemPosition.touchUpdate();
 
         WItemPosition saved = repository.save(itemPosition);
-        log.debug("Saved item position: world={}, itemId={}, chunk={}",
-                worldId, itemId, chunk);
+        log.debug("Saved item position: world={}, itemId={}, chunk={}", worldId, itemId, chunk);
         return saved;
     }
 
@@ -120,8 +119,7 @@ public class WItemPositionService {
             // Player instance: COW merge
             var baseList = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
-            var instanceList = repository.findByWorldIdAndChunk(
-                    worldId.getId(), chunk);
+            var instanceList = repository.findByWorldIdAndChunk(worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
             // Base world or editor instance: read directly from base world
@@ -177,8 +175,11 @@ public class WItemPositionService {
         }
         if (worldId.isInstance() && !worldId.isEditorInstance()) {
             // Player instance: COW lookup
-            var instanceEntry = repository.findByWorldIdAndItemId(worldId.getId(), itemId).orElse(null);
-            var baseEntry = repository.findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId).orElse(null);
+            var instanceEntry =
+                    repository.findByWorldIdAndItemId(worldId.getId(), itemId).orElse(null);
+            var baseEntry = repository
+                    .findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId)
+                    .orElse(null);
             return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
         }
         // Base world or editor instance
@@ -230,8 +231,8 @@ public class WItemPositionService {
 
         // For player instance worlds: check if item exists in base world and create tombstone
         if (worldId.isInstance()) {
-            Optional<WItemPosition> baseOpt = repository.findByWorldIdAndItemId(
-                    worldId.toBaseWorldId().getId(), itemId);
+            Optional<WItemPosition> baseOpt =
+                    repository.findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId);
             if (baseOpt.isPresent()) {
                 WItemPosition tombstone = WItemPosition.builder()
                         .worldId(worldId.getId())
@@ -262,8 +263,7 @@ public class WItemPositionService {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
         repository.deleteByWorldIdAndItemId(worldId.getId(), itemId);
-        log.info("Hard deleted item: world={}, itemId={}",
-                worldId, itemId);
+        log.info("Hard deleted item: world={}, itemId={}", worldId, itemId);
     }
 
     /**
@@ -309,8 +309,7 @@ public class WItemPositionService {
             // Player instance: COW merge with epoch filter on base
             var baseList = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
                     worldId.toBaseWorldId().getId(), chunk, true, epoch);
-            var instanceList = repository.findByWorldIdAndChunk(
-                    worldId.getId(), chunk);
+            var instanceList = repository.findByWorldIdAndChunk(worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
             // Base world or editor instance
@@ -335,12 +334,14 @@ public class WItemPositionService {
         }
         if (worldId.isInstance() && !worldId.isEditorInstance()) {
             // Player instance: COW merge
-            var baseList = repository.findByWorldIdAndEpochesContaining(worldId.toBaseWorldId().getId(), epoch);
+            var baseList = repository.findByWorldIdAndEpochesContaining(
+                    worldId.toBaseWorldId().getId(), epoch);
             var instanceList = repository.findByWorldId(worldId.getId());
             return CowUtil.merge(baseList, instanceList);
         }
         // Base world or editor instance
-        return repository.findByWorldIdAndEpochesContaining(worldId.toBaseWorldId().getId(), epoch);
+        return repository.findByWorldIdAndEpochesContaining(
+                worldId.toBaseWorldId().getId(), epoch);
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -360,7 +361,8 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+        WWorld world =
+                worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
         if (world == null) {
             return Optional.empty();
         }
@@ -371,8 +373,7 @@ public class WItemPositionService {
             // Player instance: COW merge
             var baseList = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
-            var instanceList = repository.findByWorldIdAndChunk(
-                    worldId.getId(), chunk);
+            var instanceList = repository.findByWorldIdAndChunk(worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
             // Base world or editor instance
@@ -385,9 +386,7 @@ public class WItemPositionService {
                     var data = item.getPublicData();
                     if (data == null || data.getPosition() == null) return false;
                     var pos = data.getPosition();
-                    return (int) pos.getX() == x
-                            && (int) pos.getY() == y
-                            && (int) pos.getZ() == z;
+                    return (int) pos.getX() == x && (int) pos.getY() == y && (int) pos.getZ() == z;
                 })
                 .findFirst();
     }
@@ -400,7 +399,8 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+        WWorld world =
+                worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
         if (world == null) {
             return Optional.empty();
         }
@@ -410,8 +410,7 @@ public class WItemPositionService {
         if (worldId.isInstance() && !worldId.isEditorInstance()) {
             var baseList = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
                     worldId.toBaseWorldId().getId(), chunk, true, epoch);
-            var instanceList = repository.findByWorldIdAndChunk(
-                    worldId.getId(), chunk);
+            var instanceList = repository.findByWorldIdAndChunk(worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
             positions = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
@@ -423,9 +422,7 @@ public class WItemPositionService {
                     var data = item.getPublicData();
                     if (data == null || data.getPosition() == null) return false;
                     var pos = data.getPosition();
-                    return (int) pos.getX() == x
-                            && (int) pos.getY() == y
-                            && (int) pos.getZ() == z;
+                    return (int) pos.getX() == x && (int) pos.getY() == y && (int) pos.getZ() == z;
                 })
                 .findFirst();
     }
@@ -479,8 +476,7 @@ public class WItemPositionService {
             repository.save(targetItemPosition);
             duplicatedCount++;
         }
-        log.info("Duplicated {} item positions from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} item positions from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -491,12 +487,7 @@ public class WItemPositionService {
      * @return list of distinct world identifiers
      */
     public List<String> findDistinctWorldIds() {
-        return mongoTemplate.findDistinct(
-                new Query(),
-                "worldId",
-                WItemPosition.class,
-                String.class
-        );
+        return mongoTemplate.findDistinct(new Query(), "worldId", WItemPosition.class, String.class);
     }
 
     // ==================== EPOCH MANAGEMENT (data ownership) ====================
@@ -512,7 +503,8 @@ public class WItemPositionService {
      * Propagate a new epoch by copying it into documents that hold the source epoch.
      */
     public EpochProcessResult createEpoch(String worldId, int sourceEpoch, int newEpoch) {
-        return EpochArrayHelper.create(mongoTemplate, WItemPosition.class, "item_position", worldId, sourceEpoch, newEpoch);
+        return EpochArrayHelper.create(
+                mongoTemplate, WItemPosition.class, "item_position", worldId, sourceEpoch, newEpoch);
     }
 
     /**
@@ -532,12 +524,10 @@ public class WItemPositionService {
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
         return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WItemPosition.class, "itemposition", worldId,
-                doc -> {
+                mongoTemplate, WItemPosition.class, "itemposition", worldId, doc -> {
                     String itemId = doc.getString("itemId");
                     return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
-                }
-        );
+                });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -562,7 +552,8 @@ public class WItemPositionService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndItemId(String worldId, String itemId) {
         String collectionName = mongoTemplate.getCollectionName(WItemPosition.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("itemId").is(itemId));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("itemId").is(itemId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -574,8 +565,10 @@ public class WItemPositionService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WItemPosition.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("itemId").is(doc.getString("itemId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("itemId")
+                .is(doc.getString("itemId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -592,5 +585,4 @@ public class WItemPositionService {
         String collectionName = mongoTemplate.getCollectionName(WItemPosition.class);
         mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), collectionName);
     }
-
 }

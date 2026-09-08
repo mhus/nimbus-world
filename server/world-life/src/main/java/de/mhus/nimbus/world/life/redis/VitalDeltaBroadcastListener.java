@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.life.redis;
 
-import tools.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.generated.types.Vector3;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.service.LifeSoundUtil;
 import de.mhus.nimbus.world.life.service.SimulatorService;
@@ -19,15 +18,15 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.WEntityType;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Listens for vital delta messages targeting NPC entities on this pod.
@@ -99,15 +98,19 @@ public class VitalDeltaBroadcastListener {
 
             var state = simulatorService.findSimulationState(worldId, delta.getTargetEntityId());
             if (state == null) {
-                log.trace("Vital delta target entity {} not loaded on this pod in world {}",
-                        delta.getTargetEntityId(), worldId);
+                log.trace(
+                        "Vital delta target entity {} not loaded on this pod in world {}",
+                        delta.getTargetEntityId(),
+                        worldId);
                 return;
             }
 
             EntityCombatData combatData = state.getCombatData();
             if (combatData == null) {
-                log.debug("World {}: Entity {} has no combat data, ignoring vital delta",
-                        worldId, delta.getTargetEntityId());
+                log.debug(
+                        "World {}: Entity {} has no combat data, ignoring vital delta",
+                        worldId,
+                        delta.getTargetEntityId());
                 return;
             }
 
@@ -131,8 +134,8 @@ public class VitalDeltaBroadcastListener {
      * Handle an incoming ATTACK message.
      * Uses the NPC's defense stats to resolve damage via CombatResolver.
      */
-    private void handleAttack(WorldId worldId, SimulationState state,
-                               EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+    private void handleAttack(
+            WorldId worldId, SimulationState state, EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
         // Read defender's effective combat stats
         double defPhysDef = getEffectiveStat(combatData, "physical.defense");
         double defPhysEvasion = getEffectiveStat(combatData, "physical.evasion");
@@ -141,25 +144,41 @@ public class VitalDeltaBroadcastListener {
 
         // Resolve damage using CombatResolver
         double damage = CombatResolver.resolve(
-                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
-                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
-                msg.getCritChance(), msg.getCritMultiplier(),
-                defPhysDef, defPhysEvasion,
-                defMagDef, defMagEvasion);
+                msg.getPhysicalDamage(),
+                msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(),
+                msg.getMagicalAccuracy(),
+                msg.getCritChance(),
+                msg.getCritMultiplier(),
+                defPhysDef,
+                defPhysEvasion,
+                defMagDef,
+                defMagEvasion);
 
-        log.debug("World {}: Attack on {} from {}: physDmg={}, physAcc={}, magDmg={}, magAcc={}, crit={}/{}, def: phys={}/{}, mag={}/{} → damage={}",
-                worldId, msg.getTargetEntityId(), msg.getSourceEntityId(),
-                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
-                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
-                msg.getCritChance(), msg.getCritMultiplier(),
-                defPhysDef, defPhysEvasion, defMagDef, defMagEvasion, damage);
+        log.debug(
+                "World {}: Attack on {} from {}: physDmg={}, physAcc={}, magDmg={}, magAcc={}, crit={}/{}, def: phys={}/{}, mag={}/{} → damage={}",
+                worldId,
+                msg.getTargetEntityId(),
+                msg.getSourceEntityId(),
+                msg.getPhysicalDamage(),
+                msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(),
+                msg.getMagicalAccuracy(),
+                msg.getCritChance(),
+                msg.getCritMultiplier(),
+                defPhysDef,
+                defPhysEvasion,
+                defMagDef,
+                defMagEvasion,
+                damage);
 
         // Resolve NPC hit sound (only on hit)
         String hitSound = null;
         double soundX = 0, soundY = 0, soundZ = 0;
         if (damage != 0 && state.getEntity() != null) {
             String soundValue = state.getEntity().getServer() != null
-                    ? state.getEntity().getServer().get("sound_hit") : null;
+                    ? state.getEntity().getServer().get("sound_hit")
+                    : null;
             hitSound = LifeSoundUtil.resolveSound(soundValue, LifeSoundUtil.SOUND_NPC_HIT);
             Vector3 pos = state.getEntity().getPosition();
             if (pos != null) {
@@ -171,9 +190,15 @@ public class VitalDeltaBroadcastListener {
 
         // Send attack result back to attacker (with optional NPC hit sound)
         vitalDeltaPublisher.publishAttackResult(
-                worldId.getId(), msg.getSourceEntityId(), msg.getTargetEntityId(),
-                damage != 0, damage,
-                hitSound, soundX, soundY, soundZ);
+                worldId.getId(),
+                msg.getSourceEntityId(),
+                msg.getTargetEntityId(),
+                damage != 0,
+                damage,
+                hitSound,
+                soundX,
+                soundY,
+                soundZ);
 
         // Track attacker for loot eligibility (even on miss — they are engaged)
         if (msg.getSourceEntityId() != null) {
@@ -186,11 +211,15 @@ public class VitalDeltaBroadcastListener {
             if (!state.isInCombat()) {
                 state.setCombatStrategy(combatData.getCombatStrategy());
                 state.enterCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
-                log.info("World {}: Entity {} entered combat (strategy={}, attacker={})",
-                        worldId, msg.getTargetEntityId(), combatData.getCombatStrategy(), msg.getSourceEntityId());
+                log.info(
+                        "World {}: Entity {} entered combat (strategy={}, attacker={})",
+                        worldId,
+                        msg.getTargetEntityId(),
+                        combatData.getCombatStrategy(),
+                        msg.getSourceEntityId());
                 // Spread combat to nearby entities
-                simulatorService.spreadCombatMode(worldId, msg.getTargetEntityId(),
-                        msg.getSourceEntityId(), msg.getSourceSessionId());
+                simulatorService.spreadCombatMode(
+                        worldId, msg.getTargetEntityId(), msg.getSourceEntityId(), msg.getSourceSessionId());
             } else {
                 state.refreshCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
             }
@@ -209,14 +238,19 @@ public class VitalDeltaBroadcastListener {
             // Publish health status to clients
             publishHealthStatus(worldId, msg.getTargetEntityId(), health);
 
-            log.debug("World {}: Entity {} took {} damage from {}, health now {}/{}",
-                    worldId, msg.getTargetEntityId(), -damage, msg.getSourceEntityId(),
-                    health.getCurrent(), health.getEffectiveMax());
+            log.debug(
+                    "World {}: Entity {} took {} damage from {}, health now {}/{}",
+                    worldId,
+                    msg.getTargetEntityId(),
+                    -damage,
+                    msg.getSourceEntityId(),
+                    health.getCurrent(),
+                    health.getEffectiveMax());
 
             // Notify remote servers about damage to REMOTE entities
             if (state.getEntity().getType() == WEntityType.REMOTE) {
-                remoteCombatFeedbackPublisher.publishDamaged(worldId, msg.getTargetEntityId(),
-                        damage, health.getCurrent(), msg.getSourceEntityId());
+                remoteCombatFeedbackPublisher.publishDamaged(
+                        worldId, msg.getTargetEntityId(), damage, health.getCurrent(), msg.getSourceEntityId());
             }
         }
     }
@@ -226,10 +260,11 @@ public class VitalDeltaBroadcastListener {
      * A player entered the attention range of this entity.
      * If the entity has combat_aggroOnProximity=true, it enters combat mode.
      */
-    private void handleProximity(WorldId worldId, SimulationState state,
-                                  EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+    private void handleProximity(
+            WorldId worldId, SimulationState state, EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
         String aggroOnProximity = state.getEntity() != null && state.getEntity().getServer() != null
-                ? state.getEntity().getServer().get("combat_aggroOnProximity") : null;
+                ? state.getEntity().getServer().get("combat_aggroOnProximity")
+                : null;
         if (!"true".equals(aggroOnProximity)) {
             log.trace("World {}: Entity {} does not aggro on proximity", worldId, msg.getTargetEntityId());
             return;
@@ -241,19 +276,23 @@ public class VitalDeltaBroadcastListener {
         }
 
         if (combatData.getCombatStrategy() == null) {
-            log.trace("World {}: Entity {} has no combat strategy, ignoring proximity", worldId, msg.getTargetEntityId());
+            log.trace(
+                    "World {}: Entity {} has no combat strategy, ignoring proximity", worldId, msg.getTargetEntityId());
             return;
         }
 
         long now = System.currentTimeMillis();
         state.setCombatStrategy(combatData.getCombatStrategy());
         state.enterCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
-        log.info("World {}: Entity {} entered combat via proximity (attacker={})",
-                worldId, msg.getTargetEntityId(), msg.getSourceEntityId());
+        log.info(
+                "World {}: Entity {} entered combat via proximity (attacker={})",
+                worldId,
+                msg.getTargetEntityId(),
+                msg.getSourceEntityId());
 
         // Spread combat to nearby entities
-        simulatorService.spreadCombatMode(worldId, msg.getTargetEntityId(),
-                msg.getSourceEntityId(), msg.getSourceSessionId());
+        simulatorService.spreadCombatMode(
+                worldId, msg.getTargetEntityId(), msg.getSourceEntityId(), msg.getSourceSessionId());
     }
 
     /**
@@ -282,17 +321,22 @@ public class VitalDeltaBroadcastListener {
         vital.setCurrent(vital.getCurrent() + msg.getDelta());
         vital.clamp();
 
-        log.debug("World {}: Applied vital delta to entity {}: {} {} (from {}), now {}",
-                worldId, msg.getTargetEntityId(), vitalType, msg.getDelta(),
-                msg.getSourceEntityId(), vital.getCurrent());
+        log.debug(
+                "World {}: Applied vital delta to entity {}: {} {} (from {}), now {}",
+                worldId,
+                msg.getTargetEntityId(),
+                vitalType,
+                msg.getDelta(),
+                msg.getSourceEntityId(),
+                vital.getCurrent());
     }
 
     /**
      * Handle a REVIVE message for a dead entity.
      * Revives the entity in place if it is in DEAD state (before GONE).
      */
-    private void handleRevive(WorldId worldId, SimulationState state,
-                               EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+    private void handleRevive(
+            WorldId worldId, SimulationState state, EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
         boolean revived = simulatorService.reviveEntity(worldId, state);
         if (revived) {
             log.info("World {}: Entity {} revived by {}", worldId, msg.getTargetEntityId(), msg.getSourceEntityId());

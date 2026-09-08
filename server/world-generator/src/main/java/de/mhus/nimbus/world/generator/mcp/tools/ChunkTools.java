@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.layer.WEditCache;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.world.*;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -26,17 +25,22 @@ public class ChunkTools implements McpToolBean {
     private final WWorldService worldService;
     private final WEditCacheService editCacheService;
 
-    @Tool(name = "get_chunk_data", description = "Get chunk storage data including blocks for a specific chunk position. Use epoch parameter to get the chunk version for a specific epoch (since multiple versions may exist for different epoches).")
+    @Tool(
+            name = "get_chunk_data",
+            description =
+                    "Get chunk storage data including blocks for a specific chunk position. Use epoch parameter to get the chunk version for a specific epoch (since multiple versions may exist for different epoches).")
     public Map<String, Object> getChunkData(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Chunk X coordinate") int cx,
             @ToolParam(description = "Chunk Z coordinate") int cz,
-            @ToolParam(description = "Optional epoch number. If specified, returns the chunk version that contains this epoch. If not specified, returns the first chunk found.", required = false) Integer epoch) {
+            @ToolParam(
+                            description =
+                                    "Optional epoch number. If specified, returns the chunk version that contains this epoch. If not specified, returns the first chunk found.",
+                            required = false)
+                    Integer epoch) {
         log.debug("MCP: Get chunk data: worldId={}, cx={}, cz={}, epoch={}", worldId, cx, cz, epoch);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         String chunkKey = cx + ":" + cz;
 
@@ -79,9 +83,8 @@ public class ChunkTools implements McpToolBean {
         result.put("blockCount", blocks != null ? blocks.size() : 0);
 
         if (blocks != null && !blocks.isEmpty()) {
-            List<Map<String, Object>> blockDtos = blocks.stream()
-                    .map(this::toChunkBlockDto)
-                    .collect(Collectors.toList());
+            List<Map<String, Object>> blockDtos =
+                    blocks.stream().map(this::toChunkBlockDto).collect(Collectors.toList());
             result.put("blocks", blockDtos);
 
             Map<String, Long> blockTypeCounts = blocks.stream()
@@ -99,7 +102,10 @@ public class ChunkTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "get_block_at", description = "Get the block at an exact world position (x, y, z). Automatically calculates the correct chunk.")
+    @Tool(
+            name = "get_block_at",
+            description =
+                    "Get the block at an exact world position (x, y, z). Automatically calculates the correct chunk.")
     public Map<String, Object> getBlockAt(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "World X coordinate") int x,
@@ -107,13 +113,10 @@ public class ChunkTools implements McpToolBean {
             @ToolParam(description = "World Z coordinate") int z) {
         log.debug("MCP: Get block at: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new McpToolException("World not found: " + worldId)
-        );
+        WWorld world =
+                worldService.getByWorldId(wid).orElseThrow(() -> new McpToolException("World not found: " + worldId));
         int chunkSize = world.getPublicData().getChunkSize();
 
         int cx = Math.floorDiv(x, chunkSize);
@@ -184,7 +187,9 @@ public class ChunkTools implements McpToolBean {
                         dto.put("modifiedAt", entry.getModifiedAt());
                         if (entry.getBlock() != null) {
                             if (entry.getBlock().getBlock() != null) {
-                                dto.put("block", toChunkBlockDto(entry.getBlock().getBlock()));
+                                dto.put(
+                                        "block",
+                                        toChunkBlockDto(entry.getBlock().getBlock()));
                             }
                             if (entry.getBlock().getGroup() != null) {
                                 dto.put("group", entry.getBlock().getGroup());
@@ -206,21 +211,25 @@ public class ChunkTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "list_server_info_keys", description = "List all block coordinate keys that have server info in a chunk. Returns coordinate keys like '-24,70,39'.")
+    @Tool(
+            name = "list_server_info_keys",
+            description =
+                    "List all block coordinate keys that have server info in a chunk. Returns coordinate keys like '-24,70,39'.")
     public Map<String, Object> listServerInfoKeys(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Chunk key (e.g. '-1:1')") String chunkKey) {
         log.debug("MCP: List server info keys: worldId={}, chunkKey={}", worldId, chunkKey);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         var keys = chunkService.getServerInfoKeys(wid, chunkKey);
         return Map.of("chunkKey", chunkKey, "keys", keys, "count", keys.size());
     }
 
-    @Tool(name = "get_server_info", description = "Get server info (metadata) for a specific block position. Server info contains action configuration like 'action=door', 'value=toggle' etc.")
+    @Tool(
+            name = "get_server_info",
+            description =
+                    "Get server info (metadata) for a specific block position. Server info contains action configuration like 'action=door', 'value=toggle' etc.")
     public Map<String, Object> getServerInfo(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "World X coordinate") int x,
@@ -228,9 +237,7 @@ public class ChunkTools implements McpToolBean {
             @ToolParam(description = "World Z coordinate") int z) {
         log.debug("MCP: Get server info: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         var info = chunkService.getServerInfo(wid, x, y, z);
         Map<String, Object> result = new HashMap<>();
@@ -246,18 +253,20 @@ public class ChunkTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "set_server_info", description = "Set server info (metadata) for a specific block position. Use to configure block actions like doors (action=door, value=toggle).")
+    @Tool(
+            name = "set_server_info",
+            description =
+                    "Set server info (metadata) for a specific block position. Use to configure block actions like doors (action=door, value=toggle).")
     public Map<String, Object> setServerInfo(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "World X coordinate") int x,
             @ToolParam(description = "World Y coordinate") int y,
             @ToolParam(description = "World Z coordinate") int z,
-            @ToolParam(description = "Server info key-value pairs (e.g. {\"action\": \"door\", \"value\": \"toggle\"})") Map<String, String> serverInfo) {
+            @ToolParam(description = "Server info key-value pairs (e.g. {\"action\": \"door\", \"value\": \"toggle\"})")
+                    Map<String, String> serverInfo) {
         log.debug("MCP: Set server info: worldId={}, x={}, y={}, z={}, info={}", worldId, x, y, z, serverInfo);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (serverInfo == null || serverInfo.isEmpty()) {
             throw new McpToolException("serverInfo must not be empty");
@@ -275,9 +284,7 @@ public class ChunkTools implements McpToolBean {
             @ToolParam(description = "World Z coordinate") int z) {
         log.debug("MCP: Remove server info: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         chunkService.removeServerInfo(wid, x, y, z);
         return Map.of("x", x, "y", y, "z", z, "status", "removed");
@@ -294,7 +301,9 @@ public class ChunkTools implements McpToolBean {
         dto.put("blockCount", chunk.getBlockCount());
         dto.put("chunkSize", chunk.getChunkSize());
         dto.put("epoches", chunk.getEpoches() != null ? chunk.getEpoches() : List.of());
-        dto.put("hasInfoServer", chunk.getInfoServer() != null && !chunk.getInfoServer().isEmpty());
+        dto.put(
+                "hasInfoServer",
+                chunk.getInfoServer() != null && !chunk.getInfoServer().isEmpty());
         dto.put("createdAt", chunk.getCreatedAt());
         dto.put("updatedAt", chunk.getUpdatedAt());
         return dto;

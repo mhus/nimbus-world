@@ -3,11 +3,9 @@ package de.mhus.nimbus.world.player.gameplay;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
-import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Adventure-specific effect processor.
@@ -39,9 +37,12 @@ public class EffectProcessor extends BaseEffectProcessor {
      * @param sourceEntityId Entity ID of the player owning these effects (source of remote deltas)
      * @return true if the player died (health <= 0)
      */
-    public boolean processTick(AdventureData data, double deltaSeconds,
-                               List<VitalDeltaBroadcastMessage> outgoingDeltas,
-                               String worldId, String sourceEntityId) {
+    public boolean processTick(
+            AdventureData data,
+            double deltaSeconds,
+            List<VitalDeltaBroadcastMessage> outgoingDeltas,
+            String worldId,
+            String sourceEntityId) {
         return super.processTick(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
     }
 

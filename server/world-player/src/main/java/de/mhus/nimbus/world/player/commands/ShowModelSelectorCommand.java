@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.commands;
 
-import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.service.ClientService;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
@@ -9,13 +9,12 @@ import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * ShowModelSelectorCommand - loads ModelSelector from WSession and sends it to the client.
@@ -112,8 +111,11 @@ public class ShowModelSelectorCommand implements Command {
             // Send to client
             clientService.sendCommand(session, clientArgs.get(0), clientArgs.subList(1, clientArgs.size()));
 
-            log.info("Sent ModelSelector to client: sessionId={} blocks={} source={}",
-                    sessionId, modelSelector.getBlockCount(), modelSelector.getAutoSelectName());
+            log.info(
+                    "Sent ModelSelector to client: sessionId={} blocks={} source={}",
+                    sessionId,
+                    modelSelector.getBlockCount(),
+                    modelSelector.getAutoSelectName());
 
             return CommandResult.success("ModelSelector displayed: " + modelSelector.getBlockCount() + " blocks");
 

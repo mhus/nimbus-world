@@ -1,14 +1,13 @@
 package de.mhus.nimbus.shared.utils;
 
 import jakarta.annotation.PostConstruct;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -33,7 +32,10 @@ public class StaticApplicationProvider {
             log.warn("ApplicationContext not available, returning default value for key '{}'", key);
             return defaultValue;
         }
-        return propertiesCacheLong.computeIfAbsent(key, k -> CastUtil.tolong(context.getEnvironment().getProperty(k, String.valueOf(defaultValue)), defaultValue));
+        return propertiesCacheLong.computeIfAbsent(
+                key,
+                k -> CastUtil.tolong(
+                        context.getEnvironment().getProperty(k, String.valueOf(defaultValue)), defaultValue));
     }
 
     public static long getProperty(String key, long defaultValue) {
@@ -45,5 +47,4 @@ public class StaticApplicationProvider {
             return defaultValue;
         }
     }
-
 }

@@ -1,17 +1,16 @@
 package de.mhus.nimbus.shared.service;
 
-import tools.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.stereotype.Service;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for importing MongoDB collections from JSON files with schema migration support.
@@ -51,9 +50,7 @@ public class ImportService {
      * @return ImportResult containing statistics about the import
      * @throws IOException if file operations fail
      */
-    public ImportResult importCollection(
-            String collectionName,
-            Path inputFile) throws IOException {
+    public ImportResult importCollection(String collectionName, Path inputFile) throws IOException {
         return importCollection(collectionName, inputFile, null, ImportMode.SKIP);
     }
 
@@ -67,10 +64,7 @@ public class ImportService {
      * @return ImportResult containing statistics about the import
      * @throws IOException if file operations fail
      */
-    public ImportResult importCollection(
-            String collectionName,
-            Path inputFile,
-            String worldId) throws IOException {
+    public ImportResult importCollection(String collectionName, Path inputFile, String worldId) throws IOException {
         return importCollection(collectionName, inputFile, worldId, ImportMode.SKIP);
     }
 
@@ -86,14 +80,15 @@ public class ImportService {
      * @return ImportResult containing statistics about the import
      * @throws IOException if file operations fail
      */
-    public ImportResult importCollection(
-            String collectionName,
-            Path inputFile,
-            String worldId,
-            ImportMode importMode) throws IOException {
+    public ImportResult importCollection(String collectionName, Path inputFile, String worldId, ImportMode importMode)
+            throws IOException {
 
-        log.info("Starting import of collection '{}' from file: {} (worldId: {}, mode: {})",
-                collectionName, inputFile, worldId == null || "*".equals(worldId) ? "all" : worldId, importMode);
+        log.info(
+                "Starting import of collection '{}' from file: {} (worldId: {}, mode: {})",
+                collectionName,
+                inputFile,
+                worldId == null || "*".equals(worldId) ? "all" : worldId,
+                importMode);
 
         if (!Files.exists(inputFile)) {
             throw new IOException("Import file not found: " + inputFile);
@@ -144,7 +139,10 @@ public class ImportService {
                             migrationCount++;
                         }
                     } catch (SchemaMigrationService.MigrationException e) {
-                        log.warn("Migration failed for entity at line {} (using original): {}", lineNumber, e.getMessage());
+                        log.warn(
+                                "Migration failed for entity at line {} (using original): {}",
+                                lineNumber,
+                                e.getMessage());
                         migratedJson = line;
                     }
 
@@ -191,8 +189,15 @@ public class ImportService {
                 .inputFile(inputFile.toString())
                 .build();
 
-        log.info("Import completed: {} - {} entities imported, {} migrated, {} skipped (filter), {} skipped (existing), {} errors in {} ms",
-                collectionName, successCount, migrationCount, skippedCount, skippedExistingCount, errorCount, duration);
+        log.info(
+                "Import completed: {} - {} entities imported, {} migrated, {} skipped (filter), {} skipped (existing), {} errors in {} ms",
+                collectionName,
+                successCount,
+                migrationCount,
+                skippedCount,
+                skippedExistingCount,
+                errorCount,
+                duration);
 
         return result;
     }
@@ -267,10 +272,9 @@ public class ImportService {
     private boolean entityExists(String entityId, String collectionName) {
         return mongoTemplate.exists(
                 org.springframework.data.mongodb.core.query.Query.query(
-                        org.springframework.data.mongodb.core.query.Criteria.where("id").is(entityId)
-                ),
-                collectionName
-        );
+                        org.springframework.data.mongodb.core.query.Criteria.where("id")
+                                .is(entityId)),
+                collectionName);
     }
 
     /**

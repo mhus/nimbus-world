@@ -2,9 +2,8 @@ package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles block usage conditions such as key-based access checks.
@@ -55,7 +54,8 @@ public class ConditionHandler {
 
         var keyItems = gameplay.getGameplayService().findItemsByEffect(session, "key");
         for (var item : keyItems) {
-            if (item.getServer() != null && requiredKeyId.equals(item.getServer().get("keyId"))) {
+            if (item.getServer() != null
+                    && requiredKeyId.equals(item.getServer().get("keyId"))) {
                 log.debug("Key condition met: player has key with keyId={}", requiredKeyId);
                 return true;
             }

@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.shared.commands;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for executing commands.
@@ -68,8 +67,12 @@ public class CommandService {
         }
 
         try {
-            log.debug("Executing command: {} with args: {} from: {} world: {}",
-                    commandName, args, context.getOriginServer(), context.getWorldId());
+            log.debug(
+                    "Executing command: {} with args: {} from: {} world: {}",
+                    commandName,
+                    args,
+                    context.getOriginServer(),
+                    context.getWorldId());
 
             return command.execute(context, args);
 

@@ -6,13 +6,12 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.TraderType;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import de.mhus.nimbus.world.shared.world.WTraderService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/control/world/{worldId}/traders")
@@ -39,8 +38,7 @@ public class WTraderController extends BaseEditorController {
             Double costPerSkillPoint,
             List<String> repairTypes,
             Double repairCostPerPoint,
-            Integer poolSyncIntervalSeconds
-    ) {}
+            Integer poolSyncIntervalSeconds) {}
 
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String worldId) {
@@ -49,18 +47,15 @@ public class WTraderController extends BaseEditorController {
     }
 
     @GetMapping("/{entityId}")
-    public ResponseEntity<?> get(
-            @PathVariable String worldId,
-            @PathVariable String entityId) {
-        return traderService.findByWorldIdAndEntityId(worldId, entityId)
+    public ResponseEntity<?> get(@PathVariable String worldId, @PathVariable String entityId) {
+        return traderService
+                .findByWorldIdAndEntityId(worldId, entityId)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> notFound("Trader not found: " + entityId));
     }
 
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String worldId,
-            @RequestBody TraderRequest request) {
+    public ResponseEntity<?> create(@PathVariable String worldId, @RequestBody TraderRequest request) {
 
         if (Strings.isBlank(request.entityId())) return bad("entityId is required");
         if (Strings.isBlank(request.chestId())) return bad("chestId is required");
@@ -76,9 +71,7 @@ public class WTraderController extends BaseEditorController {
 
     @PutMapping("/{entityId}")
     public ResponseEntity<?> update(
-            @PathVariable String worldId,
-            @PathVariable String entityId,
-            @RequestBody TraderRequest request) {
+            @PathVariable String worldId, @PathVariable String entityId, @RequestBody TraderRequest request) {
 
         var existing = traderService.findByWorldIdAndEntityId(worldId, entityId);
         if (existing.isEmpty()) return notFound("Trader not found: " + entityId);
@@ -90,9 +83,7 @@ public class WTraderController extends BaseEditorController {
     }
 
     @DeleteMapping("/{entityId}")
-    public ResponseEntity<?> delete(
-            @PathVariable String worldId,
-            @PathVariable String entityId) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, @PathVariable String entityId) {
         if (!traderService.delete(worldId, entityId)) {
             return notFound("Trader not found: " + entityId);
         }
@@ -101,13 +92,13 @@ public class WTraderController extends BaseEditorController {
     }
 
     private WTrader buildTrader(String worldId, TraderRequest req, WTrader existing) {
-        WTrader trader = existing != null ? existing : WTrader.builder()
-                .worldId(worldId)
-                .entityId(req.entityId())
-                .build();
+        WTrader trader = existing != null
+                ? existing
+                : WTrader.builder().worldId(worldId).entityId(req.entityId()).build();
 
         if (!Strings.isBlank(req.traderType())) {
-            trader.setTraderType(TraderType.valueOf(req.traderType().toUpperCase().trim()));
+            trader.setTraderType(
+                    TraderType.valueOf(req.traderType().toUpperCase().trim()));
         }
         if (req.categories() != null) trader.setCategories(req.categories());
         if (req.personalityModifier() != null) trader.setPersonalityModifier(req.personalityModifier());

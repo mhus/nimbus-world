@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.shared.spel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SafeSpelTest {
 
@@ -27,17 +26,16 @@ class SafeSpelTest {
     @Test
     void readOnlyEvaluatesConditions() {
         EvaluationContext ctx = SafeSpel.readOnly(root());
-        Boolean result = PARSER.parseExpression("state.flag == true and state.count > 3")
-                .getValue(ctx, Boolean.class);
+        Boolean result =
+                PARSER.parseExpression("state.flag == true and state.count > 3").getValue(ctx, Boolean.class);
         assertThat(result).isTrue();
     }
 
     @Test
     void readOnlyBlocksTypeReferenceRce() {
         EvaluationContext ctx = SafeSpel.readOnly(root());
-        assertThatThrownBy(() -> PARSER.parseExpression(
-                        "T(java.lang.Runtime).getRuntime().exec('id')")
-                .getValue(ctx))
+        assertThatThrownBy(() -> PARSER.parseExpression("T(java.lang.Runtime).getRuntime().exec('id')")
+                        .getValue(ctx))
                 .isInstanceOf(org.springframework.expression.spel.SpelEvaluationException.class);
     }
 
@@ -54,9 +52,8 @@ class SafeSpelTest {
     @Test
     void readWriteStillBlocksTypeReferenceRce() {
         EvaluationContext ctx = SafeSpel.readWrite(root());
-        assertThatThrownBy(() -> PARSER.parseExpression(
-                        "T(java.lang.System).exit(1)")
-                .getValue(ctx))
+        assertThatThrownBy(() ->
+                        PARSER.parseExpression("T(java.lang.System).exit(1)").getValue(ctx))
                 .isInstanceOf(org.springframework.expression.spel.SpelEvaluationException.class);
     }
 }

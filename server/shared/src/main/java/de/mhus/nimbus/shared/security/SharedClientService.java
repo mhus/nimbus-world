@@ -1,13 +1,6 @@
 package de.mhus.nimbus.shared.security;
 
 import de.mhus.nimbus.shared.utils.RestTemplateUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +10,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * REST Client für den Zugriff auf einen entfernten SharedKeyController.
@@ -27,22 +25,29 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SharedClientService {
 
-    public Optional<SharedKeyDto> createKey(String baseUrl,
-                                            String token,
-                                            String type,
-                                            String kind,
-                                            String algorithm,
-                                            String owner,
-                                            String intent,
-                                            String name,
-                                            String base64Key) {
+    public Optional<SharedKeyDto> createKey(
+            String baseUrl,
+            String token,
+            String type,
+            String kind,
+            String algorithm,
+            String owner,
+            String intent,
+            String name,
+            String base64Key) {
         try {
             var req = new CreateKeyRequest(type, kind, algorithm, name, base64Key, owner, intent);
             URI uri = URI.create(baseUrl + "/shared/key");
             var restTemplate = RestTemplateUtil.create(token);
             ResponseEntity<SharedKeyDto> resp = restTemplate.postForEntity(uri, req, SharedKeyDto.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                log.info("Key angelegt: type={} kind={} owner={} intent={} id={}", type, kind, owner, intent, resp.getBody().getId());
+                log.info(
+                        "Key angelegt: type={} kind={} owner={} intent={} id={}",
+                        type,
+                        kind,
+                        owner,
+                        intent,
+                        resp.getBody().getId());
                 return Optional.of(resp.getBody());
             }
             log.warn("createKey fehlgeschlagen HTTP {}", resp.getStatusCode());
@@ -55,8 +60,11 @@ public class SharedClientService {
     public Optional<SharedKeyDto> getKey(String baseUrl, String token, String id) {
         try {
             URI uri = UriComponentsBuilder.fromUriString(baseUrl)
-                    .path("/shared/key").pathSegment(id)
-                    .build().encode().toUri();
+                    .path("/shared/key")
+                    .pathSegment(id)
+                    .build()
+                    .encode()
+                    .toUri();
             var restTemplate = RestTemplateUtil.create(token);
             ResponseEntity<SharedKeyDto> resp = restTemplate.getForEntity(uri, SharedKeyDto.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) return Optional.of(resp.getBody());
@@ -69,8 +77,11 @@ public class SharedClientService {
     public boolean updateKeyName(String baseUrl, String token, String id, String newName) {
         try {
             URI uri = UriComponentsBuilder.fromUriString(baseUrl)
-                    .path("/shared/key").pathSegment(id)
-                    .build().encode().toUri();
+                    .path("/shared/key")
+                    .pathSegment(id)
+                    .build()
+                    .encode()
+                    .toUri();
             var body = java.util.Map.of("name", newName);
             var restTemplate = RestTemplateUtil.create(token);
             restTemplate.put(uri, body);
@@ -84,8 +95,11 @@ public class SharedClientService {
     public boolean deleteKey(String baseUrl, String token, String id) {
         try {
             URI uri = UriComponentsBuilder.fromUriString(baseUrl)
-                    .path("/shared/key").pathSegment(id)
-                    .build().encode().toUri();
+                    .path("/shared/key")
+                    .pathSegment(id)
+                    .build()
+                    .encode()
+                    .toUri();
             var restTemplate = RestTemplateUtil.create(token);
             restTemplate.delete(uri);
             return true;
@@ -103,7 +117,9 @@ public class SharedClientService {
                     .queryParam("kind", kind)
                     .queryParam("owner", owner)
                     .queryParam("intent", intent)
-                    .build().encode().toUri();
+                    .build()
+                    .encode()
+                    .toUri();
             var restTemplate = RestTemplateUtil.create(token);
 
             ResponseEntity<Map> resp = restTemplate.getForEntity(uri, Map.class);
@@ -127,8 +143,13 @@ public class SharedClientService {
                 boolean inside = false;
                 for (String line : raw.split("\\R")) {
                     line = line.trim();
-                    if (line.startsWith("-----BEGIN") && line.contains("PUBLIC KEY")) { inside = true; continue; }
-                    if (line.startsWith("-----END") && line.contains("PUBLIC KEY")) { break; }
+                    if (line.startsWith("-----BEGIN") && line.contains("PUBLIC KEY")) {
+                        inside = true;
+                        continue;
+                    }
+                    if (line.startsWith("-----END") && line.contains("PUBLIC KEY")) {
+                        break;
+                    }
                     if (inside && !line.isEmpty() && !line.startsWith("#")) sb.append(line);
                 }
                 base64 = sb.toString();
@@ -139,7 +160,8 @@ public class SharedClientService {
             X509EncodedKeySpec spec = new X509EncodedKeySpec(der);
             try {
                 return Optional.of(KeyFactory.getInstance("EC").generatePublic(spec));
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             return Optional.of(KeyFactory.getInstance("RSA").generatePublic(spec));
         } catch (Exception e) {
             log.warn("Kann Public Key Datei nicht lesen: {}", e.toString());
@@ -156,9 +178,29 @@ public class SharedClientService {
     }
 
     // Minimale lokale DTOs
-    @lombok.Data @lombok.NoArgsConstructor @lombok.AllArgsConstructor
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class SharedKeyDto {
+        private String id;
+        private String type;
+        private String kind;
+        private String algorithm;
+        private String keyId;
+        private String owner;
+        private String intent;
+        private String createdAt;
+    }
 
-    public static class SharedKeyDto { private String id; private String type; private String kind; private String algorithm; private String keyId; private String owner; private String intent; private String createdAt; }
-    @lombok.Data @lombok.AllArgsConstructor
-    public static class CreateKeyRequest { private String type; private String kind; private String algorithm; private String name; private String key; private String owner; private String intent; }
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    public static class CreateKeyRequest {
+        private String type;
+        private String kind;
+        private String algorithm;
+        private String name;
+        private String key;
+        private String owner;
+        private String intent;
+    }
 }

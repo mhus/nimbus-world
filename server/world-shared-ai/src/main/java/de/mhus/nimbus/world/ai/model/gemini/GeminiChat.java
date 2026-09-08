@@ -3,21 +3,18 @@ package de.mhus.nimbus.world.ai.model.gemini;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatException;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.data.message.ImageContent;
-import dev.langchain4j.data.message.TextContent;
+import de.mhus.nimbus.world.ai.model.RateLimiter;
 import dev.langchain4j.data.image.Image;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
-import lombok.RequiredArgsConstructor;
-import de.mhus.nimbus.world.ai.model.RateLimiter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Google Gemini implementation of AiChat.
@@ -30,8 +27,7 @@ public class GeminiChat implements AiChat {
     private final AiChatOptions options;
     private final RateLimiter rateLimiter;
 
-    public GeminiChat(String name, ChatModel chatModel, AiChatOptions options,
-                      RateLimiter rateLimiter) {
+    public GeminiChat(String name, ChatModel chatModel, AiChatOptions options, RateLimiter rateLimiter) {
         this.name = name;
         this.chatModel = chatModel;
         this.options = options;
@@ -59,7 +55,8 @@ public class GeminiChat implements AiChat {
 
             // Add system message if configured
             // Note: Some Gemini models may not support system messages directly
-            if (options.getSystemMessage() != null && !options.getSystemMessage().isBlank()) {
+            if (options.getSystemMessage() != null
+                    && !options.getSystemMessage().isBlank()) {
                 messages.add(SystemMessage.from(options.getSystemMessage()));
             }
 
@@ -75,7 +72,9 @@ public class GeminiChat implements AiChat {
             }
 
             String answer = response.aiMessage().text();
-            log.debug("Gemini response for '{}': {}", question.substring(0, Math.min(50, question.length())),
+            log.debug(
+                    "Gemini response for '{}': {}",
+                    question.substring(0, Math.min(50, question.length())),
                     answer.substring(0, Math.min(100, answer.length())));
 
             return answer;
@@ -108,7 +107,8 @@ public class GeminiChat implements AiChat {
             List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
 
             // Add system message if configured
-            if (options.getSystemMessage() != null && !options.getSystemMessage().isBlank()) {
+            if (options.getSystemMessage() != null
+                    && !options.getSystemMessage().isBlank()) {
                 messages.add(SystemMessage.from(options.getSystemMessage()));
             }
 
@@ -116,16 +116,11 @@ public class GeminiChat implements AiChat {
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
 
             // Create image from base64 data with proper URI format
-            Image image = Image.builder()
-                    .base64Data(base64Image)
-                    .mimeType(mimeType)
-                    .build();
+            Image image =
+                    Image.builder().base64Data(base64Image).mimeType(mimeType).build();
 
             // Create user message with text and image content
-            UserMessage userMessage = UserMessage.from(
-                    TextContent.from(question),
-                    ImageContent.from(image)
-            );
+            UserMessage userMessage = UserMessage.from(TextContent.from(question), ImageContent.from(image));
 
             messages.add(userMessage);
 
@@ -138,7 +133,9 @@ public class GeminiChat implements AiChat {
             }
 
             String answer = response.aiMessage().text();
-            log.debug("Gemini vision response for '{}': {}", question.substring(0, Math.min(50, question.length())),
+            log.debug(
+                    "Gemini vision response for '{}': {}",
+                    question.substring(0, Math.min(50, question.length())),
                     answer.substring(0, Math.min(100, answer.length())));
 
             return answer;

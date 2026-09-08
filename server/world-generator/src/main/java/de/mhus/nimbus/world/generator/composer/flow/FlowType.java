@@ -13,34 +13,38 @@ import java.util.Map;
  * This enum is server-side only and not exposed to TypeScript.
  */
 public enum FlowType {
-    ROAD(Road.class, Map.of(
-        "default_level", "95",
-        "default_roadType", "trail",
-        "default_width", "4"
-    )),
+    ROAD(
+            Road.class,
+            Map.of(
+                    "default_level", "95",
+                    "default_roadType", "trail",
+                    "default_width", "4")),
 
-    RIVER(River.class, Map.of(
-        "default_depth", "3",
-        "default_level", "85",
-        "default_width", "4"
-    )),
+    RIVER(
+            River.class,
+            Map.of(
+                    "default_depth", "3",
+                    "default_level", "85",
+                    "default_width", "4")),
 
-    WALL(Wall.class, Map.of(
-        "default_height", "10",
-        "default_material", "stone",
-        "default_width", "2"
-    )),
+    WALL(
+            Wall.class,
+            Map.of(
+                    "default_height", "10",
+                    "default_material", "stone",
+                    "default_width", "2")),
 
-    SIDEWALL(SideWall.class, Map.of(
-        "default_height", "10",
-        "default_material", "stone",
-        "default_type", "3",
-        "default_width", "3",
-        "default_distance", "5",
-        "default_minimum", "0",
-        "default_respectRoad", "false",
-        "default_respectRiver", "false"
-    ));
+    SIDEWALL(
+            SideWall.class,
+            Map.of(
+                    "default_height", "10",
+                    "default_material", "stone",
+                    "default_type", "3",
+                    "default_width", "3",
+                    "default_distance", "5",
+                    "default_minimum", "0",
+                    "default_respectRoad", "false",
+                    "default_respectRiver", "false"));
 
     private final Class<? extends Flow> flowClass;
     private final Map<String, String> defaultParameters;

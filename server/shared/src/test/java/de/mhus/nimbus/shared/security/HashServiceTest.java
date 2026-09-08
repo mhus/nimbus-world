@@ -1,10 +1,9 @@
 package de.mhus.nimbus.shared.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class HashServiceTest {
 
@@ -80,7 +79,8 @@ class HashServiceTest {
         assertThat(hash).isNotEmpty();
         // Hash format: algorithm:saltBase64:hashBase64
         assertThat(hash.split(";")).hasSize(3);
-        String expectedSaltBase64 = java.util.Base64.getEncoder().encodeToString(TEST_SALT.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String expectedSaltBase64 = java.util.Base64.getEncoder()
+                .encodeToString(TEST_SALT.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         assertThat(hash).startsWith("SHA-256;" + expectedSaltBase64 + ";");
     }
 
@@ -332,7 +332,8 @@ class HashServiceTest {
 
         assertThat(parts).hasSize(3);
         // Decode the Base64-encoded salt and compare
-        String decodedSalt = new String(java.util.Base64.getDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
+        String decodedSalt =
+                new String(java.util.Base64.getDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
         assertThat(decodedSalt).isEqualTo(TEST_SALT);
     }
 

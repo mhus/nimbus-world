@@ -9,9 +9,8 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Prepares the HexComposition model by calling prepareForComposition() on all features.
@@ -37,8 +36,8 @@ public class HexCompositionPreparer {
         log.debug("Preparing HexComposition: {}", composition.getName());
 
         if (composition.getFeatures() == null || composition.getFeatures().isEmpty()) {
-            log.warn("HexComposition has no features. " +
-                "Legacy biomes/villages should have been migrated during initialize().");
+            log.warn("HexComposition has no features. "
+                    + "Legacy biomes/villages should have been migrated during initialize().");
             return false;
         }
 
@@ -82,8 +81,10 @@ public class HexCompositionPreparer {
         // Call prepareForComposition() on Area or Flow features
         if (feature instanceof Area area) {
             area.prepareForComposition();
-            log.debug("Prepared area feature '{}' (type: {})",
-                area.getName(), area.getClass().getSimpleName());
+            log.debug(
+                    "Prepared area feature '{}' (type: {})",
+                    area.getName(),
+                    area.getClass().getSimpleName());
         } else if (feature instanceof Flow flow) {
             // Set FlowType automatically based on class if not already set
             if (flow.getType() == null) {
@@ -94,13 +95,14 @@ public class HexCompositionPreparer {
                 } else if (flow instanceof Wall) {
                     flow.setType(FlowType.WALL);
                 }
-                log.debug("Auto-set flow type: {} for feature '{}'",
-                    flow.getType(), flow.getName());
+                log.debug("Auto-set flow type: {} for feature '{}'", flow.getType(), flow.getName());
             }
 
             flow.prepareForComposition();
-            log.debug("Prepared flow feature '{}' (type: {})",
-                flow.getName(), flow.getClass().getSimpleName());
+            log.debug(
+                    "Prepared flow feature '{}' (type: {})",
+                    flow.getName(),
+                    flow.getClass().getSimpleName());
         }
 
         // Recursively prepare nested features in Composites
@@ -108,5 +110,4 @@ public class HexCompositionPreparer {
             prepareAllFeatures(composite.getFeatures());
         }
     }
-
 }

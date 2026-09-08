@@ -1,20 +1,17 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Chat connector command for remote agent access.
@@ -131,8 +128,12 @@ public class WChatConnectorCommand implements Command {
         }
 
         // Execute agent (use chatWithSession if sessionId is available)
-        log.debug("Executing agent {} for player {} with message: {} (sessionId: {})",
-                agentName, playerId, message, sessionId);
+        log.debug(
+                "Executing agent {} for player {} with message: {} (sessionId: {})",
+                agentName,
+                playerId,
+                message,
+                sessionId);
         List<WChatMessage> responses = sessionId != null && !sessionId.isBlank()
                 ? agent.chatWithSession(worldId, chatId, playerId, message, sessionId, null)
                 : agent.chat(worldId, chatId, playerId, message, null);
@@ -191,8 +192,12 @@ public class WChatConnectorCommand implements Command {
         }
 
         // Execute command on agent
-        log.debug("Executing command {} on agent {} for player {} (sessionId: {})",
-                command, agentName, playerId, sessionId);
+        log.debug(
+                "Executing command {} on agent {} for player {} (sessionId: {})",
+                command,
+                agentName,
+                playerId,
+                sessionId);
         List<WChatMessage> responses = agent.executeCommand(worldId, chatId, playerId, command, params);
 
         // Save to DB if chatId provided
@@ -244,17 +249,16 @@ public class WChatConnectorCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Chat connector for remote agent access\n" +
-                "\n" +
-                "Subcommands:\n" +
-                "  agent-list                              - Get list of available agents\n" +
-                "  chat <agent> <message>                  - Chat with an agent\n" +
-                "  execute-command <agent> <cmd> <params>  - Execute command on agent\n" +
-                "  enqueue <sessionMessageJson>            - Enqueue async message for processing\n" +
-                "\n" +
-                "Examples:\n" +
-                "  /chat.Connector agent-list\n" +
-                "  /chat.Connector chat eliza Hello\n" +
-                "  /chat.Connector execute-command eliza status {}";
+        return "Chat connector for remote agent access\n" + "\n"
+                + "Subcommands:\n"
+                + "  agent-list                              - Get list of available agents\n"
+                + "  chat <agent> <message>                  - Chat with an agent\n"
+                + "  execute-command <agent> <cmd> <params>  - Execute command on agent\n"
+                + "  enqueue <sessionMessageJson>            - Enqueue async message for processing\n"
+                + "\n"
+                + "Examples:\n"
+                + "  /chat.Connector agent-list\n"
+                + "  /chat.Connector chat eliza Hello\n"
+                + "  /chat.Connector execute-command eliza status {}";
     }
 }

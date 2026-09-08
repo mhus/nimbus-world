@@ -1,19 +1,17 @@
 package de.mhus.nimbus.world.control.service;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerModel;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Helper class for importing WLayerModel from JSON data (e.g., from schematic-tool).
@@ -82,12 +80,20 @@ public class LayerModelImporter {
                         .without(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
                 sourceModel = reader.readValue(jsonData);
-                log.debug("Parsed layer model from JSON: name={} blocks={}",
-                        sourceModel.getName(), sourceModel.getContent() != null ? sourceModel.getContent().size() : 0);
+                log.debug(
+                        "Parsed layer model from JSON: name={} blocks={}",
+                        sourceModel.getName(),
+                        sourceModel.getContent() != null
+                                ? sourceModel.getContent().size()
+                                : 0);
             } else if (modelData != null) {
                 sourceModel = modelData;
-                log.debug("Using provided layer model: name={} blocks={}",
-                        sourceModel.getName(), sourceModel.getContent() != null ? sourceModel.getContent().size() : 0);
+                log.debug(
+                        "Using provided layer model: name={} blocks={}",
+                        sourceModel.getName(),
+                        sourceModel.getContent() != null
+                                ? sourceModel.getContent().size()
+                                : 0);
             } else {
                 throw new IllegalStateException("Either jsonData or modelData must be provided");
             }
@@ -112,10 +118,11 @@ public class LayerModelImporter {
             int finalMountZ = mountZ != null ? mountZ : 0;
             int finalRotation = rotation != null ? rotation : sourceModel.getRotation();
             int finalOrder = order != null ? order : sourceModel.getOrder();
-            Map<String, String> finalGroups = groups != null ? groups :
-                    (sourceModel.getGroups() != null ? sourceModel.getGroups() : new HashMap<>());
-            Map<String, String> finalParameters = sourceModel.getParameters() != null ?
-                    sourceModel.getParameters() : new HashMap<>();
+            Map<String, String> finalGroups = groups != null
+                    ? groups
+                    : (sourceModel.getGroups() != null ? sourceModel.getGroups() : new HashMap<>());
+            Map<String, String> finalParameters =
+                    sourceModel.getParameters() != null ? sourceModel.getParameters() : new HashMap<>();
 
             // Content must come from source model
             List<LayerBlock> content = sourceModel.getContent();
@@ -134,8 +141,7 @@ public class LayerModelImporter {
                     finalMountZ,
                     finalRotation,
                     finalOrder,
-                    content
-            );
+                    content);
 
             // Set groups separately if needed
             if (!finalGroups.isEmpty()) {
@@ -147,8 +153,13 @@ public class LayerModelImporter {
                 layerService.updateModel(created.getId(), model -> model.setParameters(finalParameters));
             }
 
-            log.info("Imported layer model: id={} name={} blocks={} worldId={} layerDataId={}",
-                    created.getId(), created.getName(), content.size(), worldId, layerDataId);
+            log.info(
+                    "Imported layer model: id={} name={} blocks={} worldId={} layerDataId={}",
+                    created.getId(),
+                    created.getName(),
+                    content.size(),
+                    worldId,
+                    layerDataId);
 
             return created;
 

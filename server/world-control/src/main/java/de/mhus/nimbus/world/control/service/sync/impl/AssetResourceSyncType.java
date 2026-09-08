@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -24,6 +16,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for assets.
@@ -49,7 +48,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path assetsDir = dataPath.resolve("assets");
         Files.createDirectories(assetsDir);
 
@@ -108,7 +108,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(assetsDir)) {
             try (Stream<Path> paths = Files.walk(assetsDir)) {
-                List<Path> infoFiles = paths.filter(p -> p.toString().endsWith(".info.yaml")).toList();
+                List<Path> infoFiles =
+                        paths.filter(p -> p.toString().endsWith(".info.yaml")).toList();
 
                 for (Path infoFile : infoFiles) {
                     try {
@@ -138,7 +139,9 @@ public class AssetResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path assetsDir = dataPath.resolve("assets");
         if (!Files.exists(assetsDir)) {
             log.info("No assets directory found");
@@ -151,9 +154,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
 
         // Find all .info.yaml files recursively
         try (Stream<Path> paths = Files.walk(assetsDir)) {
-            List<Path> infoFiles = paths
-                    .filter(p -> p.toString().endsWith(".info.yaml"))
-                    .toList();
+            List<Path> infoFiles =
+                    paths.filter(p -> p.toString().endsWith(".info.yaml")).toList();
 
             for (Path infoFile : infoFiles) {
                 try {
@@ -190,7 +192,9 @@ public class AssetResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedDoc.getString("worldId");
                     String targetPath = migratedDoc.getString("path");
 
-                    Document existing = assetService.findDocumentByWorldIdAndPath(targetWorldId, targetPath).orElse(null);
+                    Document existing = assetService
+                            .findDocumentByWorldIdAndPath(targetWorldId, targetPath)
+                            .orElse(null);
 
                     // Check if should import metadata
                     if (!force && existing != null) {
@@ -219,13 +223,18 @@ public class AssetResourceSyncType implements ResourceSyncType {
                     assetService.upsertDocument(migratedDoc);
 
                     // Update binary content using transformed worldId and path
-                    SAsset asset = assetService.findByPath(WorldId.of(targetWorldId).get(), targetPath).orElse(null);
+                    SAsset asset = assetService
+                            .findByPath(WorldId.of(targetWorldId).get(), targetPath)
+                            .orElse(null);
                     if (asset != null) {
                         try (InputStream stream = Files.newInputStream(binaryFile)) {
                             assetService.updateContent(asset, stream);
                         }
                     } else {
-                        log.warn("Asset not found after save for binary content update: worldId={}, path={}", targetWorldId, targetPath);
+                        log.warn(
+                                "Asset not found after save for binary content update: worldId={}, path={}",
+                                targetWorldId,
+                                targetPath);
                     }
 
                     log.debug("Imported asset: {}", path);

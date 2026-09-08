@@ -6,16 +6,15 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * B1 (phase 2) — the lore elaborator. Walks the seed's {@link RealityPlan.Chapter} outline and writes
@@ -88,7 +87,12 @@ public class RealityLoreElaborator {
                 entry.setKind(Strings.isBlank(chapter.getKind()) ? "history" : chapter.getKind());
                 entry.setContent(text.trim());
                 lore.add(entry);
-                rollingSummary.append("- ").append(title).append(": ").append(truncate(text.trim())).append('\n');
+                rollingSummary
+                        .append("- ")
+                        .append(title)
+                        .append(": ")
+                        .append(truncate(text.trim()))
+                        .append('\n');
                 elaborated++;
             } catch (AiChatException e) {
                 log.warn("Failed to elaborate chapter '{}'", title, e);
@@ -115,9 +119,15 @@ public class RealityLoreElaborator {
                 if (p == null || Strings.isBlank(p.getName())) {
                     continue;
                 }
-                sb.append("Background power '").append(p.getName()).append("' (")
-                        .append(nz(p.getInfluence())).append("/").append(nz(p.getStatus())).append("): ")
-                        .append(nz(p.getGoal())).append('\n');
+                sb.append("Background power '")
+                        .append(p.getName())
+                        .append("' (")
+                        .append(nz(p.getInfluence()))
+                        .append("/")
+                        .append(nz(p.getStatus()))
+                        .append("): ")
+                        .append(nz(p.getGoal()))
+                        .append('\n');
             }
         }
         if (plan.getCast() != null) {
@@ -125,7 +135,11 @@ public class RealityLoreElaborator {
                 if (c == null || Strings.isBlank(c.getName())) {
                     continue;
                 }
-                sb.append("Cast: ").append(c.getName()).append(" — ").append(nz(c.getRole())).append('\n');
+                sb.append("Cast: ")
+                        .append(c.getName())
+                        .append(" — ")
+                        .append(nz(c.getRole()))
+                        .append('\n');
             }
         }
         return sb.toString().trim();
@@ -148,5 +162,4 @@ public class RealityLoreElaborator {
     private static String nz(String s) {
         return s == null ? "" : s;
     }
-
 }

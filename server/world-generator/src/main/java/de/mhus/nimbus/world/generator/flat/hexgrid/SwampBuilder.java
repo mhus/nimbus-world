@@ -5,9 +5,8 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Swamp scenario builder.
@@ -39,10 +38,16 @@ public class SwampBuilder extends HexGridBuilder {
         int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
-        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
+        double frequency =
+                CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
 
-        log.debug("Swamp terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
-                baseHeight, hillHeight, seaLevel, seed, frequency);
+        log.debug(
+                "Swamp terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                seed,
+                frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -52,13 +57,9 @@ public class SwampBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base swamp terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set materials based on height
         setSwampMaterials(flat, seaLevel);
@@ -67,8 +68,12 @@ public class SwampBuilder extends HexGridBuilder {
         int swampDepth = parseIntParameter(parameters, "swampDepth", 3);
         fillEnclosedValleys(flat, seaLevel, swampDepth);
 
-        log.debug("Swamp scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}, swampDepth={}",
-                baseHeight, hillHeight, seaLevel, swampDepth);
+        log.debug(
+                "Swamp scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}, swampDepth={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                swampDepth);
     }
 
     /**
@@ -96,10 +101,17 @@ public class SwampBuilder extends HexGridBuilder {
         int grassToStoneThreshold = oceanLevel + stoneOffset;
         int snowThreshold = oceanLevel + snowOffset;
 
-        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
-                grassToStoneThreshold, snowThreshold, oceanLevel);
-        log.debug("Materials: sand={}, grass={}, stone={}, snow={}",
-                sandMaterial, grassMaterial, stoneMaterial, snowMaterial);
+        log.debug(
+                "Material thresholds: stone={}, snow={} (oceanLevel={})",
+                grassToStoneThreshold,
+                snowThreshold,
+                oceanLevel);
+        log.debug(
+                "Materials: sand={}, grass={}, stone={}, snow={}",
+                sandMaterial,
+                grassMaterial,
+                stoneMaterial,
+                snowMaterial);
 
         for (int z = 0; z < sizeZ; z++) {
             for (int x = 0; x < sizeX; x++) {
@@ -149,8 +161,8 @@ public class SwampBuilder extends HexGridBuilder {
 
                 // Skip if material is UNKNOWN
                 int material = flat.getColumn(x, z);
-                if (material == FlatMaterialService.UNKNOWN_PROTECTED ||
-                    material == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
+                if (material == FlatMaterialService.UNKNOWN_PROTECTED
+                        || material == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
                     continue;
                 }
 
@@ -159,8 +171,13 @@ public class SwampBuilder extends HexGridBuilder {
 
                 if (valley != null && valley.isEnclosed) {
                     valleysFound++;
-                    log.debug("Found enclosed valley at ({}, {}): minLevel={}, maxLevel={}, size={}",
-                            x, z, valley.minLevel, valley.maxLevel, valley.positions.size());
+                    log.debug(
+                            "Found enclosed valley at ({}, {}): minLevel={}, maxLevel={}, size={}",
+                            x,
+                            z,
+                            valley.minLevel,
+                            valley.maxLevel,
+                            valley.positions.size());
 
                     // Fill valley with water if conditions are met
                     if (valley.minLevel > seaLevel) {
@@ -194,7 +211,7 @@ public class SwampBuilder extends HexGridBuilder {
         valley.minLevel = startLevel;
         valley.maxLevel = startLevel;
 
-        queue.add(new int[]{startX, startZ});
+        queue.add(new int[] {startX, startZ});
         visited[startX][startZ] = true;
 
         // Flood-fill to find all connected positions at similar height
@@ -204,7 +221,7 @@ public class SwampBuilder extends HexGridBuilder {
             int z = pos[1];
 
             int level = flat.getLevel(x, z);
-            valley.positions.add(new int[]{x, z, level});
+            valley.positions.add(new int[] {x, z, level});
             processed[x][z] = true;
 
             valley.minLevel = Math.min(valley.minLevel, level);
@@ -229,8 +246,8 @@ public class SwampBuilder extends HexGridBuilder {
                 int neighborMaterial = flat.getColumn(nx, nz);
 
                 // If neighbor is UNKNOWN material, valley is not properly enclosed
-                if (neighborMaterial == FlatMaterialService.UNKNOWN_PROTECTED ||
-                    neighborMaterial == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
+                if (neighborMaterial == FlatMaterialService.UNKNOWN_PROTECTED
+                        || neighborMaterial == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
                     valley.isEnclosed = false;
                     continue;
                 }
@@ -238,7 +255,7 @@ public class SwampBuilder extends HexGridBuilder {
                 // If neighbor is at similar or lower height, include it in the valley
                 if (neighborLevel <= startLevel + 2) {
                     visited[nx][nz] = true;
-                    queue.add(new int[]{nx, nz});
+                    queue.add(new int[] {nx, nz});
                 }
             }
         }
@@ -256,8 +273,12 @@ public class SwampBuilder extends HexGridBuilder {
      * Only the top layer (minLevel to minLevel + swampDepth) is filled.
      */
     private void fillValleyWithWater(WFlat flat, ValleyInfo valley, int swampDepth, int seaLevel) {
-        log.debug("Filling valley with water: minLevel={}, maxLevel={}, depth={}, positions={}",
-                valley.minLevel, valley.maxLevel, swampDepth, valley.positions.size());
+        log.debug(
+                "Filling valley with water: minLevel={}, maxLevel={}, depth={}, positions={}",
+                valley.minLevel,
+                valley.maxLevel,
+                swampDepth,
+                valley.positions.size());
 
         // Determine water level (top of the swamp)
         int waterLevel = Math.min(valley.minLevel + swampDepth, valley.maxLevel);
@@ -305,12 +326,12 @@ public class SwampBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 10;  // SWAMP: moderate variation for rolling hills and valleys
+        return 10; // SWAMP: moderate variation for rolling hills and valleys
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 5;  // SWAMP: low elevation, slightly above sea level
+        return 5; // SWAMP: low elevation, slightly above sea level
     }
 
     @Override
@@ -396,7 +417,7 @@ public class SwampBuilder extends HexGridBuilder {
      * Information about a valley.
      */
     private static class ValleyInfo {
-        List<int[]> positions;  // [x, z, level]
+        List<int[]> positions; // [x, z, level]
         int minLevel;
         int maxLevel;
         boolean isEnclosed;
@@ -418,7 +439,7 @@ public class SwampBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

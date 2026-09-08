@@ -8,19 +8,18 @@ import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.world.shared.world.WChunkService;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * HexGrid manipulator.
@@ -72,8 +71,7 @@ public class HexGridManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.info("Starting hex-grid manipulation: flat={}, parameters={}", flat.getFlatId(), parameters);
 
         WWorld world = worldService.getByWorldId(flat.getWorldId()).orElseThrow();
@@ -104,16 +102,20 @@ public class HexGridManipulator implements FlatManipulator {
 
         // Create builder pipeline
         List<HexGridBuilder> builderPipeline = builderService.createBuilderPipeline(hexGrid, step);
-        if ((step == HexGridBuilderService.STEP.ALL || step == HexGridBuilderService.STEP.GROUND) && builderPipeline.isEmpty()) {
-            throw new IllegalStateException("No builders in pipeline in step GROUND for hex grid: " + hexGrid.getPosition());
+        if ((step == HexGridBuilderService.STEP.ALL || step == HexGridBuilderService.STEP.GROUND)
+                && builderPipeline.isEmpty()) {
+            throw new IllegalStateException(
+                    "No builders in pipeline in step GROUND for hex grid: " + hexGrid.getPosition());
         }
         if (builderPipeline.isEmpty()) {
             log.info("No builders to execute for hex grid: {} at step: {}", hexGrid.getPosition(), step);
             return;
         }
 
-        log.info("Executing builder pipeline with {} builders for hex grid: {}",
-                builderPipeline.size(), hexGrid.getPosition());
+        log.info(
+                "Executing builder pipeline with {} builders for hex grid: {}",
+                builderPipeline.size(),
+                hexGrid.getPosition());
 
         // Clear all groupIds before executing builders
         flat.getGroups().clear();
@@ -123,8 +125,12 @@ public class HexGridManipulator implements FlatManipulator {
             HexGridBuilder builder = builderPipeline.get(i);
             String builderName = builder.getClass().getSimpleName();
 
-            log.info("Executing builder {}/{}: {} for hex grid: {}",
-                    i + 1, builderPipeline.size(), builderName, hexGrid.getPosition());
+            log.info(
+                    "Executing builder {}/{}: {} for hex grid: {}",
+                    i + 1,
+                    builderPipeline.size(),
+                    builderName,
+                    hexGrid.getPosition());
 
             builder.setContext(context);
             builder.buildFlat();
@@ -132,8 +138,10 @@ public class HexGridManipulator implements FlatManipulator {
             log.debug("Builder {} completed", builderName);
         }
 
-        log.info("Hex-grid manipulation completed: pipeline executed {} builders for hexGrid={}",
-                builderPipeline.size(), hexGrid.getPosition());
+        log.info(
+                "Hex-grid manipulation completed: pipeline executed {} builders for hexGrid={}",
+                builderPipeline.size(),
+                hexGrid.getPosition());
     }
 
     /**
@@ -145,7 +153,9 @@ public class HexGridManipulator implements FlatManipulator {
             return null;
         }
 
-        return hexGridService.findByWorldIdAndPosition(flat.getWorldId(), hexGridPos).orElse(null);
+        return hexGridService
+                .findByWorldIdAndPosition(flat.getWorldId(), hexGridPos)
+                .orElse(null);
     }
 
     /**
@@ -163,7 +173,8 @@ public class HexGridManipulator implements FlatManipulator {
             WHexGrid.EDGE direction = entry.getKey();
             HexVector2 position = entry.getValue();
 
-            WHexGrid neighbor = hexGridService.findByWorldIdAndPosition(worldId, position).orElse(null);
+            WHexGrid neighbor =
+                    hexGridService.findByWorldIdAndPosition(worldId, position).orElse(null);
             neighborGrids.put(direction, neighbor);
 
             if (neighbor != null) {
@@ -173,5 +184,4 @@ public class HexGridManipulator implements FlatManipulator {
 
         return neighborGrids;
     }
-
 }

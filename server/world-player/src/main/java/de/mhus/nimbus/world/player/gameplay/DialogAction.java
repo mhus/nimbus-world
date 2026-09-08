@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WEntity;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for starting a dialog with an entity.
@@ -35,13 +34,18 @@ public class DialogAction extends AbstractGamplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction,
-                                       String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (session.getWorldId() == null) return false;
 
         // Extract server parameters (int_ prefix for interaction)
-        Map<String, String> serverParameters = GameplayUtil.extractParams(
-                shortcutKey == null ? "int_" : "act_", entity.getServer(), null);
+        Map<String, String> serverParameters =
+                GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null);
 
         String playbookRef = serverParameters.get("playbook");
         if (Strings.isBlank(playbookRef)) {
@@ -62,8 +66,8 @@ public class DialogAction extends AbstractGamplayAction {
         WorldId anythingWorldId = worldId.isInstance() ? worldId.toMainWorld() : worldId;
 
         // Verify playbook exists in WAnything
-        Optional<WAnything> playbookOpt = basic.getAnythingService()
-                .findByWorldIdAndCollectionAndName(anythingWorldId.getId(), collection, name);
+        Optional<WAnything> playbookOpt =
+                basic.getAnythingService().findByWorldIdAndCollectionAndName(anythingWorldId.getId(), collection, name);
 
         if (playbookOpt.isEmpty()) {
             log.warn("Dialog playbook not found: {} in world {}", playbookRef, anythingWorldId);
@@ -81,21 +85,24 @@ public class DialogAction extends AbstractGamplayAction {
             leaseData.put("portraitPath", entity.getPortraitPath());
         }
 
-        var lease = basic.getLeaseService().acquire(
-                worldId.getId(),
-                playerId,
-                "dialog",
-                entity.getName(),  // resourceId = entityId so each NPC has its own lease
-                null,
-                leaseData
-        );
+        var lease = basic.getLeaseService()
+                .acquire(
+                        worldId.getId(),
+                        playerId,
+                        "dialog",
+                        entity.getName(), // resourceId = entityId so each NPC has its own lease
+                        null,
+                        leaseData);
 
         // Send openComponent command to client (dialog_start is sent by world-control on first GET)
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("dialog", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("dialog", lease.getLeaseId()));
 
-        log.debug("Sent dialog to player {}: playbook={}, entityId={}, leaseId={}",
-                playerId, playbookRef, entity.getName(), lease.getLeaseId());
+        log.debug(
+                "Sent dialog to player {}: playbook={}, entityId={}, leaseId={}",
+                playerId,
+                playbookRef,
+                entity.getName(),
+                lease.getLeaseId());
         return true;
     }
 
@@ -124,16 +131,12 @@ public class DialogAction extends AbstractGamplayAction {
         }
 
         String playerId = session.getEntityId();
-        var lease = basic.getLeaseService().acquire(
-                worldId.getId(), playerId, "dialog", playbookRef,
-                null, Map.of("playbook", playbookRef)
-        );
+        var lease = basic.getLeaseService()
+                .acquire(worldId.getId(), playerId, "dialog", playbookRef, null, Map.of("playbook", playbookRef));
 
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("dialog", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("dialog", lease.getLeaseId()));
 
-        log.debug("Sent dialog to player {}: playbook={}, leaseId={}",
-                playerId, playbookRef, lease.getLeaseId());
+        log.debug("Sent dialog to player {}: playbook={}, leaseId={}", playerId, playbookRef, lease.getLeaseId());
         return true;
     }
 }

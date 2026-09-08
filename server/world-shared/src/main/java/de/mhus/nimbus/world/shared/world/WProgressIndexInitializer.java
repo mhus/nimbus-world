@@ -1,5 +1,10 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -14,12 +19,6 @@ import org.springframework.data.mongodb.core.index.PartialIndexFilter;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Creates the unique index that makes the shared chunk documents of {@link WProgress} unique.
@@ -65,8 +64,11 @@ public class WProgressIndexInitializer implements InitializingBean {
             log.info("Created index {} on w_progress", INDEX_NAME);
         } catch (Exception e) {
             // A missing index costs exclusiveness in a rare race, it must not keep the pod from starting
-            log.error("Could not create index {} on w_progress. Concurrent block claims are not exclusive"
-                    + " until it exists - create it manually if this keeps happening.", INDEX_NAME, e);
+            log.error(
+                    "Could not create index {} on w_progress. Concurrent block claims are not exclusive"
+                            + " until it exists - create it manually if this keeps happening.",
+                    INDEX_NAME,
+                    e);
         }
     }
 
@@ -98,10 +100,10 @@ public class WProgressIndexInitializer implements InitializingBean {
      */
     private int mergeDuplicateChunkDocuments() {
         Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("playerId").is(SHARED_PLAYER)),
-                Aggregation.group("worldId", "type", "quest").count().as("count"),
-                Aggregation.match(Criteria.where("count").gt(1))
-        ).withOptions(AggregationOptions.builder().allowDiskUse(true).build());
+                        Aggregation.match(Criteria.where("playerId").is(SHARED_PLAYER)),
+                        Aggregation.group("worldId", "type", "quest").count().as("count"),
+                        Aggregation.match(Criteria.where("count").gt(1)))
+                .withOptions(AggregationOptions.builder().allowDiskUse(true).build());
 
         List<Document> groups = mongoTemplate
                 .aggregate(aggregation, WProgress.class, Document.class)
@@ -116,10 +118,14 @@ public class WProgressIndexInitializer implements InitializingBean {
     }
 
     private int mergeGroup(String worldId, String type, String quest) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(SHARED_PLAYER)
-                .and("type").is(type)
-                .and("quest").is(quest));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("playerId")
+                .is(SHARED_PLAYER)
+                .and("type")
+                .is(type)
+                .and("quest")
+                .is(quest));
 
         List<WProgress> documents = new ArrayList<>(mongoTemplate.find(query, WProgress.class));
         if (documents.size() < 2) return 0;
@@ -129,7 +135,8 @@ public class WProgressIndexInitializer implements InitializingBean {
         WProgress target = documents.getFirst();
 
         List<WProgress> sortedByUpdate = new ArrayList<>(documents);
-        sortedByUpdate.sort(Comparator.comparing(WProgress::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder())));
+        sortedByUpdate.sort(
+                Comparator.comparing(WProgress::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder())));
 
         Map<String, Object> merged = new LinkedHashMap<>();
         for (WProgress document : sortedByUpdate) {
@@ -140,11 +147,18 @@ public class WProgressIndexInitializer implements InitializingBean {
         target.touchUpdate();
         mongoTemplate.save(target);
 
-        List<String> obsolete = documents.stream().map(WProgress::getId).filter(id -> !id.equals(target.getId())).toList();
+        List<String> obsolete = documents.stream()
+                .map(WProgress::getId)
+                .filter(id -> !id.equals(target.getId()))
+                .toList();
         mongoTemplate.remove(new Query(Criteria.where("_id").in(obsolete)), WProgress.class);
 
-        log.warn("Merged {} duplicate chunk documents: worldId={}, type={}, quest={}",
-                obsolete.size(), worldId, type, quest);
+        log.warn(
+                "Merged {} duplicate chunk documents: worldId={}, type={}, quest={}",
+                obsolete.size(),
+                worldId,
+                type,
+                quest);
         return obsolete.size();
     }
 }

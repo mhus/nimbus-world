@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.control.service;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,19 +14,13 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MongoDB Entity for storing editor settings per world and user.
  * Stores user-specific editor configuration like block palettes.
  */
 @Document(collection = "w_world_edit_settings")
 @ActualSchemaVersion("1.0.0")
-@CompoundIndexes({
-        @CompoundIndex(name = "worldId_userId_idx", def = "{ 'worldId': 1, 'userId': 1 }", unique = true)
-})
+@CompoundIndexes({@CompoundIndex(name = "worldId_userId_idx", def = "{ 'worldId': 1, 'userId': 1 }", unique = true)})
 @Data
 @Builder
 @NoArgsConstructor

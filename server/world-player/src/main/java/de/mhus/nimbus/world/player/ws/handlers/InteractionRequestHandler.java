@@ -1,13 +1,13 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handles generic interaction request messages from clients.
@@ -46,7 +46,8 @@ public class InteractionRequestHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Interaction request from unauthenticated session: {}",
+            log.warn(
+                    "Interaction request from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -73,8 +74,14 @@ public class InteractionRequestHandler implements MessageHandler {
         // TODO: Send successful response if needed
 
         // For now, just log the interaction
-        log.info("Interaction request: pos=({}, {}, {}), groupId={}, user={}, session={}",
-                x, y, z, groupId, session.getTitle(), session.getSessionId());
+        log.info(
+                "Interaction request: pos=({}, {}, {}), groupId={}, user={}, session={}",
+                x,
+                y,
+                z,
+                groupId,
+                session.getTitle(),
+                session.getSessionId());
 
         // Example: Send successful response (in future, based on actual interaction result)
         // sendSuccessResponse(session, requestId);

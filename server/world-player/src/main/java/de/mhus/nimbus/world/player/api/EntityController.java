@@ -34,17 +34,17 @@ public class EntityController {
     private final SessionManager sessionManager;
 
     @GetMapping("/{entityId}")
-    @Operation(summary = "Get Entity by world and entity ID", description = "Returns Entity instance for a specific entity in a world")
+    @Operation(
+            summary = "Get Entity by world and entity ID",
+            description = "Returns Entity instance for a specific entity in a world")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity found"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
-    public ResponseEntity<?> getEntity(
-            HttpServletRequest request,
-            @PathVariable String entityId) {
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+    public ResponseEntity<?> getEntity(HttpServletRequest request, @PathVariable String entityId) {
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         if (Strings.isBlank(entityId)) {
             return ResponseEntity.badRequest().body("entityId is required");
@@ -60,12 +60,13 @@ public class EntityController {
                     .orElseGet(() -> ResponseEntity.notFound().build());
         }
 
-        int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
-                .map(s -> s.getEpoch()).orElse(0);
+        int epoch = sessionManager
+                .getBySessionId(accessUtil.getSessionId(request))
+                .map(s -> s.getEpoch())
+                .orElse(0);
         return service.findByWorldIdAndName(worldId, entityId, epoch)
-                        .map(WEntity::getPublicData)
-                        .map(ResponseEntity::ok)
-                        .orElseGet(() -> ResponseEntity.notFound().build());
+                .map(WEntity::getPublicData)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 }

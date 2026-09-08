@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.composer.build;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-
 import java.util.Collection;
 
 /**

@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.OccupationService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Gameplay action for occupying entities/items (mounts, vehicles).
@@ -48,7 +47,8 @@ public class OccupyAction extends AbstractGamplayAction {
         }
 
         // Determine source: item position ID from params (if block/item occupation)
-        String itemId = params != null && params.has("itemId") ? params.get("itemId").asText() : null;
+        String itemId =
+                params != null && params.has("itemId") ? params.get("itemId").asText() : null;
 
         if (itemId != null && !itemId.isBlank()) {
             // Occupation from world item (WItemPosition)
@@ -74,7 +74,8 @@ public class OccupyAction extends AbstractGamplayAction {
 
         if (overlayModelId == null || overlayModelId.isBlank()) {
             log.warn("Item {} has no overlayModelId", item.getName());
-            basic.getBasicClientService().sendSystemNotification(session, "Occupy", "This item cannot be used as mount.");
+            basic.getBasicClientService()
+                    .sendSystemNotification(session, "Occupy", "This item cannot be used as mount.");
             return false;
         }
 
@@ -87,7 +88,13 @@ public class OccupyAction extends AbstractGamplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         // Entity occupation: overlayModelId from entity server metadata
         String overlayModelId = entity.getServer() != null ? entity.getServer().get("overlayModelId") : null;
         if (overlayModelId == null || overlayModelId.isBlank()) {

@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.generator.fauna;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
 
 /**
  * Loads feminine and masculine name lists from classpath resources
@@ -32,8 +31,8 @@ public class FaunaNameService {
     private List<String> loadNames(String resourceName) {
         try {
             var resource = new ClassPathResource(resourceName);
-            try (var reader = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            try (var reader =
+                    new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 return reader.lines()
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
@@ -72,11 +71,12 @@ public class FaunaNameService {
      * Pick a random name for the given gender that differs from the excluded name.
      */
     public String differentNameForGender(FaunaGender gender, String excludeName, Random random) {
-        List<String> nameList = switch (gender) {
-            case W -> feminineNames;
-            case M -> masculineNames;
-            case D -> random.nextBoolean() ? feminineNames : masculineNames;
-        };
+        List<String> nameList =
+                switch (gender) {
+                    case W -> feminineNames;
+                    case M -> masculineNames;
+                    case D -> random.nextBoolean() ? feminineNames : masculineNames;
+                };
         if (nameList.isEmpty()) return "Unknown";
         if (nameList.size() == 1) return nameList.getFirst();
         for (int i = 0; i < 20; i++) {

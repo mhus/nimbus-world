@@ -22,8 +22,7 @@ public class WProgressInstanceListener implements WWorldInstanceListener {
     private final WLeaseService leaseService;
 
     @Override
-    public void worldInstanceCreated(WorldInstanceEvent event) {
-    }
+    public void worldInstanceCreated(WorldInstanceEvent event) {}
 
     @Override
     public void worldInstanceDeleted(WorldInstanceEvent event) {

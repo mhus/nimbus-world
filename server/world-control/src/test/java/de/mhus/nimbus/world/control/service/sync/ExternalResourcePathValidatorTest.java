@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.control.service.sync;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
 
 class ExternalResourcePathValidatorTest {
 
@@ -27,26 +26,22 @@ class ExternalResourcePathValidatorTest {
 
     @Test
     void traversalEscapeIsRejected() {
-        assertThatThrownBy(() -> validator.confine("../../etc/passwd"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> validator.confine("../../etc/passwd")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void absolutePathOutsideBaseIsRejected() {
-        assertThatThrownBy(() -> validator.confine("/etc/passwd"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> validator.confine("/etc/passwd")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void traversalBackIntoBaseAfterEscapeIsRejected() {
         // Normalizes to /data/secret -> outside base
-        assertThatThrownBy(() -> validator.confine("world/../../secret"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> validator.confine("world/../../secret")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void blankPathIsRejected() {
-        assertThatThrownBy(() -> validator.confine("  "))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> validator.confine("  ")).isInstanceOf(IllegalArgumentException.class);
     }
 }

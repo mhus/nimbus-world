@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * JSON model definition for the ModelBuilder system.
@@ -46,7 +45,11 @@ public class ModelBuilderModel {
         Object value = metadata.get(key);
         if (value instanceof Number number) return number.intValue();
         if (value instanceof String str) {
-            try { return Integer.parseInt(str); } catch (NumberFormatException e) { return null; }
+            try {
+                return Integer.parseInt(str);
+            } catch (NumberFormatException e) {
+                return null;
+            }
         }
         return null;
     }

@@ -16,7 +16,9 @@ public class GiveItemEffectHandler implements DialogEffectHandler {
     private final RCharacterService characterService;
 
     @Override
-    public String getEffectType() { return "giveItem"; }
+    public String getEffectType() {
+        return "giveItem";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
@@ -27,9 +29,16 @@ public class GiveItemEffectHandler implements DialogEffectHandler {
         int count = effect.count() != null ? effect.count() : 1;
         boolean success = characterService.addBackpackItem(ctx.getCharacter().getId(), effect.item(), count);
         if (success) {
-            log.debug("Gave {} x{} to character {}", effect.item(), count, ctx.getCharacter().getId());
+            log.debug(
+                    "Gave {} x{} to character {}",
+                    effect.item(),
+                    count,
+                    ctx.getCharacter().getId());
         } else {
-            log.warn("Failed to give item {} to character {}", effect.item(), ctx.getCharacter().getId());
+            log.warn(
+                    "Failed to give item {} to character {}",
+                    effect.item(),
+                    ctx.getCharacter().getId());
         }
     }
 }

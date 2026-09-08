@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.workflow;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,5 +14,5 @@ public class CreateJobRecord implements JournalRecord {
     private String executor;
     private String type;
     private String location;
-    private Map<String,String > parameters;
+    private Map<String, String> parameters;
 }

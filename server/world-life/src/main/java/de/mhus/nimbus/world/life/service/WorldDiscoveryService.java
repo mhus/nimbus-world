@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.life.service;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service that tracks active worlds for simulation.

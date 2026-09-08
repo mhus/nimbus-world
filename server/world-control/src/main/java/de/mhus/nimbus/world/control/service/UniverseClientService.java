@@ -6,6 +6,9 @@ import de.mhus.nimbus.shared.security.KeyIntent;
 import de.mhus.nimbus.shared.security.KeyService;
 import de.mhus.nimbus.shared.security.KeyType;
 import de.mhus.nimbus.shared.service.SSettingsService;
+import java.security.KeyPair;
+import java.util.Base64;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -14,10 +17,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.security.KeyPair;
-import java.util.Base64;
-import java.util.Map;
 
 /**
  * Client service for communication with the Universe server.
@@ -59,11 +58,7 @@ public class UniverseClientService {
     }
 
     public UniverseStatus getStatus() {
-        return new UniverseStatus(
-                getUniverseUrl(),
-                isPaired(),
-                getUniverseName()
-        );
+        return new UniverseStatus(getUniverseUrl(), isPaired(), getUniverseName());
     }
 
     // --- Ping ---
@@ -130,8 +125,7 @@ public class UniverseClientService {
                     sectorIntent,
                     "sector-ping:" + sectorName,
                     Map.of("sector", sectorName),
-                    java.time.Instant.now().plusSeconds(60)
-            );
+                    java.time.Instant.now().plusSeconds(60));
 
             // Send to universe
             HttpHeaders headers = new HttpHeaders();
@@ -140,8 +134,7 @@ public class UniverseClientService {
                     url + "/universe/sector/" + sectorName + "/ping",
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
-                    Map.class
-            );
+                    Map.class);
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 return PingResult.fail("Universe key ping HTTP " + response.getStatusCode());
@@ -191,23 +184,20 @@ public class UniverseClientService {
                     KeyIntent.of(name, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                     "sector:" + name,
                     Map.of("action", "getUserInfo"),
-                    java.time.Instant.now().plusSeconds(60)
-            );
+                    java.time.Instant.now().plusSeconds(60));
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
             var response = restTemplate.exchange(
                     url + "/universe/sector/" + name + "/user/" + username,
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
-                    Map.class
-            );
+                    Map.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return new UserInfo(
                         (String) response.getBody().get("username"),
                         (String) response.getBody().get("email"),
                         (String) response.getBody().get("language"),
-                        (Boolean) response.getBody().get("enabled")
-                );
+                        (Boolean) response.getBody().get("enabled"));
             }
             return null;
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
@@ -252,8 +242,7 @@ public class UniverseClientService {
                     url + "/universe/sector/" + name + "/world/" + worldId,
                     HttpMethod.DELETE,
                     new HttpEntity<>(headers),
-                    Map.class
-            );
+                    Map.class);
             log.info("World '{}' removed from universe", worldId);
             return PairResult.ok(worldId);
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
@@ -310,7 +299,8 @@ public class UniverseClientService {
         if (publicKeys.isEmpty()) {
             return PairResult.fail("Sector public key not found after creation");
         }
-        String sectorPublicKeyBase64 = Base64.getEncoder().encodeToString(publicKeys.getFirst().getEncoded());
+        String sectorPublicKeyBase64 =
+                Base64.getEncoder().encodeToString(publicKeys.getFirst().getEncoded());
 
         // Send exchange request to universe
         try {
@@ -318,13 +308,9 @@ public class UniverseClientService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             Map<String, String> requestBody = Map.of(
                     "inviteToken", inviteToken,
-                    "publicKey", sectorPublicKeyBase64
-            );
+                    "publicKey", sectorPublicKeyBase64);
             var response = restTemplate.postForEntity(
-                    url + "/universe/sector/exchange",
-                    new HttpEntity<>(requestBody, headers),
-                    Map.class
-            );
+                    url + "/universe/sector/exchange", new HttpEntity<>(requestBody, headers), Map.class);
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 return PairResult.fail("Exchange failed: HTTP " + response.getStatusCode());
@@ -387,19 +373,24 @@ public class UniverseClientService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             var body = Map.of(
-                    "worldId", world.getWorldId(),
-                    "name", world.getPublicData() != null && world.getPublicData().getTitle() != null ? world.getPublicData().getTitle() : world.getWorldId(),
-                    "description", world.getDescription() != null ? world.getDescription() : "",
-                    "publicWorld", isPublic,
-                    "members", members
-            );
+                    "worldId",
+                    world.getWorldId(),
+                    "name",
+                    world.getPublicData() != null && world.getPublicData().getTitle() != null
+                            ? world.getPublicData().getTitle()
+                            : world.getWorldId(),
+                    "description",
+                    world.getDescription() != null ? world.getDescription() : "",
+                    "publicWorld",
+                    isPublic,
+                    "members",
+                    members);
 
             restTemplate.exchange(
                     url + "/universe/sector/" + name + "/world",
                     HttpMethod.POST,
                     new HttpEntity<>(body, headers),
-                    Map.class
-            );
+                    Map.class);
             log.info("World '{}' registered at universe", world.getWorldId());
             return PairResult.ok(world.getWorldId());
         } catch (Exception e) {
@@ -428,8 +419,7 @@ public class UniverseClientService {
                     url + "/universe/sector/" + name + "/world/" + world.getWorldId(),
                     HttpMethod.DELETE,
                     new HttpEntity<>(headers),
-                    Map.class
-            );
+                    Map.class);
             log.info("World '{}' unregistered from universe", world.getWorldId());
             return PairResult.ok(world.getWorldId());
         } catch (Exception e) {
@@ -444,8 +434,7 @@ public class UniverseClientService {
                 KeyIntent.of(sectorName, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 "sector:" + sectorName,
                 Map.of("action", action),
-                java.time.Instant.now().plusSeconds(60)
-        );
+                java.time.Instant.now().plusSeconds(60));
     }
 
     // --- Unpair ---
@@ -470,16 +459,14 @@ public class UniverseClientService {
                     KeyIntent.of(name, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                     "sector:" + name,
                     Map.of("action", "unpair"),
-                    java.time.Instant.now().plusSeconds(60)
-            );
+                    java.time.Instant.now().plusSeconds(60));
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
             restTemplate.exchange(
                     url + "/universe/sector/" + name + "/unpair",
                     HttpMethod.DELETE,
                     new HttpEntity<>(headers),
-                    Map.class
-            );
+                    Map.class);
             log.info("Universe unpair successful for sector '{}'", name);
         } catch (Exception e) {
             log.warn("Universe unpair call failed (continuing with local cleanup): {}", e.getMessage());
@@ -503,12 +490,22 @@ public class UniverseClientService {
     public record UniverseStatus(String url, boolean paired, String name) {}
 
     public record PingResult(boolean ok, String status, String error) {
-        public static PingResult ok(String status) { return new PingResult(true, status, null); }
-        public static PingResult fail(String error) { return new PingResult(false, null, error); }
+        public static PingResult ok(String status) {
+            return new PingResult(true, status, null);
+        }
+
+        public static PingResult fail(String error) {
+            return new PingResult(false, null, error);
+        }
     }
 
     public record PairResult(boolean ok, String name, String error) {
-        public static PairResult ok(String name) { return new PairResult(true, name, null); }
-        public static PairResult fail(String error) { return new PairResult(false, null, error); }
+        public static PairResult ok(String name) {
+            return new PairResult(true, name, null);
+        }
+
+        public static PairResult fail(String error) {
+            return new PairResult(false, null, error);
+        }
     }
 }

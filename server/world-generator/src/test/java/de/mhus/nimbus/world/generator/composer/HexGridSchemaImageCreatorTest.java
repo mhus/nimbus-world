@@ -1,22 +1,20 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.ObjectMapper;
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridSchemaImageCreator;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static org.junit.jupiter.api.Assertions.*;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 public class HexGridSchemaImageCreatorTest {
@@ -36,7 +34,7 @@ public class HexGridSchemaImageCreatorTest {
         assertTrue(jsonFile.exists(), "composed-example.json should exist");
 
         ObjectMapper mapper = JsonMapper.builder()
-                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
                 .build();
         HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
@@ -45,14 +43,16 @@ public class HexGridSchemaImageCreatorTest {
         assertNotNull(composition.getFeatureHexGrids(), "featureHexGrids should not be null");
         assertFalse(composition.getFeatureHexGrids().isEmpty(), "featureHexGrids should not be empty");
 
-        log.info("Loaded composition with {} featureHexGrids", composition.getFeatureHexGrids().size());
+        log.info(
+                "Loaded composition with {} featureHexGrids",
+                composition.getFeatureHexGrids().size());
 
         HexGridSchemaImageCreator creator = HexGridSchemaImageCreator.builder()
-            .composition(composition)
-            .hexGridSize(400)
-            .outputDirectory(outputDir.toString())
-            .imageName("composed-example")
-            .build();
+                .composition(composition)
+                .hexGridSize(400)
+                .outputDirectory(outputDir.toString())
+                .imageName("composed-example")
+                .build();
 
         HexGridSchemaImageCreator.SchemaImageResult result = creator.createSchemaImage();
 
@@ -62,9 +62,11 @@ public class HexGridSchemaImageCreatorTest {
         assertNotNull(result.getOutputFile(), "Output file should be created");
         assertTrue(result.getOutputFile().exists(), "Output file should exist on disk");
 
-        log.info("Created schema image: {} ({}x{} pixels, {} grids)",
-            result.getOutputFile().getAbsolutePath(),
-            result.getImageWidth(), result.getImageHeight(),
-            result.getRenderedGridCount());
+        log.info(
+                "Created schema image: {} ({}x{} pixels, {} grids)",
+                result.getOutputFile().getAbsolutePath(),
+                result.getImageWidth(),
+                result.getImageHeight(),
+                result.getRenderedGridCount());
     }
 }

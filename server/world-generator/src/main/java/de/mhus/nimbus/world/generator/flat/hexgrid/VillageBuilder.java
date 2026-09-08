@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
 import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
+import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * VillageBuilder builds villages from the new district/place-based configuration.
@@ -32,7 +31,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class VillageBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     @Override
     public void buildFlat() {
@@ -45,8 +46,8 @@ public class VillageBuilder extends HexGridBuilder {
         log.debug("Building village for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get village parameter from hex grid
-        String villageParam = hexGrid.getParameters() != null ?
-            hexGrid.getParameters().get("g_village") : null;
+        String villageParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_village") : null;
 
         if (villageParam == null || villageParam.isBlank()) {
             log.debug("No village parameter found, skipping");
@@ -57,18 +58,23 @@ public class VillageBuilder extends HexGridBuilder {
             // Parse village configuration
             TownGridConfig config = objectMapper.readValue(villageParam, TownGridConfig.class);
 
-            log.debug("Parsed village config for '{}' district '{}': {} places, {} streets",
-                config.getVillageName(), config.getDistrictName(),
-                config.getPlaces() != null ? config.getPlaces().size() : 0,
-                config.getStreets() != null ? config.getStreets().size() : 0);
+            log.debug(
+                    "Parsed village config for '{}' district '{}': {} places, {} streets",
+                    config.getVillageName(),
+                    config.getDistrictName(),
+                    config.getPlaces() != null ? config.getPlaces().size() : 0,
+                    config.getStreets() != null ? config.getStreets().size() : 0);
 
             // Resolve relative baseLevel to absolute terrain level.
             // Config baseLevel is a relative offset (default 0 = terrain level).
             int terrainLevel = flat.getLevel(flat.getSizeX() / 2, flat.getSizeZ() / 2);
             int relativeOffset = config.getBaseLevel();
             int absoluteLevel = terrainLevel + relativeOffset;
-            log.debug("Resolving village level: terrain={} + offset={} = {}",
-                terrainLevel, relativeOffset, absoluteLevel);
+            log.debug(
+                    "Resolving village level: terrain={} + offset={} = {}",
+                    terrainLevel,
+                    relativeOffset,
+                    absoluteLevel);
             config.setBaseLevel(absoluteLevel);
             if (config.getStreets() != null) {
                 for (TownGridConfig.StreetSegmentConfig street : config.getStreets()) {
@@ -85,14 +91,22 @@ public class VillageBuilder extends HexGridBuilder {
             convertHexToCartesian(config, flat, hexGridSize);
 
             // Log all converted positions for debugging
-            log.debug("=== SLOT_POSITIONS: District '{}' with {} places (hexGridSize={}) ===",
-                config.getDistrictName(), config.getPlaces().size(), hexGridSize);
+            log.debug(
+                    "=== SLOT_POSITIONS: District '{}' with {} places (hexGridSize={}) ===",
+                    config.getDistrictName(),
+                    config.getPlaces().size(),
+                    hexGridSize);
             for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
-                log.debug("SLOT_POSITION: district='{}' name='{}' type='{}' hex=<{};{}> local=({},{}) divider={}",
-                    config.getDistrictName(), place.getName(), place.getType(),
-                    place.getHexQ(), place.getHexR(),
-                    place.getLocalX(), place.getLocalZ(),
-                    place.getDivider());
+                log.debug(
+                        "SLOT_POSITION: district='{}' name='{}' type='{}' hex=<{};{}> local=({},{}) divider={}",
+                        config.getDistrictName(),
+                        place.getName(),
+                        place.getType(),
+                        place.getHexQ(),
+                        place.getHexR(),
+                        place.getLocalX(),
+                        place.getLocalZ(),
+                        place.getDivider());
             }
 
             // DRAWING ORDER (critical for overlaps):
@@ -146,10 +160,14 @@ public class VillageBuilder extends HexGridBuilder {
         int steps = (int) Math.ceil(distance);
 
         // Log street segment for debugging
-        log.debug("STREET_SEGMENT: from=({},{}) to=({},{}) distance={} type='{}'",
-            street.getFromX(), street.getFromZ(),
-            street.getToX(), street.getToZ(),
-            (int)distance, street.getType());
+        log.debug(
+                "STREET_SEGMENT: from=({},{}) to=({},{}) distance={} type='{}'",
+                street.getFromX(),
+                street.getFromZ(),
+                street.getToX(),
+                street.getToZ(),
+                (int) distance,
+                street.getType());
 
         // Determine material based on type
         int material = getMaterialForStreetType(street.getType());
@@ -212,20 +230,23 @@ public class VillageBuilder extends HexGridBuilder {
         // - All buildings
         // - Free places that are PLAZA or SQUARE (not PARK or GARDEN)
         List<TownGridConfig.PlacedPlaceConfig> placesNeedingStreets = config.getPlaces().stream()
-            .filter(p -> {
-                if ("building".equals(p.getType())) {
-                    return true;
-                }
-                if ("free".equals(p.getType())) {
-                    String kind = p.getKind();
-                    return "PLAZA".equalsIgnoreCase(kind) || "SQUARE".equalsIgnoreCase(kind);
-                }
-                return false;
-            })
-            .toList();
+                .filter(p -> {
+                    if ("building".equals(p.getType())) {
+                        return true;
+                    }
+                    if ("free".equals(p.getType())) {
+                        String kind = p.getKind();
+                        return "PLAZA".equalsIgnoreCase(kind) || "SQUARE".equalsIgnoreCase(kind);
+                    }
+                    return false;
+                })
+                .toList();
 
-        log.debug("Found {} places (buildings/plazas/squares) and {} streets in district '{}'",
-            placesNeedingStreets.size(), config.getStreets().size(), config.getDistrictName());
+        log.debug(
+                "Found {} places (buildings/plazas/squares) and {} streets in district '{}'",
+                placesNeedingStreets.size(),
+                config.getStreets().size(),
+                config.getDistrictName());
 
         if (placesNeedingStreets.isEmpty() || config.getStreets().isEmpty()) {
             log.debug("No places or streets to connect");
@@ -236,30 +257,37 @@ public class VillageBuilder extends HexGridBuilder {
 
         for (TownGridConfig.PlacedPlaceConfig place : placesNeedingStreets) {
             // Find nearest street segment
-            TownGridConfig.StreetSegmentConfig nearestStreet = findNearestStreetSegment(
-                place.getLocalX(), place.getLocalZ(), config.getStreets());
+            TownGridConfig.StreetSegmentConfig nearestStreet =
+                    findNearestStreetSegment(place.getLocalX(), place.getLocalZ(), config.getStreets());
 
             if (nearestStreet != null) {
                 // Calculate closest point on the street segment
                 int[] closestPoint = closestPointOnSegment(
-                    place.getLocalX(), place.getLocalZ(),
-                    nearestStreet.getFromX(), nearestStreet.getFromZ(),
-                    nearestStreet.getToX(), nearestStreet.getToZ());
+                        place.getLocalX(), place.getLocalZ(),
+                        nearestStreet.getFromX(), nearestStreet.getFromZ(),
+                        nearestStreet.getToX(), nearestStreet.getToZ());
 
                 // Draw connection from place to street
-                drawStreetSegment(flat, TownGridConfig.StreetSegmentConfig.builder()
-                    .fromX(place.getLocalX())
-                    .fromZ(place.getLocalZ())
-                    .toX(closestPoint[0])
-                    .toZ(closestPoint[1])
-                    .width(2)  // Smaller width for connections
-                    .type("path")
-                    .level(config.getBaseLevel())
-                    .build());
+                drawStreetSegment(
+                        flat,
+                        TownGridConfig.StreetSegmentConfig.builder()
+                                .fromX(place.getLocalX())
+                                .fromZ(place.getLocalZ())
+                                .toX(closestPoint[0])
+                                .toZ(closestPoint[1])
+                                .width(2) // Smaller width for connections
+                                .type("path")
+                                .level(config.getBaseLevel())
+                                .build());
 
-                log.debug("Connected place '{}' ({}) at [{},{}] to street at [{},{}]",
-                    place.getName(), place.getType(), place.getLocalX(), place.getLocalZ(),
-                    closestPoint[0], closestPoint[1]);
+                log.debug(
+                        "Connected place '{}' ({}) at [{},{}] to street at [{},{}]",
+                        place.getName(),
+                        place.getType(),
+                        place.getLocalX(),
+                        place.getLocalZ(),
+                        closestPoint[0],
+                        closestPoint[1]);
             }
         }
 
@@ -275,9 +303,8 @@ public class VillageBuilder extends HexGridBuilder {
         double minDistance = Double.MAX_VALUE;
 
         for (TownGridConfig.StreetSegmentConfig street : streets) {
-            double distance = distanceToSegment(x, z,
-                street.getFromX(), street.getFromZ(),
-                street.getToX(), street.getToZ());
+            double distance =
+                    distanceToSegment(x, z, street.getFromX(), street.getFromZ(), street.getToX(), street.getToZ());
 
             if (distance < minDistance) {
                 minDistance = distance;
@@ -307,11 +334,11 @@ public class VillageBuilder extends HexGridBuilder {
 
         if (dx == 0 && dz == 0) {
             // Segment is a point
-            return new int[]{x1, z1};
+            return new int[] {x1, z1};
         }
 
         // Calculate projection parameter t
-        double t = ((px - x1) * dx + (pz - z1) * dz) / (double)(dx * dx + dz * dz);
+        double t = ((px - x1) * dx + (pz - z1) * dz) / (double) (dx * dx + dz * dz);
 
         // Clamp t to [0, 1] to stay on segment
         t = Math.max(0, Math.min(1, t));
@@ -320,7 +347,7 @@ public class VillageBuilder extends HexGridBuilder {
         int closestX = (int) Math.round(x1 + t * dx);
         int closestZ = (int) Math.round(z1 + t * dz);
 
-        return new int[]{closestX, closestZ};
+        return new int[] {closestX, closestZ};
     }
 
     /**
@@ -332,8 +359,8 @@ public class VillageBuilder extends HexGridBuilder {
         }
 
         List<TownGridConfig.PlacedPlaceConfig> freePlaces = config.getPlaces().stream()
-            .filter(p -> "free".equals(p.getType()))
-            .toList();
+                .filter(p -> "free".equals(p.getType()))
+                .toList();
 
         if (freePlaces.isEmpty()) {
             log.debug("No free places to draw");
@@ -352,8 +379,8 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Draw a single free place (park, garden, plaza, square)
      */
-    private void drawFreePlace(WFlat flat, TownGridConfig.PlacedPlaceConfig place,
-                               TownGridConfig config, int hexGridSize) {
+    private void drawFreePlace(
+            WFlat flat, TownGridConfig.PlacedPlaceConfig place, TownGridConfig config, int hexGridSize) {
         // Calculate slot size based on divider from place
         int divider = place.getDivider() > 0 ? place.getDivider() : 5; // Default to 5 if not set
         int slotSize = calculateSlotSize(hexGridSize, divider);
@@ -362,12 +389,16 @@ public class VillageBuilder extends HexGridBuilder {
         int material = getMaterialForFreeKind(place.getKind());
 
         // Draw circular area
-        drawCircularSlot(flat, place.getLocalX(), place.getLocalZ(),
-            slotSize / 2, config.getBaseLevel(), material);
+        drawCircularSlot(flat, place.getLocalX(), place.getLocalZ(), slotSize / 2, config.getBaseLevel(), material);
 
-        log.debug("Drew free place '{}' ({}) at [{},{}] with divider {} (size {})",
-            place.getName(), place.getKind(), place.getLocalX(), place.getLocalZ(),
-            divider, slotSize);
+        log.debug(
+                "Drew free place '{}' ({}) at [{},{}] with divider {} (size {})",
+                place.getName(),
+                place.getKind(),
+                place.getLocalX(),
+                place.getLocalZ(),
+                divider,
+                slotSize);
     }
 
     /**
@@ -399,8 +430,8 @@ public class VillageBuilder extends HexGridBuilder {
         }
 
         List<TownGridConfig.PlacedPlaceConfig> buildings = config.getPlaces().stream()
-            .filter(p -> "building".equals(p.getType()))
-            .toList();
+                .filter(p -> "building".equals(p.getType()))
+                .toList();
 
         if (buildings.isEmpty()) {
             log.debug("No buildings to draw");
@@ -419,8 +450,8 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Draw a single building plot (elevated platform at level+1)
      */
-    private void drawBuildingPlot(WFlat flat, TownGridConfig.PlacedPlaceConfig place,
-                                  TownGridConfig config, int hexGridSize) {
+    private void drawBuildingPlot(
+            WFlat flat, TownGridConfig.PlacedPlaceConfig place, TownGridConfig config, int hexGridSize) {
         // Calculate slot size based on divider from place
         int divider = place.getDivider() > 0 ? place.getDivider() : 5; // Default to 5 if not set
         int slotSize = calculateSlotSize(hexGridSize, divider);
@@ -437,29 +468,32 @@ public class VillageBuilder extends HexGridBuilder {
             // Rectangular plot for large/oversized buildings
             int sizeX = slotSize;
             int sizeZ = slotSize;
-            drawRectangularSlot(flat, place.getLocalX(), place.getLocalZ(),
-                sizeX, sizeZ, plotLevel, material);
+            drawRectangularSlot(flat, place.getLocalX(), place.getLocalZ(), sizeX, sizeZ, plotLevel, material);
 
             // Store building ID as group
             if (place.getBuildingId() != null) {
-                storeGroupInRectangularSlot(flat, place.getLocalX(), place.getLocalZ(),
-                    sizeX, sizeZ, place.getBuildingId());
+                storeGroupInRectangularSlot(
+                        flat, place.getLocalX(), place.getLocalZ(), sizeX, sizeZ, place.getBuildingId());
             }
         } else {
             // Circular plot for normal buildings
-            drawCircularSlot(flat, place.getLocalX(), place.getLocalZ(),
-                slotSize / 2, plotLevel, material);
+            drawCircularSlot(flat, place.getLocalX(), place.getLocalZ(), slotSize / 2, plotLevel, material);
 
             // Store building ID as group
             if (place.getBuildingId() != null) {
-                storeGroupInSlot(flat, place.getLocalX(), place.getLocalZ(),
-                    slotSize / 2, place.getBuildingId());
+                storeGroupInSlot(flat, place.getLocalX(), place.getLocalZ(), slotSize / 2, place.getBuildingId());
             }
         }
 
-        log.debug("Drew building plot '{}' (buildingId: {}) at [{},{}] with divider {} (size {}, oversized: {})",
-            place.getName(), place.getBuildingId(), place.getLocalX(), place.getLocalZ(),
-            divider, slotSize, place.isOversized());
+        log.debug(
+                "Drew building plot '{}' (buildingId: {}) at [{},{}] with divider {} (size {}, oversized: {})",
+                place.getName(),
+                place.getBuildingId(),
+                place.getLocalX(),
+                place.getLocalZ(),
+                divider,
+                slotSize,
+                place.isOversized());
     }
 
     /**
@@ -485,8 +519,8 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Draw a rectangular slot
      */
-    private void drawRectangularSlot(WFlat flat, int centerX, int centerZ,
-                                      int sizeX, int sizeZ, int level, int material) {
+    private void drawRectangularSlot(
+            WFlat flat, int centerX, int centerZ, int sizeX, int sizeZ, int level, int material) {
         int halfX = sizeX / 2;
         int halfZ = sizeZ / 2;
 
@@ -506,8 +540,8 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Store group ID in rectangular slot area
      */
-    private void storeGroupInRectangularSlot(WFlat flat, int centerX, int centerZ,
-                                              int sizeX, int sizeZ, String groupId) {
+    private void storeGroupInRectangularSlot(
+            WFlat flat, int centerX, int centerZ, int sizeX, int sizeZ, String groupId) {
         int halfX = sizeX / 2;
         int halfZ = sizeZ / 2;
 
@@ -536,8 +570,7 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Draw a circular slot
      */
-    private void drawCircularSlot(WFlat flat, int centerX, int centerZ,
-                                   int radius, int level, int material) {
+    private void drawCircularSlot(WFlat flat, int centerX, int centerZ, int radius, int level, int material) {
         double radiusSquared = radius * radius;
 
         for (int dx = -radius; dx <= radius; dx++) {
@@ -561,8 +594,7 @@ public class VillageBuilder extends HexGridBuilder {
     /**
      * Store group ID in circular slot area
      */
-    private void storeGroupInSlot(WFlat flat, int centerX, int centerZ,
-                                   int radius, String groupId) {
+    private void storeGroupInSlot(WFlat flat, int centerX, int centerZ, int radius, String groupId) {
         double radiusSquared = radius * radius;
 
         for (int dx = -radius; dx <= radius; dx++) {
@@ -591,8 +623,12 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Converting {} places from hex to cartesian coordinates (hexGridSize: {}, flatSize: {}x{})",
-            config.getPlaces().size(), hexGridSize, flat.getSizeX(), flat.getSizeZ());
+        log.debug(
+                "Converting {} places from hex to cartesian coordinates (hexGridSize: {}, flatSize: {}x{})",
+                config.getPlaces().size(),
+                hexGridSize,
+                flat.getSizeX(),
+                flat.getSizeZ());
 
         for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
             // Create HexVector2 from hex coordinates
@@ -617,8 +653,13 @@ public class VillageBuilder extends HexGridBuilder {
             place.setLocalZ(localZ);
             place.setRelativePos(relativePos);
 
-            log.debug("Converted place '{}' from hex <{};{}> to cartesian ({}, {})",
-                place.getName(), place.getHexQ(), place.getHexR(), localX, localZ);
+            log.debug(
+                    "Converted place '{}' from hex <{};{}> to cartesian ({}, {})",
+                    place.getName(),
+                    place.getHexQ(),
+                    place.getHexR(),
+                    localX,
+                    localZ);
         }
     }
 
@@ -631,8 +672,10 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Drawing {} debug markers for village district '{}'",
-            config.getPlaces().size(), config.getDistrictName());
+        log.debug(
+                "Drawing {} debug markers for village district '{}'",
+                config.getPlaces().size(),
+                config.getDistrictName());
 
         for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
             int x = place.getLocalX();
@@ -644,16 +687,14 @@ public class VillageBuilder extends HexGridBuilder {
                     int markerX = x + dx;
                     int markerZ = z + dz;
 
-                    if (markerX >= 0 && markerX < flat.getSizeX() &&
-                        markerZ >= 0 && markerZ < flat.getSizeZ()) {
+                    if (markerX >= 0 && markerX < flat.getSizeX() && markerZ >= 0 && markerZ < flat.getSizeZ()) {
                         flat.setLevel(markerX, markerZ, 250);
                         flat.setColumn(markerX, markerZ, FlatMaterialService.STREET);
                     }
                 }
             }
 
-            log.debug("Debug marker for '{}' ({}) at [{},{}]",
-                place.getName(), place.getType(), x, z);
+            log.debug("Debug marker for '{}' ({}) at [{},{}]", place.getName(), place.getType(), x, z);
         }
 
         log.debug("Debug markers completed");
@@ -668,8 +709,10 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Drawing {} debug labels for village district '{}'",
-            config.getPlaces().size(), config.getDistrictName());
+        log.debug(
+                "Drawing {} debug labels for village district '{}'",
+                config.getPlaces().size(),
+                config.getDistrictName());
 
         for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
             String label = place.getName();

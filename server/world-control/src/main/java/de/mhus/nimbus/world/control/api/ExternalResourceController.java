@@ -1,25 +1,24 @@
 package de.mhus.nimbus.world.control.api;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.ExternalResourcePathValidator;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncService;
-import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
+import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
-import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * REST Controller for managing external resource definitions for import/export.
@@ -47,18 +46,9 @@ public class ExternalResourceController extends BaseEditorController {
     // ==================== DTOs ====================
 
     public record CreateResourceRequest(
-            String worldId,
-            String name,
-            String localPath,
-            List<String> types,
-            boolean autoGit
-    ) {}
+            String worldId, String name, String localPath, List<String> types, boolean autoGit) {}
 
-    public record UpdateResourceRequest(
-            String localPath,
-            List<String> types,
-            Boolean autoGit
-    ) {}
+    public record UpdateResourceRequest(String localPath, List<String> types, Boolean autoGit) {}
 
     public record ExternalResourceResponse(
             String worldId,
@@ -67,8 +57,7 @@ public class ExternalResourceController extends BaseEditorController {
             Instant lastSync,
             String lastSyncResult,
             List<String> types,
-            boolean autoGit
-    ) {}
+            boolean autoGit) {}
 
     public record SyncResultResponse(
             boolean success,
@@ -77,8 +66,7 @@ public class ExternalResourceController extends BaseEditorController {
             Map<String, Integer> exportedByType,
             Map<String, Integer> deletedByType,
             String errorMessage,
-            Instant timestamp
-    ) {}
+            Instant timestamp) {}
 
     public record ImportResultResponse(
             boolean success,
@@ -87,8 +75,7 @@ public class ExternalResourceController extends BaseEditorController {
             Map<String, Integer> importedByType,
             Map<String, Integer> deletedByType,
             String errorMessage,
-            Instant timestamp
-    ) {}
+            Instant timestamp) {}
 
     // ==================== CRUD Operations ====================
 
@@ -120,11 +107,8 @@ public class ExternalResourceController extends BaseEditorController {
         }
 
         // Check if already exists
-        var existing = anythingService.findByWorldIdAndCollectionAndName(
-                request.worldId(),
-                COLLECTION_NAME,
-                request.name()
-        );
+        var existing =
+                anythingService.findByWorldIdAndCollectionAndName(request.worldId(), COLLECTION_NAME, request.name());
         if (existing.isPresent()) {
             return conflict("Resource with title '" + request.name() + "' already exists");
         }
@@ -163,9 +147,8 @@ public class ExternalResourceController extends BaseEditorController {
 
         List<WAnything> entities = anythingService.findByWorldIdAndCollection(worldId, COLLECTION_NAME);
 
-        List<ExternalResourceResponse> responses = entities.stream()
-                .map(this::toResponse)
-                .toList();
+        List<ExternalResourceResponse> responses =
+                entities.stream().map(this::toResponse).toList();
 
         return ResponseEntity.ok(responses);
     }
@@ -189,10 +172,11 @@ public class ExternalResourceController extends BaseEditorController {
 
     @PutMapping("/{name}")
     @Operation(summary = "Update external resource definition")
-    public ResponseEntity<?> update(@RequestParam String worldId,
-                                    @PathVariable String name,
-                                    @RequestBody UpdateResourceRequest request,
-                                    HttpServletRequest httpRequest) {
+    public ResponseEntity<?> update(
+            @RequestParam String worldId,
+            @PathVariable String name,
+            @RequestBody UpdateResourceRequest request,
+            HttpServletRequest httpRequest) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
@@ -237,7 +221,8 @@ public class ExternalResourceController extends BaseEditorController {
 
     @DeleteMapping("/{name}")
     @Operation(summary = "Delete external resource definition")
-    public ResponseEntity<?> delete(@RequestParam String worldId, @PathVariable String name, HttpServletRequest request) {
+    public ResponseEntity<?> delete(
+            @RequestParam String worldId, @PathVariable String name, HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
@@ -257,11 +242,12 @@ public class ExternalResourceController extends BaseEditorController {
 
     @PostMapping("/{name}/export")
     @Operation(summary = "Export world data to filesystem")
-    public ResponseEntity<?> export(@RequestParam String worldId,
-                                    @PathVariable String name,
-                                    @RequestParam(defaultValue = "false") boolean force,
-                                    @RequestParam(defaultValue = "false") boolean remove,
-                                    HttpServletRequest request) {
+    public ResponseEntity<?> export(
+            @RequestParam String worldId,
+            @PathVariable String name,
+            @RequestParam(defaultValue = "false") boolean force,
+            @RequestParam(defaultValue = "false") boolean remove,
+            HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
@@ -303,19 +289,19 @@ public class ExternalResourceController extends BaseEditorController {
                 result.exportedByType(),
                 result.deletedByType(),
                 result.errorMessage(),
-                result.timestamp()
-        );
+                result.timestamp());
 
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{name}/import")
     @Operation(summary = "Import world data from filesystem")
-    public ResponseEntity<?> importData(@RequestParam String worldId,
-                                       @PathVariable String name,
-                                       @RequestParam(defaultValue = "false") boolean force,
-                                       @RequestParam(defaultValue = "false") boolean remove,
-                                       HttpServletRequest request) {
+    public ResponseEntity<?> importData(
+            @RequestParam String worldId,
+            @PathVariable String name,
+            @RequestParam(defaultValue = "false") boolean force,
+            @RequestParam(defaultValue = "false") boolean remove,
+            HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
@@ -357,8 +343,7 @@ public class ExternalResourceController extends BaseEditorController {
                 result.importedByType(),
                 result.deletedByType(),
                 result.errorMessage(),
-                result.timestamp()
-        );
+                result.timestamp());
 
         return ResponseEntity.ok(response);
     }
@@ -375,7 +360,6 @@ public class ExternalResourceController extends BaseEditorController {
                 dto.getLastSync(),
                 dto.getLastSyncResult(),
                 dto.getTypes(),
-                dto.isAutoGit()
-        );
+                dto.isAutoGit());
     }
 }

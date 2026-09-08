@@ -15,11 +15,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Base filter for access control using sessionToken cookies.
@@ -54,8 +53,11 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
     private final RegionSettings regionProperties;
     private final MetricService metricService;
 
-    protected AccessFilterBase(JwtService jwtService, WSessionService sessionService,
-                                RegionSettings regionProperties, MetricService metricService) {
+    protected AccessFilterBase(
+            JwtService jwtService,
+            WSessionService sessionService,
+            RegionSettings regionProperties,
+            MetricService metricService) {
         this.jwtService = jwtService;
         this.sessionService = sessionService;
         this.regionProperties = regionProperties;
@@ -114,13 +116,15 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                     HttpServletResponse response,
-                                     FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-        log.trace("AccessFilter processing request: {} {} from host: {}, origin: {}",
-                request.getMethod(), request.getRequestURI(),
-                request.getHeader("Host"), request.getHeader("Origin"));
+        log.trace(
+                "AccessFilter processing request: {} {} from host: {}, origin: {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                request.getHeader("Host"),
+                request.getHeader("Origin"));
 
         // Always allow OPTIONS requests (CORS preflight) - they don't have cookies
         if ("OPTIONS".equals(request.getMethod())) {
@@ -196,8 +200,12 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                                 request.setAttribute(ATTR_SESSION_ID, claims.sessionId());
                                 request.setAttribute(ATTR_CHARACTER_ID, claims.characterId());
 
-                                log.trace("Access validated - userId={}, worldId={}, agent={}, sessionId={}",
-                                        claims.userId(), claims.worldId(), claims.agent(), claims.sessionId());
+                                log.trace(
+                                        "Access validated - userId={}, worldId={}, agent={}, sessionId={}",
+                                        claims.userId(),
+                                        claims.worldId(),
+                                        claims.agent(),
+                                        claims.sessionId());
                             }
                         }
                     }
@@ -215,11 +223,11 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         // Allow access to actuator health endpoint
         if (request.getRequestURI().startsWith("/actuator/")) {
             logger.debug("Allowing access to /actuator/ endpoint");
-        } else
-        if (!authenticated && shouldRequireAuthentication(request.getRequestURI(), request.getMethod())) {
+        } else if (!authenticated && shouldRequireAuthentication(request.getRequestURI(), request.getMethod())) {
             // Check if authentication is required for this path
             denyMetric("auth_required");
-            log.warn("Access denied - authentication required for: {} {}", request.getMethod(), request.getRequestURI());
+            log.warn(
+                    "Access denied - authentication required for: {} {}", request.getMethod(), request.getRequestURI());
             handleUnauthorized(request, response);
             return;
         }
@@ -228,8 +236,11 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         if (authenticated && validatedClaims != null) {
             if (!isPathAllowedForRole(request.getRequestURI(), validatedClaims)) {
                 denyMetric("role_forbidden");
-                log.warn("Access denied - path not allowed for role={}: {} {}",
-                        validatedClaims.role(), request.getMethod(), request.getRequestURI());
+                log.warn(
+                        "Access denied - path not allowed for role={}: {} {}",
+                        validatedClaims.role(),
+                        request.getMethod(),
+                        request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("text/html; charset=UTF-8");
                 response.getWriter().write("""
@@ -336,9 +347,15 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         if (cookies != null) {
             log.trace("Found {} cookies in request", cookies.length);
             for (Cookie cookie : cookies) {
-                log.trace("Cookie: name='{}', value='{}...'",
+                log.trace(
+                        "Cookie: name='{}', value='{}...'",
                         cookie.getName(),
-                        cookie.getValue() != null ? cookie.getValue().substring(0, Math.min(20, cookie.getValue().length())) : "null");
+                        cookie.getValue() != null
+                                ? cookie.getValue()
+                                        .substring(
+                                                0,
+                                                Math.min(20, cookie.getValue().length()))
+                                : "null");
 
                 if ("sessionToken".equals(cookie.getName())) {
                     log.trace("sessionToken cookie found via getCookies()!");
@@ -389,8 +406,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                     token,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
-            );
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN));
 
             if (jwsOpt.isEmpty()) {
                 log.warn("Token validation failed");
@@ -447,21 +463,18 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
 
             // Check worldId matches
             if (!claims.worldId().equals(session.getWorldId())) {
-                log.warn("Session worldId mismatch - expected={}, actual={}",
-                        session.getWorldId(), claims.worldId());
+                log.warn("Session worldId mismatch - expected={}, actual={}", session.getWorldId(), claims.worldId());
                 return false;
             }
 
             // Check playerId matches
             String expectedPlayerId = "@" + claims.userId() + ":" + claims.characterId();
             if (!expectedPlayerId.equals(session.getPlayerId())) {
-                log.warn("Session playerId mismatch - expected={}, actual={}",
-                        session.getPlayerId(), expectedPlayerId);
+                log.warn("Session playerId mismatch - expected={}, actual={}", session.getPlayerId(), expectedPlayerId);
                 return false;
             }
 
-            log.trace("Redis session validated - sessionId={}, status={}",
-                    claims.sessionId(), session.getStatus());
+            log.trace("Redis session validated - sessionId={}, status={}", claims.sessionId(), session.getStatus());
             return true;
 
         } catch (Exception e) {
@@ -490,11 +503,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         try {
             // Validate token with JWT service
             var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
-            Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
-                    token,
-                    KeyType.SECTOR,
-                    intent
-            );
+            Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(token, KeyType.SECTOR, intent);
 
             if (jwsOpt.isEmpty()) {
                 log.warn("Bearer token validation failed");
@@ -543,6 +552,5 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             String characterId,
             String role,
             String sessionId,
-            String regionId
-    ) {}
+            String regionId) {}
 }

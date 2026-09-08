@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -9,10 +12,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Business logic service for WAnythingEntity.
@@ -56,17 +55,20 @@ public class WAnythingService {
         }
 
         if (all.size() > 1) {
-            log.warn("Multiple entities found for worldId={}, collection={}, name={} - returning newest (count: {})",
-                    world, collection, name, all.size());
+            log.warn(
+                    "Multiple entities found for worldId={}, collection={}, name={} - returning newest (count: {})",
+                    world,
+                    collection,
+                    name,
+                    all.size());
         }
 
-        return all.stream()
-                .max((a, b) -> {
-                    if (a.getUpdatedAt() == null && b.getUpdatedAt() == null) return 0;
-                    if (a.getUpdatedAt() == null) return -1;
-                    if (b.getUpdatedAt() == null) return 1;
-                    return a.getUpdatedAt().compareTo(b.getUpdatedAt());
-                });
+        return all.stream().max((a, b) -> {
+            if (a.getUpdatedAt() == null && b.getUpdatedAt() == null) return 0;
+            if (a.getUpdatedAt() == null) return -1;
+            if (b.getUpdatedAt() == null) return 1;
+            return a.getUpdatedAt().compareTo(b.getUpdatedAt());
+        });
     }
 
     /**
@@ -100,7 +102,14 @@ public class WAnythingService {
      * Create a new entity scoped by worldId.
      */
     @Transactional
-    public WAnything create(String worldId, String collection, String name, String title, String description, String type, Object data) {
+    public WAnything create(
+            String worldId,
+            String collection,
+            String name,
+            String title,
+            String description,
+            String type,
+            Object data) {
         WorldId parsed = WorldId.of(worldId).orElseThrow();
         if (parsed.isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
@@ -108,8 +117,8 @@ public class WAnythingService {
         WorldId world = parsed.toBaseWorldId();
 
         if (repository.existsByWorldIdAndCollectionAndName(world.getId(), collection, name)) {
-            throw new IllegalStateException("Entity already exists: worldId=" + worldId +
-                    ", collection=" + collection + ", name=" + name);
+            throw new IllegalStateException(
+                    "Entity already exists: worldId=" + worldId + ", collection=" + collection + ", name=" + name);
         }
 
         WAnything entity = WAnything.builder()
@@ -125,8 +134,13 @@ public class WAnythingService {
         entity.removeWorldPrefix();
 
         repository.save(entity);
-        log.debug("WAnythingEntity created: worldId={}, collection={}, name={}, title={}, type={}",
-                worldId, collection, name, title, type);
+        log.debug(
+                "WAnythingEntity created: worldId={}, collection={}, name={}, title={}, type={}",
+                worldId,
+                collection,
+                name,
+                title,
+                type);
         return entity;
     }
 
@@ -140,8 +154,11 @@ public class WAnythingService {
             existing.touchUpdate();
             existing.removeWorldPrefix();
             repository.save(existing);
-            log.debug("WAnythingEntity updated: id={}, collection={}, name={}",
-                    id, existing.getCollection(), existing.getName());
+            log.debug(
+                    "WAnythingEntity updated: id={}, collection={}, name={}",
+                    id,
+                    existing.getCollection(),
+                    existing.getName());
             return existing;
         });
     }
@@ -154,8 +171,11 @@ public class WAnythingService {
         entity.touchUpdate();
         entity.removeWorldPrefix();
         WAnything saved = repository.save(entity);
-        log.debug("WAnythingEntity saved: id={}, collection={}, name={}",
-                saved.getId(), saved.getCollection(), saved.getName());
+        log.debug(
+                "WAnythingEntity saved: id={}, collection={}, name={}",
+                saved.getId(),
+                saved.getCollection(),
+                saved.getName());
         return saved;
     }
 
@@ -189,14 +209,13 @@ public class WAnythingService {
     public List<String> findDistinctCollections(String worldId) {
         WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         var query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("worldId").is(world.getId()));
+        query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("worldId")
+                .is(world.getId()));
 
         List<String> collections = mongoTemplate.findDistinct(query, "collection", WAnything.class, String.class);
         log.debug("Found {} distinct collections (worldId={})", collections.size(), worldId);
 
-        return collections.stream()
-                .sorted()
-                .toList();
+        return collections.stream().sorted().toList();
     }
 
     /**
@@ -210,10 +229,7 @@ public class WAnythingService {
      */
     @Transactional
     public int deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WAnything.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WAnything.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} anythings for world {}", deleted, worldId);
         return (int) deleted;
@@ -258,8 +274,7 @@ public class WAnythingService {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} anythings from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} anythings from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -272,15 +287,12 @@ public class WAnythingService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WAnything.class, "anything", worldId,
-                doc -> {
-                    String collection = doc.getString("collection");
-                    String docName = doc.getString("name");
-                    if (docName == null) return null;
-                    return doc.getString("worldId") + "|" + (collection != null ? collection : "") + "|" + docName;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WAnything.class, "anything", worldId, doc -> {
+            String collection = doc.getString("collection");
+            String docName = doc.getString("name");
+            if (docName == null) return null;
+            return doc.getString("worldId") + "|" + (collection != null ? collection : "") + "|" + docName;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -305,11 +317,15 @@ public class WAnythingService {
      * key value is matched against {@code title} to preserve existing behavior.
      */
     @Transactional(readOnly = true)
-    public Optional<Document> findDocumentByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
+    public Optional<Document> findDocumentByWorldIdAndCollectionAndName(
+            String worldId, String collection, String name) {
         String collectionName = mongoTemplate.getCollectionName(WAnything.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("collection").is(collection)
-                .and("title").is(name));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("collection")
+                .is(collection)
+                .and("title")
+                .is(name));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -321,9 +337,12 @@ public class WAnythingService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WAnything.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("collection").is(doc.getString("collection"))
-                .and("title").is(doc.getString("title")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("collection")
+                .is(doc.getString("collection"))
+                .and("title")
+                .is(doc.getString("title")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

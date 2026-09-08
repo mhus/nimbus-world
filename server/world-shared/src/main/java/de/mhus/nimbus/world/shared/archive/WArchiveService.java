@@ -6,5 +6,4 @@ import java.io.InputStream;
 public interface WArchiveService {
 
     void archive(String path, InputStream stream) throws IOException;
-
 }

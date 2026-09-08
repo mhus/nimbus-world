@@ -12,6 +12,11 @@
     <name>server-generated</name>
     <packaging>jar</packaging>
 
+    <properties>
+        <!-- Generated code is the contract to the frontend and must not be reformatted -->
+        <spotless.skip>true</spotless.skip>
+    </properties>
+
     <dependencies>
 
         <!-- Jackson annotations for @JsonProperty/@JsonInclude used in generated sources.

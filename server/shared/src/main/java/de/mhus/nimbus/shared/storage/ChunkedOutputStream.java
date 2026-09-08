@@ -1,11 +1,10 @@
 package de.mhus.nimbus.shared.storage;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Date;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Custom OutputStream that automatically splits data into chunks and saves to MongoDB.
@@ -44,8 +43,15 @@ public class ChunkedOutputStream extends OutputStream {
      * @param chunkSize  Maximum chunk size in bytes (typically 512KB)
      * @param createdAt  Creation timestamp for all chunks
      */
-    public ChunkedOutputStream(StorageDataRepository repository, String uuid, String schema, String schemaVersion, String worldId, String path,
-                               int chunkSize, Date createdAt) {
+    public ChunkedOutputStream(
+            StorageDataRepository repository,
+            String uuid,
+            String schema,
+            String schemaVersion,
+            String worldId,
+            String path,
+            int chunkSize,
+            Date createdAt) {
         this.repository = repository;
         this.uuid = uuid;
         this.worldId = worldId;
@@ -138,8 +144,8 @@ public class ChunkedOutputStream extends OutputStream {
                 flushChunk(true);
             }
 
-            log.debug("ChunkedOutputStream closed: uuid={} chunks={} totalBytes={}",
-                    uuid, chunkIndex, totalBytesWritten);
+            log.debug(
+                    "ChunkedOutputStream closed: uuid={} chunks={} totalBytes={}", uuid, chunkIndex, totalBytesWritten);
 
         } finally {
             closed = true;
@@ -189,8 +195,7 @@ public class ChunkedOutputStream extends OutputStream {
             // is also populated by Spring Data on save.
             StorageData saved = repository.save(chunk);
             lastChunk = (saved != null) ? saved : chunk;
-            log.trace("Saved chunk: uuid={} index={} size={} final={}",
-                    uuid, chunkIndex, chunkData.length, isFinal);
+            log.trace("Saved chunk: uuid={} index={} size={} final={}", uuid, chunkIndex, chunkData.length, isFinal);
 
             chunkIndex++;
             bufferPosition = 0;

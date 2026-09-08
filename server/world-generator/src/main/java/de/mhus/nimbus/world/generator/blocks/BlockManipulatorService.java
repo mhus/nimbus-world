@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
@@ -11,12 +9,13 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for managing and executing block manipulators and generators.
@@ -51,19 +50,21 @@ public class BlockManipulatorService {
      * @param worldService service for loading world data
      */
     @Autowired
-    public BlockManipulatorService(List<BlockManipulator> manipulators,
-                                  List<de.mhus.nimbus.world.generator.blocks.painter.BlockPainterProvider> painterProviders,
-                                  ObjectMapper objectMapper,
-                                  WSessionService wSessionService,
-                                  WEditCacheService editCacheService,
-                                  WWorldService worldService) {
+    public BlockManipulatorService(
+            List<BlockManipulator> manipulators,
+            List<de.mhus.nimbus.world.generator.blocks.painter.BlockPainterProvider> painterProviders,
+            ObjectMapper objectMapper,
+            WSessionService wSessionService,
+            WEditCacheService editCacheService,
+            WWorldService worldService) {
         this.manipulators = manipulators;
         this.painterProviders = painterProviders;
         this.objectMapper = objectMapper;
         this.wSessionService = wSessionService;
         this.editCacheService = editCacheService;
         this.worldService = worldService;
-        log.info("BlockManipulatorService initialized with {} manipulators and {} painter providers (lazy-loaded)",
+        log.info(
+                "BlockManipulatorService initialized with {} manipulators and {} painter providers (lazy-loaded)",
                 manipulators != null ? manipulators.size() : 0,
                 painterProviders != null ? painterProviders.size() : 0);
     }
@@ -79,7 +80,8 @@ public class BlockManipulatorService {
                 for (BlockManipulator manipulator : manipulators) {
                     String name = manipulator.getName();
                     if (manipulatorMap.containsKey(name)) {
-                        log.warn("Duplicate manipulator name '{}' detected. Previous: {}, New: {}",
+                        log.warn(
+                                "Duplicate manipulator name '{}' detected. Previous: {}, New: {}",
                                 name,
                                 manipulatorMap.get(name).getClass().getSimpleName(),
                                 manipulator.getClass().getSimpleName());
@@ -103,7 +105,8 @@ public class BlockManipulatorService {
                 for (de.mhus.nimbus.world.generator.blocks.painter.BlockPainterProvider provider : painterProviders) {
                     String name = provider.getName();
                     if (painterProviderMap.containsKey(name)) {
-                        log.warn("Duplicate painter provider name '{}' detected. Previous: {}, New: {}",
+                        log.warn(
+                                "Duplicate painter provider name '{}' detected. Previous: {}, New: {}",
                                 name,
                                 painterProviderMap.get(name).getClass().getSimpleName(),
                                 provider.getClass().getSimpleName());
@@ -204,14 +207,20 @@ public class BlockManipulatorService {
         applyTransformations(context);
 
         log.info("Executing manipulator '{}' - {}", manipulatorName, manipulator.getTitle());
-        log.debug("Context: originalParams={}, params={}, sessionId={}",
-                context.getOriginalParams(), context.getParams(), context.getSessionId());
+        log.debug(
+                "Context: originalParams={}, params={}, sessionId={}",
+                context.getOriginalParams(),
+                context.getParams(),
+                context.getSessionId());
 
         try {
             ManipulatorResult result = manipulator.execute(context);
 
-            log.info("Manipulator '{}' completed: successful={}, message={}",
-                    manipulatorName, result.isSuccess(), result.getMessage());
+            log.info(
+                    "Manipulator '{}' completed: successful={}, message={}",
+                    manipulatorName,
+                    result.isSuccess(),
+                    result.getMessage());
 
             return result;
         } catch (Exception e) {
@@ -406,8 +415,11 @@ public class BlockManipulatorService {
         positionNode.put("z", pos.getZ().intValue());
         params.set("position", positionNode);
 
-        log.debug("Applied position transformation: ({}, {}, {})",
-                pos.getX().intValue(), pos.getY().intValue(), pos.getZ().intValue());
+        log.debug(
+                "Applied position transformation: ({}, {}, {})",
+                pos.getX().intValue(),
+                pos.getY().intValue(),
+                pos.getZ().intValue());
     }
 
     /**
@@ -518,8 +530,11 @@ public class BlockManipulatorService {
                 int depth = params.get("depth").asInt();
                 params.put("width", depth);
                 params.put("depth", width);
-                log.debug("Applied forward transformation: direction={}, swapped width={} <-> depth={}",
-                        direction, depth, width);
+                log.debug(
+                        "Applied forward transformation: direction={}, swapped width={} <-> depth={}",
+                        direction,
+                        depth,
+                        width);
             } else {
                 log.debug("Applied forward transformation: direction={} (no width/depth to swap)", direction);
             }
@@ -579,9 +594,8 @@ public class BlockManipulatorService {
             // Build autoSelectName in format: layerDataId:layerName
             // Frontend expects: "#color,layerDataId:layerName"
             String layerName = context.getLayerName();
-            String autoSelectName = layerName != null && !layerName.isBlank()
-                    ? layerDataId + ":" + layerName
-                    : layerDataId;
+            String autoSelectName =
+                    layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
             context.setModelSelector(ModelSelector.builder()
                     .defaultColor("#00ff00")
@@ -615,8 +629,10 @@ public class BlockManipulatorService {
                 painter.setPainter(customPainter);
                 log.debug("Applied custom painter: {} - {}", painterType, provider.getTitle());
             } else {
-                log.warn("Unknown painter type '{}', using default. Available painters: {}",
-                        painterType, painterProviderMap.keySet());
+                log.warn(
+                        "Unknown painter type '{}', using default. Available painters: {}",
+                        painterType,
+                        painterProviderMap.keySet());
             }
         }
 
@@ -634,8 +650,13 @@ public class BlockManipulatorService {
             }
         }
 
-        log.debug("Created BlockPainter: world={}, layerDataId={}, modelName={}, groupId={}, blockType={}, painter={}, flavor={}",
-                worldId, layerDataId, modelName, groupId, blockDef.getBlockTypeId(),
+        log.debug(
+                "Created BlockPainter: world={}, layerDataId={}, modelName={}, groupId={}, blockType={}, painter={}, flavor={}",
+                worldId,
+                layerDataId,
+                modelName,
+                groupId,
+                blockDef.getBlockTypeId(),
                 painterType != null ? painterType : "default",
                 painterFlavor != null ? painterFlavor : "none");
 
@@ -650,7 +671,8 @@ public class BlockManipulatorService {
      * @param basePainter painter to wrap
      * @return wrapped painter, or null if flavor not found
      */
-    private EditCachePainter.BlockPainter applyPainterFlavor(String flavorName, EditCachePainter.BlockPainter basePainter) {
+    private EditCachePainter.BlockPainter applyPainterFlavor(
+            String flavorName, EditCachePainter.BlockPainter basePainter) {
         if (flavorName == null || basePainter == null) {
             return null;
         }

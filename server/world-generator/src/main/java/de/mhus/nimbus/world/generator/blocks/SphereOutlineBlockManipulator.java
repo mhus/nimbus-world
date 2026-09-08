@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Sphere Outline Block Manipulator - creates a hollow sphere (shell).
@@ -54,9 +54,8 @@ public class SphereOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow sphere (shell). " +
-                "Parameters: position {x,y,z}, radius, blockType (optional). " +
-                "Example: {\"sphere-outline\": {\"transform\": \"position\", \"radius\": 8}}";
+        return "Creates a hollow sphere (shell). " + "Parameters: position {x,y,z}, radius, blockType (optional). "
+                + "Example: {\"sphere-outline\": {\"transform\": \"position\", \"radius\": 8}}";
     }
 
     @Override
@@ -103,8 +102,7 @@ public class SphereOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate sphere outline
-        log.info("Generating sphere outline: pos=({},{},{}), radius={}, blockType={}",
-                x, y, z, radius, blockType);
+        log.info("Generating sphere outline: pos=({},{},{}), radius={}, blockType={}", x, y, z, radius, blockType);
 
         painter.sphereOutline(x, y, z, radius);
 
@@ -112,8 +110,8 @@ public class SphereOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated sphere outline: %d blocks (radius %d) at (%d,%d,%d)",
-                blockCount, radius, x, y, z);
+        String message = String.format(
+                "Generated sphere outline: %d blocks (radius %d) at (%d,%d,%d)", blockCount, radius, x, y, z);
 
         log.info(message);
 

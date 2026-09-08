@@ -6,19 +6,16 @@ import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.CraftingRecipeDefinition;
 import de.mhus.nimbus.world.shared.world.SpellWordService;
-import de.mhus.nimbus.world.shared.world.WAnything;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/crafting")
@@ -34,8 +31,7 @@ public class PlayerCraftingController extends BaseEditorController {
     @GetMapping("/recipes")
     @Operation(summary = "Get known recipes for the player, optionally filtered by category")
     public ResponseEntity<?> getKnownRecipes(
-            @RequestParam(required = false) String category,
-            HttpServletRequest request) {
+            @RequestParam(required = false) String category, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -79,9 +75,7 @@ public class PlayerCraftingController extends BaseEditorController {
 
     @PostMapping("/try")
     @Operation(summary = "Try to find a matching recipe for given materials (free experimentation)")
-    public ResponseEntity<?> tryRecipe(
-            @RequestBody TryRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> tryRecipe(@RequestBody TryRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -119,9 +113,7 @@ public class PlayerCraftingController extends BaseEditorController {
 
     @PostMapping("/craft")
     @Operation(summary = "Execute crafting: consume materials, create result, learn recipe")
-    public ResponseEntity<?> craft(
-            @RequestBody CraftRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> craft(@RequestBody CraftRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -155,26 +147,30 @@ public class PlayerCraftingController extends BaseEditorController {
         }
 
         String playerId = userId + ":" + characterId;
-        var result = craftingService.craft(worldId, parsedWorldId.toRegionCollection(),
-                character.getId(), playerId, body.recipeName(), body.spellWords());
+        var result = craftingService.craft(
+                worldId,
+                parsedWorldId.toRegionCollection(),
+                character.getId(),
+                playerId,
+                body.recipeName(),
+                body.spellWords());
 
         if (result.isEmpty()) {
             return ResponseEntity.ok(Map.of("success", false, "message", "Crafting fehlgeschlagen"));
         }
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "resultItemId", result.get()
-        ));
+        return ResponseEntity.ok(Map.of("success", true, "resultItemId", result.get()));
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
-        return characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        return characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
     }
 
     record TryRequest(Map<String, Integer> materials, String category) {}
-    record CraftRequest(String recipeName, List<String> spellWords) {}
 
+    record CraftRequest(String recipeName, List<String> spellWords) {}
 }

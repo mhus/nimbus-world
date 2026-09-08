@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WChat entities.
@@ -28,7 +27,8 @@ public interface WChatRepository extends MongoRepository<WChat, String> {
 
     List<WChat> findByWorldIdAndTypeAndOwnerId(String worldId, String type, String ownerId);
 
-    List<WChat> findByWorldIdAndTypeAndOwnerIdAndArchived(String worldId, String type, String ownerId, boolean archived);
+    List<WChat> findByWorldIdAndTypeAndOwnerIdAndArchived(
+            String worldId, String type, String ownerId, boolean archived);
 
     boolean existsByWorldIdAndChatId(String worldId, String chatId);
 
@@ -36,7 +36,9 @@ public interface WChatRepository extends MongoRepository<WChat, String> {
 
     List<WChat> findByWorldIdAndParentChatId(String worldId, String parentChatId);
 
-    List<WChat> findByWorldIdAndOwnerIdAndArchivedAndInternal(String worldId, String ownerId, boolean archived, boolean internal);
+    List<WChat> findByWorldIdAndOwnerIdAndArchivedAndInternal(
+            String worldId, String ownerId, boolean archived, boolean internal);
 
-    List<WChat> findByWorldIdAndTypeAndOwnerIdAndArchivedAndInternal(String worldId, String type, String ownerId, boolean archived, boolean internal);
+    List<WChat> findByWorldIdAndTypeAndOwnerIdAndArchivedAndInternal(
+            String worldId, String type, String ownerId, boolean archived, boolean internal);
 }

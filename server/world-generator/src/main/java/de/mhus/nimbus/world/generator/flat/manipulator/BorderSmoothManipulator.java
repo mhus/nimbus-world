@@ -2,10 +2,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Border smooth manipulator that smooths terrain heights at the edges of a flat.
@@ -101,15 +100,30 @@ public class BorderSmoothManipulator implements FlatManipulator {
         // Bottom-right corner
         smoothCorner(flat, x, z, sizeX - 1, sizeZ - 1, totalCornerDepth, strength, originalHeights);
 
-        log.info("Border smoothed: region=({},{},{},{}), depth={}, strength={}, cornerDepth={}",
-                x, z, sizeX, sizeZ, depth, strength, cornerDepth);
+        log.info(
+                "Border smoothed: region=({},{},{},{}), depth={}, strength={}, cornerDepth={}",
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                depth,
+                strength,
+                cornerDepth);
     }
 
     /**
      * Smooth vertical border (top or bottom edge).
      */
-    private void smoothVerticalBorder(WFlat flat, int offsetX, int offsetZ, int localX, int edgeZ,
-                                      int depth, double strength, int[][] originalHeights, boolean isTop) {
+    private void smoothVerticalBorder(
+            WFlat flat,
+            int offsetX,
+            int offsetZ,
+            int localX,
+            int edgeZ,
+            int depth,
+            double strength,
+            int[][] originalHeights,
+            boolean isTop) {
         int flatX = offsetX + localX;
 
         // Get edge height (this won't be modified)
@@ -136,8 +150,16 @@ public class BorderSmoothManipulator implements FlatManipulator {
     /**
      * Smooth horizontal border (left or right edge).
      */
-    private void smoothHorizontalBorder(WFlat flat, int offsetX, int offsetZ, int edgeX, int localZ,
-                                        int depth, double strength, int[][] originalHeights, boolean isLeft) {
+    private void smoothHorizontalBorder(
+            WFlat flat,
+            int offsetX,
+            int offsetZ,
+            int edgeX,
+            int localZ,
+            int depth,
+            double strength,
+            int[][] originalHeights,
+            boolean isLeft) {
         int flatZ = offsetZ + localZ;
 
         // Get edge height (this won't be modified)
@@ -164,8 +186,15 @@ public class BorderSmoothManipulator implements FlatManipulator {
     /**
      * Smooth corner region with additional depth for smoother transitions.
      */
-    private void smoothCorner(WFlat flat, int offsetX, int offsetZ, int cornerX, int cornerZ,
-                             int totalDepth, double strength, int[][] originalHeights) {
+    private void smoothCorner(
+            WFlat flat,
+            int offsetX,
+            int offsetZ,
+            int cornerX,
+            int cornerZ,
+            int totalDepth,
+            double strength,
+            int[][] originalHeights) {
         int sizeX = originalHeights.length;
         int sizeZ = originalHeights[0].length;
 

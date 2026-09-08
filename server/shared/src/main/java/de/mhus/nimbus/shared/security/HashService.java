@@ -1,13 +1,12 @@
 package de.mhus.nimbus.shared.security;
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for hashing and validating strings with optional salt support.
@@ -151,7 +150,8 @@ public class HashService {
             String salt = new String(Base64.getDecoder().decode(saltBase64), StandardCharsets.UTF_8);
             return new HashParts(parts[0], salt, parts[2]);
         } else {
-            throw new HashException("Invalid hash format. Expected 'algorithm;hashBase64' or 'algorithm:saltBase64;hashBase64'");
+            throw new HashException(
+                    "Invalid hash format. Expected 'algorithm;hashBase64' or 'algorithm:saltBase64;hashBase64'");
         }
     }
 

@@ -21,13 +21,12 @@ import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor for creating default world entities.
@@ -70,13 +69,17 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
             log.info("Creating default entities for world: {}", worldId);
 
             StringBuilder resultMessage = new StringBuilder();
-            resultMessage.append("Created default entities for world ").append(worldId).append(":\n");
+            resultMessage
+                    .append("Created default entities for world ")
+                    .append(worldId)
+                    .append(":\n");
 
             // 1. Create default layers
             log.info("Creating default layers for world {}", worldId);
             try {
                 // Layer 1: ground (order 10, baseGround=true)
-                WLayer groundLayer = layerService.createLayer(worldId, "ground", LayerType.GROUND, 10, true, null, true);
+                WLayer groundLayer =
+                        layerService.createLayer(worldId, "ground", LayerType.GROUND, 10, true, null, true);
                 resultMessage.append("- Layer 'ground' created\n");
                 log.debug("Created default layer 'ground' for world {}", worldId);
 
@@ -92,10 +95,7 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
 
                 // 2. Create default hex grid at 0:0
                 log.info("Creating default hex grid at 0:0 for world {}", worldId);
-                HexVector2 hexPosition = HexVector2.builder()
-                        .q(0)
-                        .r(0)
-                        .build();
+                HexVector2 hexPosition = HexVector2.builder().q(0).r(0).build();
 
                 HexGrid hexGridData = HexGrid.builder()
                         .position(hexPosition)
@@ -126,28 +126,19 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
                 for (int x = 0; x < 32; x++) {
                     for (int z = 0; z < 32; z++) {
                         Block block = Block.builder()
-                                .position(Vector3Int.builder()
-                                        .x(x)
-                                        .y(65)
-                                        .z(z)
-                                        .build())
+                                .position(Vector3Int.builder().x(x).y(65).z(z).build())
                                 .blockTypeId("n:g")
                                 .build();
 
-                        LayerBlock layerBlock = LayerBlock.builder()
-                                .block(block)
-                                .group(null)
-                                .build();
+                        LayerBlock layerBlock =
+                                LayerBlock.builder().block(block).group(null).build();
 
                         blocks.add(layerBlock);
                     }
                 }
 
-                LayerChunkData chunkData = LayerChunkData.builder()
-                        .cx(0)
-                        .cz(0)
-                        .blocks(blocks)
-                        .build();
+                LayerChunkData chunkData =
+                        LayerChunkData.builder().cx(0).cz(0).blocks(blocks).build();
 
                 layerService.saveTerrainChunk(worldId, groundLayer.getLayerDataId(), chunkKey, chunkData);
                 resultMessage.append("- Initial ground plateau at 0:0 created (32x32 = 1024 blocks at height 65)\n");
@@ -160,59 +151,52 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
 
                 // 4. Set default world configuration (boundaries, entry point, chunk size, hex grid size)
                 log.info("Setting default world configuration for world {}", worldId);
-                worldService.updateWorld(de.mhus.nimbus.shared.types.WorldId.of(worldId).orElseThrow(), world -> {
-                    WorldInfo publicData = world.getPublicData();
-                    if (publicData == null) {
-                        publicData = new WorldInfo();
-                        world.setPublicData(publicData);
-                    }
+                worldService.updateWorld(
+                        de.mhus.nimbus.shared.types.WorldId.of(worldId).orElseThrow(), world -> {
+                            WorldInfo publicData = world.getPublicData();
+                            if (publicData == null) {
+                                publicData = new WorldInfo();
+                                world.setPublicData(publicData);
+                            }
 
-                    // Set boundaries (start = min, stop = max)
-                    Vector3 boundariesMin = Vector3.builder()
-                            .x(-200.0f)
-                            .y(0.0f)
-                            .z(-200.0f)
-                            .build();
-                    publicData.setStart(boundariesMin);
+                            // Set boundaries (start = min, stop = max)
+                            Vector3 boundariesMin = Vector3.builder()
+                                    .x(-200.0f)
+                                    .y(0.0f)
+                                    .z(-200.0f)
+                                    .build();
+                            publicData.setStart(boundariesMin);
 
-                    Vector3 boundariesMax = Vector3.builder()
-                            .x(200.0f)
-                            .y(200.0f)
-                            .z(200.0f)
-                            .build();
-                    publicData.setStop(boundariesMax);
+                            Vector3 boundariesMax = Vector3.builder()
+                                    .x(200.0f)
+                                    .y(200.0f)
+                                    .z(200.0f)
+                                    .build();
+                            publicData.setStop(boundariesMax);
 
-                    // Set chunk size
-                    publicData.setChunkSize(32);
+                            // Set chunk size
+                            publicData.setChunkSize(32);
 
-                    // Set hex grid size
-                    publicData.setHexGridSize(400);
+                            // Set hex grid size
+                            publicData.setHexGridSize(400);
 
-                    // Set entry point with area at 10,65,10 and size 1x1x1
-                    Area entryArea = Area.builder()
-                            .position(Vector3Int.builder()
-                                    .x(10)
-                                    .y(65)
-                                    .z(10)
-                                    .build())
-                            .size(Vector3Int.builder()
-                                    .x(1)
-                                    .y(1)
-                                    .z(1)
-                                    .build())
-                            .build();
+                            // Set entry point with area at 10,65,10 and size 1x1x1
+                            Area entryArea = Area.builder()
+                                    .position(Vector3Int.builder()
+                                            .x(10)
+                                            .y(65)
+                                            .z(10)
+                                            .build())
+                                    .size(Vector3Int.builder().x(1).y(1).z(1).build())
+                                    .build();
 
-                    WorldInfoEntryPointDTO entryPoint = WorldInfoEntryPointDTO.builder()
-                            .area(entryArea)
-                            .rotation(Rotation.builder()
-                                    .y(0)
-                                    .p(0)
-                                    .r(0d)
-                                    .build())
-                            .build();
+                            WorldInfoEntryPointDTO entryPoint = WorldInfoEntryPointDTO.builder()
+                                    .area(entryArea)
+                                    .rotation(Rotation.builder().y(0).p(0).r(0d).build())
+                                    .build();
 
-                    publicData.setEntryPoint(entryPoint);
-                });
+                            publicData.setEntryPoint(entryPoint);
+                        });
                 resultMessage.append("- World boundaries set to (-200,0,-200) to (200,200,200)\n");
                 resultMessage.append("- Chunk size set to 32\n");
                 resultMessage.append("- Hex grid size set to 400\n");

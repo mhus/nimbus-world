@@ -2,6 +2,12 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -11,13 +17,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * Service for managing WItem entities (inventory/template items without position).
@@ -86,7 +85,8 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        var existing = repository.findByWorldIdAndName(regionWorldId.getId(), itemId)
+        var existing = repository
+                .findByWorldIdAndName(regionWorldId.getId(), itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
         var publicData = existing.getPublicData();
         publicData.setName(newName);
@@ -97,7 +97,8 @@ public class WItemService {
     public WItem create(WorldId worldId, Item publicData) {
         String itemId;
         if (Strings.isBlank(publicData.getName())) {
-            itemId = "i_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0,6);
+            itemId = "i_" + System.currentTimeMillis() + "_"
+                    + UUID.randomUUID().toString().substring(0, 6);
             publicData.setName(itemId);
         } else {
             itemId = publicData.getName();
@@ -193,7 +194,8 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        WItem item = repository.findByWorldIdAndName(regionWorldId.getId(), oldItemId)
+        WItem item = repository
+                .findByWorldIdAndName(regionWorldId.getId(), oldItemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oldItemId));
         if (oldItemId.equals(newItemId)) {
             return item;
@@ -218,14 +220,17 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
-            if (!item.isEnabled()) return false;
-            item.setEnabled(false);
-            item.touchUpdate();
-            repository.save(item);
-            log.debug("Disabled item: regionWorldId={}, itemId={}", regionWorldId, itemId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndName(regionWorldId.getId(), itemId)
+                .map(item -> {
+                    if (!item.isEnabled()) return false;
+                    item.setEnabled(false);
+                    item.touchUpdate();
+                    repository.save(item);
+                    log.debug("Disabled item: regionWorldId={}, itemId={}", regionWorldId, itemId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -238,11 +243,14 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
-            repository.delete(item);
-            log.debug("Deleted item: regionWorldId={}, itemId={}", regionWorldId, itemId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndName(regionWorldId.getId(), itemId)
+                .map(item -> {
+                    repository.delete(item);
+                    log.debug("Deleted item: regionWorldId={}, itemId={}", regionWorldId, itemId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -394,9 +402,12 @@ public class WItemService {
                     if (publicData == null) return false;
 
                     // Match query against name, title, or description
-                    return (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
-                            (publicData.getTitle() != null && publicData.getTitle().toLowerCase().contains(lowerQuery)) ||
-                            (publicData.getDescription() != null && publicData.getDescription().toLowerCase().contains(lowerQuery));
+                    return (publicData.getName() != null
+                                    && publicData.getName().toLowerCase().contains(lowerQuery))
+                            || (publicData.getTitle() != null
+                                    && publicData.getTitle().toLowerCase().contains(lowerQuery))
+                            || (publicData.getDescription() != null
+                                    && publicData.getDescription().toLowerCase().contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -410,13 +421,10 @@ public class WItemService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WItem.class, "item", worldId,
-                doc -> {
-                    String itemId = doc.getString("name");
-                    return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WItem.class, "item", worldId, doc -> {
+            String itemId = doc.getString("name");
+            return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -443,7 +451,8 @@ public class WItemService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndName(String worldId, String name) {
         String collectionName = mongoTemplate.getCollectionName(WItem.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("name").is(name));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("name").is(name));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -456,8 +465,10 @@ public class WItemService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WItem.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("name").is(doc.getString("name")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("name")
+                .is(doc.getString("name")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

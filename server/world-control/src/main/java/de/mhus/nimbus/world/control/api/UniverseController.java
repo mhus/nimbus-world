@@ -1,14 +1,9 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.types.UserId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.shared.user.SectorRoles;
-import de.mhus.nimbus.shared.types.UserId;
-import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridService;
-import de.mhus.nimbus.world.shared.world.WProgressService;
-import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.control.service.UniverseClientService;
 import de.mhus.nimbus.world.shared.access.AccessService;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
@@ -16,23 +11,26 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.region.RegionCharacterSettings;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.sector.RUserService;
+import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/control/universe")
@@ -117,7 +115,9 @@ public class UniverseController extends BaseEditorController {
         return ResponseEntity.ok(Map.of("ok", false, "error", result.error()));
     }
 
-    @Operation(summary = "Sync world with universe", description = "Registers or unregisters a world at the universe based on its sync flag")
+    @Operation(
+            summary = "Sync world with universe",
+            description = "Registers or unregisters a world at the universe based on its sync flag")
     @PostMapping("/world/{worldId}/sync")
     @RequireSectorRole(SectorRoles.ADMIN)
     public ResponseEntity<?> syncWorld(@PathVariable String worldId) {
@@ -151,9 +151,13 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector endpoints (authenticated via Universe Bearer token in ControlAccessFilter) ---
 
-    public record WorldInfo(String worldId, String name, String description, boolean publicWorld, List<String> members) {}
+    public record WorldInfo(
+            String worldId, String name, String description, boolean publicWorld, List<String> members) {}
 
-    @Operation(summary = "List main worlds", description = "Returns enabled main worlds (no zones) for universe sync. Authenticated via Universe Bearer token.")
+    @Operation(
+            summary = "List main worlds",
+            description =
+                    "Returns enabled main worlds (no zones) for universe sync. Authenticated via Universe Bearer token.")
     @GetMapping("/worlds")
     public ResponseEntity<List<WorldInfo>> listMainWorlds() {
         List<WorldInfo> mainWorlds = worldService.findAll().stream()
@@ -180,8 +184,7 @@ public class UniverseController extends BaseEditorController {
                             w.getPublicData() != null ? w.getPublicData().getTitle() : w.getWorldId(),
                             w.getDescription(),
                             isPublic,
-                            members
-                    );
+                            members);
                 })
                 .toList();
         return ResponseEntity.ok(mainWorlds);
@@ -191,10 +194,16 @@ public class UniverseController extends BaseEditorController {
 
     public record CreateUserRequest(String username, String email, String language, Boolean enabled) {}
 
-    @Operation(summary = "Create user from universe", description = "Creates a sector user if not exists, or updates language if exists. Authenticated via Universe Bearer token.")
+    @Operation(
+            summary = "Create user from universe",
+            description =
+                    "Creates a sector user if not exists, or updates language if exists. Authenticated via Universe Bearer token.")
     @PostMapping("/user")
     public ResponseEntity<?> createUser(@RequestBody CreateUserRequest req) {
-        if (req.username() == null || req.username().isBlank() || req.email() == null || req.email().isBlank()) {
+        if (req.username() == null
+                || req.username().isBlank()
+                || req.email() == null
+                || req.email().isBlank()) {
             return bad("username and email are required");
         }
         var existingOpt = userService.getByUsername(req.username());
@@ -207,7 +216,8 @@ public class UniverseController extends BaseEditorController {
                 changed = true;
             }
             if (req.enabled() != null && req.enabled() != existing.isEnabled()) {
-                if (req.enabled()) existing.enable(); else existing.disable();
+                if (req.enabled()) existing.enable();
+                else existing.disable();
                 changed = true;
             }
             if (changed) {
@@ -239,14 +249,21 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Prepare Login ---
 
     public record PrepareLoginRequest(String userId, String worldId) {}
+
     public record CharacterInfo(String name, String title, String portraitPath) {}
+
     public record PrepareLoginResponse(boolean userExists, List<String> actors, List<CharacterInfo> characters) {}
 
-    @Operation(summary = "Prepare login for universe user",
-            description = "Checks user existence, available actors, and lists characters. Authenticated via Universe Bearer token.")
+    @Operation(
+            summary = "Prepare login for universe user",
+            description =
+                    "Checks user existence, available actors, and lists characters. Authenticated via Universe Bearer token.")
     @PostMapping("/prepareLogin")
     public ResponseEntity<?> prepareLogin(@RequestBody PrepareLoginRequest req) {
-        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()) {
+        if (req.userId() == null
+                || req.userId().isBlank()
+                || req.worldId() == null
+                || req.worldId().isBlank()) {
             return bad("userId and worldId are required");
         }
 
@@ -276,8 +293,7 @@ public class UniverseController extends BaseEditorController {
                 .map(c -> new CharacterInfo(
                         c.getName(),
                         c.getPublicData() != null ? c.getPublicData().getTitle() : c.getName(),
-                        c.getPublicData() != null ? c.getPublicData().getPortraitPath() : null
-                ))
+                        c.getPublicData() != null ? c.getPublicData().getPortraitPath() : null))
                 .toList();
 
         return ResponseEntity.ok(new PrepareLoginResponse(true, actors, characters));
@@ -286,14 +302,22 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Prepare New Character ---
 
     public record PrepareNewCharacterRequest(String userId, String worldId) {}
-    public record CharacterTemplateInfo(String name, String title, String description) {}
-    public record PrepareNewCharacterResponse(boolean canCreate, int currentCount, int maxCount, List<CharacterTemplateInfo> templates) {}
 
-    @Operation(summary = "Prepare new character creation",
-            description = "Returns available character templates and whether the user can create more characters. Authenticated via Universe Bearer token.")
+    public record CharacterTemplateInfo(String name, String title, String description) {}
+
+    public record PrepareNewCharacterResponse(
+            boolean canCreate, int currentCount, int maxCount, List<CharacterTemplateInfo> templates) {}
+
+    @Operation(
+            summary = "Prepare new character creation",
+            description =
+                    "Returns available character templates and whether the user can create more characters. Authenticated via Universe Bearer token.")
     @PostMapping("/prepareNewCharacter")
     public ResponseEntity<?> prepareNewCharacter(@RequestBody PrepareNewCharacterRequest req) {
-        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()) {
+        if (req.userId() == null
+                || req.userId().isBlank()
+                || req.worldId() == null
+                || req.worldId().isBlank()) {
             return bad("userId and worldId are required");
         }
 
@@ -314,34 +338,43 @@ public class UniverseController extends BaseEditorController {
         var user = userOpt.get();
         Integer userLimit = user.getCharacterLimitForRegion(regionId);
         int effectiveLimit = userLimit != null ? userLimit : characterSettings.getMaxPerRegion();
-        int currentCount = characterService.listCharacters(req.userId(), regionId).size();
+        int currentCount =
+                characterService.listCharacters(req.userId(), regionId).size();
         boolean canCreate = currentCount < effectiveLimit;
 
         // Load character templates from WAnything with collection 'character-templates' for the region
-        String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
-        var templates = anythingService.findByWorldIdAndCollectionAndEnabled(regionWorldId, "character-templates", true)
-                .stream()
-                .map(a -> new CharacterTemplateInfo(
-                        a.getName(),
-                        a.getTitle() != null ? a.getTitle() : a.getName(),
-                        a.getDescription()
-                ))
-                .toList();
+        String regionWorldId =
+                WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
+        var templates =
+                anythingService
+                        .findByWorldIdAndCollectionAndEnabled(regionWorldId, "character-templates", true)
+                        .stream()
+                        .map(a -> new CharacterTemplateInfo(
+                                a.getName(), a.getTitle() != null ? a.getTitle() : a.getName(), a.getDescription()))
+                        .toList();
 
         return ResponseEntity.ok(new PrepareNewCharacterResponse(canCreate, currentCount, effectiveLimit, templates));
     }
 
     // --- Universe-to-Sector: Create Character ---
 
-    public record CreateCharacterRequest(String userId, String worldId, String name, String title, String templateName) {}
+    public record CreateCharacterRequest(
+            String userId, String worldId, String name, String title, String templateName) {}
+
     public record CreateCharacterResponse(String name, String title) {}
 
-    @Operation(summary = "Create a new character",
-            description = "Creates a new character for the user in the region. Authenticated via Universe Bearer token.")
+    @Operation(
+            summary = "Create a new character",
+            description =
+                    "Creates a new character for the user in the region. Authenticated via Universe Bearer token.")
     @PostMapping("/createCharacter")
     public ResponseEntity<?> createCharacter(@RequestBody CreateCharacterRequest req) {
-        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()
-                || req.name() == null || req.name().isBlank()) {
+        if (req.userId() == null
+                || req.userId().isBlank()
+                || req.worldId() == null
+                || req.worldId().isBlank()
+                || req.name() == null
+                || req.name().isBlank()) {
             return bad("userId, worldId and name are required");
         }
 
@@ -360,7 +393,8 @@ public class UniverseController extends BaseEditorController {
 
         // Check if character name already exists in the region
         if (characterService.findByRegionAndName(regionId, req.name()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Character name already exists in this region: " + req.name()));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Character name already exists in this region: " + req.name()));
         }
 
         String display = req.title() != null && !req.title().isBlank() ? req.title() : req.name();
@@ -370,15 +404,21 @@ public class UniverseController extends BaseEditorController {
 
             // If a template was specified, apply template data
             if (req.templateName() != null && !req.templateName().isBlank()) {
-                String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
-                var templateOpt = anythingService.findByWorldIdAndCollectionAndName(regionWorldId, "character-templates", req.templateName());
+                String regionWorldId =
+                        WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
+                var templateOpt = anythingService.findByWorldIdAndCollectionAndName(
+                        regionWorldId, "character-templates", req.templateName());
                 if (templateOpt.isPresent()) {
                     applyCharacterTemplate(character, templateOpt.get());
                 }
             }
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(new CreateCharacterResponse(character.getName(),
-                    character.getPublicData() != null ? character.getPublicData().getTitle() : character.getName()));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new CreateCharacterResponse(
+                            character.getName(),
+                            character.getPublicData() != null
+                                    ? character.getPublicData().getTitle()
+                                    : character.getName()));
         } catch (IllegalStateException e) {
             return bad(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -436,13 +476,18 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Agent Login ---
 
     public record AgentLoginRequest(String userId, String worldId) {}
+
     public record AgentLoginResponse(String accessToken, List<String> accessUrls, String jumpUrl) {}
 
-    @Operation(summary = "Agent login from universe",
+    @Operation(
+            summary = "Agent login from universe",
             description = "Creates an agent login for a universe user. Authenticated via Universe Bearer token.")
     @PostMapping("/agentLogin")
     public ResponseEntity<?> agentLogin(@RequestBody AgentLoginRequest req) {
-        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()) {
+        if (req.userId() == null
+                || req.userId().isBlank()
+                || req.worldId() == null
+                || req.worldId().isBlank()) {
             return bad("userId and worldId are required");
         }
         try {
@@ -451,11 +496,8 @@ public class UniverseController extends BaseEditorController {
                     .userId(req.userId())
                     .build();
             var response = accessService.devAgentLogin(agentRequest);
-            return ResponseEntity.ok(new AgentLoginResponse(
-                    response.getAccessToken(),
-                    response.getAccessUrls(),
-                    response.getJumpUrl()
-            ));
+            return ResponseEntity.ok(
+                    new AgentLoginResponse(response.getAccessToken(), response.getAccessUrls(), response.getJumpUrl()));
         } catch (Exception e) {
             return bad("Agent login failed: " + e.getMessage());
         }
@@ -464,10 +506,14 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Instances ---
 
     public record InstancesRequest(String worldId, String playerId, String actor) {}
-    public record InstanceInfo(String instanceId, String title, String creator, List<String> players, java.time.Instant createdAt) {}
 
-    @Operation(summary = "List instances for player",
-            description = "Returns instances accessible by the player. For EDITOR actor, returns synthetic epoch instances. Authenticated via Universe Bearer token.")
+    public record InstanceInfo(
+            String instanceId, String title, String creator, List<String> players, java.time.Instant createdAt) {}
+
+    @Operation(
+            summary = "List instances for player",
+            description =
+                    "Returns instances accessible by the player. For EDITOR actor, returns synthetic epoch instances. Authenticated via Universe Bearer token.")
     @PostMapping("/instances")
     public ResponseEntity<?> listInstances(@RequestBody InstancesRequest req) {
         if (req.worldId() == null || req.worldId().isBlank()) {
@@ -480,12 +526,7 @@ public class UniverseController extends BaseEditorController {
                 var editorInstances = worldService.getEditorInstances(req.worldId(), username);
                 var result = editorInstances.stream()
                         .map(i -> new InstanceInfo(
-                                i.getInstanceId(),
-                                i.getTitle(),
-                                i.getCreator(),
-                                i.getPlayers(),
-                                i.getCreatedAt()
-                        ))
+                                i.getInstanceId(), i.getTitle(), i.getCreator(), i.getPlayers(), i.getCreatedAt()))
                         .toList();
                 return ResponseEntity.ok(result);
             }
@@ -506,12 +547,7 @@ public class UniverseController extends BaseEditorController {
             var instances = accessService.getInstancesForPlayer(req.worldId(), req.playerId(), allInstances);
             var result = instances.stream()
                     .map(i -> new InstanceInfo(
-                            i.getInstanceId(),
-                            i.getTitle(),
-                            i.getCreator(),
-                            i.getPlayers(),
-                            i.getCreatedAt()
-                    ))
+                            i.getInstanceId(), i.getTitle(), i.getCreator(), i.getPlayers(), i.getCreatedAt()))
                     .toList();
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -529,9 +565,11 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector: Session Login ---
 
-    public record SessionLoginRequest(String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint) {}
+    public record SessionLoginRequest(
+            String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint) {}
 
-    @Operation(summary = "Session login from universe",
+    @Operation(
+            summary = "Session login from universe",
             description = "Creates a session login for a universe user. Authenticated via Universe Bearer token.")
     @PostMapping("/sessionLogin")
     public ResponseEntity<?> sessionLogin(@RequestBody SessionLoginRequest req) {
@@ -542,7 +580,8 @@ public class UniverseController extends BaseEditorController {
             ActorRoles actor = ActorRoles.valueOf(req.actor());
 
             // Validate actor role and instance combination
-            var validationError = validateActorInstance(req.userId(), req.worldId(), actor, req.instanceId(), req.characterId());
+            var validationError =
+                    validateActorInstance(req.userId(), req.worldId(), actor, req.instanceId(), req.characterId());
             if (validationError != null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", validationError));
             }
@@ -556,11 +595,8 @@ public class UniverseController extends BaseEditorController {
                     .instanceId(req.instanceId())
                     .build();
             var response = accessService.devSessionLogin(sessionRequest);
-            return ResponseEntity.ok(new AgentLoginResponse(
-                    response.getAccessToken(),
-                    response.getAccessUrls(),
-                    response.getJumpUrl()
-            ));
+            return ResponseEntity.ok(
+                    new AgentLoginResponse(response.getAccessToken(), response.getAccessUrls(), response.getJumpUrl()));
         } catch (Exception e) {
             return bad("Session login failed: " + e.getMessage());
         }
@@ -574,7 +610,8 @@ public class UniverseController extends BaseEditorController {
      *
      * @return error message if validation fails, null if ok
      */
-    private String validateActorInstance(String userId, String worldId, ActorRoles actor, String instanceId, String characterId) {
+    private String validateActorInstance(
+            String userId, String worldId, ActorRoles actor, String instanceId, String characterId) {
         UserId uid = UserId.of(userId).orElse(null);
         if (uid == null) return "Invalid userId";
 
@@ -621,11 +658,15 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Entry Points ---
 
     public record EntryPointsRequest(String worldId, String userId, String characterId, String instanceId) {}
+
     public record HexGridInfo(int q, int r, String title, String icon, boolean hasEntryPoint, String color) {}
+
     public record EntryPointsResponse(boolean hasLastPosition, List<HexGridInfo> visitedGrids) {}
 
-    @Operation(summary = "Get available entry points",
-            description = "Returns last position availability and visited hex grids. Authenticated via Universe Bearer token.")
+    @Operation(
+            summary = "Get available entry points",
+            description =
+                    "Returns last position availability and visited hex grids. Authenticated via Universe Bearer token.")
     @PostMapping("/entryPoints")
     public ResponseEntity<?> getEntryPoints(@RequestBody EntryPointsRequest req) {
         if (req.worldId() == null || req.userId() == null || req.characterId() == null) {
@@ -633,8 +674,13 @@ public class UniverseController extends BaseEditorController {
         }
 
         String playerId = "@" + req.userId() + ":" + req.characterId();
-        log.info("entryPoints: worldId={}, userId={}, characterId={}, instanceId={}, playerId={}",
-                req.worldId(), req.userId(), req.characterId(), req.instanceId(), playerId);
+        log.info(
+                "entryPoints: worldId={}, userId={}, characterId={}, instanceId={}, playerId={}",
+                req.worldId(),
+                req.userId(),
+                req.characterId(),
+                req.instanceId(),
+                playerId);
 
         // Determine effective worldId (with instance if provided)
         // instanceId may be a full worldId (region:world::uuid) or just a UUID
@@ -652,14 +698,16 @@ public class UniverseController extends BaseEditorController {
         log.info("entryPoints: effectiveWorldId={}", effectiveWorldId);
 
         // Check if last position exists
-        boolean hasLastPosition = playerSessionService.loadSession(effectiveWorldId, playerId).isPresent();
+        boolean hasLastPosition =
+                playerSessionService.loadSession(effectiveWorldId, playerId).isPresent();
         log.info("entryPoints: hasLastPosition={}", hasLastPosition);
 
         // Get visited hex grids from progress — stored with effective worldId (with instance)
         List<HexGridInfo> visitedGrids = List.of();
         if (req.instanceId() != null && !req.instanceId().isBlank()) {
             // Only for existing instances, not new ones
-            var progressEntries = progressService.findByWorldIdAndPlayerIdAndType(effectiveWorldId, playerId, "EXPLORED_HEX");
+            var progressEntries =
+                    progressService.findByWorldIdAndPlayerIdAndType(effectiveWorldId, playerId, "EXPLORED_HEX");
             log.info("entryPoints: progressEntries={}", progressEntries.size());
             var allHexGrids = hexGridService.findByWorldId(req.worldId()); // base world hex grids
             log.info("entryPoints: allHexGrids={}", allHexGrids.size());
@@ -689,7 +737,8 @@ public class UniverseController extends BaseEditorController {
                             hasEntryPoint = pd.getEntryPoint() != null;
                         }
                         String color = grid != null && grid.getParameters() != null
-                                ? grid.getParameters().get("p_color") : null;
+                                ? grid.getParameters().get("p_color")
+                                : null;
                         return new HexGridInfo(q, r, title, icon, hasEntryPoint, color);
                     })
                     .toList();

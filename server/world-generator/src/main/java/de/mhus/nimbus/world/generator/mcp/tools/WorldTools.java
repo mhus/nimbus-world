@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -30,28 +29,22 @@ public class WorldTools implements McpToolBean {
         log.debug("MCP: List worlds");
 
         List<WWorld> worlds = worldService.findAll();
-        List<Map<String, Object>> worldDtos = worlds.stream()
-                .map(this::toWorldDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> worldDtos =
+                worlds.stream().map(this::toWorldDto).collect(Collectors.toList());
 
-        return Map.of(
-                "worlds", worldDtos,
-                "count", worldDtos.size()
-        );
+        return Map.of("worlds", worldDtos, "count", worldDtos.size());
     }
 
-    @Tool(name = "get_world", description = "Get detailed information about a specific world including publicData and settings")
-    public Map<String, Object> getWorld(
-            @ToolParam(description = "World ID") String worldId) {
+    @Tool(
+            name = "get_world",
+            description = "Get detailed information about a specific world including publicData and settings")
+    public Map<String, Object> getWorld(@ToolParam(description = "World ID") String worldId) {
         log.debug("MCP: Get world: worldId={}", worldId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new McpToolException("World not found: " + worldId)
-        );
+        WWorld world =
+                worldService.getByWorldId(wid).orElseThrow(() -> new McpToolException("World not found: " + worldId));
 
         Map<String, Object> result = toWorldDto(world);
         // Add publicData as JSON-safe map
@@ -61,19 +54,19 @@ public class WorldTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "update_world_settings", description = "Update world settings (environmentScripts, worldTime, shadows, etc.). Merges provided fields into existing settings.")
+    @Tool(
+            name = "update_world_settings",
+            description =
+                    "Update world settings (environmentScripts, worldTime, shadows, etc.). Merges provided fields into existing settings.")
     public Map<String, Object> updateWorldSettings(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Settings fields to update as JSON object") Map<String, Object> settings) {
         log.debug("MCP: Update world settings: worldId={}, settings={}", worldId, settings);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new McpToolException("World not found: " + worldId)
-        );
+        WWorld world =
+                worldService.getByWorldId(wid).orElseThrow(() -> new McpToolException("World not found: " + worldId));
 
         var publicData = world.getPublicData();
         if (publicData == null) {
@@ -88,16 +81,14 @@ public class WorldTools implements McpToolBean {
         // Merge provided settings into existing settings via ObjectMapper
         var existingSettings = objectMapper.convertValue(publicData.getSettings(), Map.class);
         existingSettings.putAll(settings);
-        var updatedSettings = objectMapper.convertValue(existingSettings, de.mhus.nimbus.generated.types.WorldInfoSettingsDTO.class);
+        var updatedSettings =
+                objectMapper.convertValue(existingSettings, de.mhus.nimbus.generated.types.WorldInfoSettingsDTO.class);
         publicData.setSettings(updatedSettings);
 
         worldService.save(world);
 
         return Map.of(
-                "worldId", worldId,
-                "message", "Settings updated successfully",
-                "updatedFields", settings.keySet()
-        );
+                "worldId", worldId, "message", "Settings updated successfully", "updatedFields", settings.keySet());
     }
 
     private Map<String, Object> toWorldDto(WWorld world) {

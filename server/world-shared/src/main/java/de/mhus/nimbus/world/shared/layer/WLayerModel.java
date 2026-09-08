@@ -4,6 +4,12 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,13 +21,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 /**
  * Model layer entity - entity-oriented storage.
  * Entire block structure stored in MongoDB document.
@@ -30,10 +29,10 @@ import java.util.stream.Stream;
 @Document(collection = "w_layer_model")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "layerData_idx", def = "{ 'layerDataId': 1 }"),
-        @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }"),
-        @CompoundIndex(name = "layerData_name_idx", def = "{ 'layerDataId': 1, 'name': 1 }", unique = true),
-        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }")
+    @CompoundIndex(name = "layerData_idx", def = "{ 'layerDataId': 1 }"),
+    @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }"),
+    @CompoundIndex(name = "layerData_name_idx", def = "{ 'layerDataId': 1, 'name': 1 }", unique = true),
+    @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }")
 })
 @Data
 @Builder
@@ -181,17 +180,20 @@ public class WLayerModel implements Identifiable {
                 .filter(layerBlock -> layerBlock.getBlock() != null)
                 .filter(layerBlock -> layerBlock.getBlock().getPosition() != null)
                 .map(layerBlock -> {
-                    de.mhus.nimbus.generated.types.Vector3Int relativePos = layerBlock.getBlock().getPosition();
+                    de.mhus.nimbus.generated.types.Vector3Int relativePos =
+                            layerBlock.getBlock().getPosition();
                     // Convert groupId String to int (use hashCode, or 0 if null)
-                    int groupIdHash = layerBlock.getGroup() != null ? layerBlock.getGroup().hashCode() : 0;
-                    return new int[]{
-                            mountX + relativePos.getX(),
-                            mountY + relativePos.getY(),
-                            mountZ + relativePos.getZ(),
-                            groupIdHash,
-                            relativePos.getX(),
-                            relativePos.getY(),
-                            relativePos.getZ(),
+                    int groupIdHash = layerBlock.getGroup() != null
+                            ? layerBlock.getGroup().hashCode()
+                            : 0;
+                    return new int[] {
+                        mountX + relativePos.getX(),
+                        mountY + relativePos.getY(),
+                        mountZ + relativePos.getZ(),
+                        groupIdHash,
+                        relativePos.getX(),
+                        relativePos.getY(),
+                        relativePos.getZ(),
                     };
                 });
     }

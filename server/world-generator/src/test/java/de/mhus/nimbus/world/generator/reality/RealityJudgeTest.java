@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.world.ai.model.AiChat;
-import de.mhus.nimbus.world.ai.model.AiModelService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiModelService;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Offline tests for the AI balance judge (C2). The AI chat is mocked. */
 class RealityJudgeTest {

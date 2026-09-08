@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;
@@ -13,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis listener for block update broadcasts.
@@ -55,7 +55,9 @@ public class BlockUpdateBroadcastListener {
      */
     public void subscribeToWorld(String worldId) {
         // Extract base worldId without instance
-        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId)
+                .toBaseWorldId()
+                .getId();
 
         // Check if already subscribed
         if (subscribedWorlds.contains(baseWorldId)) {
@@ -94,8 +96,12 @@ public class BlockUpdateBroadcastListener {
             // epochs only receive block updates for their own epoch.
             String messageWorldId = broadcast.getWorldId();
 
-            log.debug("Received block update broadcast: subscriptionWorld={}, messageWorld={}, audience={}, origin={}",
-                    subscriptionWorldId, messageWorldId, broadcast.getTargetAudience(), broadcast.getOriginatingSessionId());
+            log.debug(
+                    "Received block update broadcast: subscriptionWorld={}, messageWorld={}, audience={}, origin={}",
+                    subscriptionWorldId,
+                    messageWorldId,
+                    broadcast.getTargetAudience(),
+                    broadcast.getOriginatingSessionId());
 
             // Validate block JSON
             if (broadcast.getBlockJson() == null || broadcast.getBlockJson().isBlank()) {
@@ -122,10 +128,8 @@ public class BlockUpdateBroadcastListener {
             var blockJson = engineMapper.valueToTree(blocks);
 
             // Build WebSocket message
-            NetworkMessage networkMessage = NetworkMessage.builder()
-                    .t("b.u")
-                    .d(blockJson)
-                    .build();
+            NetworkMessage networkMessage =
+                    NetworkMessage.builder().t("b.u").d(blockJson).build();
 
             String json = engineMapper.writeValueAsString(networkMessage);
             TextMessage textMessage = new TextMessage(json);
@@ -166,8 +170,12 @@ public class BlockUpdateBroadcastListener {
                 sentCount++;
             }
 
-            log.info("Broadcast block update to {} sessions: world={} audience={} blocks={}",
-                    sentCount, messageWorldId, broadcast.getTargetAudience(), blocks.length);
+            log.info(
+                    "Broadcast block update to {} sessions: world={} audience={} blocks={}",
+                    sentCount,
+                    messageWorldId,
+                    broadcast.getTargetAudience(),
+                    blocks.length);
 
         } catch (Exception e) {
             log.error("Failed to handle block update from Redis: {}", message, e);

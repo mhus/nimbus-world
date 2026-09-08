@@ -1,9 +1,6 @@
 package de.mhus.nimbus.world.shared.job;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.CastUtil;
-
 import java.util.Map;
 
 /**
@@ -41,12 +38,7 @@ public interface JobExecutor {
      * @param resultData Optional result data (can be JSON, text, etc.)
      * @param errorMessage Error message if failed
      */
-    record JobResult(
-            boolean successful,
-            boolean async,
-            String resultData,
-            String errorMessage
-    ) {
+    record JobResult(boolean successful, boolean async, String resultData, String errorMessage) {
         /**
          * Create a successful result without data.
          */
@@ -86,5 +78,4 @@ public interface JobExecutor {
             return new JobResult(false, false, null, errorMessage);
         }
     }
-
 }

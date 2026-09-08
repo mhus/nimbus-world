@@ -8,6 +8,11 @@ import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,12 +25,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * MongoDB Entity for hexagonal grid areas in the world.
  * Each hex grid represents a pentagonal/hexagonal area that divides the world into regions.
@@ -34,9 +33,9 @@ import java.util.Map;
 @Document(collection = "w_hexgrids")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_position_idx", def = "{ 'worldId': 1, 'position': 1 }"),
-        @CompoundIndex(name = "world_position_epoches_idx", def = "{ 'worldId': 1, 'position': 1, 'epoches': 1 }"),
-        @CompoundIndex(name = "world_enabled_epoches_idx", def = "{ 'worldId': 1, 'enabled': 1, 'epoches': 1 }")
+    @CompoundIndex(name = "world_position_idx", def = "{ 'worldId': 1, 'position': 1 }"),
+    @CompoundIndex(name = "world_position_epoches_idx", def = "{ 'worldId': 1, 'position': 1, 'epoches': 1 }"),
+    @CompoundIndex(name = "world_enabled_epoches_idx", def = "{ 'worldId': 1, 'enabled': 1, 'epoches': 1 }")
 })
 @Data
 @Builder
@@ -51,7 +50,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
         SOUTH_WEST("SW"), // BOTTOM_LEFT
         WEST("W"), // LEFT
         NORTH_WEST("NW") // TOP_LEFT
-        ;
+    ;
+
         @Getter
         private final String shortName;
 
@@ -85,15 +85,14 @@ public class WHexGrid implements Identifiable, EpochEntity {
 
         public CORNER[] getAdjacentCorners() {
             return switch (this) {
-                case NORTH_EAST -> new CORNER[]{CORNER.NORTH, CORNER.NORTH_EAST};
-                case EAST -> new CORNER[]{CORNER.NORTH_EAST, CORNER.SOUTH_EAST};
-                case SOUTH_EAST -> new CORNER[]{CORNER.SOUTH_EAST, CORNER.SOUTH};
-                case SOUTH_WEST -> new CORNER[]{CORNER.SOUTH, CORNER.SOUTH_WEST};
-                case WEST -> new CORNER[]{CORNER.SOUTH_WEST, CORNER.NORTH_WEST};
-                case NORTH_WEST -> new CORNER[]{CORNER.NORTH_WEST, CORNER.NORTH};
+                case NORTH_EAST -> new CORNER[] {CORNER.NORTH, CORNER.NORTH_EAST};
+                case EAST -> new CORNER[] {CORNER.NORTH_EAST, CORNER.SOUTH_EAST};
+                case SOUTH_EAST -> new CORNER[] {CORNER.SOUTH_EAST, CORNER.SOUTH};
+                case SOUTH_WEST -> new CORNER[] {CORNER.SOUTH, CORNER.SOUTH_WEST};
+                case WEST -> new CORNER[] {CORNER.SOUTH_WEST, CORNER.NORTH_WEST};
+                case NORTH_WEST -> new CORNER[] {CORNER.NORTH_WEST, CORNER.NORTH};
             };
         }
-
     }
 
     public enum CORNER {
@@ -102,10 +101,11 @@ public class WHexGrid implements Identifiable, EpochEntity {
         SOUTH_EAST("SE"),
         SOUTH("S"),
         SOUTH_WEST("SW"),
-        NORTH_WEST("NW")
-        ;
+        NORTH_WEST("NW");
+
         @Getter
         private final String shortName;
+
         CORNER(String shortName) {
             this.shortName = shortName;
         }
@@ -117,12 +117,12 @@ public class WHexGrid implements Identifiable, EpochEntity {
 
         public EDGE[] getAdjacentEdges() {
             return switch (this) {
-                case NORTH -> new EDGE[]{EDGE.NORTH_WEST, EDGE.NORTH_EAST};
-                case NORTH_EAST -> new EDGE[]{EDGE.NORTH_EAST, EDGE.EAST};
-                case SOUTH_EAST -> new EDGE[]{EDGE.EAST, EDGE.SOUTH_EAST};
-                case SOUTH -> new EDGE[]{EDGE.SOUTH_EAST, EDGE.SOUTH_WEST};
-                case SOUTH_WEST -> new EDGE[]{EDGE.SOUTH_WEST, EDGE.WEST};
-                case NORTH_WEST -> new EDGE[]{EDGE.WEST, EDGE.NORTH_WEST};
+                case NORTH -> new EDGE[] {EDGE.NORTH_WEST, EDGE.NORTH_EAST};
+                case NORTH_EAST -> new EDGE[] {EDGE.NORTH_EAST, EDGE.EAST};
+                case SOUTH_EAST -> new EDGE[] {EDGE.EAST, EDGE.SOUTH_EAST};
+                case SOUTH -> new EDGE[] {EDGE.SOUTH_EAST, EDGE.SOUTH_WEST};
+                case SOUTH_WEST -> new EDGE[] {EDGE.SOUTH_WEST, EDGE.WEST};
+                case NORTH_WEST -> new EDGE[] {EDGE.WEST, EDGE.NORTH_WEST};
             };
         }
 
@@ -133,7 +133,6 @@ public class WHexGrid implements Identifiable, EpochEntity {
             }
             return null;
         }
-
     }
 
     @Id
@@ -323,8 +322,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
         return HexMathUtil.getDominantChunkKeysForHex(hexCoord, chunkSize, gridSize);
     }
 
-
-        // --- Area methods using TypeUtil for key parsing/formatting ---
+    // --- Area methods using TypeUtil for key parsing/formatting ---
 
     /**
      * Returns the parameter map for the given area, or null if not present.
@@ -391,7 +389,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
         for (String key : areas.keySet()) {
             try {
                 result.add(TypeUtil.parseArea(key));
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
         return result;
     }
@@ -414,7 +413,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
                         bestSize = size;
                     }
                 }
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
         return best;
     }
@@ -440,9 +440,17 @@ public class WHexGrid implements Identifiable, EpochEntity {
      */
     public Map<String, String> getAreaData(int x, int z) {
         Area pointArea = Area.builder()
-            .position(de.mhus.nimbus.generated.types.Vector3Int.builder().x(x).y(0).z(z).build())
-            .size(de.mhus.nimbus.generated.types.Vector3Int.builder().x(1).y(1).z(1).build())
-            .build();
+                .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                        .x(x)
+                        .y(0)
+                        .z(z)
+                        .build())
+                .size(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                        .x(1)
+                        .y(1)
+                        .z(1)
+                        .build())
+                .build();
         Area match = getSmallestMatchingArea(pointArea);
         if (match == null) return null;
         return getAreaData(match);
@@ -460,7 +468,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
             if (parameters != null && parameters.containsKey("chunkSize")) {
                 chunkSize = Integer.parseInt(parameters.get("chunkSize"));
             }
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         int minX = cx * chunkSize;
         int minZ = cz * chunkSize;
         int maxX = (cx + 1) * chunkSize - 1;
@@ -476,7 +485,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 int amaxZ = az + asz - 1;
                 boolean overlap = (minX <= amaxX && maxX >= ax && minZ <= amaxZ && maxZ >= az);
                 if (overlap) result.put(area, entry.getValue());
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
         return result;
     }
@@ -493,7 +503,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 try {
                     Area area = TypeUtil.parseArea(entry.getKey());
                     result.put(area, data);
-                } catch (Exception ignore) {}
+                } catch (Exception ignore) {
+                }
             }
         }
         return result;
@@ -516,7 +527,8 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 int amaxZ = az + asz - 1;
                 boolean contains = (x >= ax && x <= amaxX && z >= az && z <= amaxZ);
                 if (contains) result.put(area, entry.getValue());
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
         return result;
     }

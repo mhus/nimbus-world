@@ -6,14 +6,13 @@ import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * AI text generation and caching for dialog nodes.
@@ -51,12 +50,14 @@ public class DialogTextService {
             int maxVersions = getMaxVersions(ctx);
 
             // Try cache lookup
-            Optional<WAnything> cacheOpt = anythingService
-                    .findByWorldIdAndCollectionAndName(mainWorldId, CACHE_COLLECTION, cacheName);
+            Optional<WAnything> cacheOpt =
+                    anythingService.findByWorldIdAndCollectionAndName(mainWorldId, CACHE_COLLECTION, cacheName);
 
             if (cacheOpt.isPresent()) {
                 var cacheData = cacheOpt.get().getDataAs(TextCacheEntry.class).orElse(null);
-                if (cacheData != null && cacheData.versions() != null && !cacheData.versions().isEmpty()) {
+                if (cacheData != null
+                        && cacheData.versions() != null
+                        && !cacheData.versions().isEmpty()) {
                     // Pick random version
                     String text = pickRandom(cacheData.versions());
 
@@ -96,12 +97,14 @@ public class DialogTextService {
      */
     public String generateText(DialogNode node, DialogContext ctx, String language) {
         String modelName = resolveModelName(ctx);
-        Optional<AiChat> chatOpt = aiModelService.createChat(modelName, AiChatOptions.builder()
-                .systemMessage(buildSystemPrompt(ctx, language))
-                .temperature(0.9)
-                .maxTokens(0)
-                .timeoutSeconds(30)
-                .build());
+        Optional<AiChat> chatOpt = aiModelService.createChat(
+                modelName,
+                AiChatOptions.builder()
+                        .systemMessage(buildSystemPrompt(ctx, language))
+                        .temperature(0.9)
+                        .maxTokens(0)
+                        .timeoutSeconds(30)
+                        .build());
 
         if (chatOpt.isEmpty()) {
             log.warn("AI model not available: {}", modelName);
@@ -166,7 +169,9 @@ public class DialogTextService {
 
         // Situation context
         if (ctx.getActiveSituation() != null && ctx.getActiveSituation().aiContext() != null) {
-            sb.append("\nAktuelle Situation: ").append(ctx.getActiveSituation().aiContext()).append("\n");
+            sb.append("\nAktuelle Situation: ")
+                    .append(ctx.getActiveSituation().aiContext())
+                    .append("\n");
         }
 
         // Background situations
@@ -186,7 +191,9 @@ public class DialogTextService {
         // Player memory
         List<String> remembers = ctx.getPlayerRemembers();
         if (!remembers.isEmpty()) {
-            sb.append("\nDu erinnerst dich an diesen Spieler: ").append(String.join("; ", remembers)).append("\n");
+            sb.append("\nDu erinnerst dich an diesen Spieler: ")
+                    .append(String.join("; ", remembers))
+                    .append("\n");
         }
         int convCount = ctx.getConversationCount();
         if (convCount > 0) {
@@ -221,12 +228,12 @@ public class DialogTextService {
     // --- Cache management ---
 
     private String buildCacheName(DialogContext ctx, String contextKey, String language) {
-        return ctx.getPlaybookName() + "/" + ctx.getActiveSituationName() + "/"
-                + ctx.getCurrentNodeId() + "/" + contextKey + "/" + (language != null ? language : "de");
+        return ctx.getPlaybookName() + "/" + ctx.getActiveSituationName() + "/" + ctx.getCurrentNodeId() + "/"
+                + contextKey + "/" + (language != null ? language : "de");
     }
 
-    private void saveToCache(String mainWorldId, String cacheName, DialogContext ctx,
-                             String contextKey, String language, String text) {
+    private void saveToCache(
+            String mainWorldId, String cacheName, DialogContext ctx, String contextKey, String language, String text) {
         try {
             TextCacheVersion version = new TextCacheVersion(text, Instant.now().toString());
             TextCacheEntry entry = new TextCacheEntry(
@@ -235,10 +242,8 @@ public class DialogTextService {
                     contextKey,
                     language != null ? language : "de",
                     getMaxVersions(ctx),
-                    List.of(version)
-            );
-            anythingService.create(mainWorldId, CACHE_COLLECTION, cacheName,
-                    null, null, "text-cache", entry);
+                    List.of(version));
+            anythingService.create(mainWorldId, CACHE_COLLECTION, cacheName, null, null, "text-cache", entry);
             log.debug("Created cache entry: {}", cacheName);
         } catch (Exception e) {
             log.warn("Failed to save cache entry {}: {}", cacheName, e.getMessage());
@@ -246,8 +251,8 @@ public class DialogTextService {
     }
 
     @SuppressWarnings("unchecked")
-    private void asyncGenerateAndAppend(DialogNode node, DialogContext ctx, String language,
-                                         String cacheName, String mainWorldId) {
+    private void asyncGenerateAndAppend(
+            DialogNode node, DialogContext ctx, String language, String cacheName, String mainWorldId) {
         // Copy relevant context values for async execution
         String modelName = resolveModelName(ctx);
         String systemPrompt = buildSystemPrompt(ctx, language);
@@ -256,12 +261,14 @@ public class DialogTextService {
 
         CompletableFuture.runAsync(() -> {
             try {
-                Optional<AiChat> chatOpt = aiModelService.createChat(modelName, AiChatOptions.builder()
-                        .systemMessage(systemPrompt)
-                        .temperature(0.9)
-                        .maxTokens(0)
-                        .timeoutSeconds(30)
-                        .build());
+                Optional<AiChat> chatOpt = aiModelService.createChat(
+                        modelName,
+                        AiChatOptions.builder()
+                                .systemMessage(systemPrompt)
+                                .temperature(0.9)
+                                .maxTokens(0)
+                                .timeoutSeconds(30)
+                                .build());
 
                 if (chatOpt.isEmpty()) return;
 
@@ -269,19 +276,21 @@ public class DialogTextService {
                 if (generated == null || generated.isBlank()) return;
 
                 // Append to cache
-                anythingService.findByWorldIdAndCollectionAndName(mainWorldId, CACHE_COLLECTION, cacheName)
+                anythingService
+                        .findByWorldIdAndCollectionAndName(mainWorldId, CACHE_COLLECTION, cacheName)
                         .ifPresent(anything -> {
                             anythingService.update(anything.getId(), a -> {
-                                TextCacheEntry existing = a.getDataAs(TextCacheEntry.class).orElse(null);
+                                TextCacheEntry existing =
+                                        a.getDataAs(TextCacheEntry.class).orElse(null);
                                 if (existing != null && existing.versions() != null) {
                                     if (existing.versions().size() >= maxVersions) return;
                                     List<TextCacheVersion> versions = new ArrayList<>(existing.versions());
-                                    versions.add(new TextCacheVersion(generated, Instant.now().toString()));
+                                    versions.add(new TextCacheVersion(
+                                            generated, Instant.now().toString()));
                                     a.setData(new TextCacheEntry(
                                             existing.playbookName(), existing.nodeId(),
                                             existing.contextKey(), existing.language(),
-                                            existing.maxVersions(), versions
-                                    ));
+                                            existing.maxVersions(), versions));
                                 }
                             });
                         });
@@ -396,11 +405,7 @@ public class DialogTextService {
             String contextKey,
             String language,
             int maxVersions,
-            List<TextCacheVersion> versions
-    ) {}
+            List<TextCacheVersion> versions) {}
 
-    public record TextCacheVersion(
-            String text,
-            String createdAt
-    ) {}
+    public record TextCacheVersion(String text, String createdAt) {}
 }

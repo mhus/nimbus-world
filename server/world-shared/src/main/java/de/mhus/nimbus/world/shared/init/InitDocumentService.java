@@ -3,17 +3,16 @@ package de.mhus.nimbus.world.shared.init;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.UUID;
 
 /**
  * Service to import initial documents from resources/documents folder on startup.
@@ -128,8 +127,7 @@ public class InitDocumentService {
 
         // Check if document with same hash already exists in this collection
         var existingDocs = documentService.findByCollection(worldId, collection);
-        boolean exists = existingDocs.stream()
-                .anyMatch(doc -> hash.equals(doc.getHash()));
+        boolean exists = existingDocs.stream().anyMatch(doc -> hash.equals(doc.getHash()));
 
         if (exists) {
             log.debug("Document '{}' in collection '{}' already exists (same hash), skipping", filename, collection);
@@ -148,7 +146,7 @@ public class InitDocumentService {
             doc.setContent(content);
             doc.setHash(hash);
             doc.setMain(true);
-            doc.setReadOnly(true);  // Mark imported documents as read-only
+            doc.setReadOnly(true); // Mark imported documents as read-only
         });
 
         log.info("Imported document: collection='{}', name='{}', title='{}'", collection, filename, title);

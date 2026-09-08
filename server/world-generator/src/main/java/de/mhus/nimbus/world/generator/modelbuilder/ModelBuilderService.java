@@ -1,23 +1,22 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import tools.jackson.databind.ObjectMapper;
+import static java.util.OptionalInt.empty;
+import static java.util.OptionalInt.of;
+
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static java.util.OptionalInt.empty;
-import static java.util.OptionalInt.of;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for building 3D models from JSON definitions.
@@ -44,7 +43,8 @@ public class ModelBuilderService {
                 for (ModelPartBuilder builder : partBuilders) {
                     String name = builder.name();
                     if (partBuilderMap.containsKey(name)) {
-                        log.warn("Duplicate ModelPartBuilder name '{}': {} vs {}",
+                        log.warn(
+                                "Duplicate ModelPartBuilder name '{}': {} vs {}",
                                 name,
                                 partBuilderMap.get(name).getClass().getSimpleName(),
                                 builder.getClass().getSimpleName());
@@ -81,23 +81,28 @@ public class ModelBuilderService {
      * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
-    public ModelBuilderContext buildModel(WWorld world, WLayer layer, String collection, String name,
-                          Vector3Int startPos, Map<String, String> parameterMap,
-                          String group) throws ModelBuilderException {
+    public ModelBuilderContext buildModel(
+            WWorld world,
+            WLayer layer,
+            String collection,
+            String name,
+            Vector3Int startPos,
+            Map<String, String> parameterMap,
+            String group)
+            throws ModelBuilderException {
         WorldId regionWorldId = WorldId.of(world.getWorldId())
                 .orElseThrow(() -> new ModelBuilderException("Invalid worldId: " + world.getWorldId()))
                 .toRegionCollection();
 
-        WAnything entity = anythingService.findByWorldIdAndCollectionAndName(
-                regionWorldId.getId(), collection, name)
-                .orElseThrow(() -> new ModelBuilderException(
-                        "Model not found: collection=" + collection + ", name=" + name
-                                + ", worldId=" + regionWorldId.getId()));
+        WAnything entity = anythingService
+                .findByWorldIdAndCollectionAndName(regionWorldId.getId(), collection, name)
+                .orElseThrow(() -> new ModelBuilderException("Model not found: collection=" + collection + ", name="
+                        + name + ", worldId=" + regionWorldId.getId()));
 
         ModelBuilderModel model = entity.getDataAs(ModelBuilderModel.class)
-                .orElseThrow(() -> new ModelBuilderException(
-                        "Failed to convert WAnything data to ModelBuilderModel: collection=" + collection
-                                + ", name=" + name));
+                .orElseThrow(() ->
+                        new ModelBuilderException("Failed to convert WAnything data to ModelBuilderModel: collection="
+                                + collection + ", name=" + name));
 
         return buildModel(world, layer, model, startPos, parameterMap, group);
     }
@@ -113,9 +118,14 @@ public class ModelBuilderService {
      * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
-    public ModelBuilderContext buildModel(WWorld world, WLayer layer, ModelBuilderModel model,
-                          Vector3Int startPos, Map<String, String> parameterMap,
-                          String group) throws ModelBuilderException {
+    public ModelBuilderContext buildModel(
+            WWorld world,
+            WLayer layer,
+            ModelBuilderModel model,
+            Vector3Int startPos,
+            Map<String, String> parameterMap,
+            String group)
+            throws ModelBuilderException {
         return buildModel(world, layer, model, startPos, parameterMap, new Random(), group);
     }
 
@@ -132,9 +142,15 @@ public class ModelBuilderService {
      * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
-    public ModelBuilderContext buildModel(WWorld world, WLayer layer, ModelBuilderModel model,
-                          Vector3Int startPos, Map<String, String> parameterMap,
-                          Random random, String group) throws ModelBuilderException {
+    public ModelBuilderContext buildModel(
+            WWorld world,
+            WLayer layer,
+            ModelBuilderModel model,
+            Vector3Int startPos,
+            Map<String, String> parameterMap,
+            Random random,
+            String group)
+            throws ModelBuilderException {
         initializePartBuildersIfNeeded();
 
         if (model.getSteps() == null || model.getSteps().isEmpty()) {
@@ -171,7 +187,8 @@ public class ModelBuilderService {
             ModelBuilderModel.StepDefinition definition = definitionMap.get(definitionName);
 
             if (definition == null) {
-                throw new ModelBuilderException("Definition not found: " + definitionName + " (step: " + step.getStep() + ")");
+                throw new ModelBuilderException(
+                        "Definition not found: " + definitionName + " (step: " + step.getStep() + ")");
             }
 
             // Resolve the step: merge parameters and substitute $N
@@ -199,14 +216,22 @@ public class ModelBuilderService {
             // Find the builder
             ModelPartBuilder builder = partBuilderMap.get(resolvedStep.getType());
             if (builder == null) {
-                throw new ModelBuilderException("ModelPartBuilder not found: " + resolvedStep.getType() + " (step: " + step.getStep() + ")");
+                throw new ModelBuilderException(
+                        "ModelPartBuilder not found: " + resolvedStep.getType() + " (step: " + step.getStep() + ")");
             }
 
-            log.debug("Executing step '{}' with builder '{}', params: {}", step.getStep(), resolvedStep.getType(), resolvedStep.getParameters());
+            log.debug(
+                    "Executing step '{}' with builder '{}', params: {}",
+                    step.getStep(),
+                    resolvedStep.getType(),
+                    resolvedStep.getParameters());
             builder.buildPart(context, resolvedStep);
         }
 
-        log.info("Model built: {} blocks placed into {} chunks", context.getBlockCount(), context.getChunkDataMap().size());
+        log.info(
+                "Model built: {} blocks placed into {} chunks",
+                context.getBlockCount(),
+                context.getChunkDataMap().size());
         return context;
     }
 
@@ -222,13 +247,19 @@ public class ModelBuilderService {
      * @param group                group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
-    public ModelBuilderContext buildFromDescriptor(WWorld world, WLayer layer, String descriptor,
-                                                   String collection, Vector3Int startPos,
-                                                   Map<String, String> additionalParameters,
-                                                   String group) throws ModelBuilderException {
+    public ModelBuilderContext buildFromDescriptor(
+            WWorld world,
+            WLayer layer,
+            String descriptor,
+            String collection,
+            Vector3Int startPos,
+            Map<String, String> additionalParameters,
+            String group)
+            throws ModelBuilderException {
         WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
         return switch (parsed) {
-            case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos, group);
+            case WAnythingDescriptor.BlockStack blockStack ->
+                buildBlockStack(world, layer, blockStack, startPos, group);
             case WAnythingDescriptor.ModelRef modelRef -> {
                 Map<String, String> mergedParams = new HashMap<>(modelRef.parameters());
                 if (additionalParameters != null) {
@@ -256,10 +287,8 @@ public class ModelBuilderService {
             WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
             return switch (parsed) {
                 case WAnythingDescriptor.BlockStack bs ->
-                        new FloraConstraints(of(bs.blockTypes().size()), empty(), empty(),
-                                true, true, true, false);
-                case WAnythingDescriptor.ModelRef mr ->
-                        resolveModelConstraints(world, collection, mr.name());
+                    new FloraConstraints(of(bs.blockTypes().size()), empty(), empty(), true, true, true, false);
+                case WAnythingDescriptor.ModelRef mr -> resolveModelConstraints(world, collection, mr.name());
             };
         } catch (Exception e) {
             log.debug("Cannot resolve descriptor constraints for '{}': {}", descriptor, e.getMessage());
@@ -271,8 +300,10 @@ public class ModelBuilderService {
         WorldId regionWorldId = WorldId.of(world.getWorldId()).orElse(null);
         if (regionWorldId == null) return FloraConstraints.UNCONSTRAINED;
 
-        WAnything entity = anythingService.findByWorldIdAndCollectionAndName(
-                regionWorldId.toRegionCollection().getId(), collection, name).orElse(null);
+        WAnything entity = anythingService
+                .findByWorldIdAndCollectionAndName(
+                        regionWorldId.toRegionCollection().getId(), collection, name)
+                .orElse(null);
         if (entity == null) return FloraConstraints.UNCONSTRAINED;
 
         ModelBuilderModel model = entity.getDataAs(ModelBuilderModel.class).orElse(null);
@@ -289,12 +320,15 @@ public class ModelBuilderService {
                 maxHeight != null ? of(maxHeight) : empty(),
                 minWater != null ? of(minWater) : empty(),
                 maxWater != null ? of(maxWater) : empty(),
-                land, water, sea, emerse);
+                land,
+                water,
+                sea,
+                emerse);
     }
 
-    private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,
-                                                WAnythingDescriptor.BlockStack blockStack,
-                                                Vector3Int startPos, String group) throws ModelBuilderException {
+    private ModelBuilderContext buildBlockStack(
+            WWorld world, WLayer layer, WAnythingDescriptor.BlockStack blockStack, Vector3Int startPos, String group)
+            throws ModelBuilderException {
         ModelBuilderContext context = ModelBuilderContext.builder()
                 .world(world)
                 .layer(layer)
@@ -324,9 +358,10 @@ public class ModelBuilderService {
      * Resolve a step by merging definition defaults with step overrides,
      * then applying $N parameter substitution.
      */
-    private ResolvedStep resolveStep(ModelBuilderModel.Step step,
-                                     ModelBuilderModel.StepDefinition definition,
-                                     Map<String, String> parameterMap) {
+    private ResolvedStep resolveStep(
+            ModelBuilderModel.Step step,
+            ModelBuilderModel.StepDefinition definition,
+            Map<String, String> parameterMap) {
         // Merge parameters: definition defaults as base, step params override
         Map<String, Object> merged = new LinkedHashMap<>();
         if (definition.getParameters() != null) {

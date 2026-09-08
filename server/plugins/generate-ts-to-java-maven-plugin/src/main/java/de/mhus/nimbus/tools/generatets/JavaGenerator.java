@@ -7,10 +7,7 @@ import de.mhus.nimbus.tools.generatets.java.JavaType;
 import de.mhus.nimbus.tools.generatets.ts.TsDeclarations;
 import de.mhus.nimbus.tools.generatets.ts.TsModel;
 import de.mhus.nimbus.tools.generatets.ts.TsSourceFile;
-
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,7 +51,9 @@ public class JavaGenerator {
                     if (i.properties != null) {
                         for (TsDeclarations.TsProperty p : i.properties) {
                             if (p == null || p.name == null) continue;
-                            String jt = (p.javaTypeHint != null && !p.javaTypeHint.isBlank()) ? p.javaTypeHint : mapTsTypeToJava(p.type, p.optional);
+                            String jt = (p.javaTypeHint != null && !p.javaTypeHint.isBlank())
+                                    ? p.javaTypeHint
+                                    : mapTsTypeToJava(p.type, p.optional);
                             t.getProperties().add(new JavaProperty(p.name, jt, p.optional, p.visibility));
                         }
                     }
@@ -87,7 +86,8 @@ public class JavaGenerator {
                     }
                     if (c.implementsList != null) {
                         for (String n : c.implementsList) {
-                            if (n != null && !n.isEmpty()) t.getImplementsNames().add(n);
+                            if (n != null && !n.isEmpty())
+                                t.getImplementsNames().add(n);
                         }
                     }
                     // Properties (with special handling for inline backdrop object)
@@ -172,19 +172,27 @@ public class JavaGenerator {
         jm.addType(helper);
     }
 
-
     private String boxIfPrimitive(String type) {
         if (type == null) return null;
         switch (type) {
-            case "int": return "java.lang.Integer";
-            case "long": return "java.lang.Long";
-            case "double": return "java.lang.Double";
-            case "float": return "java.lang.Float";
-            case "short": return "java.lang.Short";
-            case "byte": return "java.lang.Byte";
-            case "char": return "java.lang.Character";
-            case "boolean": return "java.lang.Boolean";
-            default: return type;
+            case "int":
+                return "java.lang.Integer";
+            case "long":
+                return "java.lang.Long";
+            case "double":
+                return "java.lang.Double";
+            case "float":
+                return "java.lang.Float";
+            case "short":
+                return "java.lang.Short";
+            case "byte":
+                return "java.lang.Byte";
+            case "char":
+                return "java.lang.Character";
+            case "boolean":
+                return "java.lang.Boolean";
+            default:
+                return type;
         }
     }
 
@@ -211,7 +219,7 @@ public class JavaGenerator {
             case "boolean":
                 return optional ? boxIfPrimitive(s) : s;
             default:
-                // continue normal mapping
+            // continue normal mapping
         }
         // Unwrap utility types that don't change representation in Java
         if (s.startsWith("Readonly<") && s.endsWith(">")) {
@@ -247,7 +255,8 @@ public class JavaGenerator {
             return "java.util.List<" + elem + ">";
         }
         if (s.startsWith("ReadonlyArray<") && s.endsWith(">")) {
-            String inner = s.substring("ReadonlyArray<".length(), s.length() - 1).trim();
+            String inner =
+                    s.substring("ReadonlyArray<".length(), s.length() - 1).trim();
             String elem = mapTsTypeToJava(inner, false);
             elem = boxIfPrimitive(elem);
             return "java.util.List<" + elem + ">";
@@ -289,15 +298,24 @@ public class JavaGenerator {
             return "Object";
         }
         switch (s) {
-            case "string": return "String";
-            case "number": return optional ? "java.lang.Double" : "double";
-            case "boolean": return optional ? "java.lang.Boolean" : "boolean";
-            case "true": return optional ? "java.lang.Boolean" : "boolean";
-            case "false": return optional ? "java.lang.Boolean" : "boolean";
-            case "any": return "Object";
-            case "unknown": return "Object";
-            case "null": return "Object";
-            case "undefined": return "Object";
+            case "string":
+                return "String";
+            case "number":
+                return optional ? "java.lang.Double" : "double";
+            case "boolean":
+                return optional ? "java.lang.Boolean" : "boolean";
+            case "true":
+                return optional ? "java.lang.Boolean" : "boolean";
+            case "false":
+                return optional ? "java.lang.Boolean" : "boolean";
+            case "any":
+                return "Object";
+            case "unknown":
+                return "Object";
+            case "null":
+                return "Object";
+            case "undefined":
+                return "Object";
             default:
                 // Record<...> handled above
                 // Generic parameter heuristics: map common single-letter generics to Object
@@ -317,7 +335,9 @@ public class JavaGenerator {
         // string keyword
         if ("string".equals(t)) return true;
         // string literals: 'x', "x", `x`
-        if ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith("\"") && t.endsWith("\"")) || (t.startsWith("`") && t.endsWith("`"))) {
+        if ((t.startsWith("'") && t.endsWith("'"))
+                || (t.startsWith("\"") && t.endsWith("\""))
+                || (t.startsWith("`") && t.endsWith("`"))) {
             return true;
         }
         // allow null/undefined in union with string literals -> still String

@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.shared.generator;
-import lombok.RequiredArgsConstructor;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Helper class for creating height map (level) images from WFlat data.
@@ -39,8 +39,7 @@ public class FlatLevelImageCreator {
         int maxHeightRange = 100;
 
         // Create image
-        BufferedImage image = new BufferedImage(
-                width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
         // Draw height map with fixed palette
         for (int z = 0; z < height; z++) {
@@ -62,9 +61,9 @@ public class FlatLevelImageCreator {
                     // Fixed palette from 0 to oceanLevel
                     float t = oceanLevel > 0 ? (float) level / oceanLevel : 0;
                     // Dark blue (0, 0, 100) to light cyan (50, 150, 255)
-                    r = (int)(t * 50);
-                    g = (int)(t * 150);
-                    b = (int)(100 + t * 155);
+                    r = (int) (t * 50);
+                    g = (int) (t * 150);
+                    b = (int) (100 + t * 155);
                 } else {
                     // At or above ocean: yellow -> green -> red
                     // Fixed palette from oceanLevel to oceanLevel + maxHeightRange
@@ -74,14 +73,14 @@ public class FlatLevelImageCreator {
                     if (t < 0.5f) {
                         // Yellow to green
                         float tt = t * 2;
-                        r = (int)(255 - tt * 255);
+                        r = (int) (255 - tt * 255);
                         g = 255;
                         b = 0;
                     } else {
                         // Green to red
                         float tt = (t - 0.5f) * 2;
-                        r = (int)(tt * 255);
-                        g = (int)((1 - tt) * 255);
+                        r = (int) (tt * 255);
+                        g = (int) ((1 - tt) * 255);
                         b = 0;
                     }
                 }

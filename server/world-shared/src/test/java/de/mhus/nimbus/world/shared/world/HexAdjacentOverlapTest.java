@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.shared.world;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests whether adjacent hex grids overlap when placed next to each other.
@@ -53,7 +53,8 @@ class HexAdjacentOverlapTest {
                 if (in00 && in10) overlapCount++;
             }
 
-            System.out.printf("gridSize=%d, gridWidth=%d: sharedX=%.0f, overlap=%d pixels%n",
+            System.out.printf(
+                    "gridSize=%d, gridWidth=%d: sharedX=%.0f, overlap=%d pixels%n",
                     gridSize, gridWidth, sharedX, overlapCount);
 
             // Half-open boundary: no pixel is claimed by both hexes
@@ -74,15 +75,15 @@ class HexAdjacentOverlapTest {
 
         // Test even row: hex (0,0) and hex (2,0)
         HexVector2[] evenRowHexes = {
-                HexVector2.builder().q(0).r(0).build(),
-                HexVector2.builder().q(2).r(0).build(),
-                HexVector2.builder().q(-1).r(2).build(),
+            HexVector2.builder().q(0).r(0).build(),
+            HexVector2.builder().q(2).r(0).build(),
+            HexVector2.builder().q(-1).r(2).build(),
         };
         // Test odd row: hex (0,1) and hex (1,-1)
         HexVector2[] oddRowHexes = {
-                HexVector2.builder().q(0).r(1).build(),
-                HexVector2.builder().q(1).r(-1).build(),
-                HexVector2.builder().q(0).r(3).build(),
+            HexVector2.builder().q(0).r(1).build(),
+            HexVector2.builder().q(1).r(-1).build(),
+            HexVector2.builder().q(0).r(3).build(),
         };
 
         for (HexVector2 hex : evenRowHexes) {
@@ -93,11 +94,11 @@ class HexAdjacentOverlapTest {
                 HexVector2 neighbor = HexMathUtil.getNeighborPosition(hex, direction);
                 int[] neighborCenter = HexMathUtil.hexToCartesian(neighbor, gridSize);
                 double dist = Math.sqrt(
-                        Math.pow(neighborCenter[0] - center[0], 2) +
-                        Math.pow(neighborCenter[1] - center[1], 2));
+                        Math.pow(neighborCenter[0] - center[0], 2) + Math.pow(neighborCenter[1] - center[1], 2));
 
                 assertThat(dist)
-                        .as("Even row hex(%d,%d) %s neighbor(%d,%d) distance should be ≈ gridWidth=%d",
+                        .as(
+                                "Even row hex(%d,%d) %s neighbor(%d,%d) distance should be ≈ gridWidth=%d",
                                 hex.getQ(), hex.getR(), direction, neighbor.getQ(), neighbor.getR(), gridWidth)
                         .isBetween((double) gridWidth - 1, (double) gridWidth + 1);
             }
@@ -111,11 +112,11 @@ class HexAdjacentOverlapTest {
                 HexVector2 neighbor = HexMathUtil.getNeighborPosition(hex, direction);
                 int[] neighborCenter = HexMathUtil.hexToCartesian(neighbor, gridSize);
                 double dist = Math.sqrt(
-                        Math.pow(neighborCenter[0] - center[0], 2) +
-                        Math.pow(neighborCenter[1] - center[1], 2));
+                        Math.pow(neighborCenter[0] - center[0], 2) + Math.pow(neighborCenter[1] - center[1], 2));
 
                 assertThat(dist)
-                        .as("Odd row hex(%d,%d) %s neighbor(%d,%d) distance should be ≈ gridWidth=%d",
+                        .as(
+                                "Odd row hex(%d,%d) %s neighbor(%d,%d) distance should be ≈ gridWidth=%d",
                                 hex.getQ(), hex.getR(), direction, neighbor.getQ(), neighbor.getR(), gridWidth)
                         .isBetween((double) gridWidth - 1, (double) gridWidth + 1);
             }
@@ -130,10 +131,10 @@ class HexAdjacentOverlapTest {
     void testGetNeighborPosition_roundtrip() {
         int gridSize = 400;
         HexVector2[] testHexes = {
-                HexVector2.builder().q(0).r(0).build(),
-                HexVector2.builder().q(1).r(1).build(),
-                HexVector2.builder().q(-2).r(3).build(),
-                HexVector2.builder().q(5).r(-4).build(),
+            HexVector2.builder().q(0).r(0).build(),
+            HexVector2.builder().q(1).r(1).build(),
+            HexVector2.builder().q(-2).r(3).build(),
+            HexVector2.builder().q(5).r(-4).build(),
         };
 
         for (HexVector2 hex : testHexes) {
@@ -167,9 +168,8 @@ class HexAdjacentOverlapTest {
             int[] neighborPos = HexMathUtil.hexToCartesian(neighborHex, gridSize);
 
             // Verify geometrically adjacent
-            double dist = Math.sqrt(
-                    Math.pow(neighborPos[0] - centerPos[0], 2) +
-                    Math.pow(neighborPos[1] - centerPos[1], 2));
+            double dist =
+                    Math.sqrt(Math.pow(neighborPos[0] - centerPos[0], 2) + Math.pow(neighborPos[1] - centerPos[1], 2));
             assertThat(dist)
                     .as("Neighbor distance for %s should be ≈ gridWidth=%d", direction, gridWidth)
                     .isBetween((double) gridWidth - 1, (double) gridWidth + 1);
@@ -182,9 +182,17 @@ class HexAdjacentOverlapTest {
             boolean inCenter = HexMathUtil.isPointInHex(edgeMidX, edgeMidZ, centerPos[0], centerPos[1], gridSize);
             boolean inNeighbor = HexMathUtil.isPointInHex(edgeMidX, edgeMidZ, neighborPos[0], neighborPos[1], gridSize);
 
-            System.out.printf("Direction %s: neighbor=(%d,%d) at (%d,%d), edgeMid=(%.1f,%.1f), inCenter=%b, inNeighbor=%b%n",
-                    direction, neighborHex.getQ(), neighborHex.getR(), neighborPos[0], neighborPos[1],
-                    edgeMidX, edgeMidZ, inCenter, inNeighbor);
+            System.out.printf(
+                    "Direction %s: neighbor=(%d,%d) at (%d,%d), edgeMid=(%.1f,%.1f), inCenter=%b, inNeighbor=%b%n",
+                    direction,
+                    neighborHex.getQ(),
+                    neighborHex.getR(),
+                    neighborPos[0],
+                    neighborPos[1],
+                    edgeMidX,
+                    edgeMidZ,
+                    inCenter,
+                    inNeighbor);
 
             // Half-open boundary: edge midpoint belongs to exactly one hex
             assertThat(inCenter || inNeighbor)
@@ -216,9 +224,9 @@ class HexAdjacentOverlapTest {
 
             int flatOverlap = (mount00X + sizeX) - mount10X;
 
-            System.out.printf("gridSize=%d: flat00=[%d, %d), flat10=[%d, %d), overlap=%d (expected %d)%n",
-                    gridSize, mount00X, mount00X + sizeX, mount10X, mount10X + sizeX,
-                    flatOverlap, BORDER * 2);
+            System.out.printf(
+                    "gridSize=%d: flat00=[%d, %d), flat10=[%d, %d), overlap=%d (expected %d)%n",
+                    gridSize, mount00X, mount00X + sizeX, mount10X, mount10X + sizeX, flatOverlap, BORDER * 2);
 
             assertThat(flatOverlap)
                     .as("Flat overlap for gridSize=%d should be 2*border=%d", gridSize, BORDER * 2)
@@ -252,7 +260,8 @@ class HexAdjacentOverlapTest {
                 }
             }
 
-            System.out.printf("gridSize=%d, gridWidth=%d: hex interior E/W overlap at center Z = %d columns%n",
+            System.out.printf(
+                    "gridSize=%d, gridWidth=%d: hex interior E/W overlap at center Z = %d columns%n",
                     gridSize, gridWidth, overlapColumns);
 
             // Half-open boundary: no column is shared at the E/W edge
@@ -302,8 +311,7 @@ class HexAdjacentOverlapTest {
                 }
             }
 
-            System.out.printf("Direction %s: edge length=%d, overlap pixels=%d%n",
-                    direction, steps, overlapCount);
+            System.out.printf("Direction %s: edge length=%d, overlap pixels=%d%n", direction, steps, overlapCount);
 
             // Half-open boundary: edges have no overlap (max 1-2 for vertex pixels)
             assertThat(overlapCount)
@@ -334,7 +342,8 @@ class HexAdjacentOverlapTest {
                 }
             }
 
-            System.out.printf("gridSize=%d, gridWidth=%d: hex pixel extent at center row = %d%n",
+            System.out.printf(
+                    "gridSize=%d, gridWidth=%d: hex pixel extent at center row = %d%n",
                     gridSize, gridWidth, pixelCount);
 
             // Half-open boundary: hex occupies exactly gridWidth pixels at widest row
@@ -355,19 +364,37 @@ class HexAdjacentOverlapTest {
 
         // Even row (r=0): neighbors in offset coordinates
         HexVector2 ne = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.NORTH_EAST);
-        HexVector2 e  = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.EAST);
+        HexVector2 e = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.EAST);
         HexVector2 se = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.SOUTH_EAST);
         HexVector2 sw = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.SOUTH_WEST);
-        HexVector2 w  = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.WEST);
+        HexVector2 w = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.WEST);
         HexVector2 nw = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.NORTH_WEST);
 
         // Expected offset coordinates for even row center (0,0)
-        assertThat(ne).as("NE").satisfies(h -> { assertThat(h.getQ()).isEqualTo(0);  assertThat(h.getR()).isEqualTo(1); });
-        assertThat(e).as("E").satisfies(h ->   { assertThat(h.getQ()).isEqualTo(1);  assertThat(h.getR()).isEqualTo(0); });
-        assertThat(se).as("SE").satisfies(h -> { assertThat(h.getQ()).isEqualTo(0);  assertThat(h.getR()).isEqualTo(-1); });
-        assertThat(sw).as("SW").satisfies(h -> { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(-1); });
-        assertThat(w).as("W").satisfies(h ->   { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(0); });
-        assertThat(nw).as("NW").satisfies(h -> { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(1); });
+        assertThat(ne).as("NE").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(0);
+            assertThat(h.getR()).isEqualTo(1);
+        });
+        assertThat(e).as("E").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(1);
+            assertThat(h.getR()).isEqualTo(0);
+        });
+        assertThat(se).as("SE").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(0);
+            assertThat(h.getR()).isEqualTo(-1);
+        });
+        assertThat(sw).as("SW").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(-1);
+            assertThat(h.getR()).isEqualTo(-1);
+        });
+        assertThat(w).as("W").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(-1);
+            assertThat(h.getR()).isEqualTo(0);
+        });
+        assertThat(nw).as("NW").satisfies(h -> {
+            assertThat(h.getQ()).isEqualTo(-1);
+            assertThat(h.getR()).isEqualTo(1);
+        });
 
         // Verify proper hexagonal layout: all neighbors equidistant from center
         int gridWidth = HexMathUtil.getGridWidth(gridSize);
@@ -376,11 +403,10 @@ class HexAdjacentOverlapTest {
         for (WHexGrid.EDGE dir : WHexGrid.EDGE.values()) {
             HexVector2 neighbor = HexMathUtil.getNeighborPosition(center, dir);
             int[] nPos = HexMathUtil.hexToCartesian(neighbor, gridSize);
-            double dist = Math.sqrt(
-                    Math.pow(nPos[0] - centerPos[0], 2) +
-                    Math.pow(nPos[1] - centerPos[1], 2));
+            double dist = Math.sqrt(Math.pow(nPos[0] - centerPos[0], 2) + Math.pow(nPos[1] - centerPos[1], 2));
 
-            System.out.printf("  %s → (%d,%d) at world (%d,%d), dist=%.1f%n",
+            System.out.printf(
+                    "  %s → (%d,%d) at world (%d,%d), dist=%.1f%n",
                     dir, neighbor.getQ(), neighbor.getR(), nPos[0], nPos[1], dist);
 
             assertThat(dist)

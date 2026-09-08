@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -10,10 +13,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * Service for managing WEntityModel entities.
@@ -84,16 +83,18 @@ public class WEntityModelService {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
 
-        WEntityModel entity = repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).orElseGet(() -> {
-            WEntityModel neu = WEntityModel.builder()
-                    .name(resolvedModelId)
-                    .worldId(resolvedWorldId.getId())
-                    .enabled(true)
-                    .build();
-            neu.touchCreate();
-            log.debug("Creating new WEntityModel: {}", resolvedModelId);
-            return neu;
-        });
+        WEntityModel entity = repository
+                .findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId)
+                .orElseGet(() -> {
+                    WEntityModel neu = WEntityModel.builder()
+                            .name(resolvedModelId)
+                            .worldId(resolvedWorldId.getId())
+                            .enabled(true)
+                            .build();
+                    neu.touchCreate();
+                    log.debug("Creating new WEntityModel: {}", resolvedModelId);
+                    return neu;
+                });
 
         entity.setPublicData(publicData);
         entity.touchUpdate();
@@ -136,14 +137,16 @@ public class WEntityModelService {
         if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
-            updater.accept(entity);
-            entity.touchUpdate();
-            entity.removeWorldPrefix();
-            WEntityModel saved = repository.save(entity);
-            log.debug("Updated WEntityModel: {}", resolvedModelId);
-            return saved;
-        });
+        return repository
+                .findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId)
+                .map(entity -> {
+                    updater.accept(entity);
+                    entity.touchUpdate();
+                    entity.removeWorldPrefix();
+                    WEntityModel saved = repository.save(entity);
+                    log.debug("Updated WEntityModel: {}", resolvedModelId);
+                    return saved;
+                });
     }
 
     /**
@@ -159,11 +162,14 @@ public class WEntityModelService {
         if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
-            repository.delete(entity);
-            log.debug("Deleted WEntityModel: {}", modelId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId)
+                .map(entity -> {
+                    repository.delete(entity);
+                    log.debug("Deleted WEntityModel: {}", modelId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Transactional
@@ -200,7 +206,8 @@ public class WEntityModelService {
     public List<WEntityModel> findByWorldIdAndType(WorldId worldId, String type) {
         var regionWorldId = worldId.toCollection();
         return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true).stream()
-                .filter(m -> m.getPublicData() != null && type.equals(m.getPublicData().getType()))
+                .filter(m -> m.getPublicData() != null
+                        && type.equals(m.getPublicData().getType()))
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -267,8 +274,7 @@ public class WEntityModelService {
             modelCount++;
         }
 
-        log.info("Duplicated {} entity models from world {} to {}",
-                modelCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} entity models from world {} to {}", modelCount, sourceWorldId, targetWorldId);
         return modelCount;
     }
 
@@ -282,12 +288,10 @@ public class WEntityModelService {
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
         return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WEntityModel.class, "entitymodel", worldId,
-                doc -> {
+                mongoTemplate, WEntityModel.class, "entitymodel", worldId, doc -> {
                     String modelId = doc.getString("name");
                     return modelId != null ? doc.getString("worldId") + "|" + modelId : null;
-                }
-        );
+                });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -314,7 +318,8 @@ public class WEntityModelService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndName(String worldId, String name) {
         String collectionName = mongoTemplate.getCollectionName(WEntityModel.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("name").is(name));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("name").is(name));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -327,8 +332,10 @@ public class WEntityModelService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WEntityModel.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("name").is(doc.getString("name")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("name")
+                .is(doc.getString("name")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -336,5 +343,4 @@ public class WEntityModelService {
         }
         return mongoTemplate.save(doc, collectionName);
     }
-
 }

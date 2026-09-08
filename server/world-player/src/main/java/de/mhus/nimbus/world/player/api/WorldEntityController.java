@@ -46,24 +46,25 @@ public class WorldEntityController {
      * 2. Persistent NPC entities in database
      */
     @GetMapping("/entity/{entityId}")
-    @Operation(summary = "Get Entity by ID", description = "Returns Entity instance for a specific entity (player or NPC)")
+    @Operation(
+            summary = "Get Entity by ID",
+            description = "Returns Entity instance for a specific entity (player or NPC)")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity found"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
-    public ResponseEntity<Entity> getEntity(
-            HttpServletRequest request,
-            @PathVariable String entityId) {
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+    public ResponseEntity<Entity> getEntity(HttpServletRequest request, @PathVariable String entityId) {
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         log.debug("GET /player/world/entity/{}", worldId, entityId);
 
         // Check if this is a player entity (starts with "@")
         if (entityId.startsWith("@")) {
             // Search in active sessions
-            var entityX = playerService.getPlayerAsEntity(de.mhus.nimbus.shared.types.PlayerId.of(entityId).get(), worldId);
+            var entityX = playerService.getPlayerAsEntity(
+                    de.mhus.nimbus.shared.types.PlayerId.of(entityId).get(), worldId);
             if (entityX.isPresent()) {
                 log.debug("Found player entity in active sessions: {}", entityId);
                 return ResponseEntity.ok(entityX.get());
@@ -73,15 +74,16 @@ public class WorldEntityController {
         }
 
         // Not a player entity or not found in sessions - search database
-        int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
-                .map(PlayerSession::getEpoch).orElse(0);
+        int epoch = sessionManager
+                .getBySessionId(accessUtil.getSessionId(request))
+                .map(PlayerSession::getEpoch)
+                .orElse(0);
         return service.findByWorldIdAndName(worldId, entityId, epoch)
-                        .map(WEntity::getPublicData)
-                        .map(ResponseEntity::ok)
-                        .orElseGet(() -> {
-                            log.debug("Entity not found: worldId={}, entityId={}", worldId, entityId);
-                            return ResponseEntity.notFound().build();
-                        });
+                .map(WEntity::getPublicData)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> {
+                    log.debug("Entity not found: worldId={}, entityId={}", worldId, entityId);
+                    return ResponseEntity.notFound().build();
+                });
     }
-
 }

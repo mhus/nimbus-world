@@ -28,7 +28,6 @@ public class DuplicateBlockTypesService implements DuplicateToWorld {
 
         int duplicatedCount = blockTypeService.duplicateToWorld(sourceWorldId, targetWorldId);
 
-        log.info("Duplicated {} block types from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} block types from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

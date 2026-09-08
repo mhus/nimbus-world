@@ -1,35 +1,34 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.area.AreaSize;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
-import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
-import de.mhus.nimbus.world.generator.composer.point.PointComposer;
-import de.mhus.nimbus.world.generator.composer.point.PositionPoint;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.RoadType;
+import de.mhus.nimbus.world.generator.composer.point.PointComposer;
+import de.mhus.nimbus.world.generator.composer.point.PositionPoint;
 import de.mhus.nimbus.world.generator.composer.point.SnapConfig;
 import de.mhus.nimbus.world.generator.composer.point.SnapMode;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for Roads connecting Points with lx/lz coordinates instead of sides
@@ -63,20 +62,21 @@ public class RoadWithPointEndpointsTest {
 
         // Compose points
         PointComposer pointComposer = new PointComposer();
-        PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, biomePlacementResult, testWorld);
+        PointComposer.PointCompositionResult pointResult =
+                pointComposer.composePoints(composition, biomePlacementResult, testWorld);
         assertTrue(pointResult.isSuccess(), "Point composition should succeed");
         assertEquals(2, pointResult.getComposedPoints(), "Should compose both points");
         log.info("Placed {} points", pointResult.getComposedPoints());
 
         // Compose flows (roads)
         FlowComposer flowComposer = new FlowComposer();
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, biomePlacementResult);
+        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, biomePlacementResult);
         assertTrue(flowResult.isSuccess(), "Flow composition should succeed");
         assertEquals(1, flowResult.getComposedFlows(), "Should compose the road");
-        log.info("Composed {} flows with {} total segments",
-            flowResult.getComposedFlows(), flowResult.getTotalSegments());
+        log.info(
+                "Composed {} flows with {} total segments",
+                flowResult.getComposedFlows(),
+                flowResult.getTotalSegments());
 
         // Verify road endpoints
         Road road = findRoad(composition, "road-between-cities");
@@ -86,24 +86,27 @@ public class RoadWithPointEndpointsTest {
         assertEquals("city-a", road.getStartPointFeature().getName(), "Should start at city-a");
         assertEquals("city-b", road.getEndPointFeature().getName(), "Should end at city-b");
 
-        log.info("Road starts at Point '{}' with lx={}, lz={}",
-            road.getStartPointFeature().getName(),
-            road.getStartPointFeature().getPlacedLx(),
-            road.getStartPointFeature().getPlacedLz());
+        log.info(
+                "Road starts at Point '{}' with lx={}, lz={}",
+                road.getStartPointFeature().getName(),
+                road.getStartPointFeature().getPlacedLx(),
+                road.getStartPointFeature().getPlacedLz());
 
-        log.info("Road ends at Point '{}' with lx={}, lz={}",
-            road.getEndPointFeature().getName(),
-            road.getEndPointFeature().getPlacedLx(),
-            road.getEndPointFeature().getPlacedLz());
+        log.info(
+                "Road ends at Point '{}' with lx={}, lz={}",
+                road.getEndPointFeature().getName(),
+                road.getEndPointFeature().getPlacedLx(),
+                road.getEndPointFeature().getPlacedLz());
 
         // Verify flow segments have lx/lz coordinates instead of sides
         assertTrue(road.getRoute().size() > 0, "Road should have route");
 
         // Collect grids from Central Registry that contain segments from this road
         List<FeatureHexGrid> roadGrids = composition.getFeatureHexGridRegistry().values().stream()
-            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
-                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
-            .collect(Collectors.toList());
+                .filter(grid -> grid.getFlowSegments() != null
+                        && grid.getFlowSegments().stream()
+                                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
+                .collect(Collectors.toList());
 
         // First segment should have fromLx/fromLz (from Point)
         FeatureHexGrid firstGrid = roadGrids.get(0);
@@ -116,8 +119,10 @@ public class RoadWithPointEndpointsTest {
             assertTrue(firstSegment.hasFromCoordinates(), "Start segment should have from coordinates");
             assertNotNull(firstSegment.getFromLx(), "Start segment should have fromLx");
             assertNotNull(firstSegment.getFromLz(), "Start segment should have fromLz");
-            log.info("First segment uses Point coordinates: fromLx={}, fromLz={}",
-                firstSegment.getFromLx(), firstSegment.getFromLz());
+            log.info(
+                    "First segment uses Point coordinates: fromLx={}, fromLz={}",
+                    firstSegment.getFromLx(),
+                    firstSegment.getFromLz());
         }
 
         // Last segment should have toLx/toLz (to Point)
@@ -131,8 +136,10 @@ public class RoadWithPointEndpointsTest {
             assertTrue(lastSegment.hasToCoordinates(), "End segment should have to coordinates");
             assertNotNull(lastSegment.getToLx(), "End segment should have toLx");
             assertNotNull(lastSegment.getToLz(), "End segment should have toLz");
-            log.info("Last segment uses Point coordinates: toLx={}, toLz={}",
-                lastSegment.getToLx(), lastSegment.getToLz());
+            log.info(
+                    "Last segment uses Point coordinates: toLx={}, toLz={}",
+                    lastSegment.getToLx(),
+                    lastSegment.getToLz());
         }
 
         log.info("=== Road Between Points Test Completed ===");
@@ -161,10 +168,8 @@ public class RoadWithPointEndpointsTest {
         cityA.setName("city-a");
         cityA.setFeatureId("city-a");
         cityA.setStatus(FeatureStatus.NEW);
-        cityA.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("plains")
-            .build());
+        cityA.setSnap(
+                SnapConfig.builder().mode(SnapMode.INSIDE).target("plains").build());
         features.add(cityA);
 
         // Point B: City on the east side
@@ -172,17 +177,12 @@ public class RoadWithPointEndpointsTest {
         cityB.setName("city-b");
         cityB.setFeatureId("city-b");
         cityB.setStatus(FeatureStatus.NEW);
-        cityB.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("plains")
-            .build());
+        cityB.setSnap(
+                SnapConfig.builder().mode(SnapMode.INSIDE).target("plains").build());
         features.add(cityB);
 
         // Road connecting both cities
-        Road road = Road.builder()
-            .roadType(RoadType.STREET)
-            .level(100)
-            .build();
+        Road road = Road.builder().roadType(RoadType.STREET).level(100).build();
         road.setName("road-between-cities");
         road.setFeatureId("road-between-cities");
         road.setStatus(FeatureStatus.NEW);

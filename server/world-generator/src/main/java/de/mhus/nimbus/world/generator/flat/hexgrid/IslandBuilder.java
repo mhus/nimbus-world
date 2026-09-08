@@ -4,10 +4,9 @@ import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.generator.flat.manipulator.IslandsManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Island scenario builder.
@@ -22,19 +21,23 @@ public class IslandBuilder extends HexGridBuilder {
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.debug("Building island scenario for flat: {}",
-                flat.getFlatId());
+        log.debug("Building island scenario for flat: {}", flat.getFlatId());
 
         int oceanLevel = flat.getSeaLevel();
 
         // Step 1: Create hilly ocean floor using HillyTerrainManipulator (like OceanBuilder)
         int hillHeight = getOffset();
-        int baseHeight = Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
+        int baseHeight =
+                Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
 
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
-        log.debug("Ocean floor generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
-                baseHeight, hillHeight, oceanLevel, seed);
+        log.debug(
+                "Ocean floor generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
+                baseHeight,
+                hillHeight,
+                oceanLevel,
+                seed);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -43,13 +46,9 @@ public class IslandBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
 
         // Use HillyTerrainManipulator to generate ocean floor terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         log.debug("Ocean floor created, now creating islands");
 
@@ -57,35 +56,32 @@ public class IslandBuilder extends HexGridBuilder {
         Map<String, String> islandParams = new HashMap<>();
 
         // Use parameters from IslandsManipulator with proper defaults
-        islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_SIZE,
-                getParameterOrDefault("mainIslandSize", "40"));
+        islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_SIZE, getParameterOrDefault("mainIslandSize", "40"));
         // mainIslandHeight is HEIGHT ABOVE ocean level, not absolute height!
-        islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_HEIGHT,
-                getParameterOrDefault("mainIslandHeight", "2"));  // 2 pixels above ocean
-        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLANDS,
-                getParameterOrDefault("smallIslands", "8"));
-        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MIN_RADIUS,
-                getParameterOrDefault("smallIslandMinRadius", "8"));
-        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MAX_RADIUS,
-                getParameterOrDefault("smallIslandMaxRadius", "15"));
-        islandParams.put(IslandsManipulator.PARAM_SCATTER_DISTANCE,
-                getParameterOrDefault("scatterDistance", "60"));
+        islandParams.put(
+                IslandsManipulator.PARAM_MAIN_ISLAND_HEIGHT,
+                getParameterOrDefault("mainIslandHeight", "2")); // 2 pixels above ocean
+        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLANDS, getParameterOrDefault("smallIslands", "8"));
+        islandParams.put(
+                IslandsManipulator.PARAM_SMALL_ISLAND_MIN_RADIUS, getParameterOrDefault("smallIslandMinRadius", "8"));
+        islandParams.put(
+                IslandsManipulator.PARAM_SMALL_ISLAND_MAX_RADIUS, getParameterOrDefault("smallIslandMaxRadius", "15"));
+        islandParams.put(IslandsManipulator.PARAM_SCATTER_DISTANCE, getParameterOrDefault("scatterDistance", "60"));
         islandParams.put(IslandsManipulator.PARAM_SEED, String.valueOf(seed));
         islandParams.put(IslandsManipulator.PARAM_UNDERWATER, "false");
 
         log.debug("Island parameters: {}", islandParams);
 
         // Use IslandsManipulator to create islands
-        context.getManipulatorService().executeManipulator(
-                IslandsManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                islandParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        IslandsManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), islandParams);
 
-        log.debug("Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, oceanLevel);
+        log.debug(
+                "Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight,
+                hillHeight,
+                oceanLevel);
     }
 
     private String getParameterOrDefault(String mainIslandSize, String number) {
@@ -97,12 +93,12 @@ public class IslandBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 5;  // LAND: normal variation
+        return 5; // LAND: normal variation
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 15;  // LAND: above ocean level
+        return 15; // LAND: above ocean level
     }
 
     private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {
@@ -120,5 +116,4 @@ public class IslandBuilder extends HexGridBuilder {
     public int getLandSideLevel(WHexGrid.EDGE side) {
         return getCenterAsl();
     }
-
 }

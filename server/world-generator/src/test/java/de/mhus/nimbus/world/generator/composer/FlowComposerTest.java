@@ -1,37 +1,35 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import de.mhus.nimbus.world.generator.composer.area.AreaShape;
-import de.mhus.nimbus.world.generator.composer.area.AreaSize;
-import de.mhus.nimbus.world.generator.composer.biome.Biome;
-import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
-import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
-import de.mhus.nimbus.world.generator.composer.flow.FlowWidth;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
-import de.mhus.nimbus.world.generator.composer.flow.River;
-import de.mhus.nimbus.world.generator.composer.flow.Road;
-import de.mhus.nimbus.world.generator.composer.flow.RoadType;
-import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridService;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.AreaSize;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
+import de.mhus.nimbus.world.generator.composer.biome.Biome;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
+import de.mhus.nimbus.world.generator.composer.flow.FlowWidth;
+import de.mhus.nimbus.world.generator.composer.flow.River;
+import de.mhus.nimbus.world.generator.composer.flow.Road;
+import de.mhus.nimbus.world.generator.composer.flow.RoadType;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Tests for FlowComposer integration with BiomeComposer and HexGridGenerator
@@ -48,7 +46,7 @@ public class FlowComposerTest {
 
         // Mock service to return empty for all lookups (simulate no existing grids)
         when(mockHexGridService.findAllByWorldIdAndPosition(anyString(), any(HexVector2.class)))
-            .thenReturn(List.of());
+                .thenReturn(List.of());
 
         // Mock saveAll to return what was passed in
         when(mockHexGridService.saveAll(any())).thenAnswer(invocation -> {
@@ -67,12 +65,12 @@ public class FlowComposerTest {
 
         // Use HexCompositeBuilder to orchestrate the complete pipeline
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(12345L)
-            .fillGaps(false)  // No gap filling for this test
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(12345L)
+                .fillGaps(false) // No gap filling for this test
+                .build()
+                .compose();
 
         // Generate WHexGrids for testing
         result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockHexGridService);
@@ -87,51 +85,51 @@ public class FlowComposerTest {
 
         // Verify flow composition
         assertEquals(1, result.getTotalFlows(), "Should have 1 flow");
-        assertTrue(result.getFlowCompositionResult().getTotalSegments() > 0,
-            "Should have created segments");
+        assertTrue(result.getFlowCompositionResult().getTotalSegments() > 0, "Should have created segments");
 
-        log.info("Flow composition result: successful={}, composed={}/{}, segments={}",
-            result.getFlowCompositionResult().isSuccess(),
-            result.getFlowCompositionResult().getComposedFlows(),
-            result.getFlowCompositionResult().getTotalFlows(),
-            result.getFlowCompositionResult().getTotalSegments());
+        log.info(
+                "Flow composition result: successful={}, composed={}/{}, segments={}",
+                result.getFlowCompositionResult().isSuccess(),
+                result.getFlowCompositionResult().getComposedFlows(),
+                result.getFlowCompositionResult().getTotalFlows(),
+                result.getFlowCompositionResult().getTotalSegments());
 
         // Collect grids from Central Registry that contain segments from this road
         Road road = composition.getRoads().get(0);
         List<FeatureHexGrid> roadHexGrids = composition.getFeatureHexGridRegistry().values().stream()
-            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
-                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
-            .collect(Collectors.toList());
+                .filter(grid -> grid.getFlowSegments() != null
+                        && grid.getFlowSegments().stream()
+                                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
+                .collect(Collectors.toList());
 
         assertNotNull(roadHexGrids, "Road should have hexGrids");
         assertFalse(roadHexGrids.isEmpty(), "Road hexGrids should not be empty");
 
-        log.info("Road '{}' has {} hexGrids with flow segments",
-            road.getName(), roadHexGrids.size());
+        log.info("Road '{}' has {} hexGrids with flow segments", road.getName(), roadHexGrids.size());
 
         // Verify flow segments
         int totalSegments = 0;
         for (FeatureHexGrid hexGrid : roadHexGrids) {
             if (hexGrid.hasFlowSegments()) {
                 totalSegments += hexGrid.getFlowSegments().size();
-                log.debug("HexGrid at {} has {} flow segments",
-                    hexGrid.getCoordinate(),
-                    hexGrid.getFlowSegments().size());
+                log.debug(
+                        "HexGrid at {} has {} flow segments",
+                        hexGrid.getCoordinate(),
+                        hexGrid.getFlowSegments().size());
             }
         }
 
         assertTrue(totalSegments > 0, "Should have flow segments in hexGrids");
 
         // Verify central registry contains grids (WHexGrid creation is now separate)
-        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(),
-            "Central registry should contain grids");
+        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(), "Central registry should contain grids");
 
-        log.info("Central registry contains {} FeatureHexGrids",
-            composition.getFeatureHexGridRegistry().size());
+        log.info(
+                "Central registry contains {} FeatureHexGrids",
+                composition.getFeatureHexGridRegistry().size());
 
         // Verify feature status
-        assertEquals(FeatureStatus.CREATED, road.getStatus(),
-            "Road should have CREATED status");
+        assertEquals(FeatureStatus.CREATED, road.getStatus(), "Road should have CREATED status");
 
         log.info("=== Test completed successfully ===");
     }
@@ -145,12 +143,12 @@ public class FlowComposerTest {
 
         // Use HexCompositeBuilder to orchestrate the complete pipeline
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(54321L)
-            .fillGaps(false)  // No gap filling for this test
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(54321L)
+                .fillGaps(false) // No gap filling for this test
+                .build()
+                .compose();
 
         // Generate WHexGrids for testing
         result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockHexGridService);
@@ -158,16 +156,18 @@ public class FlowComposerTest {
         // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");
 
-        log.info("River composition: successful={}, segments={}",
-            result.getFlowCompositionResult().isSuccess(),
-            result.getFlowCompositionResult().getTotalSegments());
+        log.info(
+                "River composition: successful={}, segments={}",
+                result.getFlowCompositionResult().isSuccess(),
+                result.getFlowCompositionResult().getTotalSegments());
 
         // Collect grids from Central Registry that contain segments from this river
         River river = composition.getRivers().get(0);
         List<FeatureHexGrid> riverHexGrids = composition.getFeatureHexGridRegistry().values().stream()
-            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
-                .anyMatch(seg -> river.getFeatureId().equals(seg.getFlowFeatureId())))
-            .collect(Collectors.toList());
+                .filter(grid -> grid.getFlowSegments() != null
+                        && grid.getFlowSegments().stream()
+                                .anyMatch(seg -> river.getFeatureId().equals(seg.getFlowFeatureId())))
+                .collect(Collectors.toList());
 
         assertNotNull(riverHexGrids);
         assertFalse(riverHexGrids.isEmpty());
@@ -175,8 +175,7 @@ public class FlowComposerTest {
         log.info("River '{}' has {} hexGrids", river.getName(), riverHexGrids.size());
 
         // Verify central registry contains grids (WHexGrid creation is now separate)
-        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(),
-            "Central registry should contain grids");
+        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(), "Central registry should contain grids");
 
         log.info("=== River test completed successfully ===");
     }
@@ -186,15 +185,13 @@ public class FlowComposerTest {
      */
     private HexComposition createCompositionWithRoad() {
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("road-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("road-test")
+                .features(new ArrayList<>())
+                .build();
 
         // Biome 1: Forest at origin
-        Biome forest = Biome.builder()
-            .type(BiomeType.FOREST)
-            .build();
+        Biome forest = Biome.builder().type(BiomeType.FOREST).build();
         forest.setName("forest");
         forest.setTitle("Test Forest");
         forest.setShape(AreaShape.CIRCLE);
@@ -202,9 +199,7 @@ public class FlowComposerTest {
         forest.setPositions(List.of(createOriginPosition()));
 
         // Biome 2: Mountains to the north
-        Biome mountains = Biome.builder()
-            .type(BiomeType.MOUNTAINS)
-            .build();
+        Biome mountains = Biome.builder().type(BiomeType.MOUNTAINS).build();
         mountains.setName("mountains");
         mountains.setTitle("Test Mountains");
         mountains.setShape(AreaShape.CIRCLE);
@@ -213,10 +208,10 @@ public class FlowComposerTest {
 
         // Road connecting forest to mountains
         Road road = Road.builder()
-            .waypointIds(new ArrayList<>())
-            .roadType(RoadType.STREET)
-            .level(95)
-            .build();
+                .waypointIds(new ArrayList<>())
+                .roadType(RoadType.STREET)
+                .level(95)
+                .build();
         road.setName("main-road");
         road.setTitle("Main Road");
         road.setStartPointId("forest");
@@ -235,15 +230,13 @@ public class FlowComposerTest {
      */
     private HexComposition createCompositionWithRiver() {
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("river-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("river-test")
+                .features(new ArrayList<>())
+                .build();
 
         // Biome 1: Plains at origin
-        Biome plains = Biome.builder()
-            .type(BiomeType.PLAINS)
-            .build();
+        Biome plains = Biome.builder().type(BiomeType.PLAINS).build();
         plains.setName("plains");
         plains.setTitle("Test Plains");
         plains.setShape(AreaShape.CIRCLE);
@@ -251,9 +244,7 @@ public class FlowComposerTest {
         plains.setPositions(List.of(createOriginPosition()));
 
         // Biome 2: Swamp to the south
-        Biome swamp = Biome.builder()
-            .type(BiomeType.SWAMP)
-            .build();
+        Biome swamp = Biome.builder().type(BiomeType.SWAMP).build();
         swamp.setName("swamp");
         swamp.setTitle("Test Swamp");
         swamp.setShape(AreaShape.CIRCLE);
@@ -262,10 +253,10 @@ public class FlowComposerTest {
 
         // River from plains to swamp
         River river = River.builder()
-            .waypointIds(new ArrayList<>())
-            .depth(3)
-            .level(50)
-            .build();
+                .waypointIds(new ArrayList<>())
+                .depth(3)
+                .level(50)
+                .build();
         river.setName("main-river");
         river.setTitle("Main River");
         river.setStartPointId("plains");

@@ -1,5 +1,9 @@
 package de.mhus.nimbus.world.control.service.sync;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
@@ -8,11 +12,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.stereotype.Service;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Git repository control implementation using JGit.
@@ -23,7 +22,8 @@ import java.nio.file.Path;
 public class RepositoryControlWithJGit implements RepositoryControl {
 
     @Override
-    public void initOrClone(Path localPath, String repositoryUrl, String branch, String username, String password) throws IOException {
+    public void initOrClone(Path localPath, String repositoryUrl, String branch, String username, String password)
+            throws IOException {
         if (isGitRepository(localPath)) {
             log.info("Git repository already exists: {}", localPath);
             return;
@@ -43,9 +43,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
                 }
 
                 if (username != null && !username.isBlank() && password != null) {
-                    cloneCommand.setCredentialsProvider(
-                            new UsernamePasswordCredentialsProvider(username, password)
-                    );
+                    cloneCommand.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
                 }
 
                 try (Git git = cloneCommand.call()) {
@@ -78,13 +76,10 @@ public class RepositoryControlWithJGit implements RepositoryControl {
             resetHard(localPath);
 
             // Then: pull with rebase
-            var pullCommand = git.pull()
-                    .setRebase(true);
+            var pullCommand = git.pull().setRebase(true);
 
             if (username != null && !username.isBlank() && password != null) {
-                pullCommand.setCredentialsProvider(
-                        new UsernamePasswordCredentialsProvider(username, password)
-                );
+                pullCommand.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
             }
 
             var result = pullCommand.call();
@@ -105,9 +100,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
 
         try (Git git = openRepository(localPath)) {
             // Add all changes
-            git.add()
-                    .addFilepattern(".")
-                    .call();
+            git.add().addFilepattern(".").call();
 
             // Check if there are changes to commit
             var status = git.status().call();
@@ -117,10 +110,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
             }
 
             // Commit
-            git.commit()
-                    .setMessage(message)
-                    .setAllowEmpty(false)
-                    .call();
+            git.commit().setMessage(message).setAllowEmpty(false).call();
 
             log.info("Changes committed: {}", localPath);
 
@@ -128,9 +118,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
             var pushCommand = git.push();
 
             if (username != null && !username.isBlank() && password != null) {
-                pushCommand.setCredentialsProvider(
-                        new UsernamePasswordCredentialsProvider(username, password)
-                );
+                pushCommand.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
             }
 
             pushCommand.call();
@@ -146,10 +134,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
         log.info("Resetting repository to HEAD (hard): {}", localPath);
 
         try (Git git = openRepository(localPath)) {
-            git.reset()
-                    .setMode(ResetCommand.ResetType.HARD)
-                    .setRef("HEAD")
-                    .call();
+            git.reset().setMode(ResetCommand.ResetType.HARD).setRef("HEAD").call();
 
             log.info("Repository reset successful: {}", localPath);
         } catch (GitAPIException e) {
@@ -193,11 +178,14 @@ public class RepositoryControlWithJGit implements RepositoryControl {
                 if (remotes.isEmpty()) {
                     result.append("⚠️  No remote configured\n");
                 } else {
-                    result.append("✅ Remotes configured: ").append(remotes.size()).append("\n");
-                    remotes.forEach(remote ->
-                        result.append("   - ").append(remote.getName())
-                              .append(": ").append(remote.getURIs()).append("\n")
-                    );
+                    result.append("✅ Remotes configured: ")
+                            .append(remotes.size())
+                            .append("\n");
+                    remotes.forEach(remote -> result.append("   - ")
+                            .append(remote.getName())
+                            .append(": ")
+                            .append(remote.getURIs())
+                            .append("\n"));
                 }
 
                 // Test fetch (doesn't download, just checks connectivity)
@@ -206,24 +194,29 @@ public class RepositoryControlWithJGit implements RepositoryControl {
                         var fetchCommand = git.fetch();
                         if (username != null && !username.isBlank() && password != null) {
                             fetchCommand.setCredentialsProvider(
-                                    new UsernamePasswordCredentialsProvider(username, password)
-                            );
+                                    new UsernamePasswordCredentialsProvider(username, password));
                         }
                         fetchCommand.setDryRun(true).call();
                         result.append("✅ Remote connectivity OK\n");
                     } catch (Exception e) {
-                        result.append("❌ Remote connectivity failed: ").append(e.getMessage()).append("\n");
+                        result.append("❌ Remote connectivity failed: ")
+                                .append(e.getMessage())
+                                .append("\n");
                     }
                 }
 
             } catch (Exception e) {
-                result.append("❌ Failed to read repository info: ").append(e.getMessage()).append("\n");
+                result.append("❌ Failed to read repository info: ")
+                        .append(e.getMessage())
+                        .append("\n");
             }
         } else {
             result.append("⚠️  Not a Git repository\n");
 
             if (repositoryUrl != null && !repositoryUrl.isBlank()) {
-                result.append("ℹ️  Repository URL configured: ").append(repositoryUrl).append("\n");
+                result.append("ℹ️  Repository URL configured: ")
+                        .append(repositoryUrl)
+                        .append("\n");
                 result.append("ℹ️  Will clone on first sync\n");
             } else {
                 result.append("⚠️  No repository URL configured\n");
@@ -252,8 +245,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
     private Git openRepository(Path localPath) throws IOException {
         try {
             FileRepositoryBuilder builder = new FileRepositoryBuilder();
-            Repository repository = builder
-                    .setGitDir(localPath.resolve(".git").toFile())
+            Repository repository = builder.setGitDir(localPath.resolve(".git").toFile())
                     .readEnvironment()
                     .findGitDir()
                     .build();

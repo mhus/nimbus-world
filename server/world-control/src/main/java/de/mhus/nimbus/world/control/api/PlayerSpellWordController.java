@@ -10,13 +10,12 @@ import de.mhus.nimbus.world.shared.world.WAnything;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/spell-words")
@@ -89,7 +88,8 @@ public class PlayerSpellWordController extends BaseEditorController {
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
-        return characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        return characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
     }
-
 }

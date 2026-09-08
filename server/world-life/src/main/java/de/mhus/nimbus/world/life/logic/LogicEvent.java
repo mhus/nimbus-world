@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.life.logic;
 
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Request DTO for Logic Machine event processing.

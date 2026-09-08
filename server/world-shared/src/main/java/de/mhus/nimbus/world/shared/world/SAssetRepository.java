@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface SAssetRepository extends MongoRepository<SAsset, String> {
@@ -46,7 +45,6 @@ public interface SAssetRepository extends MongoRepository<SAsset, String> {
      * Find assets by worldId with path and extension filter (case-insensitive) and pagination.
      */
     @Query("{ 'worldId': ?0, 'path': { $regex: ?1, $options: 'i' }, 'name': { $regex: ?2, $options: 'i' } }")
-    Page<SAsset> findByWorldIdAndPathContainingAndExtension(String worldId, String pathPattern, String extensionPattern, Pageable pageable);
-
+    Page<SAsset> findByWorldIdAndPathContainingAndExtension(
+            String worldId, String pathPattern, String extensionPattern, Pageable pageable);
 }
-

@@ -1,8 +1,8 @@
 package de.mhus.nimbus.evaluate;
 
-import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class EvaluateMessagesOnlyTest {
 
@@ -55,7 +54,9 @@ public class EvaluateMessagesOnlyTest {
         // assertions
         assertTrue(outJavaDir.exists(), "Output dir not created: " + outJavaDir);
         List<File> javaFiles = collectJavaFiles(outJavaDir);
-        assertFalse(javaFiles.isEmpty(), "Expected Java files to be generated from messages, but none were found in: " + outJavaDir);
+        assertFalse(
+                javaFiles.isEmpty(),
+                "Expected Java files to be generated from messages, but none were found in: " + outJavaDir);
 
         System.out.println("✅ Generated Java files:");
         javaFiles.forEach(f -> System.out.println("  " + f.getPath()));
@@ -65,9 +66,11 @@ public class EvaluateMessagesOnlyTest {
         assertNotNull(pongDataFile, "PongData.java should be generated");
 
         String pongDataContent = Files.readString(pongDataFile.toPath(), StandardCharsets.UTF_8);
-        assertTrue(pongDataContent.contains("private long cTs"),
+        assertTrue(
+                pongDataContent.contains("private long cTs"),
                 "PongData should have 'private long cTs' field, but content was:\n" + pongDataContent);
-        assertTrue(pongDataContent.contains("private long sTs"),
+        assertTrue(
+                pongDataContent.contains("private long sTs"),
                 "PongData should have 'private long sTs' field, but content was:\n" + pongDataContent);
 
         System.out.println("✅ PongData generated with correct long timestamp fields:");
@@ -96,10 +99,7 @@ public class EvaluateMessagesOnlyTest {
     private static List<File> listFilesDepthFirst(File dir) throws IOException {
         if (dir == null || !dir.exists()) return java.util.Collections.emptyList();
         try (var stream = Files.walk(dir.toPath())) {
-            return stream
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .collect(Collectors.toList());
+            return stream.sorted(Comparator.reverseOrder()).map(Path::toFile).collect(Collectors.toList());
         }
     }
 
@@ -129,7 +129,8 @@ public class EvaluateMessagesOnlyTest {
         Process p = pb.start();
 
         StringBuilder out = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader br =
+                new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = br.readLine()) != null) {
                 out.append(line).append(System.lineSeparator());

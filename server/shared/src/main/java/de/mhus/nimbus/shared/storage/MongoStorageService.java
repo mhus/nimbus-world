@@ -1,6 +1,13 @@
 package de.mhus.nimbus.shared.storage;
 
 import de.mhus.nimbus.shared.types.SchemaVersion;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,14 +18,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Pattern;
 
 /**
  * MongoDB-based storage service with automatic chunking support.
@@ -45,13 +44,20 @@ public class MongoStorageService extends StorageService {
     private int chunkSize; // 512KB default
 
     @Override
-    public StorageInfo store(String schema, SchemaVersion schemaVersion, String worldId, String path, InputStream stream) {
+    public StorageInfo store(
+            String schema, SchemaVersion schemaVersion, String worldId, String path, InputStream stream) {
         String uuid = UUID.randomUUID().toString();
         return store(uuid, schema, schemaVersion, worldId, path, stream);
     }
 
     @Transactional
-    protected StorageInfo store(String storageId, String schema, SchemaVersion schemaVersion, String worldId, String path, InputStream stream) {
+    protected StorageInfo store(
+            String storageId,
+            String schema,
+            SchemaVersion schemaVersion,
+            String worldId,
+            String path,
+            InputStream stream) {
         if (stream == null) {
             log.error("Cannot store null stream for path: {}", path);
             return null;
@@ -60,7 +66,14 @@ public class MongoStorageService extends StorageService {
         Date createdAt = new Date();
 
         try (ChunkedOutputStream outputStream = new ChunkedOutputStream(
-                storageDataRepository, storageId, schema, schemaVersion.toString(), worldId, path, chunkSize, createdAt)) {
+                storageDataRepository,
+                storageId,
+                schema,
+                schemaVersion.toString(),
+                worldId,
+                path,
+                chunkSize,
+                createdAt)) {
 
             // Copy from input stream to chunked output stream
             // ChunkedOutputStream automatically splits into chunks and saves to MongoDB
@@ -211,8 +224,7 @@ public class MongoStorageService extends StorageService {
                     finalChunk.getWorldId(),
                     finalChunk.getPath(),
                     finalChunk.getSchema(),
-                    SchemaVersion.create(finalChunk.getSchemaVersion())
-            );
+                    SchemaVersion.create(finalChunk.getSchemaVersion()));
         } catch (IncorrectResultSizeDataAccessException e) {
             log.error("Multiple final chunks found for storageId: {}", storageId, e);
             // get all
@@ -232,8 +244,7 @@ public class MongoStorageService extends StorageService {
                     finalChunk.getWorldId(),
                     finalChunk.getPath(),
                     finalChunk.getSchema(),
-                    SchemaVersion.create(finalChunk.getSchemaVersion())
-            );
+                    SchemaVersion.create(finalChunk.getSchemaVersion()));
         }
     }
 
@@ -249,12 +260,12 @@ public class MongoStorageService extends StorageService {
             // cannot inject a catastrophic/backtracking expression (ReDoS) or
             // a ".*" match-all against the shared MongoDB instance.
             String searchTerm = Pattern.quote(query.trim());
-            Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("uuid").regex(searchTerm, "i"),
-                    Criteria.where("path").regex(searchTerm, "i"),
-                    Criteria.where("schema").regex(searchTerm, "i"),
-                    Criteria.where("worldId").regex(searchTerm, "i")
-            );
+            Criteria searchCriteria = new Criteria()
+                    .orOperator(
+                            Criteria.where("uuid").regex(searchTerm, "i"),
+                            Criteria.where("path").regex(searchTerm, "i"),
+                            Criteria.where("schema").regex(searchTerm, "i"),
+                            Criteria.where("worldId").regex(searchTerm, "i"));
             mongoQuery.addCriteria(searchCriteria);
         }
 
@@ -278,8 +289,7 @@ public class MongoStorageService extends StorageService {
                     storage.getWorldId(),
                     storage.getPath(),
                     storage.getSchema(),
-                    SchemaVersion.create(storage.getSchemaVersion())
-            ));
+                    SchemaVersion.create(storage.getSchemaVersion())));
         }
 
         return new StorageListResult(items, total);
@@ -287,20 +297,19 @@ public class MongoStorageService extends StorageService {
 
     @Override
     public List<String> findFinalStorageUuids(String worldId, Date olderThan) {
-        Query query = new Query(
-                Criteria.where("worldId").is(worldId)
-                        .and("isFinal").is(true)
-                        .and("createdAt").lt(olderThan)
-        );
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("isFinal")
+                .is(true)
+                .and("createdAt")
+                .lt(olderThan));
         return mongoTemplate.findDistinct(query, "uuid", StorageData.class, String.class);
     }
 
     @Override
     public List<String> findStorageUuids(String worldId, Date olderThan) {
-        Query query = new Query(
-                Criteria.where("worldId").is(worldId)
-                        .and("createdAt").lt(olderThan)
-        );
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("createdAt").lt(olderThan));
         return mongoTemplate.findDistinct(query, "uuid", StorageData.class, String.class);
     }
 
@@ -350,20 +359,18 @@ public class MongoStorageService extends StorageService {
         try {
             // Store with new worldId
             StorageInfo newInfo = store(
-                    sourceInfo.schema(),
-                    sourceInfo.schemaVersion(),
-                    targetWorldId,
-                    sourceInfo.path(),
-                    sourceStream
-            );
+                    sourceInfo.schema(), sourceInfo.schemaVersion(), targetWorldId, sourceInfo.path(), sourceStream);
 
             if (newInfo == null) {
                 log.error("Failed to store duplicated storage data");
                 return null;
             }
 
-            log.debug("Duplicated storage: sourceId={} targetId={} targetWorldId={}",
-                    sourceStorageId, newInfo.id(), targetWorldId);
+            log.debug(
+                    "Duplicated storage: sourceId={} targetId={} targetWorldId={}",
+                    sourceStorageId,
+                    newInfo.id(),
+                    targetWorldId);
 
             return newInfo.id();
 

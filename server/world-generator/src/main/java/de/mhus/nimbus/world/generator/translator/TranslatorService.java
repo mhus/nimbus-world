@@ -1,27 +1,19 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.fauna.FaunaIndex;
-import de.mhus.nimbus.world.generator.flora.FloraIndex;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatException;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.fauna.FaunaIndex;
+import de.mhus.nimbus.world.generator.flora.FloraIndex;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -29,9 +21,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Service for translating textual instructions into Composer Model JSON format.
@@ -72,7 +70,6 @@ public class TranslatorService {
      */
     public void loadComposerModelDescription() {
 
-
         try {
             // Create WorldId for @shared:n
             WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n")
@@ -82,10 +79,7 @@ public class TranslatorService {
                 log.info("Loading Composer Model description from WDocumentService");
                 // Load document by name
                 Optional<WDocument> documentDescriptionOpt = documentService.findByName(
-                        sharedWorldId,
-                        DOCUMENT_COLLECTION,
-                        COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME
-                );
+                        sharedWorldId, DOCUMENT_COLLECTION, COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME);
 
                 if (documentDescriptionOpt.isPresent()) {
                     WDocument document = documentDescriptionOpt.get();
@@ -99,8 +93,11 @@ public class TranslatorService {
                         log.info("Successfully loaded Composer Model description ({} characters)", content.length());
                     }
                 } else {
-                    log.warn("Composer Model description document not found: worldId={}, collection={}, name={}",
-                            SHARED_WORLD_ID, DOCUMENT_COLLECTION, COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME);
+                    log.warn(
+                            "Composer Model description document not found: worldId={}, collection={}, name={}",
+                            SHARED_WORLD_ID,
+                            DOCUMENT_COLLECTION,
+                            COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME);
                 }
             }
 
@@ -108,10 +105,7 @@ public class TranslatorService {
                 log.info("Loading Composer Model readme from WDocumentService");
                 // Load document by name
                 Optional<WDocument> documentReadmeOpt = documentService.findByName(
-                        sharedWorldId,
-                        DOCUMENT_COLLECTION,
-                        COMPOSER_MODEL_README_DOCUMENT_NAME
-                );
+                        sharedWorldId, DOCUMENT_COLLECTION, COMPOSER_MODEL_README_DOCUMENT_NAME);
                 if (documentReadmeOpt.isPresent()) {
                     WDocument document = documentReadmeOpt.get();
                     String content = document.getContent();
@@ -124,8 +118,11 @@ public class TranslatorService {
                         log.info("Successfully loaded Composer Model readme ({} characters)", content.length());
                     }
                 } else {
-                    log.warn("Composer Model readme document not found: worldId={}, collection={}, name={}",
-                            SHARED_WORLD_ID, DOCUMENT_COLLECTION, COMPOSER_MODEL_README_DOCUMENT_NAME);
+                    log.warn(
+                            "Composer Model readme document not found: worldId={}, collection={}, name={}",
+                            SHARED_WORLD_ID,
+                            DOCUMENT_COLLECTION,
+                            COMPOSER_MODEL_README_DOCUMENT_NAME);
                 }
             }
         } catch (Exception e) {
@@ -146,14 +143,16 @@ public class TranslatorService {
         try {
             // Create chat options optimized for translation
             AiChatOptions options = AiChatOptions.builder()
-                    .temperature(0.2)  // Low temperature for deterministic, structured output
-                    .maxTokens(0)      // Use model maximum for large JSON outputs
+                    .temperature(0.2) // Low temperature for deterministic, structured output
+                    .maxTokens(0) // Use model maximum for large JSON outputs
                     .build();
 
             Optional<AiChat> chatOpt = aiModelService.createChat(modelName, options);
 
             if (chatOpt.isPresent()) {
-                log.info("Successfully created translator chat model: {}", chatOpt.get().getName());
+                log.info(
+                        "Successfully created translator chat model: {}",
+                        chatOpt.get().getName());
                 return chatOpt;
             } else {
                 log.warn("Failed to create chat model: {}", modelName);
@@ -208,11 +207,8 @@ public class TranslatorService {
                     .orElseThrow(() -> new IllegalStateException("Failed to create shared WorldId"));
 
             // Load document by name
-            Optional<WDocument> documentOpt = documentService.findByName(
-                    sharedWorldId,
-                    DOCUMENT_COLLECTION,
-                    LESSONS_LEARNED_DOCUMENT_NAME
-            );
+            Optional<WDocument> documentOpt =
+                    documentService.findByName(sharedWorldId, DOCUMENT_COLLECTION, LESSONS_LEARNED_DOCUMENT_NAME);
 
             if (documentOpt.isPresent()) {
                 WDocument document = documentOpt.get();
@@ -228,8 +224,11 @@ public class TranslatorService {
                 log.info("Successfully loaded Lessons Learned ({} characters)", content.length());
                 return Optional.of(content);
             } else {
-                log.info("Lessons Learned document not found (optional): worldId={}, collection={}, name={}",
-                        SHARED_WORLD_ID, DOCUMENT_COLLECTION, LESSONS_LEARNED_DOCUMENT_NAME);
+                log.info(
+                        "Lessons Learned document not found (optional): worldId={}, collection={}, name={}",
+                        SHARED_WORLD_ID,
+                        DOCUMENT_COLLECTION,
+                        LESSONS_LEARNED_DOCUMENT_NAME);
                 return Optional.empty();
             }
 
@@ -305,7 +304,8 @@ public class TranslatorService {
      * @return Translation result with JSON or errors
      */
     public TranslationResult translateInstruction(String instruction, String previousError, TranslatorContext context) {
-        log.info("Translating instruction (length: {} chars, has previous error: {})",
+        log.info(
+                "Translating instruction (length: {} chars, has previous error: {})",
                 instruction != null ? instruction.length() : 0,
                 previousError != null);
 
@@ -336,15 +336,16 @@ public class TranslatorService {
             Optional<AiChat> chatOpt = createDefaultTranslatorChatModel();
             if (chatOpt.isEmpty()) {
                 return TranslationResult.failure(
-                        "AI chat model not available. " +
-                        "Please configure an AI model via AiModelService.");
+                        "AI chat model not available. " + "Please configure an AI model via AiModelService.");
             }
             AiChat chat = chatOpt.get();
 
             // 4. Build prompt with template
             PromptTemplate template = PromptTemplate.from(promptTemplateText);
             Map<String, Object> variables = new HashMap<>();
-            variables.put("composerModelDescription", cachedComposerModelDescription == null ? "" : cachedComposerModelDescription);
+            variables.put(
+                    "composerModelDescription",
+                    cachedComposerModelDescription == null ? "" : cachedComposerModelDescription);
             variables.put("composerModelReadme", cachedComposerModelReadme == null ? "" : cachedComposerModelReadme);
             variables.put("instruction", instruction);
 
@@ -412,7 +413,8 @@ public class TranslatorService {
                 return TranslationResult.success(cleanedJson);
             } catch (Exception e) {
                 log.warn("Generated JSON is invalid", e);
-                String errorMessage = "Generated JSON is invalid: " + e.getMessage() + "\n\nGenerated content:\n" + cleanedJson;
+                String errorMessage =
+                        "Generated JSON is invalid: " + e.getMessage() + "\n\nGenerated content:\n" + cleanedJson;
 
                 // Update Lessons Learned with this error
                 try {
@@ -499,8 +501,10 @@ public class TranslatorService {
      * @param context TranslatorContext with flora/fauna indices (optional)
      * @return Composition result with HexComposition object or errors
      */
-    public CompositionResult translateInstructionToComposite(String instructions, String previousError, TranslatorContext context) {
-        log.info("Translating instruction to HexComposition (length: {} chars, has previous error: {}, has context: {})",
+    public CompositionResult translateInstructionToComposite(
+            String instructions, String previousError, TranslatorContext context) {
+        log.info(
+                "Translating instruction to HexComposition (length: {} chars, has previous error: {}, has context: {})",
                 instructions != null ? instructions.length() : 0,
                 previousError != null,
                 context != null);
@@ -509,7 +513,9 @@ public class TranslatorService {
         TranslationResult translationResult = translateInstruction(instructions, previousError, context);
 
         if (translationResult.hasFailed()) {
-            log.warn("Translation to JSON failed with {} errors", translationResult.getErrors().size());
+            log.warn(
+                    "Translation to JSON failed with {} errors",
+                    translationResult.getErrors().size());
             return CompositionResult.failure(translationResult.getErrors());
         }
 
@@ -532,10 +538,13 @@ public class TranslatorService {
                 return CompositionResult.failure("Failed to parse JSON: ObjectMapper returned null", json);
             }
 
-            log.info("Successfully parsed HexComposition: name='{}', worldId='{}', features={}",
+            log.info(
+                    "Successfully parsed HexComposition: name='{}', worldId='{}', features={}",
                     composition.getName(),
                     composition.getWorldId(),
-                    composition.getFeatures() != null ? composition.getFeatures().size() : 0);
+                    composition.getFeatures() != null
+                            ? composition.getFeatures().size()
+                            : 0);
 
             return CompositionResult.success(composition, json);
 
@@ -543,13 +552,9 @@ public class TranslatorService {
             log.error("Failed to parse JSON to HexComposition", e);
 
             String errorMessage = String.format(
-                    "Failed to parse JSON to HexComposition: %s\n\n" +
-                    "JSON parsing error: %s\n\n" +
-                    "Generated JSON:\n%s",
-                    e.getClass().getSimpleName(),
-                    e.getMessage(),
-                    json
-            );
+                    "Failed to parse JSON to HexComposition: %s\n\n" + "JSON parsing error: %s\n\n"
+                            + "Generated JSON:\n%s",
+                    e.getClass().getSimpleName(), e.getMessage(), json);
 
             // Update Lessons Learned with this error
             try {
@@ -612,12 +617,8 @@ public class TranslatorService {
             AiChat chat = chatOpt.get();
 
             // 3. Build prompt for updating lessons learned
-            String updatePrompt = buildLessonsLearnedUpdatePrompt(
-                    currentLessons,
-                    errorMessage,
-                    instruction,
-                    generatedJson
-            );
+            String updatePrompt =
+                    buildLessonsLearnedUpdatePrompt(currentLessons, errorMessage, instruction, generatedJson);
 
             // 4. Ask AI to create updated version
             String updatedLessons;
@@ -638,7 +639,9 @@ public class TranslatorService {
             }
 
             if (updatedLessons.length() < 100) {
-                log.warn("Updated lessons learned suspiciously short ({} chars) - not updating", updatedLessons.length());
+                log.warn(
+                        "Updated lessons learned suspiciously short ({} chars) - not updating",
+                        updatedLessons.length());
                 return;
             }
 
@@ -656,14 +659,10 @@ public class TranslatorService {
      * Build prompt for updating lessons learned document.
      */
     private String buildLessonsLearnedUpdatePrompt(
-            String currentLessons,
-            String errorMessage,
-            String instruction,
-            String generatedJson) {
+            String currentLessons, String errorMessage, String instruction, String generatedJson) {
 
-        String currentLessonsSection = currentLessons.isBlank()
-                ? "No previous lessons learned available yet."
-                : currentLessons;
+        String currentLessonsSection =
+                currentLessons.isBlank() ? "No previous lessons learned available yet." : currentLessons;
 
         String generatedJsonSection = (generatedJson != null && !generatedJson.isBlank())
                 ? "\n\n## Generated JSON\n\n```json\n" + generatedJson + "\n```"
@@ -704,12 +703,7 @@ public class TranslatorService {
                 Do NOT wrap the output in code blocks.
 
                 The document should start with "# Composer Model - Lessons Learned" as the main heading.
-                """,
-                currentLessonsSection,
-                instruction,
-                errorMessage,
-                generatedJsonSection
-        );
+                """, currentLessonsSection, instruction, errorMessage, generatedJsonSection);
     }
 
     /**
@@ -743,11 +737,8 @@ public class TranslatorService {
                     .orElseThrow(() -> new IllegalStateException("Failed to create shared WorldId"));
 
             // Check if document exists
-            Optional<WDocument> existingDocOpt = documentService.findByName(
-                    sharedWorldId,
-                    DOCUMENT_COLLECTION,
-                    LESSONS_LEARNED_DOCUMENT_NAME
-            );
+            Optional<WDocument> existingDocOpt =
+                    documentService.findByName(sharedWorldId, DOCUMENT_COLLECTION, LESSONS_LEARNED_DOCUMENT_NAME);
 
             if (existingDocOpt.isPresent()) {
                 // Update existing document

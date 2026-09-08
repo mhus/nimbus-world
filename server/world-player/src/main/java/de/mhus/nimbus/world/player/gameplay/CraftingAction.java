@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for opening a crafting station.
@@ -59,21 +58,19 @@ public class CraftingAction extends AbstractGamplayAction {
         leaseData.put("slots", slots);
         leaseData.put("allowSpells", allowSpells);
 
-        var lease = basic.getLeaseService().acquire(
-                worldId.getId(),
-                playerId,
-                "crafting-station",
-                category,
-                "Crafting: " + category,
-                leaseData
-        );
+        var lease = basic.getLeaseService()
+                .acquire(worldId.getId(), playerId, "crafting-station", category, "Crafting: " + category, leaseData);
 
         // Send openComponent command to client
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("crafting", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("crafting", lease.getLeaseId()));
 
-        log.debug("Sent crafting to player {}: category={}, slots={}, allowSpells={}, leaseId={}",
-                playerId, category, slots, allowSpells, lease.getLeaseId());
+        log.debug(
+                "Sent crafting to player {}: category={}, slots={}, allowSpells={}, leaseId={}",
+                playerId,
+                category,
+                slots,
+                allowSpells,
+                lease.getLeaseId());
         return true;
     }
 }

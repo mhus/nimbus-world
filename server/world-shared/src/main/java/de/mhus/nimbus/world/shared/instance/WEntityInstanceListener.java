@@ -20,8 +20,7 @@ public class WEntityInstanceListener implements WWorldInstanceListener {
     private final WEntityService entityService;
 
     @Override
-    public void worldInstanceCreated(WorldInstanceEvent event) {
-    }
+    public void worldInstanceCreated(WorldInstanceEvent event) {}
 
     @Override
     public void worldInstanceDeleted(WorldInstanceEvent event) {

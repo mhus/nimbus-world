@@ -9,12 +9,10 @@ import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.SAssetService;
+import java.io.ByteArrayInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.io.ByteArrayInputStream;
-import java.util.Optional;
 
 /**
  * Job executor for exporting WFlat as images (level map and material map) to SAssets.
@@ -52,9 +50,8 @@ public class FlatImageExportJobExecutor implements JobExecutor {
 
             // Get worldId from job
             String worldId = job.getWorldId();
-            WorldId worldIdObj = WorldId.of(worldId).orElseThrow(
-                    () -> new JobExecutionException("Invalid worldId: " + worldId)
-            );
+            WorldId worldIdObj =
+                    WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
 
             // Extract required parameters
             String flatId = getRequiredParameter(job, "flatId");
@@ -65,27 +62,38 @@ public class FlatImageExportJobExecutor implements JobExecutor {
             boolean ignoreEmptyMaterial = getOptionalBooleanParameter(job, "ignoreEmptyMaterial", false);
             String layerDataId = getOptionalParameter(job, "layerDataId", null);
 
-            log.info("Exporting flat images: flatId={}, worldId={}, levelPath={}, materialPath={}, ignoreEmptyMaterial={}",
-                    flatId, worldId, levelPath, materialPath, ignoreEmptyMaterial);
+            log.info(
+                    "Exporting flat images: flatId={}, worldId={}, levelPath={}, materialPath={}, ignoreEmptyMaterial={}",
+                    flatId,
+                    worldId,
+                    levelPath,
+                    materialPath,
+                    ignoreEmptyMaterial);
 
             // Load flat using worldId and flatId (like other flat jobs)
             WFlat flat;
             if (layerDataId != null && !layerDataId.isBlank()) {
                 // Use compound lookup with worldId, layerDataId, and flatId
-                flat = flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
-                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                                ", layerDataId=" + layerDataId + ", flatId=" + flatId));
+                flat = flatService
+                        .findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
+                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId
+                                + ", layerDataId=" + layerDataId + ", flatId=" + flatId));
             } else {
                 // Search for flat with matching flatId in this world
                 flat = flatService.findByWorldId(worldId).stream()
                         .filter(f -> flatId.equals(f.getFlatId()))
                         .findFirst()
-                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                                ", flatId=" + flatId));
+                        .orElseThrow(() ->
+                                new JobExecutionException("Flat not found: worldId=" + worldId + ", flatId=" + flatId));
             }
 
-            log.info("Flat loaded: id={}, flatId={}, title={}, size={}x{}",
-                    flat.getId(), flat.getFlatId(), flat.getTitle(), flat.getSizeX(), flat.getSizeZ());
+            log.info(
+                    "Flat loaded: id={}, flatId={}, title={}, size={}x{}",
+                    flat.getId(),
+                    flat.getFlatId(),
+                    flat.getTitle(),
+                    flat.getSizeX(),
+                    flat.getSizeZ());
 
             // Generate level image
             log.info("Generating level image...");
@@ -113,8 +121,10 @@ public class FlatImageExportJobExecutor implements JobExecutor {
             // findByPath() automatically cleans up old duplicates and returns the newest
             log.info("Checking for existing level image assets: path={}", levelPath);
             assetService.findByPath(worldIdObj, levelPath).ifPresent(existingAsset -> {
-                log.info("Found existing level image asset, will be replaced: id={}, path={}",
-                        existingAsset.getId(), existingAsset.getPath());
+                log.info(
+                        "Found existing level image asset, will be replaced: id={}, path={}",
+                        existingAsset.getId(),
+                        existingAsset.getPath());
                 try {
                     assetService.delete(existingAsset);
                     log.info("Existing level image asset deleted successfully");
@@ -133,7 +143,7 @@ public class FlatImageExportJobExecutor implements JobExecutor {
                         levelStream,
                         "flat-export-images-job",
                         null // No additional metadata needed
-                );
+                        );
             } catch (Exception e) {
                 throw new JobExecutionException("Failed to save level image: " + e.getMessage(), e);
             }
@@ -143,8 +153,10 @@ public class FlatImageExportJobExecutor implements JobExecutor {
             // findByPath() automatically cleans up old duplicates and returns the newest
             log.info("Checking for existing material image assets: path={}", materialPath);
             assetService.findByPath(worldIdObj, materialPath).ifPresent(existingAsset -> {
-                log.info("Found existing material image asset, will be replaced: id={}, path={}",
-                        existingAsset.getId(), existingAsset.getPath());
+                log.info(
+                        "Found existing material image asset, will be replaced: id={}, path={}",
+                        existingAsset.getId(),
+                        existingAsset.getPath());
                 try {
                     assetService.delete(existingAsset);
                     log.info("Existing material image asset deleted successfully");
@@ -163,7 +175,7 @@ public class FlatImageExportJobExecutor implements JobExecutor {
                         materialStream,
                         "flat-export-images-job",
                         null // No additional metadata needed
-                );
+                        );
             } catch (Exception e) {
                 throw new JobExecutionException("Failed to save material image: " + e.getMessage(), e);
             }
@@ -172,8 +184,13 @@ public class FlatImageExportJobExecutor implements JobExecutor {
             // Build successful result
             String resultData = String.format(
                     "Successfully exported flat images: flatId=%s, worldId=%s, levelPath=%s (size=%d bytes), materialPath=%s (size=%d bytes), ignoreEmptyMaterial=%s",
-                    flatId, worldId, levelPath, levelImageBytes.length, materialPath, materialImageBytes.length, ignoreEmptyMaterial
-            );
+                    flatId,
+                    worldId,
+                    levelPath,
+                    levelImageBytes.length,
+                    materialPath,
+                    materialImageBytes.length,
+                    ignoreEmptyMaterial);
 
             log.info("Flat image export job completed successfully: jobId={}, flatId={}", job.getId(), flatId);
 

@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TerrainPathFinder finds an optimal path between two points by following the terrain.
@@ -18,7 +17,7 @@ public class TerrainPathFinder {
 
     private final WFlat flat;
     private final int maxSlopePerBlock;
-    private final double maxDriftRatio;  // Max ratio of actual distance to direct distance
+    private final double maxDriftRatio; // Max ratio of actual distance to direct distance
 
     /**
      * @param flat The terrain to navigate
@@ -42,8 +41,7 @@ public class TerrainPathFinder {
      * @param endLevel Required end elevation
      * @return List of PathPoints, or null if path not feasible
      */
-    public List<PathPoint> findPath(int startX, int startZ, int startLevel,
-                                      int endX, int endZ, int endLevel) {
+    public List<PathPoint> findPath(int startX, int startZ, int startLevel, int endX, int endZ, int endLevel) {
         List<PathPoint> path = new ArrayList<>();
 
         // Calculate direct distance for drift control
@@ -61,18 +59,24 @@ public class TerrainPathFinder {
         // Velocity vector for momentum (prevents zigzagging)
         double velocityX = 0;
         double velocityZ = 0;
-        double velocityDamping = 0.6;  // Velocity decreases quickly
+        double velocityDamping = 0.6; // Velocity decreases quickly
 
         path.add(new PathPoint(currentX, currentZ, currentLevel));
 
         while (currentX != endX || currentZ != endZ) {
             // Find best next step
             StepCandidate bestStep = findBestNextStep(
-                currentX, currentZ, currentLevel,
-                endX, endZ, endLevel,
-                directDistance, traveledDistance, maxPathLength,
-                velocityX, velocityZ
-            );
+                    currentX,
+                    currentZ,
+                    currentLevel,
+                    endX,
+                    endZ,
+                    endLevel,
+                    directDistance,
+                    traveledDistance,
+                    maxPathLength,
+                    velocityX,
+                    velocityZ);
 
             if (bestStep == null) {
                 // No valid step found - path blocked
@@ -105,8 +109,7 @@ public class TerrainPathFinder {
 
         // Verify we reached the end level (within tolerance)
         if (Math.abs(currentLevel - endLevel) > maxSlopePerBlock) {
-            log.debug("TerrainPathFinder: Cannot reach end level (current={}, target={})",
-                currentLevel, endLevel);
+            log.debug("TerrainPathFinder: Cannot reach end level (current={}, target={})", currentLevel, endLevel);
             return null;
         }
 
@@ -115,8 +118,11 @@ public class TerrainPathFinder {
             path.get(path.size() - 1).level = endLevel;
         }
 
-        log.debug("TerrainPathFinder: Found path with {} points, traveled distance: {:.1f} (direct: {:.1f})",
-            path.size(), traveledDistance, directDistance);
+        log.debug(
+                "TerrainPathFinder: Found path with {} points, traveled distance: {:.1f} (direct: {:.1f})",
+                path.size(),
+                traveledDistance,
+                directDistance);
 
         return path;
     }
@@ -127,18 +133,25 @@ public class TerrainPathFinder {
      * @param velocityX Current velocity X component (for momentum)
      * @param velocityZ Current velocity Z component (for momentum)
      */
-    private StepCandidate findBestNextStep(int currentX, int currentZ, int currentLevel,
-                                            int targetX, int targetZ, int targetLevel,
-                                            double directDistance, double traveledDistance,
-                                            double maxPathLength,
-                                            double velocityX, double velocityZ) {
+    private StepCandidate findBestNextStep(
+            int currentX,
+            int currentZ,
+            int currentLevel,
+            int targetX,
+            int targetZ,
+            int targetLevel,
+            double directDistance,
+            double traveledDistance,
+            double maxPathLength,
+            double velocityX,
+            double velocityZ) {
         StepCandidate bestCandidate = null;
         double bestScore = Double.MAX_VALUE;
 
         // Consider 8 neighboring cells
         int[][] neighbors = {
-            {1, 0}, {-1, 0}, {0, 1}, {0, -1},  // Cardinal directions
-            {1, 1}, {1, -1}, {-1, 1}, {-1, -1}  // Diagonals
+            {1, 0}, {-1, 0}, {0, 1}, {0, -1}, // Cardinal directions
+            {1, 1}, {1, -1}, {-1, 1}, {-1, -1} // Diagonals
         };
 
         for (int[] neighbor : neighbors) {
@@ -163,7 +176,7 @@ public class TerrainPathFinder {
 
             // Check drift constraint
             if (traveledDistance + stepDistance + distanceToTarget > maxPathLength) {
-                continue;  // Would drift too far
+                continue; // Would drift too far
             }
 
             // Calculate required level to reach target from here
@@ -194,18 +207,18 @@ public class TerrainPathFinder {
             // Check if we can still reach target level
             double remainingLevelChange = Math.abs(targetLevel - nextLevel);
             if (remainingLevelChange > remainingSteps * maxSlopePerBlock) {
-                continue;  // Cannot reach target level from here
+                continue; // Cannot reach target level from here
             }
 
             // Calculate score: prefer minimal slope and progress toward goal
-            double slopeCost = Math.abs(nextLevel - terrainLevel) * 10.0;  // Penalty for deviating from terrain
-            double distanceCost = distanceToTarget;  // Prefer getting closer to target
-            double driftPenalty = (traveledDistance + stepDistance) / directDistance * 5.0;  // Penalty for drifting
+            double slopeCost = Math.abs(nextLevel - terrainLevel) * 10.0; // Penalty for deviating from terrain
+            double distanceCost = distanceToTarget; // Prefer getting closer to target
+            double driftPenalty = (traveledDistance + stepDistance) / directDistance * 5.0; // Penalty for drifting
 
             // Momentum bonus: prefer moving in the same direction as current velocity
             // Dot product between movement direction and velocity vector
             double momentumAlignment = neighbor[0] * velocityX + neighbor[1] * velocityZ;
-            double momentumPenalty = -momentumAlignment * 8.0;  // Bonus for alignment (negative = lower score)
+            double momentumPenalty = -momentumAlignment * 8.0; // Bonus for alignment (negative = lower score)
 
             double score = slopeCost + distanceCost + driftPenalty + momentumPenalty;
 

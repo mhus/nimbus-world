@@ -4,9 +4,8 @@ import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
+import org.springframework.stereotype.Service;
 
 @Service
 public class HelloWorldJobExecutor implements JobExecutor {
@@ -30,8 +29,6 @@ public class HelloWorldJobExecutor implements JobExecutor {
         if (errorRate > 0 && Math.random() < errorRate) {
             throw new JobExecutionException(job, "Simulated error");
         }
-        return JobResult.success(Map.of(
-                "message", "Hello, World!"
-        ));
+        return JobResult.success(Map.of("message", "Hello, World!"));
     }
 }

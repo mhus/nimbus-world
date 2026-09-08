@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.CoastBiome;
@@ -11,8 +13,6 @@ import de.mhus.nimbus.world.generator.composer.biome.OceanBiome;
 import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
 import de.mhus.nimbus.world.generator.composer.biome.SwampBiome;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for BiomeType Rich Enum pattern
@@ -129,8 +129,8 @@ class BiomeTypeTest {
         assertEquals("mountain", mountains.getParameters().get("g_builder"));
 
         // With different offsets
-        assertEquals("5", forest.getParameters().get("g_offset"));   // DENSE forest
-        assertEquals("30", mountains.getParameters().get("g_offset"));  // High peaks
+        assertEquals("5", forest.getParameters().get("g_offset")); // DENSE forest
+        assertEquals("30", mountains.getParameters().get("g_offset")); // High peaks
 
         // Different classes
         assertInstanceOf(ForestBiome.class, forest);

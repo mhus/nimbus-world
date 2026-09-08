@@ -5,16 +5,15 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WWorldCollection;
 import de.mhus.nimbus.world.shared.world.WWorldCollectionService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing World Collections.
@@ -30,11 +29,7 @@ public class WWorldCollectionController extends BaseEditorController {
     private final AccessValidator accessValidator;
 
     // DTOs
-    public record CollectionRequest(
-            String worldId,
-            String title,
-            String description
-    ) {}
+    public record CollectionRequest(String worldId, String title, String description) {}
 
     public record CollectionResponse(
             String id,
@@ -43,8 +38,7 @@ public class WWorldCollectionController extends BaseEditorController {
             String description,
             Instant createdAt,
             Instant updatedAt,
-            boolean enabled
-    ) {}
+            boolean enabled) {}
 
     private CollectionResponse toResponse(WWorldCollection collection) {
         return new CollectionResponse(
@@ -54,8 +48,7 @@ public class WWorldCollectionController extends BaseEditorController {
                 collection.getDescription(),
                 collection.getCreatedAt(),
                 collection.getUpdatedAt(),
-                collection.isEnabled()
-        );
+                collection.isEnabled());
     }
 
     /**
@@ -90,7 +83,8 @@ public class WWorldCollectionController extends BaseEditorController {
             return bad("Collection worldId must start with '@'");
         }
 
-        return collectionService.findByWorldId(worldId)
+        return collectionService
+                .findByWorldId(worldId)
                 .<ResponseEntity<?>>map(collection -> ResponseEntity.ok(toResponse(collection)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Collection not found: " + worldId)));
@@ -117,11 +111,8 @@ public class WWorldCollectionController extends BaseEditorController {
         }
 
         try {
-            WWorldCollection created = collectionService.create(
-                    request.worldId(),
-                    request.title(),
-                    request.description()
-            );
+            WWorldCollection created =
+                    collectionService.create(request.worldId(), request.title(), request.description());
 
             return ResponseEntity.created(URI.create("/control/collections/" + created.getWorldId()))
                     .body(toResponse(created));
@@ -136,8 +127,7 @@ public class WWorldCollectionController extends BaseEditorController {
      */
     @PutMapping("/{worldId}")
     public ResponseEntity<?> update(
-            @PathVariable String worldId,
-            @RequestBody CollectionRequest request, HttpServletRequest httpRequest) {
+            @PathVariable String worldId, @RequestBody CollectionRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;

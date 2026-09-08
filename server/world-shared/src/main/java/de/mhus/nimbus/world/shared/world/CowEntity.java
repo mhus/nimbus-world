@@ -43,5 +43,4 @@ public interface CowEntity {
      * Used when copying a base entity into an instance.
      */
     void setWorldId(String worldId);
-
 }

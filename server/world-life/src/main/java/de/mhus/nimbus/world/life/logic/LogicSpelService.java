@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.life.logic;
 
 import de.mhus.nimbus.world.shared.spel.SafeSpel;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * SpEL evaluation service for the Logic Machine.
@@ -36,8 +35,7 @@ public class LogicSpelService {
      * state.pkg.key1      -> no match on "state.pkg" because followed by ".key1"
      * state.key1 == true  -> match on "state.key1"
      */
-    private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
+    private static final Pattern UNQUALIFIED_STATE = Pattern.compile("state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     /**
      * Evaluate an assignment expression with package-scoped shorthand resolution.
@@ -104,8 +102,7 @@ public class LogicSpelService {
         if (expression == null || rulePackage == null || rulePackage.isBlank()) {
             return expression;
         }
-        return UNQUALIFIED_STATE.matcher(expression)
-                .replaceAll("state." + rulePackage + ".$1");
+        return UNQUALIFIED_STATE.matcher(expression).replaceAll("state." + rulePackage + ".$1");
     }
 
     private Map<String, Object> buildRoot(LogicStateMap stateMap) {

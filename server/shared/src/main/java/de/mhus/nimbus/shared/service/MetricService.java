@@ -6,15 +6,14 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Centralized service for creating and retrieving Micrometer metric instruments.
@@ -63,9 +62,7 @@ public class MetricService {
         String key = buildKey(name, tags);
         return counters.computeIfAbsent(key, k -> {
             checkCapacity(counters, "counter", name);
-            return Counter.builder(name)
-                    .tags(toTags(tags))
-                    .register(registry);
+            return Counter.builder(name).tags(toTags(tags)).register(registry);
         });
     }
 
@@ -80,9 +77,7 @@ public class MetricService {
         String key = buildKey(name, tags);
         return timers.computeIfAbsent(key, k -> {
             checkCapacity(timers, "timer", name);
-            return Timer.builder(name)
-                    .tags(toTags(tags))
-                    .register(registry);
+            return Timer.builder(name).tags(toTags(tags)).register(registry);
         });
     }
 
@@ -97,9 +92,7 @@ public class MetricService {
         String key = buildKey(name, tags);
         return summaries.computeIfAbsent(key, k -> {
             checkCapacity(summaries, "summary", name);
-            return DistributionSummary.builder(name)
-                    .tags(toTags(tags))
-                    .register(registry);
+            return DistributionSummary.builder(name).tags(toTags(tags)).register(registry);
         });
     }
 
@@ -116,9 +109,10 @@ public class MetricService {
     public AtomicReference<Double> gauge(String name, String[] tags, Supplier<Number> supplier) {
         String key = buildKey(name, tags);
         return gauges.computeIfAbsent(key, k -> {
-            checkCapacity(gauges, "gauge", name);
-            return new GaugeHolder(name, toTags(tags), supplier, registry);
-        }).getValue();
+                    checkCapacity(gauges, "gauge", name);
+                    return new GaugeHolder(name, toTags(tags), supplier, registry);
+                })
+                .getValue();
     }
 
     /**
@@ -137,7 +131,8 @@ public class MetricService {
      */
     public void exception(Class<?> source, String context, Throwable exception) {
         String type = exception.getClass().getSimpleName();
-        counter("exceptions", "source", source.getSimpleName(), "context", context, "type", type).increment();
+        counter("exceptions", "source", source.getSimpleName(), "context", context, "type", type)
+                .increment();
     }
 
     /**
@@ -204,8 +199,11 @@ public class MetricService {
 
     private <V> void checkCapacity(Map<String, V> map, String type, String name) {
         if (map.size() >= MAX_ENTRIES_PER_TYPE) {
-            log.warn("MetricService: {} cache at capacity ({}) — new metric '{}' may indicate tag cardinality issue",
-                    type, MAX_ENTRIES_PER_TYPE, name);
+            log.warn(
+                    "MetricService: {} cache at capacity ({}) — new metric '{}' may indicate tag cardinality issue",
+                    type,
+                    MAX_ENTRIES_PER_TYPE,
+                    name);
         }
     }
 
@@ -223,9 +221,7 @@ public class MetricService {
             Number initial = supplier.get();
             if (initial != null) value.set(initial.doubleValue());
 
-            Gauge.builder(name, this, GaugeHolder::currentValue)
-                    .tags(tags)
-                    .register(registry);
+            Gauge.builder(name, this, GaugeHolder::currentValue).tags(tags).register(registry);
         }
 
         double currentValue() {

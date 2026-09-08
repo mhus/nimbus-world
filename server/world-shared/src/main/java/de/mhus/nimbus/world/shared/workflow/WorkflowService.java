@@ -5,18 +5,17 @@ import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.shared.job.NextJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for managing workflows.
@@ -25,17 +24,15 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(
-        value = "nimbus.services.workflows",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.workflows", havingValue = "true", matchIfMissing = false)
 public class WorkflowService {
 
     private final WWorkflowJournalService journalService;
+
     @Lazy
     @Autowired
     private List<Workflow> workflows;
+
     private final WJobService jobService;
     private final LocationService locationService;
     private final WWorldService worldService;
@@ -52,7 +49,8 @@ public class WorkflowService {
      * @return Workflow identifier for the created workflow instance
      * @throws WorkflowException If workflow not found or initialization fails
      */
-    public String createWorkflow(String worldId, String workflowName, Map<String, String> params, String jobId) throws WorkflowException {
+    public String createWorkflow(String worldId, String workflowName, Map<String, String> params, String jobId)
+            throws WorkflowException {
         log.info("Creating workflow: name={}, worldId={}, jobId={}", workflowName, worldId, jobId);
 
         Workflow workflow = findWorkflow(workflowName)
@@ -62,22 +60,20 @@ public class WorkflowService {
         String workflowId = UUID.randomUUID().toString();
 
         try {
-            Map<String,Object> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
+            Map<String, Object> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
 
             // Create initial status entry
             journalService.addWorkflowJournalRecord(worldId, workflowId, new StartRecord(workflowName));
             if (jobId != null) {
                 journalService.addWorkflowJournalRecord(worldId, workflowId, new JobIdRecord(jobId));
             }
-            WorkflowParameters workflowParameters = WorkflowParameters.builder()
-                    .parameters(parameters)
-                    .build();
+            WorkflowParameters workflowParameters =
+                    WorkflowParameters.builder().parameters(parameters).build();
             journalService.addWorkflowJournalRecord(worldId, workflowId, workflowParameters);
 
             // Create initial status entry
-            StatusRecord status = StatusRecord.builder()
-                    .status(StatusRecord.CREATED)
-                    .build();
+            StatusRecord status =
+                    StatusRecord.builder().status(StatusRecord.CREATED).build();
             journalService.addWorkflowJournalRecord(worldId, workflowId, status);
 
             log.info("Workflow created: workflowId={}, name={}, worldId={}", workflowId, workflowName, worldId);
@@ -87,15 +83,31 @@ public class WorkflowService {
             return workflowId;
 
         } catch (WorkflowException e) {
-            log.error("Failed to initialize workflow: name={}, worldId={}, workflowId={}", workflowName, worldId, workflowId, e);
+            log.error(
+                    "Failed to initialize workflow: name={}, worldId={}, workflowId={}",
+                    workflowName,
+                    worldId,
+                    workflowId,
+                    e);
             throw e;
         } catch (Exception e) {
-            log.error("Unexpected error initializing workflow: name={}, worldId={}, workflowId={}", workflowName, worldId, workflowId, e);
+            log.error(
+                    "Unexpected error initializing workflow: name={}, worldId={}, workflowId={}",
+                    workflowName,
+                    worldId,
+                    workflowId,
+                    e);
             throw new WorkflowException(workflowId, "Failed to initialize workflow: " + e.getMessage(), e);
         }
     }
 
-    private void fireJob(WorkflowContext context, String executor, String type, String location, String titleSuffix, Map<String,String > parameters) {
+    private void fireJob(
+            WorkflowContext context,
+            String executor,
+            String type,
+            String location,
+            String titleSuffix,
+            Map<String, String> parameters) {
 
         var onSuccess = NextJob.builder()
                 .executor(WorkflowEventJobExecutor.NAME)
@@ -110,18 +122,14 @@ public class WorkflowService {
                 .parameters(Map.of())
                 .build();
 
-        // Build descriptive title: "workflow-name: status [executor/type]" or with suffix: "workflow-name: status - titleSuffix"
+        // Build descriptive title: "workflow-name: status [executor/type]" or with suffix: "workflow-name: status -
+        // titleSuffix"
         String title;
         if (titleSuffix != null && !titleSuffix.isBlank()) {
-            title = String.format("%s: %s - %s",
-                    context.getWorkflowName(),
-                    context.getStatus(),
-                    titleSuffix);
+            title = String.format("%s: %s - %s", context.getWorkflowName(), context.getStatus(), titleSuffix);
         } else {
-            title = String.format("%s: %s [%s]",
-                    context.getWorkflowName(),
-                    context.getStatus(),
-                    type.isBlank() ? executor : type);
+            title = String.format(
+                    "%s: %s [%s]", context.getWorkflowName(), context.getStatus(), type.isBlank() ? executor : type);
         }
 
         var job = jobService.createJob(
@@ -135,10 +143,8 @@ public class WorkflowService {
                 5,
                 0,
                 onSuccess,
-                onError
-        );
+                onError);
         context.addRecord(new CreateJobRecord(job.getId(), executor, type, location, parameters));
-
     }
 
     private void fireStartEvent(String workflowName, String worldId, String workflowId) {
@@ -153,8 +159,7 @@ public class WorkflowService {
                 5,
                 0,
                 null,
-                null
-        );
+                null);
     }
 
     /**
@@ -195,7 +200,8 @@ public class WorkflowService {
      * @return Updated workflow status after processing the event
      * @throws WorkflowException If workflow not found or event handling fails
      */
-    public String processEvent(String worldId, String workflowName, String workflowId, WorkflowEvent event) throws WorkflowException {
+    public String processEvent(String worldId, String workflowName, String workflowId, WorkflowEvent event)
+            throws WorkflowException {
         log.debug("Sending event to workflow: workflowId={}, event={}", workflowId, event.getEventName());
 
         Workflow workflow = findWorkflow(workflowName)
@@ -204,7 +210,11 @@ public class WorkflowService {
         WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName, event);
         String status = context.getStatus();
         if (isStatusFinal(status)) {
-            log.warn("Cannot process event for finalized workflow: workflowId={}, status={}, event={}", workflowId, status, event.getEventName());
+            log.warn(
+                    "Cannot process event for finalized workflow: workflowId={}, status={}, event={}",
+                    workflowId,
+                    status,
+                    event.getEventName());
             return status;
         }
 
@@ -237,7 +247,10 @@ public class WorkflowService {
             var jobId = context.getLastJournalRecord(JobIdRecord.class).orElse(null);
             if (jobId != null) {
                 var result = context.getLastJournalRecord(ResultRecord.class).orElse(null);
-                log.info("Marking linked job as completed: jobId={}, workflowId={}", jobId.getJobId(), context.getWorkflowId());
+                log.info(
+                        "Marking linked job as completed: jobId={}, workflowId={}",
+                        jobId.getJobId(),
+                        context.getWorkflowId());
                 if (isStatusFailed(status)) {
                     jobService.markJobFailed(jobId.getJobId(), result == null ? null : result.getResult());
                 } else {
@@ -252,12 +265,12 @@ public class WorkflowService {
         for (WorkflowContext.Job job : context.getJobQueue()) {
             fireJob(context, job.executor(), job.type(), job.location(), job.titleSuffix(), job.parameters());
         }
-
-
     }
 
     private boolean isStatusFinal(String status) {
-        return StatusRecord.COMPLETED.equals(status) || StatusRecord.FAILED.equals(status) || StatusRecord.TERMINATED.equals(status);
+        return StatusRecord.COMPLETED.equals(status)
+                || StatusRecord.FAILED.equals(status)
+                || StatusRecord.TERMINATED.equals(status);
     }
 
     private boolean isStatusFailed(String status) {
@@ -272,7 +285,8 @@ public class WorkflowService {
      * @param event
      * @return Workflow context
      */
-    public WorkflowContext loadWorkflowContext(String worldId, String workflowId, String workflowName, WorkflowEvent event) {
+    public WorkflowContext loadWorkflowContext(
+            String worldId, String workflowId, String workflowName, WorkflowEvent event) {
         List<WWorkflowJournalRecord> journal = journalService.getWorkflowJournalRecords(worldId, workflowId);
 
         return WorkflowContext.builder()
@@ -294,12 +308,11 @@ public class WorkflowService {
      * @param status New status
      */
     public void updateWorkflowStatus(String worldId, String workflowId, String status) {
-        StatusRecord workflowStatus = StatusRecord.builder()
-                .status(status)
-                .build();
+        StatusRecord workflowStatus = StatusRecord.builder().status(status).build();
         try {
-            Thread.sleep(1);  // Ensure different timestamp
-        } catch (InterruptedException e) {}
+            Thread.sleep(1); // Ensure different timestamp
+        } catch (InterruptedException e) {
+        }
         journalService.addWorkflowJournalRecord(worldId, workflowId, workflowStatus);
         log.debug("Updated workflow status: workflowId={}, status={}", workflowId, status);
     }
@@ -311,13 +324,13 @@ public class WorkflowService {
      * @return Optional workflow
      */
     private Optional<Workflow> findWorkflow(String name) {
-        return workflows.stream()
-                .filter(w -> w.name().equals(name))
-                .findFirst();
+        return workflows.stream().filter(w -> w.name().equals(name)).findFirst();
     }
 
     public boolean existsWorkflow(String worldId, String workflowId) {
-        return !journalService.getWorkflowJournalRecordsForType(worldId, workflowId, StartRecord.class.getCanonicalName()).isEmpty();
+        return !journalService
+                .getWorkflowJournalRecordsForType(worldId, workflowId, StartRecord.class.getCanonicalName())
+                .isEmpty();
     }
 
     public void emigrateToWorld(WorkflowContext context, String newWorldId, String newStatus) {
@@ -328,8 +341,10 @@ public class WorkflowService {
 
         var jobId = context.getLastJournalRecord(JobIdRecord.class);
         journalService.emigrateToWorld(context.getWorldId(), context.getWorkflowId(), newWorldId);
-        jobId.ifPresent(jobIdRecord -> jobService.emigrateToWorld(context.getWorldId(), jobIdRecord.getJobId(), newWorldId));
-        var newContext = loadWorkflowContext(newWorldId, context.getWorkflowId(), context.getWorkflowName(), context.getEvent());
+        jobId.ifPresent(
+                jobIdRecord -> jobService.emigrateToWorld(context.getWorldId(), jobIdRecord.getJobId(), newWorldId));
+        var newContext =
+                loadWorkflowContext(newWorldId, context.getWorkflowId(), context.getWorkflowName(), context.getEvent());
         newContext.updateWorkflowStatus(newStatus);
 
         var workflowName = context.getWorkflowName();
@@ -344,8 +359,6 @@ public class WorkflowService {
                 5,
                 0,
                 null,
-                null
-        );
+                null);
     }
-
 }

@@ -7,15 +7,14 @@ import de.mhus.nimbus.world.shared.workflow.OnSuccess;
 import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Day 5 workflow: Environment generation (weather configuration) for all hex grids.
@@ -58,8 +57,7 @@ public class Day5Environment extends MethodBasedWorkflow {
 
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
-                GenesisConst.EPOCH, epochStr
-        );
+                GenesisConst.EPOCH, epochStr);
     }
 
     @Override
@@ -67,10 +65,14 @@ public class Day5Environment extends MethodBasedWorkflow {
         // Load hex grid coordinates from composition
         context.updateWorkflowStatus("loadModel");
         String epoch = String.valueOf(context.getParameters().get(GenesisConst.EPOCH));
-        context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
-                "epoch", epoch
-        ));
+        context.enqueueJob(
+                "generator-generate-hexgrid-from-composite",
+                "",
+                Map.of(
+                        "documentId",
+                        (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                        "epoch",
+                        epoch));
     }
 
     @OnSuccess("loadModel")
@@ -114,20 +116,20 @@ public class Day5Environment extends MethodBasedWorkflow {
 
         Day5ProcessingState.HexCoordinate coord = state.getCoordinates().get(index);
         String epoch = (String) context.getParameters().get("epoch");
-        String gridLabel = String.format("Grid %d;%d (%d/%d)",
-                coord.getQ(), coord.getR(), index + 1, total);
+        String gridLabel = String.format("Grid %d;%d (%d/%d)", coord.getQ(), coord.getR(), index + 1, total);
 
         log.info("Generating weather for {}", gridLabel);
 
         context.updateWorkflowStatus("generateWeather");
         context.enqueueJob(
-                HexGridWeatherGeneratorJobExecutor.EXECUTOR_NAME, "", "",
+                HexGridWeatherGeneratorJobExecutor.EXECUTOR_NAME,
+                "",
+                "",
                 "Weather for " + gridLabel,
                 Map.of(
                         "hexQ", String.valueOf(coord.getQ()),
                         "hexR", String.valueOf(coord.getR()),
-                        "epoch", epoch
-                ));
+                        "epoch", epoch));
     }
 
     @OnSuccess("generateWeather")
@@ -135,7 +137,10 @@ public class Day5Environment extends MethodBasedWorkflow {
         Day5ProcessingState state = context.getLastJournalRecord(Day5ProcessingState.class)
                 .orElseThrow(() -> new WorkflowException(null, "Processing state not found"));
 
-        log.info("Completed weather {}/{}", state.getCurrentIndex() + 1, state.getCoordinates().size());
+        log.info(
+                "Completed weather {}/{}",
+                state.getCurrentIndex() + 1,
+                state.getCoordinates().size());
 
         state.setCurrentIndex(state.getCurrentIndex() + 1);
         context.addRecord(state);
@@ -144,6 +149,5 @@ public class Day5Environment extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
-    }
+    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
 }

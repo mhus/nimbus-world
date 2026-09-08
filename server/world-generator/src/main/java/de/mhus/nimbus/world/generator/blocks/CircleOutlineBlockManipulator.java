@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Circle Outline Block Manipulator - creates a circle outline (ring) on a specified plane.
@@ -61,9 +61,9 @@ public class CircleOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a circle outline (ring) on the specified plane. " +
-                "Parameters: position {x,y,z}, radius, plane (Y/X/Z, default Y), blockType (optional). " +
-                "Example: {\"circle-outline\": {\"transform\": \"position\", \"radius\": 5}}";
+        return "Creates a circle outline (ring) on the specified plane. "
+                + "Parameters: position {x,y,z}, radius, plane (Y/X/Z, default Y), blockType (optional). "
+                + "Example: {\"circle-outline\": {\"transform\": \"position\", \"radius\": 5}}";
     }
 
     @Override
@@ -121,8 +121,14 @@ public class CircleOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate circle outline on specified plane
-        log.info("Generating circle outline: pos=({},{},{}), radius={}, plane={}, blockType={}",
-                x, y, z, radius, plane, blockType);
+        log.info(
+                "Generating circle outline: pos=({},{},{}), radius={}, plane={}, blockType={}",
+                x,
+                y,
+                z,
+                radius,
+                plane,
+                blockType);
 
         switch (plane) {
             case "Y":
@@ -140,7 +146,8 @@ public class CircleOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated circle outline: %d blocks (radius %d, plane %s) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated circle outline: %d blocks (radius %d, plane %s) at (%d,%d,%d)",
                 blockCount, radius, plane, x, y, z);
 
         log.info(message);

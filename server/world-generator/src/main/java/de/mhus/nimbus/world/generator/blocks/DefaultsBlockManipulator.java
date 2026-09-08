@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.ObjectNode;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Manipulator for setting default parameters in the BlockManipulatorService.
@@ -45,9 +44,9 @@ public class DefaultsBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Sets default parameters for all subsequent manipulators. " +
-                "Parameters: any key-value pairs to use as defaults (e.g., blockType, diffuse, etc.). " +
-                "Example: {\"defaults\": {\"blockType\": \"n:s\", \"diffuse\": 0.1}}";
+        return "Sets default parameters for all subsequent manipulators. "
+                + "Parameters: any key-value pairs to use as defaults (e.g., blockType, diffuse, etc.). "
+                + "Example: {\"defaults\": {\"blockType\": \"n:s\", \"diffuse\": 0.1}}";
     }
 
     @Override
@@ -70,9 +69,7 @@ public class DefaultsBlockManipulator implements BlockManipulator {
                 defaultsList.add(entry.getKey() + "=" + entry.getValue());
             }
 
-            return ManipulatorResult.success(
-                    "Current defaults: " + String.join(", ", defaultsList)
-            );
+            return ManipulatorResult.success("Current defaults: " + String.join(", ", defaultsList));
         }
 
         // Set all parameters as defaults
@@ -91,8 +88,7 @@ public class DefaultsBlockManipulator implements BlockManipulator {
             log.debug("Set default parameter: {} = {}", key, javaValue);
         }
 
-        String message = "Set " + setParameters.size() + " default parameter(s): " +
-                String.join(", ", setParameters);
+        String message = "Set " + setParameters.size() + " default parameter(s): " + String.join(", ", setParameters);
 
         log.info("Defaults updated: {}", message);
 

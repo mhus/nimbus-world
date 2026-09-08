@@ -5,18 +5,16 @@ import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +64,12 @@ public class WSessionService {
         String regionId = worldId.getRegionId();
         storePlayerSession(regionId, playerId.getId(), id);
 
-        log.debug("WSession erstellt id={} world={} user={} status=WAITING ttl={}min", id, worldId, playerId, effectiveTtl.toMinutes());
+        log.debug(
+                "WSession erstellt id={} world={} user={} status=WAITING ttl={}min",
+                id,
+                worldId,
+                playerId,
+                effectiveTtl.toMinutes());
         return session;
     }
 
@@ -98,8 +101,12 @@ public class WSessionService {
                 .build();
         write(session, effectiveTtl);
 
-        log.debug("Service WSession created id={} world={} owner={} status=RUNNING ttl={}h",
-                id, worldId, ownerId, effectiveTtl.toHours());
+        log.debug(
+                "Service WSession created id={} world={} owner={} status=RUNNING ttl={}h",
+                id,
+                worldId,
+                ownerId,
+                effectiveTtl.toHours());
         return session;
     }
 
@@ -156,11 +163,12 @@ public class WSessionService {
         return get(id).map(existing -> {
             existing.setStatus(newStatus);
             existing.touchUpdate();
-            Duration newTtl = switch (newStatus) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
+            Duration newTtl =
+                    switch (newStatus) {
+                        case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
+                        case RUNNING -> Duration.ofHours(props.getRunningHours());
+                        case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
+                    };
             existing.setExpireAt(Instant.now().plus(newTtl));
             write(existing, newTtl);
 
@@ -181,11 +189,12 @@ public class WSessionService {
         return get(id).map(existing -> {
             existing.setPlayerUrl(playerUrl);
             existing.touchUpdate();
-            Duration ttl = switch (existing.getStatus()) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
+            Duration ttl =
+                    switch (existing.getStatus()) {
+                        case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
+                        case RUNNING -> Duration.ofHours(props.getRunningHours());
+                        case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
+                    };
             existing.setExpireAt(Instant.now().plus(ttl));
             write(existing, ttl);
             log.debug("WSession playerUrl aktualisiert id={} playerUrl={}", id, playerUrl);
@@ -197,11 +206,12 @@ public class WSessionService {
         return get(id).map(existing -> {
             existing.setEntryPoint(entryPoint);
             existing.touchUpdate();
-            Duration ttl = switch (existing.getStatus()) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
+            Duration ttl =
+                    switch (existing.getStatus()) {
+                        case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
+                        case RUNNING -> Duration.ofHours(props.getRunningHours());
+                        case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
+                    };
             existing.setExpireAt(Instant.now().plus(ttl));
             write(existing, ttl);
             log.debug("WSession entryPoint aktualisiert id={} entryPoint={}", id, entryPoint);
@@ -213,11 +223,12 @@ public class WSessionService {
         return get(id).map(existing -> {
             existing.setTeleportation(teleportation);
             existing.touchUpdate();
-            Duration ttl = switch (existing.getStatus()) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
+            Duration ttl =
+                    switch (existing.getStatus()) {
+                        case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
+                        case RUNNING -> Duration.ofHours(props.getRunningHours());
+                        case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
+                    };
             existing.setExpireAt(Instant.now().plus(ttl));
             write(existing, ttl);
             log.debug("WSession teleportation aktualisiert id={} teleportation={}", id, teleportation);
@@ -229,14 +240,17 @@ public class WSessionService {
         return get(id).map(existing -> {
             existing.setModelSelector(ModelSelector.cleanup(modelSelector)); // remove doubles
             existing.touchUpdate();
-            Duration ttl = switch (existing.getStatus()) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
+            Duration ttl =
+                    switch (existing.getStatus()) {
+                        case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
+                        case RUNNING -> Duration.ofHours(props.getRunningHours());
+                        case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
+                    };
             existing.setExpireAt(Instant.now().plus(ttl));
             write(existing, ttl);
-            log.debug("WSession modelSelector aktualisiert id={} blocks={}", id,
+            log.debug(
+                    "WSession modelSelector aktualisiert id={} blocks={}",
+                    id,
                     modelSelector != null ? modelSelector.size() - 1 : 0); // -1 for config line
             return existing;
         });
@@ -299,11 +313,13 @@ public class WSessionService {
         redis.expire(k, ttl);
     }
 
-    private String key(String id) { return KEY_PREFIX + "session:" + id; }
+    private String key(String id) {
+        return KEY_PREFIX + "session:" + id;
+    }
 
     private String randomId() {
         StringBuilder sb = new StringBuilder(ID_LENGTH);
-        for (int i=0; i<ID_LENGTH; i++) {
+        for (int i = 0; i < ID_LENGTH; i++) {
             sb.append(ID_ALPHABET.charAt(RANDOM.nextInt(ID_ALPHABET.length())));
         }
         return sb.toString();
@@ -316,12 +332,12 @@ public class WSessionService {
      * @return neuer Cursor ("0" wenn Ende erreicht) und gelöschte Anzahl
      */
     public CleanupResult cleanupExpired(String cursorStart) {
-        if (!props.isCleanupEnabled()) return new CleanupResult("0",0);
+        if (!props.isCleanupEnabled()) return new CleanupResult("0", 0);
         int deleted = 0;
         var scanOptions = org.springframework.data.redis.core.ScanOptions.scanOptions()
-            .match("wsession:session:*")
-            .count(props.getCleanupScanCount())
-            .build();
+                .match("wsession:session:*")
+                .count(props.getCleanupScanCount())
+                .build();
         boolean usedFallback = false;
         try (var connection = redis.getConnectionFactory().getConnection()) {
             Cursor<byte[]> cursor = connection.scan(scanOptions);
@@ -379,7 +395,7 @@ public class WSessionService {
         }
     }
 
-    public record CleanupResult(String cursor, int deleted) { }
+    public record CleanupResult(String cursor, int deleted) {}
 
     // ========================================================================
     // WSessionPosition Management
@@ -402,13 +418,11 @@ public class WSessionService {
      * @param pitch rotation pitch in degrees (optional)
      * @return updated position
      */
-    public WSessionPosition updatePosition(String sessionId, Double x, Double y, Double z,
-                                          Integer chunkX, Integer chunkZ,
-                                          Double yaw, Double pitch) {
+    public WSessionPosition updatePosition(
+            String sessionId, Double x, Double y, Double z, Integer chunkX, Integer chunkZ, Double yaw, Double pitch) {
         // Get existing or create new
-        WSessionPosition position = getPosition(sessionId).orElse(
-                WSessionPosition.builder().sessionId(sessionId).build()
-        );
+        WSessionPosition position = getPosition(sessionId)
+                .orElse(WSessionPosition.builder().sessionId(sessionId).build());
 
         // Update position if provided
         if (x != null) position.setX(x);
@@ -428,8 +442,16 @@ public class WSessionService {
         // Store in Redis
         writePosition(position);
 
-        log.trace("Updated position for session {}: pos=({}, {}, {}), chunk=({}, {}), rot=(yaw:{}, pitch:{})",
-                sessionId, x, y, z, chunkX, chunkZ, yaw, pitch);
+        log.trace(
+                "Updated position for session {}: pos=({}, {}, {}), chunk=({}, {}), rot=(yaw:{}, pitch:{})",
+                sessionId,
+                x,
+                y,
+                z,
+                chunkX,
+                chunkZ,
+                yaw,
+                pitch);
 
         return position;
     }
@@ -459,8 +481,7 @@ public class WSessionService {
                     .chunkZ(parseInteger(map.get("chunkZ")))
                     .yaw(parseDouble(map.get("yaw")))
                     .pitch(parseDouble(map.get("pitch")))
-                    .updatedAt(map.get("updatedAt") != null ?
-                            Instant.parse((String) map.get("updatedAt")) : null)
+                    .updatedAt(map.get("updatedAt") != null ? Instant.parse((String) map.get("updatedAt")) : null)
                     .build();
 
             return Optional.of(position);
@@ -491,11 +512,15 @@ public class WSessionService {
         if (position.getX() != null) ops.put(key, "x", position.getX().toString());
         if (position.getY() != null) ops.put(key, "y", position.getY().toString());
         if (position.getZ() != null) ops.put(key, "z", position.getZ().toString());
-        if (position.getChunkX() != null) ops.put(key, "chunkX", position.getChunkX().toString());
-        if (position.getChunkZ() != null) ops.put(key, "chunkZ", position.getChunkZ().toString());
+        if (position.getChunkX() != null)
+            ops.put(key, "chunkX", position.getChunkX().toString());
+        if (position.getChunkZ() != null)
+            ops.put(key, "chunkZ", position.getChunkZ().toString());
         if (position.getYaw() != null) ops.put(key, "yaw", position.getYaw().toString());
-        if (position.getPitch() != null) ops.put(key, "pitch", position.getPitch().toString());
-        if (position.getUpdatedAt() != null) ops.put(key, "updatedAt", position.getUpdatedAt().toString());
+        if (position.getPitch() != null)
+            ops.put(key, "pitch", position.getPitch().toString());
+        if (position.getUpdatedAt() != null)
+            ops.put(key, "updatedAt", position.getUpdatedAt().toString());
 
         // Set short TTL
         redis.expire(key, POSITION_TTL);
@@ -566,15 +591,16 @@ public class WSessionService {
         try {
             EditState editState = EditState.builder()
                     .editMode(parseBoolean(map.get("editMode")))
-                    .editAction(map.get("editAction") != null ?
-                            de.mhus.nimbus.generated.types.EditAction.valueOf((String) map.get("editAction")) : null)
+                    .editAction(
+                            map.get("editAction") != null
+                                    ? de.mhus.nimbus.generated.types.EditAction.valueOf((String) map.get("editAction"))
+                                    : null)
                     .selectedLayer((String) map.get("selectedLayer"))
                     .layerDataId((String) map.get("layerDataId"))
                     .selectedModelId((String) map.get("selectedModelId"))
                     .modelName((String) map.get("modelName"))
                     .selectedGroup((String) map.get("selectedGroup"))
-                    .lastUpdated(map.get("lastUpdated") != null ?
-                            Instant.parse((String) map.get("lastUpdated")) : null)
+                    .lastUpdated(map.get("lastUpdated") != null ? Instant.parse((String) map.get("lastUpdated")) : null)
                     .worldId((String) map.get("worldId"))
                     .build();
 
@@ -648,8 +674,12 @@ public class WSessionService {
         // Set TTL
         redis.expire(key, EDITSTATE_TTL);
 
-        log.trace("Wrote edit state to Redis: sessionId={}, layer={}, layerDataId={}, modelName={}",
-                sessionId, editState.getSelectedLayer(), editState.getLayerDataId(), editState.getModelName());
+        log.trace(
+                "Wrote edit state to Redis: sessionId={}, layer={}, layerDataId={}, modelName={}",
+                sessionId,
+                editState.getSelectedLayer(),
+                editState.getLayerDataId(),
+                editState.getModelName());
     }
 
     private Boolean parseBoolean(Object value) {
@@ -836,8 +866,11 @@ public class WSessionService {
             // Set TTL
             redis.expire(key, BLOCKREGISTER_TTL);
 
-            log.trace("Wrote block register to Redis: sessionId={}, layer={}, group={}",
-                    sessionId, blockRegister.getLayer(), blockRegister.getGroup());
+            log.trace(
+                    "Wrote block register to Redis: sessionId={}, layer={}, group={}",
+                    sessionId,
+                    blockRegister.getLayer(),
+                    blockRegister.getGroup());
         } catch (Exception e) {
             log.error("Failed to write block register: sessionId={}", sessionId, e);
         }

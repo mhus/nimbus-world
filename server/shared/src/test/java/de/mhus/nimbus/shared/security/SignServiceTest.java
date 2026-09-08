@@ -1,16 +1,15 @@
 package de.mhus.nimbus.shared.security;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class SignServiceTest {
 
@@ -37,4 +36,3 @@ class SignServiceTest {
         assertThrows(SignService.SignatureException.class, () -> signService.sign("X", "nix:id"));
     }
 }
-

@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WDocument entities.
@@ -21,7 +20,8 @@ public interface WDocumentRepository extends MongoRepository<WDocument, String> 
      * Note: 'name' is not part of the unique constraint, so multiple documents may exist with the same name.
      * Returns the newest document (ordered by createdAt descending) to handle legacy duplicates.
      */
-    Optional<WDocument> findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(String worldId, String collection, String name);
+    Optional<WDocument> findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
+            String worldId, String collection, String name);
 
     List<WDocument> findByWorldId(String worldId);
 

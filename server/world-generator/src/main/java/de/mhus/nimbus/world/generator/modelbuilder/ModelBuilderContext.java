@@ -7,12 +7,11 @@ import de.mhus.nimbus.world.generator.blocks.generator.LayerWriteTarget;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Context for model building operations.

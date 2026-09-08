@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.api;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
@@ -16,13 +15,13 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/control/player/status")
@@ -126,10 +125,10 @@ public class PlayerStatusController extends BaseEditorController {
             try {
                 var wSession = wSessionService.getWithPlayerUrl(sessionId);
                 if (wSession.isPresent() && !Strings.isBlank(wSession.get().getPlayerUrl())) {
-                    var response = worldClientService.sendPlayerCommand(
-                            worldId, sessionId, wSession.get().getPlayerUrl(),
-                            "GetStatus", List.of(), null
-                    ).get();
+                    var response = worldClientService
+                            .sendPlayerCommand(
+                                    worldId, sessionId, wSession.get().getPlayerUrl(), "GetStatus", List.of(), null)
+                            .get();
 
                     if (response.rc() == 0 && response.message() != null) {
                         @SuppressWarnings("unchecked")
@@ -153,6 +152,8 @@ public class PlayerStatusController extends BaseEditorController {
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
-        return characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        return characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
     }
 }

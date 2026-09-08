@@ -1,8 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TypeUtilTest {
 

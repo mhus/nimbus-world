@@ -22,8 +22,7 @@ public class HexCompositeTestHelper {
      * @return Generation result with statistics
      */
     public static HexGridGenerator.GenerationResult generateAndSaveWHexGrids(
-            HexComposition composition,
-            WHexGridService hexGridService) {
+            HexComposition composition, WHexGridService hexGridService) {
 
         if (composition == null) {
             throw new IllegalArgumentException("composition is required");
@@ -56,9 +55,7 @@ public class HexCompositeTestHelper {
      * @return Updated composition result with generation result
      */
     public static CompositionResult generateWHexGridsForResult(
-            CompositionResult compositionResult,
-            HexComposition composition,
-            WHexGridService hexGridService) {
+            CompositionResult compositionResult, HexComposition composition, WHexGridService hexGridService) {
 
         HexGridGenerator.GenerationResult genResult = generateAndSaveWHexGrids(composition, hexGridService);
 

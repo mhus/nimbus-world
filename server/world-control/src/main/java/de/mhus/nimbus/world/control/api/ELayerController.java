@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.control.api;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
-import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.control.service.LayerModelImporter;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.dto.CreateLayerRequest;
 import de.mhus.nimbus.world.shared.dto.ImportLayerModelRequest;
 import de.mhus.nimbus.world.shared.dto.LayerDto;
@@ -19,17 +18,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * REST Controller for Layer CRUD operations.
@@ -59,9 +58,9 @@ public class ELayerController extends BaseEditorController {
     @GetMapping("/{id}")
     @Operation(summary = "Get Layer by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Layer found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "200", description = "Layer found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -69,9 +68,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("GET layer: worldId={}, id={}", worldId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -98,8 +95,8 @@ public class ELayerController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Layers")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -108,11 +105,15 @@ public class ELayerController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST layers: worldId={}, query={}, epoch={}, offset={}, limit={}", worldId, query, epoch, offset, limit);
+        log.debug(
+                "LIST layers: worldId={}, query={}, epoch={}, offset={}, limit={}",
+                worldId,
+                query,
+                epoch,
+                offset,
+                limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -132,11 +133,8 @@ public class ELayerController extends BaseEditorController {
         int totalCount = all.size();
 
         // Apply pagination
-        List<LayerDto> layerDtos = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<LayerDto> layerDtos =
+                all.stream().skip(offset).limit(limit).map(this::toDto).collect(Collectors.toList());
 
         log.debug("Returning {} layers (total: {})", layerDtos.size(), totalCount);
 
@@ -144,8 +142,7 @@ public class ELayerController extends BaseEditorController {
                 "layers", layerDtos,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -155,9 +152,9 @@ public class ELayerController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Layer created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Layer title already exists")
+        @ApiResponse(responseCode = "201", description = "Layer created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Layer title already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -165,9 +162,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("CREATE layer: worldId={}, title={}", worldId, request.name());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(request.name())) {
             return bad("title required");
         }
@@ -193,8 +188,7 @@ public class ELayerController extends BaseEditorController {
                     request.order() != null ? request.order() : 0,
                     request.allChunks() != null ? request.allChunks() : true,
                     request.affectedChunks(),
-                    request.baseGround() != null ? request.baseGround() : false
-            );
+                    request.baseGround() != null ? request.baseGround() : false);
 
             // Set enabled flag if provided
             if (request.enabled() != null) {
@@ -214,8 +208,12 @@ public class ELayerController extends BaseEditorController {
                 layer = layerService.save(layer);
             }
 
-            log.info("Created layer: id={}, title={}, type={}, layerDataId={}",
-                    layer.getId(), layer.getName(), layer.getLayerType(), layer.getLayerDataId());
+            log.info(
+                    "Created layer: id={}, title={}, type={}, layerDataId={}",
+                    layer.getId(),
+                    layer.getName(),
+                    layer.getLayerType(),
+                    layer.getLayerDataId());
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", layer.getId()));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating layer: {}", e.getMessage());
@@ -234,9 +232,9 @@ public class ELayerController extends BaseEditorController {
     @PutMapping("/{id}")
     @Operation(summary = "Update Layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Layer updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "200", description = "Layer updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -245,9 +243,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("UPDATE layer: worldId={}, id={}", worldId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -321,9 +317,9 @@ public class ELayerController extends BaseEditorController {
     @PostMapping("/{id}/regenerate")
     @Operation(summary = "Regenerate Layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Layer regeneration triggered"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "200", description = "Layer regeneration triggered"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> regenerate(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -331,9 +327,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("REGENERATE layer: worldId={}, id={}", worldId, id);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -360,22 +354,22 @@ public class ELayerController extends BaseEditorController {
                         "recreate-model-based-layer",
                         "Regenerate Layer: " + layer.getName(),
                         "layer-regeneration",
-                        Map.of(
-                                "layerDataId", layer.getLayerDataId(),
-                                "markChunksDirty", "true"
-                        ),
+                        Map.of("layerDataId", layer.getLayerDataId(), "markChunksDirty", "true"),
                         8, // High priority
-                        3  // Max retries
-                );
+                        3 // Max retries
+                        );
 
                 log.info("Created regeneration job for MODEL layer: layerId={} jobId={}", id, job.getId());
 
                 return ResponseEntity.ok(Map.of(
-                        "successful", true,
-                        "layerType", "MODEL",
-                        "jobId", job.getId(),
-                        "message", "Regeneration job created successfully"
-                ));
+                        "successful",
+                        true,
+                        "layerType",
+                        "MODEL",
+                        "jobId",
+                        job.getId(),
+                        "message",
+                        "Regeneration job created successfully"));
 
             } else {
                 // For GROUND layers: Mark all affected chunks as dirty
@@ -383,7 +377,10 @@ public class ELayerController extends BaseEditorController {
                 if (layer.isAllChunks()) {
                     // Get all existing chunks for this world
                     affectedChunks = layerService.findChunkKeysByLayerDataId(layer.getLayerDataId());
-                    log.info("Regenerating GROUND layer with allChunks=true: layerId={}, chunks={}", id, affectedChunks.size());
+                    log.info(
+                            "Regenerating GROUND layer with allChunks=true: layerId={}, chunks={}",
+                            id,
+                            affectedChunks.size());
                 } else {
                     affectedChunks = layer.getAffectedChunks();
                 }
@@ -398,11 +395,14 @@ public class ELayerController extends BaseEditorController {
                 log.info("Marked {} chunks dirty for GROUND layer: layerId={}", affectedChunks.size(), id);
 
                 return ResponseEntity.ok(Map.of(
-                        "successful", true,
-                        "layerType", "GROUND",
-                        "chunksMarked", affectedChunks.size(),
-                        "message", "Chunks marked for regeneration successfully"
-                ));
+                        "successful",
+                        true,
+                        "layerType",
+                        "GROUND",
+                        "chunksMarked",
+                        affectedChunks.size(),
+                        "message",
+                        "Chunks marked for regeneration successfully"));
             }
 
         } catch (Exception e) {
@@ -419,9 +419,9 @@ public class ELayerController extends BaseEditorController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Layer deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "204", description = "Layer deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -429,9 +429,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("DELETE layer: worldId={}, id={}", worldId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -463,9 +461,9 @@ public class ELayerController extends BaseEditorController {
     @PostMapping("/{id}/import")
     @Operation(summary = "Import Layer Model from JSON")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Model imported successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request or layer is not MODEL type"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "201", description = "Model imported successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request or layer is not MODEL type"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> importModel(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -474,9 +472,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("IMPORT model: worldId={}, layerId={}", worldId, id);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -525,15 +521,20 @@ public class ELayerController extends BaseEditorController {
 
             WLayerModel imported = builder.build().importModel();
 
-            log.info("Imported layer model: layerId={} modelId={} name={} blocks={}",
-                    id, imported.getId(), imported.getName(),
+            log.info(
+                    "Imported layer model: layerId={} modelId={} name={} blocks={}",
+                    id,
+                    imported.getId(),
+                    imported.getName(),
                     imported.getContent() != null ? imported.getContent().size() : 0);
 
             // Build response map with null-safe values
             Map<String, Object> response = new java.util.HashMap<>();
             response.put("modelId", imported.getId() != null ? imported.getId() : "");
             response.put("name", imported.getName() != null ? imported.getName() : "");
-            response.put("blocks", imported.getContent() != null ? imported.getContent().size() : 0);
+            response.put(
+                    "blocks",
+                    imported.getContent() != null ? imported.getContent().size() : 0);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -561,9 +562,7 @@ public class ELayerController extends BaseEditorController {
 
         log.debug("IMPORT terrain: worldId={}, layerId={}", worldId, id);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -605,11 +604,15 @@ public class ELayerController extends BaseEditorController {
                     request.mountX(),
                     request.mountY(),
                     request.mountZ(),
-                    markChunksDirty
-            );
+                    markChunksDirty);
 
-            log.info("Imported model to terrain: layerId={} chunks={} mountPoint=({},{},{})",
-                    id, chunksProcessed, request.mountX(), request.mountY(), request.mountZ());
+            log.info(
+                    "Imported model to terrain: layerId={} chunks={} mountPoint=({},{},{})",
+                    id,
+                    chunksProcessed,
+                    request.mountX(),
+                    request.mountY(),
+                    request.mountZ());
 
             Map<String, Object> response = new java.util.HashMap<>();
             response.put("chunksAffected", chunksProcessed);
@@ -647,7 +650,6 @@ public class ELayerController extends BaseEditorController {
                 layer.getGroups(),
                 layer.getEpoches(),
                 layer.getCreatedAt(),
-                layer.getUpdatedAt()
-        );
+                layer.getUpdatedAt());
     }
 }

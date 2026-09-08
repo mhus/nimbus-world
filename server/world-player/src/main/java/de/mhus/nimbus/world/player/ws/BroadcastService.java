@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.player.ws;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.HashSet;
-import java.util.Set;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 /**
  * Service for broadcasting messages to relevant player sessions.
@@ -37,21 +36,14 @@ public class BroadcastService {
      * @return Number of sessions the message was sent to
      */
     public int broadcastToWorld(
-            String worldId,
-            String messageType,
-            JsonNode data,
-            String originatingSessionId,
-            Integer cx,
-            Integer cz) {
+            String worldId, String messageType, JsonNode data, String originatingSessionId, Integer cx, Integer cz) {
 
         // Normalize worldId (strip trailing colons from fullId format)
         worldId = WorldId.unchecked(worldId).getId();
 
         try {
-            NetworkMessage networkMessage = NetworkMessage.builder()
-                    .t(messageType)
-                    .d(data)
-                    .build();
+            NetworkMessage networkMessage =
+                    NetworkMessage.builder().t(messageType).d(data).build();
 
             String json = objectMapper.writeValueAsString(networkMessage);
             TextMessage textMessage = new TextMessage(json);
@@ -73,8 +65,11 @@ public class BroadcastService {
                 // Check if session has registered the chunk (if chunk coordinates provided)
                 if (cx != null && cz != null) {
                     if (!session.isChunkRegistered(cx, cz)) {
-                        log.trace("Session {} has not registered chunk ({}, {}), skipping",
-                                session.getSessionId(), cx, cz);
+                        log.trace(
+                                "Session {} has not registered chunk ({}, {}), skipping",
+                                session.getSessionId(),
+                                cx,
+                                cz);
                         continue;
                     }
                 }
@@ -84,8 +79,13 @@ public class BroadcastService {
                 sentCount++;
             }
 
-            log.trace("Broadcast {} to {} sessions (origin={}, chunk={},{})",
-                    messageType, sentCount, originatingSessionId, cx, cz);
+            log.trace(
+                    "Broadcast {} to {} sessions (origin={}, chunk={},{})",
+                    messageType,
+                    sentCount,
+                    originatingSessionId,
+                    cx,
+                    cz);
 
             return sentCount;
 
@@ -105,7 +105,8 @@ public class BroadcastService {
     /**
      * Broadcast to a specific chunk in a world (excludes originating session).
      */
-    public int broadcastToChunk(String worldId, int cx, int cz, String messageType, JsonNode data, String originatingSessionId) {
+    public int broadcastToChunk(
+            String worldId, int cx, int cz, String messageType, JsonNode data, String originatingSessionId) {
         return broadcastToWorld(worldId, messageType, data, originatingSessionId, cx, cz);
     }
 
@@ -121,20 +122,14 @@ public class BroadcastService {
      * @return Number of unique sessions the message was sent to
      */
     public int broadcastToWorldMultiChunk(
-            String worldId,
-            String messageType,
-            JsonNode data,
-            String originatingSessionId,
-            ArrayNode chunks) {
+            String worldId, String messageType, JsonNode data, String originatingSessionId, ArrayNode chunks) {
 
         // Normalize worldId (strip trailing colons from fullId format)
         worldId = WorldId.unchecked(worldId).getId();
 
         try {
-            NetworkMessage networkMessage = NetworkMessage.builder()
-                    .t(messageType)
-                    .d(data)
-                    .build();
+            NetworkMessage networkMessage =
+                    NetworkMessage.builder().t(messageType).d(data).build();
 
             String json = objectMapper.writeValueAsString(networkMessage);
             TextMessage textMessage = new TextMessage(json);
@@ -157,10 +152,12 @@ public class BroadcastService {
                 // Check if session has registered at least one of the chunks
                 boolean hasChunk = false;
                 for (JsonNode chunkNode : chunks) {
-                    int cx = chunkNode.has("cx") ? chunkNode.get("cx").asInt() :
-                             chunkNode.has("x") ? chunkNode.get("x").asInt() : 0;
-                    int cz = chunkNode.has("cz") ? chunkNode.get("cz").asInt() :
-                             chunkNode.has("z") ? chunkNode.get("z").asInt() : 0;
+                    int cx = chunkNode.has("cx")
+                            ? chunkNode.get("cx").asInt()
+                            : chunkNode.has("x") ? chunkNode.get("x").asInt() : 0;
+                    int cz = chunkNode.has("cz")
+                            ? chunkNode.get("cz").asInt()
+                            : chunkNode.has("z") ? chunkNode.get("z").asInt() : 0;
 
                     if (session.isChunkRegistered(cx, cz)) {
                         hasChunk = true;
@@ -175,8 +172,12 @@ public class BroadcastService {
                 sentSessions.add(session.getSessionId());
             }
 
-            log.trace("Broadcast {} to {} unique sessions across {} chunks (origin={})",
-                    messageType, sentSessions.size(), chunks.size(), originatingSessionId);
+            log.trace(
+                    "Broadcast {} to {} unique sessions across {} chunks (origin={})",
+                    messageType,
+                    sentSessions.size(),
+                    chunks.size(),
+                    originatingSessionId);
 
             return sentSessions.size();
 

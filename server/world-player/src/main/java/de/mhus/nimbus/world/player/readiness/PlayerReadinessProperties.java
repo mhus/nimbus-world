@@ -10,4 +10,3 @@ public record PlayerReadinessProperties(int maxActiveSessions) {
         }
     }
 }
-

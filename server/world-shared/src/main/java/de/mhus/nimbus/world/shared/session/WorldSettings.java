@@ -27,34 +27,13 @@ public class WorldSettings {
 
     @PostConstruct
     private void init() {
-        waitingMinutes = settingsService.getInteger(
-                "session.waitingMinutes",
-                5
-        );
-        runningHours = settingsService.getInteger(
-                "session.runningHours",
-                12
-        );
-        deprecatedMinutes = settingsService.getInteger(
-                "session.deprecatedMinutes",
-                30
-        );
-        cleanupScanCount = settingsService.getInteger(
-                "session.cleanupScanCount",
-                500
-        );
-        cleanupMaxDeletes = settingsService.getInteger(
-                "session.cleanupMaxDeletes",
-                1000
-        );
-        cleanupEnabled = settingsService.getBoolean(
-                "session.cleanupEnabled",
-                true
-        );
-        cleanupIntervalSeconds = settingsService.getInteger(
-                "session.cleanupIntervalSeconds",
-                60
-        );
+        waitingMinutes = settingsService.getInteger("session.waitingMinutes", 5);
+        runningHours = settingsService.getInteger("session.runningHours", 12);
+        deprecatedMinutes = settingsService.getInteger("session.deprecatedMinutes", 30);
+        cleanupScanCount = settingsService.getInteger("session.cleanupScanCount", 500);
+        cleanupMaxDeletes = settingsService.getInteger("session.cleanupMaxDeletes", 1000);
+        cleanupEnabled = settingsService.getBoolean("session.cleanupEnabled", true);
+        cleanupIntervalSeconds = settingsService.getInteger("session.cleanupIntervalSeconds", 60);
     }
 
     /**

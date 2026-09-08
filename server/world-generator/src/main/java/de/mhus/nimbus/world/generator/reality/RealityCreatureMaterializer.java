@@ -46,8 +46,10 @@ public class RealityCreatureMaterializer {
                 result.addError("creature '" + modelId + "': " + ex.getMessage());
             }
         }
-        log.info("RealityCreatureMaterializer: {} entity models, {} errors",
-                result.getCreated(), result.getErrors().size());
+        log.info(
+                "RealityCreatureMaterializer: {} entity models, {} errors",
+                result.getCreated(),
+                result.getErrors().size());
         return result;
     }
 }

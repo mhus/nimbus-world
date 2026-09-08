@@ -6,13 +6,12 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import jakarta.annotation.PreDestroy;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor that waits until all DirtyChunk entries for a world have been cleared.
@@ -73,7 +72,8 @@ public class WaitForDirtyChunksJobExecutor implements JobExecutor {
                 long dirtyCount = dirtyChunkService.countDirtyChunks(worldId);
                 if (dirtyCount == 0) {
                     long durationSec = (System.currentTimeMillis() - startTime) / 1000;
-                    String result = String.format("All dirty chunks cleared for world=%s after %ds", worldId, durationSec);
+                    String result =
+                            String.format("All dirty chunks cleared for world=%s after %ds", worldId, durationSec);
                     log.info(result);
                     jobService.markJobCompleted(jobId, result);
                     return;
@@ -90,8 +90,12 @@ public class WaitForDirtyChunksJobExecutor implements JobExecutor {
                 }
 
                 long pollInterval = calculatePollInterval(dirtyCount);
-                log.debug("Still {} dirty chunks for world={}, elapsed={}s, next poll in {}s",
-                        dirtyCount, worldId, elapsed / 1000, pollInterval / 1000);
+                log.debug(
+                        "Still {} dirty chunks for world={}, elapsed={}s, next poll in {}s",
+                        dirtyCount,
+                        worldId,
+                        elapsed / 1000,
+                        pollInterval / 1000);
                 Thread.sleep(pollInterval);
             }
         } catch (InterruptedException e) {
@@ -108,10 +112,10 @@ public class WaitForDirtyChunksJobExecutor implements JobExecutor {
      * More chunks = longer interval since it will obviously take more time.
      */
     private long calculatePollInterval(long dirtyCount) {
-        if (dirtyCount <= 10) return 10_000;   // 10s
-        if (dirtyCount <= 100) return 30_000;   // 30s
-        if (dirtyCount <= 500) return 60_000;   // 60s
-        return 120_000;                          // 120s
+        if (dirtyCount <= 10) return 10_000; // 10s
+        if (dirtyCount <= 100) return 30_000; // 30s
+        if (dirtyCount <= 500) return 60_000; // 60s
+        return 120_000; // 120s
     }
 
     private int getOptionalIntParameter(WJob job, String paramName, int defaultValue) {

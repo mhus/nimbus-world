@@ -4,8 +4,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.readiness.WebSocketSessionTracker;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -37,8 +37,7 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
         webSocketSession.setTextMessageSizeLimit(messageSizeLimit);
 
         String worldId = extractWorldId(webSocketSession);
-        log.info("WebSocket connection established: session={}, worldId={}",
-                webSocketSession.getId(), worldId);
+        log.info("WebSocket connection established: session={}, worldId={}", webSocketSession.getId(), worldId);
 
         // Create player session
         PlayerSession playerSession = sessionManager.createSession(webSocketSession);
@@ -50,16 +49,17 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
         String userAgent = headers.getFirst("User-Agent");
         if (userAgent != null && userAgent.contains("Safari") && !userAgent.contains("Chrome")) {
             playerSession.setSafariClient(true);
-            log.info("Safari client detected, using base64 text transport for chunks: session={}", webSocketSession.getId());
+            log.info(
+                    "Safari client detected, using base64 text transport for chunks: session={}",
+                    webSocketSession.getId());
         }
-
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession webSocketSession, TextMessage message) throws Exception {
         // Get player session
-        PlayerSession playerSession = sessionManager.getByWebSocketId(webSocketSession.getId())
-                .orElse(null);
+        PlayerSession playerSession =
+                sessionManager.getByWebSocketId(webSocketSession.getId()).orElse(null);
 
         if (playerSession == null) {
             log.warn("No session found for WebSocket: {}", webSocketSession.getId());
@@ -74,8 +74,7 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status) throws Exception {
         tracker.decrement();
-        log.info("WebSocket connection closed: session={}, status={}",
-                webSocketSession.getId(), status);
+        log.info("WebSocket connection closed: session={}, status={}", webSocketSession.getId(), status);
 
         // Remove session immediately. removeSession updates the Redis status to CLOSED
         // and notifies world-control exactly once (a preceding deprecateSession would

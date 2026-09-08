@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
  * This will setup region keys if needed.
  * TODO should be a Sector key. Region keys are not needed anymore.
  */
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,11 +32,7 @@ public class InitSectorService {
         var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
         if (keyService.getLatestPrivateKey(KeyType.SECTOR, intent).isEmpty()) {
             var keys = keyService.createECCKeys();
-            keyService.storeKeyPair(
-                    KeyType.SECTOR,
-                    KeyId.newOf(intent),
-                    keys
-            );
+            keyService.storeKeyPair(KeyType.SECTOR, KeyId.newOf(intent), keys);
             log.info("Created missing JWT token key for sector server'{}'", regionProperties.getSectorServerId());
             ConfidentialUtil.save("regionServerPublicKey.txt", keys.getPublic());
         }

@@ -11,6 +11,7 @@ public class FlatPainter {
 
     @Getter
     private final WFlat flat;
+
     private int definition = DO_NOT_SET;
     /**
      * Whether column values are written. Enabled when a caller configures a
@@ -47,17 +48,19 @@ public class FlatPainter {
     }
 
     public static final Painter DEFAULT_PAINTER = (flat, x, z, level) -> level;
-    public static final Painter ADDITIVE = (flat, x, z, level) -> flat.getLevel(x,z) + level;
-    public static final Painter RANDOM_MODIFIER = (flat, x, z, level) -> flat.getLevel(x,z) + (int)(Math.random() * level) - level / 2;
-    public static final Painter RANDOM_ADDITIVE = (flat, x, z, level) -> flat.getLevel(x,z) + (int)(Math.random() * level);
-    public static final Painter RANDOM_DIFFUSE_2 = (flat, x, z, level) -> level + (int)(Math.random() * 10) % 3;
-    public static final Painter RANDOM_DIFFUSE_1 = (flat, x, z, level) -> level + (int)(Math.random() * 10) % 2;
+    public static final Painter ADDITIVE = (flat, x, z, level) -> flat.getLevel(x, z) + level;
+    public static final Painter RANDOM_MODIFIER =
+            (flat, x, z, level) -> flat.getLevel(x, z) + (int) (Math.random() * level) - level / 2;
+    public static final Painter RANDOM_ADDITIVE =
+            (flat, x, z, level) -> flat.getLevel(x, z) + (int) (Math.random() * level);
+    public static final Painter RANDOM_DIFFUSE_2 = (flat, x, z, level) -> level + (int) (Math.random() * 10) % 3;
+    public static final Painter RANDOM_DIFFUSE_1 = (flat, x, z, level) -> level + (int) (Math.random() * 10) % 2;
     public static final Painter HIGHER = (flat, x, z, level) -> {
-        var current = flat.getLevel(x,z);
+        var current = flat.getLevel(x, z);
         return current < level ? level : current;
     };
     public static final Painter LOWER = (flat, x, z, level) -> {
-        var current = flat.getLevel(x,z);
+        var current = flat.getLevel(x, z);
         return current > level ? level : current;
     };
 
@@ -100,6 +103,7 @@ public class FlatPainter {
     public void line(int x1, int z1, int x2, int z2, int level) {
         line(x1, z1, x2, z2, level, painter);
     }
+
     public void line(int x1, int z1, int x2, int z2, int level, Painter painter) {
         int dx = x2 - x1;
         int dz = z2 - z1;
@@ -143,6 +147,7 @@ public class FlatPainter {
     public void fillCircle(int x, int z, int radius, int level) {
         fillCircle(x, z, radius, level, painter);
     }
+
     public void fillCircle(int x, int z, int radius, int level, Painter painter) {
         if (radius < 1) return;
         int r2 = radius * radius;
@@ -165,6 +170,7 @@ public class FlatPainter {
     public void circleOutline(int x, int z, int radius, int level) {
         circleOutline(x, z, radius, level, painter);
     }
+
     public void circleOutline(int x, int z, int radius, int level, Painter painter) {
         if (radius < 1) return;
         int steps = Math.max(12, (int) (2 * Math.PI * radius));
@@ -184,6 +190,7 @@ public class FlatPainter {
     public void fillRectangle(int x1, int z1, int x2, int z2, int level) {
         fillRectangle(x1, z1, x2, z2, level, painter);
     }
+
     public void fillRectangle(int x1, int z1, int x2, int z2, int level, Painter painter) {
         int xmin = Math.min(x1, x2);
         int xmax = Math.max(x1, x2);
@@ -204,6 +211,7 @@ public class FlatPainter {
     public void rectangleOutline(int x1, int z1, int x2, int z2, int level) {
         rectangleOutline(x1, z1, x2, z2, level, painter);
     }
+
     public void rectangleOutline(int x1, int z1, int x2, int z2, int level, Painter painter) {
         int xmin = Math.min(x1, x2);
         int xmax = Math.max(x1, x2);
@@ -291,8 +299,9 @@ public class FlatPainter {
 
         // Log statistics
         if (attemptedCount > 0) {
-            log.debug("Attempted: {}, Changed: {} ({}%)",
-                attemptedCount, changedCount, 100.0 * changedCount / attemptedCount);
+            log.debug(
+                    "Attempted: {}, Changed: {} ({}%)",
+                    attemptedCount, changedCount, 100.0 * changedCount / attemptedCount);
         }
     }
 
@@ -390,6 +399,7 @@ public class FlatPainter {
     public void paint(int x, int z, int level) {
         paint(x, z, level, painter);
     }
+
     public void paint(int x, int z, int level, Painter painter) {
         if (isInBounds(x, z)) {
             flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
@@ -432,5 +442,4 @@ public class FlatPainter {
             }
         }
     }
-
 }

@@ -22,14 +22,8 @@ public class OpenAiSettings {
 
     @PostConstruct
     private void init() {
-        apiKey = settingsService.getString(
-                "langchain4j.openai.apiKey",
-                null
-        );
-        imageRateLimit = settingsService.getInteger(
-                "langchain4j.openai.image.rateLimit",
-                10
-        );
+        apiKey = settingsService.getString("langchain4j.openai.apiKey", null);
+        imageRateLimit = settingsService.getInteger("langchain4j.openai.image.rateLimit", 10);
     }
 
     /**

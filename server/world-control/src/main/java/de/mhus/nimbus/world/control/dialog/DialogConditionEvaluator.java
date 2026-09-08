@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.control.dialog;
 
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Condition;
 import de.mhus.nimbus.world.shared.world.LogicConditionService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Evaluates dialog conditions against the current dialog context.
@@ -37,21 +36,22 @@ public class DialogConditionEvaluator {
      * Evaluate a single condition against the context.
      */
     public boolean evaluate(Condition condition, DialogContext ctx) {
-        boolean result = switch (condition.type()) {
-            case "logic" -> evaluateLogic(condition, ctx);
-            case "skill" -> evaluateSkill(condition, ctx);
-            case "reputation" -> evaluateReputation(condition, ctx);
-            case "item" -> evaluateItem(condition, ctx);
-            case "npcState" -> evaluateNpcState(condition, ctx);
-            case "npcFact" -> evaluateNpcFact(condition, ctx);
-            case "memory" -> evaluateMemory(condition, ctx);
-            case "conversationCount" -> evaluateConversationCount(condition, ctx);
-            case "progress" -> evaluateProgress(condition, ctx);
-            default -> {
-                log.warn("Unknown condition type: {}", condition.type());
-                yield false;
-            }
-        };
+        boolean result =
+                switch (condition.type()) {
+                    case "logic" -> evaluateLogic(condition, ctx);
+                    case "skill" -> evaluateSkill(condition, ctx);
+                    case "reputation" -> evaluateReputation(condition, ctx);
+                    case "item" -> evaluateItem(condition, ctx);
+                    case "npcState" -> evaluateNpcState(condition, ctx);
+                    case "npcFact" -> evaluateNpcFact(condition, ctx);
+                    case "memory" -> evaluateMemory(condition, ctx);
+                    case "conversationCount" -> evaluateConversationCount(condition, ctx);
+                    case "progress" -> evaluateProgress(condition, ctx);
+                    default -> {
+                        log.warn("Unknown condition type: {}", condition.type());
+                        yield false;
+                    }
+                };
 
         if (Boolean.TRUE.equals(condition.negate())) {
             result = !result;

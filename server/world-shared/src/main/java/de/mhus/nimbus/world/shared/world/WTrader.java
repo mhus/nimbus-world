@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,19 +16,13 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MongoDB Entity for NPC traders/service providers.
  * Linked to a WEntity via entityId. Holds commerce, training, and service data.
  */
 @Document(collection = "w_traders")
 @ActualSchemaVersion("1.0.0")
-@CompoundIndexes({
-        @CompoundIndex(name = "world_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true)
-})
+@CompoundIndexes({@CompoundIndex(name = "world_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true)})
 @Data
 @Builder
 @NoArgsConstructor

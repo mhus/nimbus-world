@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.shared;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import java.util.List;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Guards the MongoDB mapping of the entities whose all-args constructor was made private (so Jackson
@@ -56,8 +55,7 @@ class MongoMappingDefaultsTest {
 
     @Test
     void storedValuesStillWin() {
-        WWorld world = converter.read(WWorld.class,
-                new Document("worldId", "w:test").append("enabled", false));
+        WWorld world = converter.read(WWorld.class, new Document("worldId", "w:test").append("enabled", false));
 
         assertThat(world.isEnabled()).isFalse();
     }
@@ -74,13 +72,11 @@ class MongoMappingDefaultsTest {
     /** Nested class whose all-args constructor was made private as well. */
     @Test
     void nestedMaterialDefinitionKeepsItsDefaults() {
-        WFlat.MaterialDefinition material = converter.read(WFlat.MaterialDefinition.class,
-                new Document("blockDef", "n:s@s:100"));
+        WFlat.MaterialDefinition material =
+                converter.read(WFlat.MaterialDefinition.class, new Document("blockDef", "n:s@s:100"));
 
         assertThat(material.getBlockDef()).isEqualTo("n:s@s:100");
-        assertThat(material.isBlockMapDelta())
-                .isEqualTo(new WFlat.MaterialDefinition().isBlockMapDelta());
+        assertThat(material.isBlockMapDelta()).isEqualTo(new WFlat.MaterialDefinition().isBlockMapDelta());
         assertThat(material.getBlockAtLevels()).isNotNull();
     }
-
 }

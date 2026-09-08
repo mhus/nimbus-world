@@ -10,13 +10,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for Backdrop configurations (read-only).
@@ -33,40 +32,37 @@ public class BackdropController {
     private final AccessValidator accessUtil;
 
     @GetMapping("/backdrop/{backdropId}")
-    @Operation(summary = "Get Backdrop by ID", description = "Returns Backdrop configuration for a specific backdrop ID")
+    @Operation(
+            summary = "Get Backdrop by ID",
+            description = "Returns Backdrop configuration for a specific backdrop ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Backdrop found"),
-            @ApiResponse(responseCode = "400", description = "Invalid worldId"),
-            @ApiResponse(responseCode = "404", description = "Backdrop not found")
+        @ApiResponse(responseCode = "200", description = "Backdrop found"),
+        @ApiResponse(responseCode = "400", description = "Invalid worldId"),
+        @ApiResponse(responseCode = "404", description = "Backdrop not found")
     })
-    public ResponseEntity<Backdrop> getBackdrop(
-            HttpServletRequest request,
-            @PathVariable String backdropId) {
+    public ResponseEntity<Backdrop> getBackdrop(HttpServletRequest request, @PathVariable String backdropId) {
 
         if ("none".equals(backdropId)) {
-            return ResponseEntity.ok().body(
-                    Backdrop.builder().type("none").build()
-            );
+            return ResponseEntity.ok().body(Backdrop.builder().type("none").build());
         }
 
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         return service.findByBackdropId(worldId, backdropId)
-                        .map(WBackdrop::getPublicData)
-                        .map(ResponseEntity::ok)
-                        .orElseGet(() -> ResponseEntity.notFound().build());
+                .map(WBackdrop::getPublicData)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/backdrops")
     @Operation(summary = "Get all Backdrops", description = "Returns all enabled Backdrop configurations")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "List of Backdrops"),
-            @ApiResponse(responseCode = "400", description = "Invalid worldId")
+        @ApiResponse(responseCode = "200", description = "List of Backdrops"),
+        @ApiResponse(responseCode = "400", description = "Invalid worldId")
     })
-    public ResponseEntity<?> getAllBackdrops(
-            @PathVariable String worldId) {
+    public ResponseEntity<?> getAllBackdrops(@PathVariable String worldId) {
 
         return WorldId.of(worldId)
                 .map(wid -> {
@@ -74,10 +70,7 @@ public class BackdropController {
                             .map(WBackdrop::getPublicData)
                             .toList();
 
-                    return ResponseEntity.ok(Map.of(
-                            "backdrops", backdrops,
-                            "count", backdrops.size()
-                    ));
+                    return ResponseEntity.ok(Map.of("backdrops", backdrops, "count", backdrops.size()));
                 })
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }

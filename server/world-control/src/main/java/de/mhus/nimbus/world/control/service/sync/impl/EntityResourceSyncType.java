@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +14,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for entities.
@@ -46,7 +45,8 @@ public class EntityResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path entitiesDir = dataPath.resolve("entities");
         Files.createDirectories(entitiesDir);
 
@@ -84,7 +84,8 @@ public class EntityResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(entitiesDir)) {
             try (Stream<Path> files = Files.list(entitiesDir)) {
-                for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                for (Path file :
+                        files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     try {
                         Document doc = yamlMapper.readValue(file.toFile(), Document.class);
                         String entityId = doc.getString("entityId");
@@ -105,7 +106,9 @@ public class EntityResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path entitiesDir = dataPath.resolve("entities");
         if (!Files.exists(entitiesDir)) {
             log.info("No entities directory found");
@@ -140,10 +143,10 @@ public class EntityResourceSyncType implements ResourceSyncType {
                     documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + entityId)
-                    Document existing = entityService.findDocumentByWorldIdAndEntityId(
-                            migratedDoc.getString("worldId"),
-                            migratedDoc.getString("entityId")
-                    ).orElse(null);
+                    Document existing = entityService
+                            .findDocumentByWorldIdAndEntityId(
+                                    migratedDoc.getString("worldId"), migratedDoc.getString("entityId"))
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {

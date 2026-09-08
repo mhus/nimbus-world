@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.player.ws;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.handlers.MessageHandler;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Routes incoming WebSocket messages to appropriate handlers.
@@ -24,8 +23,8 @@ public class MessageRouter {
 
     public MessageRouter(ObjectMapper objectMapper, List<MessageHandler> handlerList) {
         this.objectMapper = objectMapper;
-        this.handlers = handlerList.stream()
-                .collect(Collectors.toMap(MessageHandler::getMessageType, Function.identity()));
+        this.handlers =
+                handlerList.stream().collect(Collectors.toMap(MessageHandler::getMessageType, Function.identity()));
         log.info("Registered {} message handlers: {}", handlers.size(), handlers.keySet());
     }
 
@@ -38,14 +37,18 @@ public class MessageRouter {
     public void route(PlayerSession session, TextMessage message) {
         try {
             String payload = message.getPayload();
-            log.trace("Received message from {}: {}", session.getWebSocketSession().getId(),
-                     payload.length() > 200 ? payload.substring(0, 200) + "..." : payload);
+            log.trace(
+                    "Received message from {}: {}",
+                    session.getWebSocketSession().getId(),
+                    payload.length() > 200 ? payload.substring(0, 200) + "..." : payload);
 
             // Parse network message
             NetworkMessage networkMessage = objectMapper.readValue(payload, NetworkMessage.class);
 
             if (networkMessage.getT() == null) {
-                log.warn("Message without type from {} - ignoring", session.getWebSocketSession().getId());
+                log.warn(
+                        "Message without type from {} - ignoring",
+                        session.getWebSocketSession().getId());
                 return;
             }
 
@@ -60,8 +63,10 @@ public class MessageRouter {
             handler.handle(session, networkMessage);
 
         } catch (Exception e) {
-            log.error("Error routing message from {} - ignoring message", session.getWebSocketSession().getId(), e);
+            log.error(
+                    "Error routing message from {} - ignoring message",
+                    session.getWebSocketSession().getId(),
+                    e);
         }
     }
-
 }

@@ -20,19 +20,22 @@ public class WallConfigPart {
      * Type of wall part
      */
     public enum PartType {
-        SIDE,      // Side-based wall segment
-        GATE       // Gate/opening in wall
+        SIDE, // Side-based wall segment
+        GATE // Gate/opening in wall
     }
 
     private PartType partType;
 
     // SIDE fields - either side-based OR position-based
-    private EDGE side;           // Side-based wall (NE, NW, etc.)
-    private String position;     // HexLocal position string (e.g., "<NE 2/4>" or "<256;256>")
+    private EDGE side; // Side-based wall (NE, NW, etc.)
+    private String position; // HexLocal position string (e.g., "<NE 2/4>" or "<256;256>")
+
     @Deprecated
-    private Integer lx;          // Deprecated: use position instead
+    private Integer lx; // Deprecated: use position instead
+
     @Deprecated
-    private Integer lz;          // Deprecated: use position instead
+    private Integer lz; // Deprecated: use position instead
+
     private Integer height;
     private Integer width;
     private Integer level;
@@ -46,31 +49,31 @@ public class WallConfigPart {
     /**
      * Creates a SIDE part for wall segment
      */
-    public static WallConfigPart createSidePart(EDGE side, Integer height, Integer width,
-                                                Integer level, String material) {
+    public static WallConfigPart createSidePart(
+            EDGE side, Integer height, Integer width, Integer level, String material) {
         return WallConfigPart.builder()
-            .partType(PartType.SIDE)
-            .side(side)
-            .height(height)
-            .width(width)
-            .level(level)
-            .material(material)
-            .build();
+                .partType(PartType.SIDE)
+                .side(side)
+                .height(height)
+                .width(width)
+                .level(level)
+                .material(material)
+                .build();
     }
 
     /**
      * Creates a position-based wall segment part with HexLocal position string
      */
-    public static WallConfigPart createPositionPart(String position, Integer height,
-                                                     Integer width, Integer level, String material) {
+    public static WallConfigPart createPositionPart(
+            String position, Integer height, Integer width, Integer level, String material) {
         return WallConfigPart.builder()
-            .partType(PartType.SIDE)
-            .position(position)
-            .height(height)
-            .width(width)
-            .level(level)
-            .material(material)
-            .build();
+                .partType(PartType.SIDE)
+                .position(position)
+                .height(height)
+                .width(width)
+                .level(level)
+                .material(material)
+                .build();
     }
 
     /**
@@ -78,17 +81,17 @@ public class WallConfigPart {
      * @deprecated Use createPositionPart(String position, ...) instead
      */
     @Deprecated
-    public static WallConfigPart createPositionPartDeprecated(Integer lx, Integer lz, Integer height,
-                                                               Integer width, Integer level, String material) {
+    public static WallConfigPart createPositionPartDeprecated(
+            Integer lx, Integer lz, Integer height, Integer width, Integer level, String material) {
         return WallConfigPart.builder()
-            .partType(PartType.SIDE)
-            .lx(lx)
-            .lz(lz)
-            .height(height)
-            .width(width)
-            .level(level)
-            .material(material)
-            .build();
+                .partType(PartType.SIDE)
+                .lx(lx)
+                .lz(lz)
+                .height(height)
+                .width(width)
+                .level(level)
+                .material(material)
+                .build();
     }
 
     /**
@@ -96,10 +99,10 @@ public class WallConfigPart {
      */
     public static WallConfigPart createGatePart(EDGE side, Integer position, Integer width) {
         return WallConfigPart.builder()
-            .partType(PartType.GATE)
-            .gateSide(side)
-            .gatePosition(position)
-            .gateWidth(width)
-            .build();
+                .partType(PartType.GATE)
+                .gateSide(side)
+                .gatePosition(position)
+                .gateWidth(width)
+                .build();
     }
 }

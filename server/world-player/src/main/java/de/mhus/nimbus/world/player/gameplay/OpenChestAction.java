@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WChest;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for opening a world chest.
@@ -53,14 +52,8 @@ public class OpenChestAction extends AbstractGamplayAction {
         String playerId = session.getEntityId();
 
         // Acquire lease for chest access
-        var lease = basic.getLeaseService().acquire(
-                worldId,
-                playerId,
-                "chest-access",
-                chestName,
-                chest.getTitle(),
-                Map.of("chestId", chestName)
-        );
+        var lease = basic.getLeaseService()
+                .acquire(worldId, playerId, "chest-access", chestName, chest.getTitle(), Map.of("chestId", chestName));
 
         // Play chest open sound
         String soundValue = serverParameters.get("sound_chest_open");
@@ -68,11 +61,9 @@ public class OpenChestAction extends AbstractGamplayAction {
         basic.getBasicClientService().sendCommand(session, "playSound", List.of(sound));
 
         // Send openComponent command to client
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("chest", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("chest", lease.getLeaseId()));
 
-        log.debug("Sent open.chest to player {}: chest={}, leaseId={}",
-                playerId, chestName, lease.getLeaseId());
+        log.debug("Sent open.chest to player {}: chest={}, leaseId={}", playerId, chestName, lease.getLeaseId());
         return true;
     }
 }

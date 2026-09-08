@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
-import lombok.Getter;
-
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Defines a reputation type with its metadata and level boundaries.
@@ -54,7 +53,8 @@ public class Reputation {
      * @param max         Maximum value
      * @return Reputation instance
      */
-    public static Reputation of(String name, String title, String description, String group, int start, int min, int max) {
+    public static Reputation of(
+            String name, String title, String description, String group, int start, int min, int max) {
         return new Reputation(name, title, description, group, start, min, max);
     }
 

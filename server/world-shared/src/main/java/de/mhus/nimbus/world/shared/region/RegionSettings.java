@@ -21,18 +21,9 @@ public class RegionSettings {
 
     @PostConstruct
     private void init() {
-        universeBaseUrl = settingsService.getString(
-                "universeBaseUrl",
-                "http://localhost:9040"
-        );
-        sectorServerUrl = settingsService.getString(
-                "sectorServerUrl",
-                "http://localhost:9041"
-        );
-        sectorServerId = settingsService.getString(
-                "sectorServerId",
-                "default-sector"
-        );
+        universeBaseUrl = settingsService.getString("universeBaseUrl", "http://localhost:9040");
+        sectorServerUrl = settingsService.getString("sectorServerUrl", "http://localhost:9041");
+        sectorServerId = settingsService.getString("sectorServerId", "default-sector");
     }
 
     private SettingString universeBaseUrl;
@@ -52,5 +43,4 @@ public class RegionSettings {
     public String getSectorServerId() {
         return sectorServerId.get();
     }
-
 }

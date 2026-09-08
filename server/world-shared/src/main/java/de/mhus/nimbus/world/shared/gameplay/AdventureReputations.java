@@ -18,47 +18,55 @@ public final class AdventureReputations {
     // --- Social Reputations ---
 
     public static final Reputation RENOWNED = Reputation.of(
-            "renowned", "Berühmt",
-            "Allgemeine Bekanntheit und Ansehen in der Welt",
-            "Sozial", 0, -1000, 1000);
+            "renowned", "Berühmt", "Allgemeine Bekanntheit und Ansehen in der Welt", "Sozial", 0, -1000, 1000);
 
     public static final Reputation RESPECTED = Reputation.of(
-            "respected", "Respektiert",
+            "respected",
+            "Respektiert",
             "Wird von anderen als ehrenwert und vertrauenswürdig angesehen",
-            "Sozial", 0, -1000, 1000);
+            "Sozial",
+            0,
+            -1000,
+            1000);
 
     public static final Reputation NOTORIOUS = Reputation.of(
-            "notorious", "Berüchtigt",
+            "notorious",
+            "Berüchtigt",
             "Bekannt für zweifelhafte Taten und fragwürdige Methoden",
-            "Sozial", 0, -1000, 1000);
+            "Sozial",
+            0,
+            -1000,
+            1000);
 
     // --- Combat Reputations ---
 
     public static final Reputation FEARED = Reputation.of(
-            "feared", "Gefürchtet",
-            "Feinde weichen zurück, NPCs reagieren eingeschüchtert",
-            "Kampf", 0, -1000, 1000);
+            "feared", "Gefürchtet", "Feinde weichen zurück, NPCs reagieren eingeschüchtert", "Kampf", 0, -1000, 1000);
 
     public static final Reputation INFAMOUS = Reputation.of(
-            "infamous", "Verrufen",
+            "infamous",
+            "Verrufen",
             "Bekannt für rücksichtsloses und zerstörerisches Verhalten",
-            "Kampf", 0, -1000, 1000);
+            "Kampf",
+            0,
+            -1000,
+            1000);
 
     // --- Special Reputations ---
 
     public static final Reputation LEGENDARY = Reputation.of(
-            "legendary", "Legendär",
+            "legendary",
+            "Legendär",
             "Geschichten über die Taten dieses Charakters werden weitererzählt",
-            "Besonders", 0, -1000, 1000);
+            "Besonders",
+            0,
+            -1000,
+            1000);
 
     /**
      * All defined reputations as a list.
      */
-    public static final List<Reputation> ALL = List.of(
-            RENOWNED, RESPECTED, NOTORIOUS,
-            FEARED, INFAMOUS,
-            LEGENDARY
-    );
+    public static final List<Reputation> ALL = List.of(RENOWNED, RESPECTED, NOTORIOUS, FEARED, INFAMOUS, LEGENDARY);
 
     /**
      * Find a reputation definition by its technical name.

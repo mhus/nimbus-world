@@ -14,15 +14,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for player shortcut operations.
@@ -48,8 +47,8 @@ public class PlayerShortcutController extends BaseEditorController {
     @GetMapping("/templates")
     @Operation(summary = "Get shortcut templates for current world")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Templates found"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated")
+        @ApiResponse(responseCode = "200", description = "Templates found"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated")
     })
     public ResponseEntity<?> getTemplates(HttpServletRequest request) {
 
@@ -67,18 +66,21 @@ public class PlayerShortcutController extends BaseEditorController {
         }
 
         // Build region collection worldId: @region:regionId
-        String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, parsedWorldId.getRegionId()).orElseThrow().getId();
+        String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, parsedWorldId.getRegionId())
+                .orElseThrow()
+                .getId();
 
-        List<WAnything> templates = anythingService.findByWorldIdAndCollectionAndEnabled(
-                regionWorldId, "editorShortcuts", true);
+        List<WAnything> templates =
+                anythingService.findByWorldIdAndCollectionAndEnabled(regionWorldId, "editorShortcuts", true);
 
-        var result = templates.stream().map(entity -> Map.of(
-                "name", entity.getName() != null ? entity.getName() : "",
-                "title", entity.getTitle() != null ? entity.getTitle() : "",
-                "description", entity.getDescription() != null ? entity.getDescription() : "",
-                "type", entity.getType() != null ? entity.getType() : "",
-                "data", entity.getData() != null ? entity.getData() : Map.of()
-        )).toList();
+        var result = templates.stream()
+                .map(entity -> Map.of(
+                        "name", entity.getName() != null ? entity.getName() : "",
+                        "title", entity.getTitle() != null ? entity.getTitle() : "",
+                        "description", entity.getDescription() != null ? entity.getDescription() : "",
+                        "type", entity.getType() != null ? entity.getType() : "",
+                        "data", entity.getData() != null ? entity.getData() : Map.of()))
+                .toList();
 
         return ResponseEntity.ok(Map.of("templates", result));
     }
@@ -89,9 +91,9 @@ public class PlayerShortcutController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get editor shortcuts for current player")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcuts found"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Player not found")
+        @ApiResponse(responseCode = "200", description = "Shortcuts found"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Player not found")
     })
     public ResponseEntity<?> getShortcuts(HttpServletRequest request) {
 
@@ -113,9 +115,7 @@ public class PlayerShortcutController extends BaseEditorController {
         PlayerInfo playerInfo = character.getPublicData();
         Map<String, ShortcutDefinition> shortcuts = playerInfo != null ? playerInfo.getEditorShortcuts() : null;
 
-        return ResponseEntity.ok(Map.of(
-                "editorShortcuts", shortcuts != null ? shortcuts : Map.of()
-        ));
+        return ResponseEntity.ok(Map.of("editorShortcuts", shortcuts != null ? shortcuts : Map.of()));
     }
 
     /**
@@ -124,13 +124,11 @@ public class PlayerShortcutController extends BaseEditorController {
     @PutMapping
     @Operation(summary = "Update editor shortcuts for current player")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcuts updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Player not found")
+        @ApiResponse(responseCode = "200", description = "Shortcuts updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Player not found")
     })
-    public ResponseEntity<?> updateShortcuts(
-            @RequestBody UpdateShortcutsRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> updateShortcuts(@RequestBody UpdateShortcutsRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -162,8 +160,8 @@ public class PlayerShortcutController extends BaseEditorController {
 
         log.info("Updated editor shortcuts: userId={}, characterId={}", userId, characterId);
         return ResponseEntity.ok(Map.of(
-                "editorShortcuts", playerInfo.getEditorShortcuts() != null ? playerInfo.getEditorShortcuts() : Map.of()
-        ));
+                "editorShortcuts",
+                playerInfo.getEditorShortcuts() != null ? playerInfo.getEditorShortcuts() : Map.of()));
     }
 
     /**

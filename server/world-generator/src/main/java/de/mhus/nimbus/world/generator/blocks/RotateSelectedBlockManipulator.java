@@ -11,15 +11,14 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Rotate Selected Blocks Manipulator.
@@ -66,10 +65,10 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Rotates all blocks that are currently selected in the ModelSelector around the selection center. " +
-                "Only 90-degree steps allowed (90, 180, 270, -90, -180, -270). " +
-                "Parameters: x (default 0), y (default 0), z (default 0). " +
-                "Example: {\"rotate-selected\": {\"y\": 90}}";
+        return "Rotates all blocks that are currently selected in the ModelSelector around the selection center. "
+                + "Only 90-degree steps allowed (90, 180, 270, -90, -180, -270). "
+                + "Parameters: x (default 0), y (default 0), z (default 0). "
+                + "Example: {\"rotate-selected\": {\"y\": 90}}";
     }
 
     @Override
@@ -124,7 +123,8 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
 
         // Validate rotation angles (only 90-degree steps)
         if (!isValidRotation(rotX) || !isValidRotation(rotY) || !isValidRotation(rotZ)) {
-            return ManipulatorResult.error("Invalid rotation angles. Only 90-degree steps allowed: 90, 180, 270, -90, -180, -270");
+            return ManipulatorResult.error(
+                    "Invalid rotation angles. Only 90-degree steps allowed: 90, 180, 270, -90, -180, -270");
         }
 
         if (rotX == 0 && rotY == 0 && rotZ == 0) {
@@ -136,8 +136,13 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
         rotY = normalizeRotation(rotY);
         rotZ = normalizeRotation(rotZ);
 
-        log.info("Rotating {} selected blocks by angles (x:{}, y:{}, z:{}) in layer {}",
-                modelSelector.getBlockCount(), rotX, rotY, rotZ, layerDataId);
+        log.info(
+                "Rotating {} selected blocks by angles (x:{}, y:{}, z:{}) in layer {}",
+                modelSelector.getBlockCount(),
+                rotX,
+                rotY,
+                rotZ,
+                layerDataId);
 
         // Load all cached blocks for the layer
         List<WEditCache> cachedBlocks = editCacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
@@ -149,9 +154,9 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
             if (layerBlock != null && layerBlock.getBlock() != null) {
                 Block block = layerBlock.getBlock();
                 if (block.getPosition() != null) {
-                    String key = block.getPosition().getX() + "," +
-                               block.getPosition().getY() + "," +
-                               block.getPosition().getZ();
+                    String key = block.getPosition().getX() + ","
+                            + block.getPosition().getY()
+                            + "," + block.getPosition().getZ();
                     blockMap.put(key, cache);
                 }
             }
@@ -197,9 +202,7 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
 
         // Create new ModelSelector for the rotated blocks
         String layerName = context.getLayerName();
-        String autoSelectName = layerName != null && !layerName.isBlank()
-                ? layerDataId + ":" + layerName
-                : layerDataId;
+        String autoSelectName = layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
         ModelSelector newModelSelector = ModelSelector.builder()
                 .defaultColor(modelSelector.getDefaultColor())
@@ -264,13 +267,19 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
                         .build();
 
                 // Queue for two-phase apply (see below)
-                sourcesToDelete.add(new int[]{x, y, z});
-                pendingSets.add(new PendingSet(newBlock,
-                        newPosition.getX(), newPosition.getY(), newPosition.getZ(), color));
+                sourcesToDelete.add(new int[] {x, y, z});
+                pendingSets.add(
+                        new PendingSet(newBlock, newPosition.getX(), newPosition.getY(), newPosition.getZ(), color));
 
                 rotatedCount++;
-                log.debug("Queued rotation from ({},{},{}) to ({},{},{})",
-                        x, y, z, newPosition.getX(), newPosition.getY(), newPosition.getZ());
+                log.debug(
+                        "Queued rotation from ({},{},{}) to ({},{},{})",
+                        x,
+                        y,
+                        z,
+                        newPosition.getX(),
+                        newPosition.getY(),
+                        newPosition.getZ());
 
             } catch (NumberFormatException e) {
                 log.warn("Failed to parse block coordinates from entry: {}", blockEntry, e);
@@ -299,12 +308,13 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
         // Build result message
         String message;
         if (errorCount > 0) {
-            message = String.format("Rotated %d blocks by (x:%d°, y:%d°, z:%d°), %d errors occurred",
+            message = String.format(
+                    "Rotated %d blocks by (x:%d°, y:%d°, z:%d°), %d errors occurred",
                     rotatedCount, rotX, rotY, rotZ, errorCount);
             log.warn(message);
         } else {
-            message = String.format("Successfully rotated %d blocks by (x:%d°, y:%d°, z:%d°)",
-                    rotatedCount, rotX, rotY, rotZ);
+            message = String.format(
+                    "Successfully rotated %d blocks by (x:%d°, y:%d°, z:%d°)", rotatedCount, rotX, rotY, rotZ);
             log.info(message);
         }
 
@@ -333,8 +343,8 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
     /**
      * Rotate a position around a center point.
      */
-    private Vector3Int rotatePosition(int x, int y, int z, double cx, double cy, double cz,
-                                     int rotX, int rotY, int rotZ) {
+    private Vector3Int rotatePosition(
+            int x, int y, int z, double cx, double cy, double cz, int rotX, int rotY, int rotZ) {
         // Relative to center
         double rx = x - cx;
         double ry = y - cy;
@@ -366,11 +376,7 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
         int newY = (int) Math.round(cy + ry);
         int newZ = (int) Math.round(cz + rz);
 
-        return Vector3Int.builder()
-                .x(newX)
-                .y(newY)
-                .z(newZ)
-                .build();
+        return Vector3Int.builder().x(newX).y(newY).z(newZ).build();
     }
 
     /**
@@ -378,10 +384,10 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
      */
     private double[] rotateY(double x, double z, int degrees) {
         return switch (degrees) {
-            case 90 -> new double[]{-z, x};
-            case 180 -> new double[]{-x, -z};
-            case 270 -> new double[]{z, -x};
-            default -> new double[]{x, z};
+            case 90 -> new double[] {-z, x};
+            case 180 -> new double[] {-x, -z};
+            case 270 -> new double[] {z, -x};
+            default -> new double[] {x, z};
         };
     }
 
@@ -390,10 +396,10 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
      */
     private double[] rotateX(double y, double z, int degrees) {
         return switch (degrees) {
-            case 90 -> new double[]{-z, y};
-            case 180 -> new double[]{-y, -z};
-            case 270 -> new double[]{z, -y};
-            default -> new double[]{y, z};
+            case 90 -> new double[] {-z, y};
+            case 180 -> new double[] {-y, -z};
+            case 270 -> new double[] {z, -y};
+            default -> new double[] {y, z};
         };
     }
 
@@ -402,10 +408,10 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
      */
     private double[] rotateZ(double x, double y, int degrees) {
         return switch (degrees) {
-            case 90 -> new double[]{-y, x};
-            case 180 -> new double[]{-x, -y};
-            case 270 -> new double[]{y, -x};
-            default -> new double[]{x, y};
+            case 90 -> new double[] {-y, x};
+            case 180 -> new double[] {-x, -y};
+            case 270 -> new double[] {y, -x};
+            default -> new double[] {x, y};
         };
     }
 
@@ -432,10 +438,7 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
         newX = normalizeRadians(newX);
         newY = normalizeRadians(newY);
 
-        return RotationXY.builder()
-                .x(newX)
-                .y(newY)
-                .build();
+        return RotationXY.builder().x(newX).y(newY).build();
     }
 
     /**

@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Job executor for transferring a single WLayerModel into WLayerTerrain storage.
@@ -57,8 +56,8 @@ public class TransferModelToTerrainJobExecutor implements JobExecutor {
                 return JobResult.failure("Model not found: " + modelId);
             }
 
-            String resultMessage = String.format("Transferred model to terrain: modelId=%s chunks=%d",
-                    modelId, chunksProcessed);
+            String resultMessage =
+                    String.format("Transferred model to terrain: modelId=%s chunks=%d", modelId, chunksProcessed);
 
             log.info(resultMessage);
             return JobResult.success(resultMessage);

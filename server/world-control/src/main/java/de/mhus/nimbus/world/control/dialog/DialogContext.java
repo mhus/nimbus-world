@@ -4,12 +4,11 @@ import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WProgress;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Aggregated context for a dialog interaction.
@@ -32,11 +31,13 @@ public class DialogContext {
 
     // NPC world-instance state (WProgress playerId="npc:{entityId}", type="npc-state")
     private WProgress npcStateProgress;
+
     @Builder.Default
     private Map<String, Object> npcState = new HashMap<>();
 
     // NPC-player memory (WProgress type="npc-memory", quest=entityId)
     private WProgress playerMemoryProgress;
+
     @Builder.Default
     private Map<String, Object> playerMemory = new HashMap<>();
 
@@ -51,6 +52,7 @@ public class DialogContext {
     // Active situation (set by selectSituation)
     private DialogDtos.Situation activeSituation;
     private String activeSituationName;
+
     @Builder.Default
     private List<DialogDtos.Situation> backgroundSituations = List.of();
 

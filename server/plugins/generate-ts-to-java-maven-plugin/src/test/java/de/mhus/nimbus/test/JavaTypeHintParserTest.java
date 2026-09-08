@@ -1,7 +1,8 @@
 package de.mhus.nimbus.test;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Test für das Parsen von javaType-Hints aus TypeScript-Zeilen
@@ -183,4 +184,3 @@ public class JavaTypeHintParserTest {
         return typeStr.isEmpty() ? null : typeStr;
     }
 }
-

@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.control.service.epoch;
 
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
-
 import java.util.List;
 
 /**

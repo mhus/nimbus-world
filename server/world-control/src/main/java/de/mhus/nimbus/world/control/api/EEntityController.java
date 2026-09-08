@@ -14,18 +14,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for Entity CRUD operations.
@@ -56,15 +55,27 @@ public class EEntityController extends BaseEditorController {
             List<Integer> epoches,
             List<EntitySchedulePhase> schedule,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
-    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches, List<EntitySchedulePhase> schedule) {
-    }
+    public record CreateEntityRequest(
+            String entityId,
+            Entity publicData,
+            String modelId,
+            WEntityType type,
+            String portraitPath,
+            Map<String, String> server,
+            List<Integer> epoches,
+            List<EntitySchedulePhase> schedule) {}
 
-    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches, List<EntitySchedulePhase> schedule) {
-    }
+    public record UpdateEntityRequest(
+            Entity publicData,
+            String modelId,
+            Boolean enabled,
+            WEntityType type,
+            String portraitPath,
+            Map<String, String> server,
+            List<Integer> epoches,
+            List<EntitySchedulePhase> schedule) {}
 
     /**
      * Get single Entity by ID.
@@ -73,9 +84,9 @@ public class EEntityController extends BaseEditorController {
     @GetMapping("/{entityId}")
     @Operation(summary = "Get Entity by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -83,9 +94,7 @@ public class EEntityController extends BaseEditorController {
 
         log.debug("GET entity: worldId={}, entityId={}", worldId, entityId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(entityId, "entityId");
         if (validation != null) return validation;
 
@@ -106,8 +115,8 @@ public class EEntityController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Entities")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -116,11 +125,15 @@ public class EEntityController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST entities: worldId={}, query={}, epoch={}, offset={}, limit={}", worldId, query, epoch, offset, limit);
+        log.debug(
+                "LIST entities: worldId={}, query={}, epoch={}, offset={}, limit={}",
+                worldId,
+                query,
+                epoch,
+                offset,
+                limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -137,11 +150,8 @@ public class EEntityController extends BaseEditorController {
         int totalCount = all.size();
 
         // Apply pagination
-        List<EntityDto> dtoList = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<EntityDto> dtoList =
+                all.stream().skip(offset).limit(limit).map(this::toDto).collect(Collectors.toList());
 
         log.debug("Returning {} entities (total: {})", dtoList.size(), totalCount);
 
@@ -149,8 +159,7 @@ public class EEntityController extends BaseEditorController {
                 "entities", dtoList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -160,9 +169,9 @@ public class EEntityController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Entity")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Entity created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Entity already exists")
+        @ApiResponse(responseCode = "201", description = "Entity created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Entity already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -170,9 +179,7 @@ public class EEntityController extends BaseEditorController {
 
         log.debug("CREATE entity: worldId={}, entityId={}", worldId, request.entityId());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         if (Strings.isBlank(request.entityId())) {
             return bad("entityId required");
         }
@@ -187,13 +194,11 @@ public class EEntityController extends BaseEditorController {
         }
 
         try {
-            WEntity saved = entityService.save(
-                    wid,
-                    request.entityId(),
-                    request.publicData(),
-                    request.modelId()
-            );
-            if (request.type() != null || request.portraitPath() != null || request.server() != null || request.epoches() != null) {
+            WEntity saved = entityService.save(wid, request.entityId(), request.publicData(), request.modelId());
+            if (request.type() != null
+                    || request.portraitPath() != null
+                    || request.server() != null
+                    || request.epoches() != null) {
                 entityService.update(wid, request.entityId(), entity -> {
                     if (request.type() != null) {
                         entity.setType(request.type());
@@ -232,9 +237,9 @@ public class EEntityController extends BaseEditorController {
     @PutMapping("/{entityId}")
     @Operation(summary = "Update Entity")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -243,13 +248,15 @@ public class EEntityController extends BaseEditorController {
 
         log.debug("UPDATE entity: worldId={}, entityId={}", worldId, entityId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(entityId, "entityId");
         if (validation != null) return validation;
 
-        if (request.publicData() == null && request.modelId() == null && request.enabled() == null && request.type() == null && request.portraitPath() == null) {
+        if (request.publicData() == null
+                && request.modelId() == null
+                && request.enabled() == null
+                && request.type() == null
+                && request.portraitPath() == null) {
             return bad("at least one field required for update");
         }
 
@@ -296,9 +303,9 @@ public class EEntityController extends BaseEditorController {
     @DeleteMapping("/{entityId}")
     @Operation(summary = "Delete Entity")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Entity deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "204", description = "Entity deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -306,9 +313,7 @@ public class EEntityController extends BaseEditorController {
 
         log.debug("DELETE entity: worldId={}, entityId={}", worldId, entityId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(entityId, "entityId");
         if (validation != null) return validation;
 
@@ -337,8 +342,6 @@ public class EEntityController extends BaseEditorController {
                 entity.getEpoches() != null ? entity.getEpoches() : List.of(),
                 entity.getSchedule() != null ? entity.getSchedule() : List.of(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
-
 }

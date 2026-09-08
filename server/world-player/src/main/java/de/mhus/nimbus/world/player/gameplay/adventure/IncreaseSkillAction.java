@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
@@ -10,9 +9,9 @@ import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 public class IncreaseSkillAction implements GameplayAction {
@@ -24,23 +23,53 @@ public class IncreaseSkillAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
-        return applySkill(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", serverInfo, null), null);
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
+        return applySkill(
+                session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", serverInfo, null), null);
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (entity == null || entity.getServer() == null) return false;
-        return applySkill(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null), null);
+        return applySkill(
+                session,
+                GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null),
+                null);
     }
 
     @Override
     public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
-        return applySkill(session, GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()), item.getName());
+        return applySkill(
+                session,
+                GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()),
+                item.getName());
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 
@@ -77,8 +106,9 @@ public class IncreaseSkillAction implements GameplayAction {
         // Check current level
         int currentLevel = skillDef.getValue(data.getCachedSkills());
         if (currentLevel >= skillDef.getMax()) {
-            adventure.getClientService().sendNotification(session, 3, "",
-                    "Skill already maxed", "n:textures/actions/skill.png");
+            adventure
+                    .getClientService()
+                    .sendNotification(session, 3, "", "Skill already maxed", "n:textures/actions/skill.png");
             return true;
         }
 
@@ -93,10 +123,21 @@ public class IncreaseSkillAction implements GameplayAction {
         adventure.getCharacterService().incrementSkillAtomic(docId, skillName, actualIncrease);
         adventure.getGameplayService().onSkillsModified(session);
 
-        adventure.getClientService().sendNotification(session, 3, "",
-                "+ " + actualIncrease + " " + skillDef.getTitle(), "n:textures/actions/skill.png");
-        log.info("Player {} increased skill {} by {} (was {}, now {})",
-                session.getEntityId(), skillName, actualIncrease, currentLevel, currentLevel + actualIncrease);
+        adventure
+                .getClientService()
+                .sendNotification(
+                        session,
+                        3,
+                        "",
+                        "+ " + actualIncrease + " " + skillDef.getTitle(),
+                        "n:textures/actions/skill.png");
+        log.info(
+                "Player {} increased skill {} by {} (was {}, now {})",
+                session.getEntityId(),
+                skillName,
+                actualIncrease,
+                currentLevel,
+                currentLevel + actualIncrease);
         return true;
     }
 }

@@ -2,20 +2,19 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
-import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.control.service.EditService;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * REST Controller for block marker operations.
@@ -36,11 +35,13 @@ public class EMarkerController extends BaseEditorController {
      * POST /control/worlds/{worldId}/session/{sessionId}/marker/{x}/{y}/{z}
      */
     @PostMapping("/{x}/{y}/{z}")
-    @Operation(summary = "Mark block at position", description = "Marks a block at the specified coordinates in the client")
+    @Operation(
+            summary = "Mark block at position",
+            description = "Marks a block at the specified coordinates in the client")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Block marked successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Session or world not found")
+        @ApiResponse(responseCode = "200", description = "Block marked successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Session or world not found")
     })
     public ResponseEntity<?> markBlock(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -51,9 +52,7 @@ public class EMarkerController extends BaseEditorController {
 
         log.debug("Mark block: worldId={}, sessionId={}, pos=({},{},{})", worldId, sessionId, x, y, z);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -61,8 +60,8 @@ public class EMarkerController extends BaseEditorController {
             // Call EditService markBlock method
             editService.doMarkBlock(worldId, sessionId, x, y, z);
 
-            log.info("Block marked successfully: worldId={}, sessionId={}, pos=({},{},{})",
-                    worldId, sessionId, x, y, z);
+            log.info(
+                    "Block marked successfully: worldId={}, sessionId={}, pos=({},{},{})", worldId, sessionId, x, y, z);
 
             return ResponseEntity.ok(Map.of(
                     "successful", true,
@@ -70,12 +69,10 @@ public class EMarkerController extends BaseEditorController {
                     "sessionId", sessionId,
                     "x", x,
                     "y", y,
-                    "z", z
-            ));
+                    "z", z));
 
         } catch (Exception e) {
-            log.error("Failed to mark block: worldId={}, sessionId={}, pos=({},{},{})",
-                    worldId, sessionId, x, y, z, e);
+            log.error("Failed to mark block: worldId={}, sessionId={}, pos=({},{},{})", worldId, sessionId, x, y, z, e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Failed to mark block: " + e.getMessage()));
         }
@@ -86,11 +83,13 @@ public class EMarkerController extends BaseEditorController {
      * DELETE /control/worlds/{worldId}/session/{sessionId}/marker
      */
     @DeleteMapping
-    @Operation(summary = "Clear marked block", description = "Removes the visual marker from the client and clears marked block data from Redis")
+    @Operation(
+            summary = "Clear marked block",
+            description = "Removes the visual marker from the client and clears marked block data from Redis")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Marker cleared successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Session or world not found")
+        @ApiResponse(responseCode = "200", description = "Marker cleared successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Session or world not found")
     })
     public ResponseEntity<?> clearMarker(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -98,9 +97,7 @@ public class EMarkerController extends BaseEditorController {
 
         log.debug("Clear marker: worldId={}, sessionId={}", worldId, sessionId);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -113,8 +110,7 @@ public class EMarkerController extends BaseEditorController {
             return ResponseEntity.ok(Map.of(
                     "successful", true,
                     "worldId", worldId,
-                    "sessionId", sessionId
-            ));
+                    "sessionId", sessionId));
 
         } catch (Exception e) {
             log.error("Failed to clear marker: worldId={}, sessionId={}", worldId, sessionId, e);

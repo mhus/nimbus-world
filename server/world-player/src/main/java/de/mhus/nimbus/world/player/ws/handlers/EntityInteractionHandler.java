@@ -1,12 +1,12 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.GameplayService;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Handles entity interaction messages from clients.
@@ -40,7 +40,8 @@ public class EntityInteractionHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Entity interaction from unauthenticated session: {}",
+            log.warn(
+                    "Entity interaction from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -59,8 +60,12 @@ public class EntityInteractionHandler implements MessageHandler {
             return;
         }
 
-        log.trace("Entity interaction received: entityId={}, action={}, shortcut={}, user={}",
-                entityId, userAction, shortcutKey, session.getTitle());
+        log.trace(
+                "Entity interaction received: entityId={}, action={}, shortcut={}, user={}",
+                entityId,
+                userAction,
+                shortcutKey,
+                session.getTitle());
 
         if (entityId.startsWith("@")) {
             gameplay.onPlayerPlayerInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
@@ -68,5 +73,4 @@ public class EntityInteractionHandler implements MessageHandler {
             gameplay.onPlayerEntityInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
         }
     }
-
 }

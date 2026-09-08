@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.SpikesPoint;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.SpikesManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * SingleSpikesBuilder builds a field of spikes from SpikesPoint configuration.
@@ -23,7 +22,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class SingleSpikesBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     @Override
     public void buildFlat() {
@@ -36,8 +37,8 @@ public class SingleSpikesBuilder extends HexGridBuilder {
         log.debug("Building spike field for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get spikes parameter from hex grid
-        String spikesParam = hexGrid.getParameters() != null ?
-            hexGrid.getParameters().get("g_spikes") : null;
+        String spikesParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_spikes") : null;
 
         if (spikesParam == null || spikesParam.isBlank()) {
             log.debug("No spikes parameter found, skipping");
@@ -46,12 +47,14 @@ public class SingleSpikesBuilder extends HexGridBuilder {
 
         try {
             // Parse spikes configuration
-            SpikesPoint.SpikesConfig config = objectMapper.readValue(
-                spikesParam, SpikesPoint.SpikesConfig.class);
+            SpikesPoint.SpikesConfig config = objectMapper.readValue(spikesParam, SpikesPoint.SpikesConfig.class);
 
-            log.debug("Parsed spikes config for '{}': density={}, amount={}, radius={}",
-                config.getSpikesName(), config.getDensity(), config.getAmount(),
-                config.getDistributionRadius());
+            log.debug(
+                    "Parsed spikes config for '{}': density={}, amount={}, radius={}",
+                    config.getSpikesName(),
+                    config.getDensity(),
+                    config.getAmount(),
+                    config.getDistributionRadius());
 
             // Build the spike field
             buildSpikes(flat, config, hexGridSize);
@@ -81,8 +84,15 @@ public class SingleSpikesBuilder extends HexGridBuilder {
         int regionSizeX = Math.min(flat.getSizeX(), effectiveRadius * 2);
         int regionSizeZ = Math.min(flat.getSizeZ(), effectiveRadius * 2);
 
-        log.debug("Building spikes at center ({}, {}) with effectiveRadius={}, region=({},{},{},{})",
-            centerX, centerZ, effectiveRadius, regionStartX, regionStartZ, regionSizeX, regionSizeZ);
+        log.debug(
+                "Building spikes at center ({}, {}) with effectiveRadius={}, region=({},{},{},{})",
+                centerX,
+                centerZ,
+                effectiveRadius,
+                regionStartX,
+                regionStartZ,
+                regionSizeX,
+                regionSizeZ);
 
         // Create parameters map for SpikesManipulator
         Map<String, String> manipulatorParams = new HashMap<>();
@@ -101,9 +111,12 @@ public class SingleSpikesBuilder extends HexGridBuilder {
         SpikesManipulator manipulator = new SpikesManipulator();
         manipulator.manipulate(flat, regionStartX, regionStartZ, regionSizeX, regionSizeZ, manipulatorParams);
 
-        log.info("Spike field built: name='{}', density={}, amount={}, material={}",
-            config.getSpikesName(), config.getDensity(), config.getAmount(),
-            config.getMaterial());
+        log.info(
+                "Spike field built: name='{}', density={}, amount={}, material={}",
+                config.getSpikesName(),
+                config.getDensity(),
+                config.getAmount(),
+                config.getMaterial());
     }
 
     /**

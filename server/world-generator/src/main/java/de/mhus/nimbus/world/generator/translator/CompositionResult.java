@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.translator;
 
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of translating textual instructions to HexComposition object.
@@ -85,9 +84,7 @@ public class CompositionResult {
      * @return Failed composition result
      */
     public static CompositionResult failure(List<String> errors) {
-        return CompositionResult.builder()
-                .errors(errors)
-                .build();
+        return CompositionResult.builder().errors(errors).build();
     }
 
     /**
@@ -99,9 +96,7 @@ public class CompositionResult {
     public static CompositionResult failure(String error) {
         List<String> errors = new ArrayList<>();
         errors.add(error);
-        return CompositionResult.builder()
-                .errors(errors)
-                .build();
+        return CompositionResult.builder().errors(errors).build();
     }
 
     /**

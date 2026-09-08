@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.CoastFiller;
@@ -9,7 +8,6 @@ import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.filler.ContinentFiller;
-import de.mhus.nimbus.world.generator.composer.filler.FillerType;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.generator.composer.filler.LowlandFiller;
 import de.mhus.nimbus.world.generator.composer.filler.MountainFiller;
@@ -23,14 +21,13 @@ import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.Town;
 import de.mhus.nimbus.world.generator.composer.town.TownExternalConnectionGenerator;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Builder for orchestrating the complete hex composition pipeline.
@@ -151,26 +148,26 @@ public class HexCompositeBuilder {
      */
     public CompositionResult compose() {
         log.debug("=== Starting HexComposite Pipeline ===");
-        log.debug("WorldId: {}, Seed: {}, FillGaps: {}, OceanBorderRings: {}",
-            worldId, seed, fillGaps, oceanBorderRings);
+        log.debug(
+                "WorldId: {}, Seed: {}, FillGaps: {}, OceanBorderRings: {}", worldId, seed, fillGaps, oceanBorderRings);
 
         List<String> warnings = new ArrayList<>();
-        CompositionResult.CompositionResultBuilder resultBuilder = CompositionResult.builder()
-            .warnings(warnings);
+        CompositionResult.CompositionResultBuilder resultBuilder =
+                CompositionResult.builder().warnings(warnings);
 
         try {
             // Validate inputs
             if (composition == null) {
                 return resultBuilder
-                    .success(false)
-                    .errorMessage("Composition is null")
-                    .build();
+                        .success(false)
+                        .errorMessage("Composition is null")
+                        .build();
             }
             if (worldId == null || worldId.isBlank()) {
                 return resultBuilder
-                    .success(false)
-                    .errorMessage("WorldId is required")
-                    .build();
+                        .success(false)
+                        .errorMessage("WorldId is required")
+                        .build();
             }
 
             // ============================================================
@@ -187,27 +184,33 @@ public class HexCompositeBuilder {
             boolean prepareSuccess = preparer.prepare(composition);
             if (!prepareSuccess) {
                 return resultBuilder
-                    .success(false)
-                    .errorMessage("Composition preparation failed")
-                    .build();
+                        .success(false)
+                        .errorMessage("Composition preparation failed")
+                        .build();
             }
 
             // Step 3: Compose biomes (positioning only)
             log.debug("Step 3: Composing biomes (positioning)");
             BiomeComposer biomeComposer = new BiomeComposer();
-            BiomePlacementResult placementResult = biomeComposer.compose(composition, worldId, seed,
-                placementToleranceStart, placementToleranceIncrement, maxPlacementTolerance);
+            BiomePlacementResult placementResult = biomeComposer.compose(
+                    composition,
+                    worldId,
+                    seed,
+                    placementToleranceStart,
+                    placementToleranceIncrement,
+                    maxPlacementTolerance);
 
             if (!placementResult.isSuccess()) {
                 return resultBuilder
-                    .success(false)
-                    .errorMessage("Biome composition failed: " + placementResult.getErrorMessage())
-                    .biomePlacementResult(placementResult)
-                    .build();
+                        .success(false)
+                        .errorMessage("Biome composition failed: " + placementResult.getErrorMessage())
+                        .biomePlacementResult(placementResult)
+                        .build();
             }
 
-            log.debug("Placed {} biomes (positioning complete)",
-                placementResult.getPlacedBiomes().size());
+            log.debug(
+                    "Placed {} biomes (positioning complete)",
+                    placementResult.getPlacedBiomes().size());
 
             resultBuilder.biomePlacementResult(placementResult);
             resultBuilder.totalBiomes(placementResult.getPlacedBiomes().size());
@@ -215,24 +218,26 @@ public class HexCompositeBuilder {
             // Step 3.5: Compose structures (villages, towns, etc.)
             log.debug("Step 3.5: Composing structures");
 
-            StructuresIndex effectiveStructuresIndex = structuresIndex != null ? structuresIndex : new StructuresIndex();
+            StructuresIndex effectiveStructuresIndex =
+                    structuresIndex != null ? structuresIndex : new StructuresIndex();
 
             ComposeContext structureContext = ComposeContext.builder()
-                .composition(composition)
-                .world(world)
-                .structuresIndex(effectiveStructuresIndex)
-                .build();
+                    .composition(composition)
+                    .world(world)
+                    .structuresIndex(effectiveStructuresIndex)
+                    .build();
 
             StructureComposer structureComposer = new StructureComposer();
-            StructurePlacementResult structureResult = structureComposer.composeStructures(
-                structureContext, placementResult);
+            StructurePlacementResult structureResult =
+                    structureComposer.composeStructures(structureContext, placementResult);
 
             if (!structureResult.isSuccess()) {
                 warnings.add("Structure composition had issues: errors=" + structureResult.getErrors());
             } else {
-                log.debug("Composed {} structures ({} failed)",
-                    structureResult.getPlacedCount(),
-                    structureResult.getFailedCount());
+                log.debug(
+                        "Composed {} structures ({} failed)",
+                        structureResult.getPlacedCount(),
+                        structureResult.getFailedCount());
             }
 
             resultBuilder.structurePlacementResult(structureResult);
@@ -240,8 +245,8 @@ public class HexCompositeBuilder {
 
             // Track biome grid count before fillers
             int initialBiomeGridCount = placementResult.getPlacedBiomes().stream()
-                .mapToInt(PlacedBiome::getActualSize)
-                .sum();
+                    .mapToInt(PlacedBiome::getActualSize)
+                    .sum();
 
             // ============================================================
             // Phase B: Gap Filling
@@ -294,8 +299,14 @@ public class HexCompositeBuilder {
                 log.debug("Step 4.5 OceanFiller: added {} PlacedBiomes", oceanAdded);
 
                 int totalFillerBiomes = mountainAdded + lowlandAdded + continentAdded + coastAdded + oceanAdded;
-                log.debug("Phase B complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
-                    totalFillerBiomes, mountainAdded, lowlandAdded, continentAdded, coastAdded, oceanAdded);
+                log.debug(
+                        "Phase B complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
+                        totalFillerBiomes,
+                        mountainAdded,
+                        lowlandAdded,
+                        continentAdded,
+                        coastAdded,
+                        oceanAdded);
             } else {
                 log.debug("Phase B: Skipping gap filling (disabled)");
             }
@@ -307,8 +318,7 @@ public class HexCompositeBuilder {
             // Step 5a: Register ALL PlacedBiomes (including fillers) in central FeatureHexGrid registry
             log.debug("Step 5a: Registering all biomes (including fillers) in central registry");
             BiomeComposer biomeComposerForFillers = new BiomeComposer();
-            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
-                placementResult.getPlacedBiomes(), composition);
+            biomeComposerForFillers.configureHexGridsForPlacedBiomes(placementResult.getPlacedBiomes(), composition);
             log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
 
             // Step 5b: Register Structure HexGrids in central registry
@@ -332,8 +342,10 @@ public class HexCompositeBuilder {
             int connectedVillages = 0;
             for (Feature feature : composition.getFeatures()) {
                 if (feature instanceof Town village) {
-                    if (village.getExternalConnectionPoints() != null && !village.getExternalConnectionPoints().isEmpty()) {
-                        village.connectExternalConnectionPoints(world.getPublicData().getHexGridSize());
+                    if (village.getExternalConnectionPoints() != null
+                            && !village.getExternalConnectionPoints().isEmpty()) {
+                        village.connectExternalConnectionPoints(
+                                world.getPublicData().getHexGridSize());
                         connectedVillages++;
                     }
                 }
@@ -343,15 +355,16 @@ public class HexCompositeBuilder {
             // Step 7: Compose points (place Points within biomes)
             log.debug("Step 7: Composing points");
             PointComposer pointComposer = new PointComposer();
-            PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-                composition, placementResult, world, effectiveStructuresIndex);
+            PointComposer.PointCompositionResult pointResult =
+                    pointComposer.composePoints(composition, placementResult, world, effectiveStructuresIndex);
 
             if (!pointResult.isSuccess()) {
                 warnings.add("Point composition had issues: errors=" + pointResult.getErrors());
             } else {
-                log.debug("Composed {} points ({} failed)",
-                    pointResult.getComposedPoints(),
-                    pointResult.getFailedPoints());
+                log.debug(
+                        "Composed {} points ({} failed)",
+                        pointResult.getComposedPoints(),
+                        pointResult.getFailedPoints());
             }
 
             resultBuilder.pointCompositionResult(pointResult);
@@ -360,15 +373,15 @@ public class HexCompositeBuilder {
             // Step 8: Compose flows (roads, rivers, walls)
             log.debug("Step 8: Composing flows");
             FlowComposer flowComposer = new FlowComposer();
-            FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-                composition, placementResult);
+            FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, placementResult);
 
             if (!flowResult.isSuccess()) {
                 warnings.add("Flow composition had issues: errors=" + flowResult.getFailedFlows());
             } else {
-                log.debug("Composed {} flows with {} total segments",
-                    flowResult.getComposedFlows(),
-                    flowResult.getTotalSegments());
+                log.debug(
+                        "Composed {} flows with {} total segments",
+                        flowResult.getComposedFlows(),
+                        flowResult.getTotalSegments());
             }
 
             resultBuilder.flowCompositionResult(flowResult);
@@ -401,10 +414,12 @@ public class HexCompositeBuilder {
             log.debug("Step 10b: Configuring road/river/wall parameters");
             HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
             HexGridRoadConfigurator.RoadConfigurationResult roadResult =
-                roadConfigurator.configureRoads(composition, placementResult);
-            log.debug("Road configuration: configured={}/{} grids, {} total segments",
-                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
-                roadResult.getTotalSegments());
+                    roadConfigurator.configureRoads(composition, placementResult);
+            log.debug(
+                    "Road configuration: configured={}/{} grids, {} total segments",
+                    roadResult.getConfiguredGrids(),
+                    roadResult.getTotalGrids(),
+                    roadResult.getTotalSegments());
             if (!roadResult.isSuccess()) {
                 log.warn("Road configuration had errors: {}", roadResult.getErrors());
             }
@@ -415,23 +430,24 @@ public class HexCompositeBuilder {
             // ============================================================
 
             int registryGridCount = composition.getFeatureHexGridRegistry() != null
-                ? composition.getFeatureHexGridRegistry().size() : 0;
+                    ? composition.getFeatureHexGridRegistry().size()
+                    : 0;
             int fillerGridCount = registryGridCount - initialBiomeGridCount;
 
             resultBuilder.totalGrids(initialBiomeGridCount);
 
             if (fillGaps) {
                 HexGridFillResult fillResult = HexGridFillResult.builder()
-                    .placementResult(placementResult)
-                    .totalGridCount(registryGridCount)
-                    .oceanFillCount(oceanAdded)
-                    .landFillCount(mountainAdded + lowlandAdded)
-                    .coastFillCount(coastAdded)
-                    .mountainFillCount(mountainAdded)
-                    .lowlandFillCount(lowlandAdded)
-                    .continentFillCount(continentAdded)
-                    .success(true)
-                    .build();
+                        .placementResult(placementResult)
+                        .totalGridCount(registryGridCount)
+                        .oceanFillCount(oceanAdded)
+                        .landFillCount(mountainAdded + lowlandAdded)
+                        .coastFillCount(coastAdded)
+                        .mountainFillCount(mountainAdded)
+                        .lowlandFillCount(lowlandAdded)
+                        .continentFillCount(continentAdded)
+                        .success(true)
+                        .build();
 
                 resultBuilder.fillResult(fillResult);
                 resultBuilder.filledGrids(fillerGridCount);
@@ -439,25 +455,24 @@ public class HexCompositeBuilder {
 
             // Pipeline complete
             log.debug("=== HexComposite Pipeline Complete ===");
-            log.debug("Summary: biomes={}, structures={}, points={}, flows={}, registryGrids={}, filled={}, warnings={}",
-                placementResult.getPlacedBiomes().size(),
-                structureResult.getPlacedCount(),
-                pointResult.getComposedPoints(),
-                flowResult.getComposedFlows(),
-                registryGridCount,
-                fillerGridCount,
-                warnings.size());
+            log.debug(
+                    "Summary: biomes={}, structures={}, points={}, flows={}, registryGrids={}, filled={}, warnings={}",
+                    placementResult.getPlacedBiomes().size(),
+                    structureResult.getPlacedCount(),
+                    pointResult.getComposedPoints(),
+                    flowResult.getComposedFlows(),
+                    registryGridCount,
+                    fillerGridCount,
+                    warnings.size());
 
-            return resultBuilder
-                .success(true)
-                .build();
+            return resultBuilder.success(true).build();
 
         } catch (Exception e) {
             log.error("HexComposite pipeline failed with exception", e);
             return resultBuilder
-                .success(false)
-                .errorMessage("Pipeline failed: " + e.getMessage())
-                .build();
+                    .success(false)
+                    .errorMessage("Pipeline failed: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -474,9 +489,9 @@ public class HexCompositeBuilder {
         }
 
         return placedBiomes.stream()
-            .filter(placed -> biomeName.equals(placed.getBiome().getName()))
-            .findFirst()
-            .orElse(null);
+                .filter(placed -> biomeName.equals(placed.getBiome().getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -502,8 +517,9 @@ public class HexCompositeBuilder {
         int mergedCount = 0;
         int parameterCollisionCount = 0;
 
-        log.debug("Populating central FeatureHexGrid registry from {} features",
-            composition.getFeatures() != null ? composition.getFeatures().size() : 0);
+        log.debug(
+                "Populating central FeatureHexGrid registry from {} features",
+                composition.getFeatures() != null ? composition.getFeatures().size() : 0);
 
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
@@ -521,17 +537,16 @@ public class HexCompositeBuilder {
 
                 for (FeatureHexGrid featureGrid : hexGrids) {
                     if (featureGrid.getCoordinate() == null) {
-                        log.warn("Feature '{}' has HexGrid without coordinate, skipping",
-                            feature.getName());
+                        log.warn("Feature '{}' has HexGrid without coordinate, skipping", feature.getName());
                         continue;
                     }
 
                     // Get or create in central registry
-                    FeatureHexGrid centralGrid = composition.getOrCreateFeatureHexGrid(
-                        featureGrid.getCoordinate());
+                    FeatureHexGrid centralGrid = composition.getOrCreateFeatureHexGrid(featureGrid.getCoordinate());
 
                     // Check if grid was newly created or already existed
-                    boolean isNew = centralGrid.getName() == null && centralGrid.getParameters().isEmpty();
+                    boolean isNew = centralGrid.getName() == null
+                            && centralGrid.getParameters().isEmpty();
 
                     if (isNew) {
                         // New grid - copy all data
@@ -543,32 +558,43 @@ public class HexCompositeBuilder {
                         }
 
                         // Copy flowSegments from Flow/Structure to central registry
-                        if (featureGrid.getFlowSegments() != null && !featureGrid.getFlowSegments().isEmpty()) {
+                        if (featureGrid.getFlowSegments() != null
+                                && !featureGrid.getFlowSegments().isEmpty()) {
                             centralGrid.getFlowSegments().addAll(featureGrid.getFlowSegments());
                         }
 
                         registeredCount++;
-                        log.trace("Registered new grid [{},{}] from feature '{}'",
-                            featureGrid.getCoordinate().getQ(),
-                            featureGrid.getCoordinate().getR(),
-                            feature.getName());
+                        log.trace(
+                                "Registered new grid [{},{}] from feature '{}'",
+                                featureGrid.getCoordinate().getQ(),
+                                featureGrid.getCoordinate().getR(),
+                                feature.getName());
                     } else {
                         // Grid already exists - merge parameters with collision detection
                         mergedCount++;
 
                         if (featureGrid.getParameters() != null) {
-                            for (Map.Entry<String, String> entry : featureGrid.getParameters().entrySet()) {
-                                String existingValue = centralGrid.getParameters().get(entry.getKey());
+                            for (Map.Entry<String, String> entry :
+                                    featureGrid.getParameters().entrySet()) {
+                                String existingValue =
+                                        centralGrid.getParameters().get(entry.getKey());
 
                                 if (existingValue != null && !existingValue.equals(entry.getValue())) {
                                     // Parameter collision
-                                    log.warn("Parameter collision at grid [{},{}]: key='{}' " +
-                                        "existing='{}' new='{}' - keeping existing value",
-                                        featureGrid.getCoordinate().getQ(),
-                                        featureGrid.getCoordinate().getR(),
-                                        entry.getKey(),
-                                        existingValue.substring(0, Math.min(50, existingValue.length())),
-                                        entry.getValue().substring(0, Math.min(50, entry.getValue().length())));
+                                    log.warn(
+                                            "Parameter collision at grid [{},{}]: key='{}' "
+                                                    + "existing='{}' new='{}' - keeping existing value",
+                                            featureGrid.getCoordinate().getQ(),
+                                            featureGrid.getCoordinate().getR(),
+                                            entry.getKey(),
+                                            existingValue.substring(0, Math.min(50, existingValue.length())),
+                                            entry.getValue()
+                                                    .substring(
+                                                            0,
+                                                            Math.min(
+                                                                    50,
+                                                                    entry.getValue()
+                                                                            .length())));
                                     parameterCollisionCount++;
                                 } else if (existingValue == null) {
                                     // New parameter - add it
@@ -579,21 +605,26 @@ public class HexCompositeBuilder {
                         }
 
                         // Merge flowSegments from Flow/Structure to central registry
-                        if (featureGrid.getFlowSegments() != null && !featureGrid.getFlowSegments().isEmpty()) {
+                        if (featureGrid.getFlowSegments() != null
+                                && !featureGrid.getFlowSegments().isEmpty()) {
                             centralGrid.getFlowSegments().addAll(featureGrid.getFlowSegments());
                         }
 
-                        log.trace("Merged parameters for grid [{},{}] from feature '{}'",
-                            featureGrid.getCoordinate().getQ(),
-                            featureGrid.getCoordinate().getR(),
-                            feature.getName());
+                        log.trace(
+                                "Merged parameters for grid [{},{}] from feature '{}'",
+                                featureGrid.getCoordinate().getQ(),
+                                featureGrid.getCoordinate().getR(),
+                                feature.getName());
                     }
                 }
             }
         }
 
-        log.debug("Central registry populated: {} new grids registered, {} grids merged, {} parameter collisions",
-            registeredCount, mergedCount, parameterCollisionCount);
+        log.debug(
+                "Central registry populated: {} new grids registered, {} grids merged, {} parameter collisions",
+                registeredCount,
+                mergedCount,
+                parameterCollisionCount);
     }
 
     // Note: mergeFlowAspectsIntoCentralRegistry() was removed
@@ -612,7 +643,7 @@ public class HexCompositeBuilder {
      * @return List of WHexGrids created from the central registry
      */
     public static List<de.mhus.nimbus.world.shared.world.WHexGrid> createWHexGridsFromRegistry(
-        HexComposition composition, String worldId) {
+            HexComposition composition, String worldId) {
 
         Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
         if (registry == null || registry.isEmpty()) {
@@ -637,7 +668,7 @@ public class HexCompositeBuilder {
      * @return WHexGrid with all parameters and data from the FeatureHexGrid
      */
     private static de.mhus.nimbus.world.shared.world.WHexGrid convertFeatureHexGridToWHexGrid(
-        FeatureHexGrid featureHexGrid, String worldId) {
+            FeatureHexGrid featureHexGrid, String worldId) {
 
         de.mhus.nimbus.generated.types.HexVector2 coord = featureHexGrid.getCoordinate();
 
@@ -655,8 +686,14 @@ public class HexCompositeBuilder {
 
         // Debug: check if river parameter exists
         if (parameters.containsKey("g_river")) {
-            log.debug("Grid ({},{}) has g_river parameter: {}",
-                coord.getQ(), coord.getR(), parameters.get("g_river").substring(0, Math.min(100, parameters.get("g_river").length())));
+            log.debug(
+                    "Grid ({},{}) has g_river parameter: {}",
+                    coord.getQ(),
+                    coord.getR(),
+                    parameters
+                            .get("g_river")
+                            .substring(
+                                    0, Math.min(100, parameters.get("g_river").length())));
         }
 
         // Add debug text overlay with coordinates
@@ -667,11 +704,11 @@ public class HexCompositeBuilder {
         // This should be done by HexGridRoadConfigurator or similar component
 
         return de.mhus.nimbus.world.shared.world.WHexGrid.builder()
-            .worldId(worldId)
-            .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
-            .publicData(publicData)
-            .parameters(parameters)
-            .enabled(true)
-            .build();
+                .worldId(worldId)
+                .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
+                .publicData(publicData)
+                .parameters(parameters)
+                .enabled(true)
+                .build();
     }
 }

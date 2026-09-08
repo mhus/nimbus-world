@@ -1,25 +1,22 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.ObjectReader;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.generator.mcp.dto.BlockRequest;
-import de.mhus.nimbus.world.generator.mcp.dto.ImportLayerModelRequest;
 import de.mhus.nimbus.world.shared.layer.*;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 @Component
 @RequiredArgsConstructor
@@ -35,9 +32,7 @@ public class LayerModelTools implements McpToolBean {
             @ToolParam(description = "Layer ID (must be MODEL type)") String layerId) {
         log.debug("MCP: Get layer blocks: worldId={}, layerId={}", worldId, layerId);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(layerId)) {
             throw new McpToolException("layerId is required");
@@ -63,26 +58,21 @@ public class LayerModelTools implements McpToolBean {
         }
 
         List<LayerBlock> blocks = modelOpt.get().getContent();
-        List<Map<String, Object>> blockDtos = blocks.stream()
-                .map(this::toLayerBlockDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> blockDtos =
+                blocks.stream().map(this::toLayerBlockDto).collect(Collectors.toList());
 
-        return Map.of(
-                "blocks", blockDtos,
-                "count", blockDtos.size()
-        );
+        return Map.of("blocks", blockDtos, "count", blockDtos.size());
     }
 
     @Tool(name = "add_layer_blocks", description = "Add blocks to a MODEL layer")
     public Map<String, Object> addLayerBlocks(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer ID (must be MODEL type)") String layerId,
-            @ToolParam(description = "Array of blocks to add with x, y, z, blockId, and optional group") List<BlockRequest> blocks) {
+            @ToolParam(description = "Array of blocks to add with x, y, z, blockId, and optional group")
+                    List<BlockRequest> blocks) {
         log.debug("MCP: Add layer blocks: worldId={}, layerId={}, count={}", worldId, layerId, blocks.size());
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(layerId)) {
             throw new McpToolException("layerId is required");
@@ -110,7 +100,8 @@ public class LayerModelTools implements McpToolBean {
         }
 
         // Load or create model
-        WLayerModel model = layerService.findFirstModelByLayerDataId(layer.getLayerDataId())
+        WLayerModel model = layerService
+                .findFirstModelByLayerDataId(layer.getLayerDataId())
                 .orElseGet(() -> {
                     WLayerModel newModel = WLayerModel.builder()
                             .worldId(worldId)
@@ -134,10 +125,7 @@ public class LayerModelTools implements McpToolBean {
                             .blockTypeId(b.blockId())
                             .build();
 
-                    return LayerBlock.builder()
-                            .block(block)
-                            .group(b.group())
-                            .build();
+                    return LayerBlock.builder().block(block).group(b.group()).build();
                 })
                 .collect(Collectors.toList());
 
@@ -152,15 +140,18 @@ public class LayerModelTools implements McpToolBean {
         log.info("MCP: Added {} blocks to layer: id={}", newBlocks.size(), layerId);
         return Map.of(
                 "added", newBlocks.size(),
-                "total", allBlocks.size()
-        );
+                "total", allBlocks.size());
     }
 
-    @Tool(name = "import_layer_model", description = "Import a WLayerModel from JSON (e.g. schematic-tool output) into a MODEL layer. Creates a new model with blocks, metadata, and parameters.")
+    @Tool(
+            name = "import_layer_model",
+            description =
+                    "Import a WLayerModel from JSON (e.g. schematic-tool output) into a MODEL layer. Creates a new model with blocks, metadata, and parameters.")
     public Map<String, Object> importLayerModel(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer ID (must be MODEL type)") String layerId,
-            @ToolParam(description = "Model name (technical identifier, defaults to layer name)", required = false) String name,
+            @ToolParam(description = "Model name (technical identifier, defaults to layer name)", required = false)
+                    String name,
             @ToolParam(description = "Display title", required = false) String title,
             @ToolParam(description = "License source URL", required = false) String licenseSource,
             @ToolParam(description = "License type (e.g. CC-BY-4.0)", required = false) String licenseType,
@@ -174,13 +165,13 @@ public class LayerModelTools implements McpToolBean {
             @ToolParam(description = "Size Y", required = false) Integer sizeY,
             @ToolParam(description = "Size Z", required = false) Integer sizeZ,
             @ToolParam(description = "Groups map", required = false) Map<String, String> groups,
-            @ToolParam(description = "Key-value metadata (e.g. style, kind)", required = false) Map<String, String> parameters,
-            @ToolParam(description = "Array of blocks (same format as add_layer_blocks)", required = false) List<BlockRequest> blocks) {
+            @ToolParam(description = "Key-value metadata (e.g. style, kind)", required = false)
+                    Map<String, String> parameters,
+            @ToolParam(description = "Array of blocks (same format as add_layer_blocks)", required = false)
+                    List<BlockRequest> blocks) {
         log.debug("MCP: Import layer model: worldId={}, layerId={}", worldId, layerId);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(layerId)) {
             throw new McpToolException("layerId is required");
@@ -256,17 +247,23 @@ public class LayerModelTools implements McpToolBean {
         model.touchCreate();
         WLayerModel saved = layerService.saveModel(model);
 
-        log.info("MCP: Imported layer model: id={}, name={}, blocks={}", saved.getId(), saved.getName(), saved.getContent().size());
+        log.info(
+                "MCP: Imported layer model: id={}, name={}, blocks={}",
+                saved.getId(),
+                saved.getName(),
+                saved.getContent().size());
 
         return Map.of(
                 "id", saved.getId(),
                 "name", saved.getName() != null ? saved.getName() : "",
-                "blocks", saved.getContent().size()
-        );
+                "blocks", saved.getContent().size());
     }
 
-    @Tool(name = "import_layer_model_json", description = "Import a WLayerModel from a complete JSON string (e.g. .model.json file content). " +
-            "The JSON is deserialized directly into a WLayerModel. Optional overrides can be applied for name, mount point, rotation and order.")
+    @Tool(
+            name = "import_layer_model_json",
+            description =
+                    "Import a WLayerModel from a complete JSON string (e.g. .model.json file content). "
+                            + "The JSON is deserialized directly into a WLayerModel. Optional overrides can be applied for name, mount point, rotation and order.")
     public Map<String, Object> importLayerModelJson(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer ID (must be MODEL type)") String layerId,
@@ -279,9 +276,7 @@ public class LayerModelTools implements McpToolBean {
             @ToolParam(description = "Override order", required = false) Integer order) {
         log.debug("MCP: Import layer model from JSON: worldId={}, layerId={}", worldId, layerId);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(layerId)) {
             throw new McpToolException("layerId is required");
@@ -368,26 +363,31 @@ public class LayerModelTools implements McpToolBean {
         sourceModel.touchCreate();
         WLayerModel saved = layerService.saveModel(sourceModel);
 
-        log.info("MCP: Imported layer model from JSON: id={}, name={}, blocks={}",
-                saved.getId(), saved.getName(), saved.getContent().size());
+        log.info(
+                "MCP: Imported layer model from JSON: id={}, name={}, blocks={}",
+                saved.getId(),
+                saved.getName(),
+                saved.getContent().size());
 
         return Map.of(
                 "id", saved.getId(),
                 "name", saved.getName() != null ? saved.getName() : "",
-                "blocks", saved.getContent().size()
-        );
+                "blocks", saved.getContent().size());
     }
 
-    @Tool(name = "touch_layer_model", description = "Touch a layer model to recalculate sizeX/sizeY/sizeZ from actual block positions")
+    @Tool(
+            name = "touch_layer_model",
+            description = "Touch a layer model to recalculate sizeX/sizeY/sizeZ from actual block positions")
     public Map<String, Object> touchLayerModel(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Layer ID (must be MODEL type)") String layerId,
-            @ToolParam(description = "Model name (optional, touches all models in layer if not specified)", required = false) String modelName) {
+            @ToolParam(
+                            description = "Model name (optional, touches all models in layer if not specified)",
+                            required = false)
+                    String modelName) {
         log.debug("MCP: Touch layer model: worldId={}, layerId={}, modelName={}", worldId, layerId, modelName);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(layerId)) {
             throw new McpToolException("layerId is required");
@@ -409,7 +409,8 @@ public class LayerModelTools implements McpToolBean {
 
         int touched = 0;
         if (!Strings.isBlank(modelName)) {
-            Optional<WLayerModel> modelOpt = layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
+            Optional<WLayerModel> modelOpt =
+                    layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
             if (modelOpt.isEmpty()) {
                 throw new McpToolException("model not found: " + modelName);
             }

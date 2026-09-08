@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.shared.job;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Service;
 
 /**
  * Registry for JobExecutor beans.
@@ -31,8 +30,7 @@ public class JobExecutorRegistry {
         if (executors == null) {
             synchronized (this) {
                 if (executors == null) {
-                    Map<String, JobExecutor> executorBeans =
-                            applicationContext.getBeansOfType(JobExecutor.class);
+                    Map<String, JobExecutor> executorBeans = applicationContext.getBeansOfType(JobExecutor.class);
                     executors = new ConcurrentHashMap<>();
 
                     for (JobExecutor executor : executorBeans.values()) {
@@ -43,8 +41,7 @@ public class JobExecutorRegistry {
                         executors.put(name, executor);
                     }
 
-                    log.info("Registered {} job executors: {}",
-                            executors.size(), executors.keySet());
+                    log.info("Registered {} job executors: {}", executors.size(), executors.keySet());
                 }
             }
         }

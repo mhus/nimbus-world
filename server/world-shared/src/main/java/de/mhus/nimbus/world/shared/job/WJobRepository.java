@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.job;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.time.Instant;
 import java.util.List;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WJob entities.
@@ -21,8 +20,7 @@ public interface WJobRepository extends MongoRepository<WJob, String> {
      * Find jobs by status (for processing).
      * Orders by priority (DESC) then createdAt (ASC).
      */
-    List<WJob> findByStatusAndEnabledOrderByPriorityDescCreatedAtAsc(
-            String status, boolean enabled);
+    List<WJob> findByStatusAndEnabledOrderByPriorityDescCreatedAtAsc(String status, boolean enabled);
 
     /**
      * Find jobs by world and status.
@@ -32,14 +30,12 @@ public interface WJobRepository extends MongoRepository<WJob, String> {
     /**
      * Find jobs by world, executor and status.
      */
-    List<WJob> findByWorldIdAndExecutorAndStatus(
-            String worldId, String executor, String status);
+    List<WJob> findByWorldIdAndExecutorAndStatus(String worldId, String executor, String status);
 
     /**
      * Find completed or failed jobs older than cutoff time (for cleanup).
      */
-    List<WJob> findByStatusInAndCompletedAtBefore(
-            List<String> statuses, Instant cutoffTime);
+    List<WJob> findByStatusInAndCompletedAtBefore(List<String> statuses, Instant cutoffTime);
 
     /**
      * Count jobs by world and status.

@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Tower Block Manipulator - creates a tower (cylinder with cone roof).
@@ -47,9 +47,9 @@ public class TowerBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a tower with cylinder body and cone roof. " +
-                "Parameters: position {x,y,z}, radius, bodyHeight, roofHeight, blockType (optional). " +
-                "Example: {\"tower\": {\"transform\": \"position\", \"radius\": 6, \"bodyHeight\": 20, \"roofHeight\": 8}}";
+        return "Creates a tower with cylinder body and cone roof. "
+                + "Parameters: position {x,y,z}, radius, bodyHeight, roofHeight, blockType (optional). "
+                + "Example: {\"tower\": {\"transform\": \"position\", \"radius\": 6, \"bodyHeight\": 20, \"roofHeight\": 8}}";
     }
 
     @Override
@@ -107,8 +107,15 @@ public class TowerBlockManipulator implements BlockManipulator {
         }
 
         // Generate tower
-        log.info("Generating tower: pos=({},{},{}), radius={}, bodyHeight={}, roofHeight={}, blockType={}",
-                x, y, z, radius, bodyHeight, roofHeight, blockType);
+        log.info(
+                "Generating tower: pos=({},{},{}), radius={}, bodyHeight={}, roofHeight={}, blockType={}",
+                x,
+                y,
+                z,
+                radius,
+                bodyHeight,
+                roofHeight,
+                blockType);
 
         painter.tower(x, y, z, radius, bodyHeight, roofHeight);
 
@@ -116,7 +123,8 @@ public class TowerBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated tower: %d blocks (radius %d, body %d, roof %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated tower: %d blocks (radius %d, body %d, roof %d) at (%d,%d,%d)",
                 blockCount, radius, bodyHeight, roofHeight, x, y, z);
 
         log.info(message);

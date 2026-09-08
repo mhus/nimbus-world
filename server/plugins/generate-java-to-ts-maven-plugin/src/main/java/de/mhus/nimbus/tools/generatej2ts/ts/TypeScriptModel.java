@@ -6,5 +6,7 @@ import java.util.List;
 public class TypeScriptModel {
     private final List<TypeScriptType> types = new ArrayList<>();
 
-    public List<TypeScriptType> getTypes() { return types; }
+    public List<TypeScriptType> getTypes() {
+        return types;
+    }
 }

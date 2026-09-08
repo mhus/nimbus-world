@@ -2,6 +2,14 @@ package de.mhus.nimbus.world.ai.tool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -13,15 +21,6 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * AI Tool for executing JavaScript code via the sandboxed GraalVM JavaScript engine.
@@ -57,10 +56,10 @@ public class JavaScriptToolService {
         this.engine = engine;
     }
 
-    @Tool("Execute JavaScript code for calculations, sorting, filtering, aggregating, or string processing. The result MUST be printed to console.")
+    @Tool(
+            "Execute JavaScript code for calculations, sorting, filtering, aggregating, or string processing. The result MUST be printed to console.")
     public String executeJavaScript(
-            @P("JavaScript code to execute, result MUST be printed to console") String javaScriptCode
-    ) {
+            @P("JavaScript code to execute, result MUST be printed to console") String javaScriptCode) {
         log.info("Executing JavaScript code: {}", javaScriptCode);
 
         ByteArrayOutputStream capturedOutput = new ByteArrayOutputStream();

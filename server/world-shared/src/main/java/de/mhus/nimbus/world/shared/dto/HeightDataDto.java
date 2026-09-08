@@ -14,9 +14,7 @@ public record HeightDataDto(
         int groundLevel,
         int waterLevel,
 
-        @TypeScript(optional = true)
-        Integer maxHeight
-) {
+        @TypeScript(optional = true) Integer maxHeight) {
     public boolean hasWater() {
         return waterLevel >= 0;
     }

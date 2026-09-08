@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of the B2 refine loop: the (best) plan plus how it got there.

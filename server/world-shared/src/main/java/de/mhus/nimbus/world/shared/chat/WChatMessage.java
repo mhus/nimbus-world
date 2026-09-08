@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +14,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * MongoDB Entity for chat messages.
  * Each message is stored as a separate entity.
@@ -23,8 +22,11 @@ import java.time.Instant;
 @Document(collection = "w_chat_messages")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_chatId_messageId_idx", def = "{ 'worldId': 1, 'chatId': 1, 'messageId': 1 }", unique = true),
-        @CompoundIndex(name = "worldId_chatId_createdAt_idx", def = "{ 'worldId': 1, 'chatId': 1, 'createdAt': -1 }")
+    @CompoundIndex(
+            name = "worldId_chatId_messageId_idx",
+            def = "{ 'worldId': 1, 'chatId': 1, 'messageId': 1 }",
+            unique = true),
+    @CompoundIndex(name = "worldId_chatId_createdAt_idx", def = "{ 'worldId': 1, 'chatId': 1, 'createdAt': -1 }")
 })
 @Data
 @Builder

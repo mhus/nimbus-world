@@ -4,25 +4,24 @@ import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * REST Controller for WFlat operations.
@@ -45,7 +44,8 @@ public class FlatController extends BaseEditorController {
      */
     private ResponseEntity<?> checkFlatAccess(String id, HttpServletRequest request) {
         var flat = flatService.findById(id);
-        if (flat.isPresent() && !accessValidator.hasEditorAccess(request, flat.get().getWorldId()))
+        if (flat.isPresent()
+                && !accessValidator.hasEditorAccess(request, flat.get().getWorldId()))
             return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         return null;
     }
@@ -64,8 +64,7 @@ public class FlatController extends BaseEditorController {
             int mountZ,
             int oceanLevel,
             Instant createdAt,
-            Instant updatedAt
-    ) {}
+            Instant updatedAt) {}
 
     public record FlatDetailDto(
             String id,
@@ -85,20 +84,11 @@ public class FlatController extends BaseEditorController {
             byte[] levels,
             byte[] columns,
             Instant createdAt,
-            Instant updatedAt
-    ) {}
+            Instant updatedAt) {}
 
-    public record UpdateFlatMetadataRequest(
-            String title,
-            String description
-    ) {}
+    public record UpdateFlatMetadataRequest(String title, String description) {}
 
-    public record OffsetDefinitionDto(
-            double one,
-            double two,
-            double oneEdge,
-            double twoEdge
-    ) {}
+    public record OffsetDefinitionDto(double one, double two, double oneEdge, double twoEdge) {}
 
     public record MaterialDefinitionDto(
             int materialId,
@@ -108,8 +98,7 @@ public class FlatController extends BaseEditorController {
             boolean isBlockMapDelta,
             Map<Integer, String> blockAtLevels,
             OffsetDefinitionDto higherOffsets,
-            OffsetDefinitionDto lowerOffsets
-    ) {}
+            OffsetDefinitionDto lowerOffsets) {}
 
     public record UpdateMaterialRequest(
             String blockDef,
@@ -118,13 +107,9 @@ public class FlatController extends BaseEditorController {
             boolean isBlockMapDelta,
             Map<Integer, String> blockAtLevels,
             OffsetDefinitionDto higherOffsets,
-            OffsetDefinitionDto lowerOffsets
-    ) {}
+            OffsetDefinitionDto lowerOffsets) {}
 
-    public record ApplyPaletteRequest(
-            String paletteName
-    ) {}
-
+    public record ApplyPaletteRequest(String paletteName) {}
 
     /**
      * List all flats for a world.
@@ -133,12 +118,11 @@ public class FlatController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List flats for a world")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Missing worldId parameter")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Missing worldId parameter")
     })
     public ResponseEntity<?> listFlats(
-            @Parameter(description = "World ID", required = true)
-            @RequestParam String worldId,
+            @Parameter(description = "World ID", required = true) @RequestParam String worldId,
             HttpServletRequest request) {
 
         if (!accessValidator.hasEditorAccess(request, worldId))
@@ -162,8 +146,7 @@ public class FlatController extends BaseEditorController {
                         flat.getMountZ(),
                         flat.getSeaLevel(),
                         flat.getCreatedAt(),
-                        flat.getUpdatedAt()
-                ))
+                        flat.getUpdatedAt()))
                 .collect(Collectors.toList());
 
         log.info("Found {} flats for worldId: {}", dtos.size(), worldId);
@@ -177,14 +160,14 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}")
     @Operation(summary = "Get flat details")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> getFlat(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.debug("Getting flat details: id={}", id);
 
         Optional<WFlat> flatOpt = flatService.findById(id);
@@ -212,8 +195,7 @@ public class FlatController extends BaseEditorController {
                 flat.getLevels(),
                 flat.getColumns(),
                 flat.getCreatedAt(),
-                flat.getUpdatedAt()
-        );
+                flat.getUpdatedAt());
 
         return ResponseEntity.ok(dto);
     }
@@ -225,15 +207,16 @@ public class FlatController extends BaseEditorController {
     @PatchMapping("/{id}/metadata")
     @Operation(summary = "Update flat metadata")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> updateFlatMetadata(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @RequestBody UpdateFlatMetadataRequest request, HttpServletRequest httpRequest) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @RequestBody UpdateFlatMetadataRequest request,
+            HttpServletRequest httpRequest) {
 
-        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, httpRequest);
+        if (ac != null) return ac;
         log.info("Updating flat metadata: id={}", id);
 
         // Load flat
@@ -274,8 +257,7 @@ public class FlatController extends BaseEditorController {
                 updated.getLevels(),
                 updated.getColumns(),
                 updated.getCreatedAt(),
-                updated.getUpdatedAt()
-        );
+                updated.getUpdatedAt());
 
         return ResponseEntity.ok(dto);
     }
@@ -287,14 +269,14 @@ public class FlatController extends BaseEditorController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete flat")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "204", description = "Deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> deleteFlat(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.info("Deleting flat: id={}", id);
 
         // Check if exists
@@ -317,14 +299,14 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}/height-map")
     @Operation(summary = "Get height map image")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> getHeightMap(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.debug("Generating height map for flat: id={}", id);
 
         // Load flat
@@ -358,14 +340,14 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}/block-map")
     @Operation(summary = "Get block map image")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> getBlockMap(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.debug("Generating block map for flat: id={}", id);
 
         // Load flat
@@ -400,14 +382,14 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}/export")
     @Operation(summary = "Export flat data as JSON file")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> exportFlat(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.info("Exporting flat data: id={}", id);
 
         try {
@@ -453,8 +435,12 @@ public class FlatController extends BaseEditorController {
 
                     json.append("\"").append(entry.getKey() & 0xFF).append("\":{");
                     WFlat.MaterialDefinition mat = entry.getValue();
-                    json.append("\"blockDef\":").append(escapeJson(mat.getBlockDef())).append(",");
-                    json.append("\"nextBlockDef\":").append(mat.getNextBlockDef() != null ? escapeJson(mat.getNextBlockDef()) : "null").append(",");
+                    json.append("\"blockDef\":")
+                            .append(escapeJson(mat.getBlockDef()))
+                            .append(",");
+                    json.append("\"nextBlockDef\":")
+                            .append(mat.getNextBlockDef() != null ? escapeJson(mat.getNextBlockDef()) : "null")
+                            .append(",");
                     json.append("\"hasOcean\":").append(mat.isHasOcean());
                     json.append("}");
                 }
@@ -467,13 +453,10 @@ public class FlatController extends BaseEditorController {
 
             // Build filename: flat_{worldId}_{flatId}_{title}_{dateTime}.wflat.json
             String normalizedTitle = normalizeForFilename(flat.getTitle());
-            String dateTime = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = String.format("flat_%s_%s_%s_%s.wflat.json",
-                    flat.getWorldId(),
-                    flat.getFlatId(),
-                    normalizedTitle,
-                    dateTime
-            );
+            String dateTime = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = String.format(
+                    "flat_%s_%s_%s_%s.wflat.json", flat.getWorldId(), flat.getFlatId(), normalizedTitle, dateTime);
 
             log.info("Flat exported successfully: id={}, size={} bytes, filename={}", id, jsonBytes.length, filename);
 
@@ -496,17 +479,17 @@ public class FlatController extends BaseEditorController {
     @PostMapping("/{id}/import")
     @Operation(summary = "Import flat data from JSON file")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid file or data")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid file or data")
     })
     public ResponseEntity<?> importFlat(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @Parameter(description = "JSON file to import", required = true)
-            @RequestParam("file") MultipartFile file, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @Parameter(description = "JSON file to import", required = true) @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.info("Importing flat data: id={}, filename={}", id, file.getOriginalFilename());
 
         try {
@@ -550,8 +533,11 @@ public class FlatController extends BaseEditorController {
             // Validate size
             int expectedSize = flat.getSizeX() * flat.getSizeZ();
             if (levelsList.size() != expectedSize || columnsList.size() != expectedSize) {
-                log.warn("Invalid import data: size mismatch. Expected: {}, got levels: {}, columns: {}",
-                        expectedSize, levelsList.size(), columnsList.size());
+                log.warn(
+                        "Invalid import data: size mismatch. Expected: {}, got levels: {}, columns: {}",
+                        expectedSize,
+                        levelsList.size(),
+                        columnsList.size());
                 return ResponseEntity.badRequest().build();
             }
 
@@ -615,8 +601,7 @@ public class FlatController extends BaseEditorController {
                     updated.getLevels(),
                     updated.getColumns(),
                     updated.getCreatedAt(),
-                    updated.getUpdatedAt()
-            );
+                    updated.getUpdatedAt());
 
             return ResponseEntity.ok(dto);
 
@@ -646,9 +631,9 @@ public class FlatController extends BaseEditorController {
 
         // Replace spaces with underscores, remove special characters
         String normalized = str.trim()
-                .replaceAll("[\\s]+", "_")  // Replace whitespace with underscore
-                .replaceAll("[^a-zA-Z0-9_-]", "")  // Remove special characters except underscore and dash
-                .replaceAll("_{2,}", "_")  // Replace multiple underscores with single
+                .replaceAll("[\\s]+", "_") // Replace whitespace with underscore
+                .replaceAll("[^a-zA-Z0-9_-]", "") // Remove special characters except underscore and dash
+                .replaceAll("_{2,}", "_") // Replace multiple underscores with single
                 .toLowerCase();
 
         // Limit length to 50 characters
@@ -684,14 +669,14 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}/materials")
     @Operation(summary = "List all materials for a flat")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found")
     })
     public ResponseEntity<?> listMaterials(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id, HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.debug("Listing materials for flat: id={}", id);
 
         Optional<WFlat> flatOpt = flatService.findById(id);
@@ -711,20 +696,18 @@ public class FlatController extends BaseEditorController {
                 WFlat.MaterialDefinition mat = entry.getValue();
 
                 // Convert blockAtLevels to Map<Integer, String> for DTO
-                Map<Integer, String> blockAtLevels = mat.getBlockAtLevels() != null
-                    ? new HashMap<>(mat.getBlockAtLevels())
-                    : new HashMap<>();
+                Map<Integer, String> blockAtLevels =
+                        mat.getBlockAtLevels() != null ? new HashMap<>(mat.getBlockAtLevels()) : new HashMap<>();
 
                 MaterialDefinitionDto dto = new MaterialDefinitionDto(
-                    materialId,
-                    mat.getBlockDef(),
-                    mat.getNextBlockDef(),
-                    mat.isHasOcean(),
-                    mat.isBlockMapDelta(),
-                    blockAtLevels,
-                    toOffsetDto(mat.getHigherOffsets()),
-                    toOffsetDto(mat.getLowerOffsets())
-                );
+                        materialId,
+                        mat.getBlockDef(),
+                        mat.getNextBlockDef(),
+                        mat.isHasOcean(),
+                        mat.isBlockMapDelta(),
+                        blockAtLevels,
+                        toOffsetDto(mat.getHigherOffsets()),
+                        toOffsetDto(mat.getLowerOffsets()));
                 dtos.add(dto);
             }
         }
@@ -743,15 +726,15 @@ public class FlatController extends BaseEditorController {
     @GetMapping("/{id}/materials/{materialId}")
     @Operation(summary = "Get single material by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat or material not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat or material not found")
     })
     public ResponseEntity<?> getMaterial(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @Parameter(description = "Material ID (1-255)", required = true)
-            @PathVariable int materialId, HttpServletRequest request) {
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @Parameter(description = "Material ID (1-255)", required = true) @PathVariable int materialId,
+            HttpServletRequest request) {
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
 
         log.debug("Getting material: flatId={}, materialId={}", id, materialId);
 
@@ -776,20 +759,18 @@ public class FlatController extends BaseEditorController {
         }
 
         WFlat.MaterialDefinition mat = materials.get((byte) materialId);
-        Map<Integer, String> blockAtLevels = mat.getBlockAtLevels() != null
-            ? new HashMap<>(mat.getBlockAtLevels())
-            : new HashMap<>();
+        Map<Integer, String> blockAtLevels =
+                mat.getBlockAtLevels() != null ? new HashMap<>(mat.getBlockAtLevels()) : new HashMap<>();
 
         MaterialDefinitionDto dto = new MaterialDefinitionDto(
-            materialId,
-            mat.getBlockDef(),
-            mat.getNextBlockDef(),
-            mat.isHasOcean(),
-            mat.isBlockMapDelta(),
-            blockAtLevels,
-            toOffsetDto(mat.getHigherOffsets()),
-            toOffsetDto(mat.getLowerOffsets())
-        );
+                materialId,
+                mat.getBlockDef(),
+                mat.getNextBlockDef(),
+                mat.isHasOcean(),
+                mat.isBlockMapDelta(),
+                blockAtLevels,
+                toOffsetDto(mat.getHigherOffsets()),
+                toOffsetDto(mat.getLowerOffsets()));
 
         return ResponseEntity.ok(dto);
     }
@@ -801,17 +782,17 @@ public class FlatController extends BaseEditorController {
     @PutMapping("/{id}/materials/{materialId}")
     @Operation(summary = "Create or update material")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid material data")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid material data")
     })
     public ResponseEntity<?> updateMaterial(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @Parameter(description = "Material ID (1-254)", required = true)
-            @PathVariable int materialId,
-            @RequestBody UpdateMaterialRequest request, HttpServletRequest httpRequest) {
-        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @Parameter(description = "Material ID (1-254)", required = true) @PathVariable int materialId,
+            @RequestBody UpdateMaterialRequest request,
+            HttpServletRequest httpRequest) {
+        var ac = checkFlatAccess(id, httpRequest);
+        if (ac != null) return ac;
 
         log.info("Updating material: flatId={}, materialId={}", id, materialId);
 
@@ -828,8 +809,9 @@ public class FlatController extends BaseEditorController {
         }
 
         // Validate nextBlockDef if present
-        if (request.nextBlockDef() != null && !request.nextBlockDef().isBlank()
-            && !isValidBlockDef(request.nextBlockDef())) {
+        if (request.nextBlockDef() != null
+                && !request.nextBlockDef().isBlank()
+                && !isValidBlockDef(request.nextBlockDef())) {
             log.warn("Invalid nextBlockDef format: {}", request.nextBlockDef());
             return ResponseEntity.badRequest().build();
         }
@@ -862,7 +844,8 @@ public class FlatController extends BaseEditorController {
                 .nextBlockDef(request.nextBlockDef())
                 .hasOcean(request.hasOcean())
                 .isBlockMapDelta(request.isBlockMapDelta())
-                .blockAtLevels(request.blockAtLevels() != null ? new HashMap<>(request.blockAtLevels()) : new HashMap<>())
+                .blockAtLevels(
+                        request.blockAtLevels() != null ? new HashMap<>(request.blockAtLevels()) : new HashMap<>())
                 .higherOffsets(fromOffsetDto(request.higherOffsets()))
                 .lowerOffsets(fromOffsetDto(request.lowerOffsets()))
                 .build();
@@ -878,20 +861,18 @@ public class FlatController extends BaseEditorController {
 
         // Return DTO
         WFlat.MaterialDefinition savedMat = updated.getMaterial((byte) materialId);
-        Map<Integer, String> blockAtLevels = savedMat.getBlockAtLevels() != null
-            ? new HashMap<>(savedMat.getBlockAtLevels())
-            : new HashMap<>();
+        Map<Integer, String> blockAtLevels =
+                savedMat.getBlockAtLevels() != null ? new HashMap<>(savedMat.getBlockAtLevels()) : new HashMap<>();
 
         MaterialDefinitionDto dto = new MaterialDefinitionDto(
-            materialId,
-            savedMat.getBlockDef(),
-            savedMat.getNextBlockDef(),
-            savedMat.isHasOcean(),
-            savedMat.isBlockMapDelta(),
-            blockAtLevels,
-            toOffsetDto(savedMat.getHigherOffsets()),
-            toOffsetDto(savedMat.getLowerOffsets())
-        );
+                materialId,
+                savedMat.getBlockDef(),
+                savedMat.getNextBlockDef(),
+                savedMat.isHasOcean(),
+                savedMat.isBlockMapDelta(),
+                blockAtLevels,
+                toOffsetDto(savedMat.getHigherOffsets()),
+                toOffsetDto(savedMat.getLowerOffsets()));
 
         return ResponseEntity.ok(dto);
     }
@@ -903,17 +884,17 @@ public class FlatController extends BaseEditorController {
     @DeleteMapping("/{id}/materials/{materialId}")
     @Operation(summary = "Delete material")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found"),
-            @ApiResponse(responseCode = "400", description = "Cannot delete protected material")
+        @ApiResponse(responseCode = "204", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found"),
+        @ApiResponse(responseCode = "400", description = "Cannot delete protected material")
     })
     public ResponseEntity<?> deleteMaterial(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @Parameter(description = "Material ID (1-254)", required = true)
-            @PathVariable int materialId, HttpServletRequest request) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @Parameter(description = "Material ID (1-254)", required = true) @PathVariable int materialId,
+            HttpServletRequest request) {
 
-        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, request);
+        if (ac != null) return ac;
         log.info("Deleting material: flatId={}, materialId={}", id, materialId);
 
         // Cannot delete material 0 (protected)
@@ -956,16 +937,17 @@ public class FlatController extends BaseEditorController {
     @PostMapping("/{id}/materials/palette")
     @Operation(summary = "Apply preset palette (nimbus or legacy)")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Flat not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid palette title")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "404", description = "Flat not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid palette title")
     })
     public ResponseEntity<?> applyPalette(
-            @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id,
-            @RequestBody ApplyPaletteRequest request, HttpServletRequest httpRequest) {
+            @Parameter(description = "Flat ID", required = true) @PathVariable String id,
+            @RequestBody ApplyPaletteRequest request,
+            HttpServletRequest httpRequest) {
 
-        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
+        var ac = checkFlatAccess(id, httpRequest);
+        if (ac != null) return ac;
         log.info("Applying palette: flatId={}, palette={}", id, request.paletteName());
 
         String paletteName = request.paletteName().toLowerCase();
@@ -1000,20 +982,18 @@ public class FlatController extends BaseEditorController {
                 int materialId = entry.getKey() & 0xFF;
                 WFlat.MaterialDefinition mat = entry.getValue();
 
-                Map<Integer, String> blockAtLevels = mat.getBlockAtLevels() != null
-                    ? new HashMap<>(mat.getBlockAtLevels())
-                    : new HashMap<>();
+                Map<Integer, String> blockAtLevels =
+                        mat.getBlockAtLevels() != null ? new HashMap<>(mat.getBlockAtLevels()) : new HashMap<>();
 
                 MaterialDefinitionDto dto = new MaterialDefinitionDto(
-                    materialId,
-                    mat.getBlockDef(),
-                    mat.getNextBlockDef(),
-                    mat.isHasOcean(),
-                    mat.isBlockMapDelta(),
-                    blockAtLevels,
-                    toOffsetDto(mat.getHigherOffsets()),
-                    toOffsetDto(mat.getLowerOffsets())
-                );
+                        materialId,
+                        mat.getBlockDef(),
+                        mat.getNextBlockDef(),
+                        mat.isHasOcean(),
+                        mat.isBlockMapDelta(),
+                        blockAtLevels,
+                        toOffsetDto(mat.getHigherOffsets()),
+                        toOffsetDto(mat.getLowerOffsets()));
                 dtos.add(dto);
             }
         }
@@ -1030,26 +1010,26 @@ public class FlatController extends BaseEditorController {
         // Palette definitions from FlatMaterialService
         if (paletteName.equals("nimbus")) {
             // Nimbus palette
-            flat.setMaterial((byte) 1, createMaterialDef("n:g", "n:d", true));    // GRASS
-            flat.setMaterial((byte) 2, createMaterialDef("n:d", "n:s", false));   // DIRT
-            flat.setMaterial((byte) 3, createMaterialDef("n:s", "n:s", false));   // STONE
+            flat.setMaterial((byte) 1, createMaterialDef("n:g", "n:d", true)); // GRASS
+            flat.setMaterial((byte) 2, createMaterialDef("n:d", "n:s", false)); // DIRT
+            flat.setMaterial((byte) 3, createMaterialDef("n:s", "n:s", false)); // STONE
             flat.setMaterial((byte) 4, createMaterialDef("n:sa", "n:sa", false)); // SAND
-            flat.setMaterial((byte) 5, createMaterialDef("n:w", "n:w", true));    // WATER
-            flat.setMaterial((byte) 6, createMaterialDef("n:b", "n:b", false));   // BEDROCK
-            flat.setMaterial((byte) 7, createMaterialDef("n:sn", "n:d", true));   // SNOW
-            flat.setMaterial((byte) 8, createMaterialDef("n:2", "n:2", false));   // INVISIBLE
-            flat.setMaterial((byte) 9, createMaterialDef("n:3", "n:3", false));   // INVISIBLE_SOLID
+            flat.setMaterial((byte) 5, createMaterialDef("n:w", "n:w", true)); // WATER
+            flat.setMaterial((byte) 6, createMaterialDef("n:b", "n:b", false)); // BEDROCK
+            flat.setMaterial((byte) 7, createMaterialDef("n:sn", "n:d", true)); // SNOW
+            flat.setMaterial((byte) 8, createMaterialDef("n:2", "n:2", false)); // INVISIBLE
+            flat.setMaterial((byte) 9, createMaterialDef("n:3", "n:3", false)); // INVISIBLE_SOLID
         } else if (paletteName.equals("legacy")) {
             // Legacy palette
-            flat.setMaterial((byte) 1, createMaterialDef("w:310", "w:279", true));  // GRASS
+            flat.setMaterial((byte) 1, createMaterialDef("w:310", "w:279", true)); // GRASS
             flat.setMaterial((byte) 2, createMaterialDef("w:279", "w:553", false)); // DIRT
             flat.setMaterial((byte) 3, createMaterialDef("w:553", "w:553", false)); // STONE
             flat.setMaterial((byte) 4, createMaterialDef("w:520", "w:520", false)); // SAND
             flat.setMaterial((byte) 5, createMaterialDef("w:1008", "w:1008", true)); // WATER
             flat.setMaterial((byte) 6, createMaterialDef("w:127", "w:127", false)); // BEDROCK
-            flat.setMaterial((byte) 7, createMaterialDef("w:537", "w:279", true));  // SNOW
-            flat.setMaterial((byte) 8, createMaterialDef("w:2", "w:2", false));     // INVISIBLE
-            flat.setMaterial((byte) 9, createMaterialDef("w:3", "w:3", false));     // INVISIBLE_SOLID
+            flat.setMaterial((byte) 7, createMaterialDef("w:537", "w:279", true)); // SNOW
+            flat.setMaterial((byte) 8, createMaterialDef("w:2", "w:2", false)); // INVISIBLE
+            flat.setMaterial((byte) 9, createMaterialDef("w:3", "w:3", false)); // INVISIBLE_SOLID
         }
     }
 
@@ -1073,12 +1053,7 @@ public class FlatController extends BaseEditorController {
         if (offset == null) {
             return new OffsetDefinitionDto(0, 0, 0, 0);
         }
-        return new OffsetDefinitionDto(
-                offset.getOne(),
-                offset.getTwo(),
-                offset.getOneEdge(),
-                offset.getTwoEdge()
-        );
+        return new OffsetDefinitionDto(offset.getOne(), offset.getTwo(), offset.getOneEdge(), offset.getTwoEdge());
     }
 
     /**
@@ -1088,12 +1063,7 @@ public class FlatController extends BaseEditorController {
         if (dto == null) {
             return new WFlat.OffsetDefinition(0, 0, 0, 0);
         }
-        return new WFlat.OffsetDefinition(
-                dto.one(),
-                dto.two(),
-                dto.oneEdge(),
-                dto.twoEdge()
-        );
+        return new WFlat.OffsetDefinition(dto.one(), dto.two(), dto.oneEdge(), dto.twoEdge());
     }
 
     /**

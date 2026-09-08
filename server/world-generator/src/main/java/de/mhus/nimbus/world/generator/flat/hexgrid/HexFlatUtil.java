@@ -9,14 +9,13 @@ import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility for hex flat calculations.
@@ -75,12 +74,12 @@ public class HexFlatUtil {
         boolean evenRow = (currentR % 2 == 0);
 
         return switch (side) {
-            case EAST -> new int[]{1, 0};
-            case WEST -> new int[]{-1, 0};
-            case NORTH_EAST -> evenRow ? new int[]{0, 1} : new int[]{1, 1};
-            case NORTH_WEST -> evenRow ? new int[]{-1, 1} : new int[]{0, 1};
-            case SOUTH_EAST -> evenRow ? new int[]{0, -1} : new int[]{1, -1};
-            case SOUTH_WEST -> evenRow ? new int[]{-1, -1} : new int[]{0, -1};
+            case EAST -> new int[] {1, 0};
+            case WEST -> new int[] {-1, 0};
+            case NORTH_EAST -> evenRow ? new int[] {0, 1} : new int[] {1, 1};
+            case NORTH_WEST -> evenRow ? new int[] {-1, 1} : new int[] {0, 1};
+            case SOUTH_EAST -> evenRow ? new int[] {0, -1} : new int[] {1, -1};
+            case SOUTH_WEST -> evenRow ? new int[] {-1, -1} : new int[] {0, -1};
         };
     }
 
@@ -128,7 +127,7 @@ public class HexFlatUtil {
         int centerX = flatSizeX / 2;
         int centerZ = flatSizeZ / 2;
         int[][] corners = HexMathUtil.getCornersForSide(side, hexGridSize);
-        return new int[][]{
+        return new int[][] {
             {centerX + corners[0][0], centerZ + corners[0][1]},
             {centerX + corners[1][0], centerZ + corners[1][1]}
         };
@@ -147,7 +146,7 @@ public class HexFlatUtil {
     public static int[][] getHexSideCornersWorld(WHexGrid.EDGE side, HexVector2 hexPosition, int hexGridSize) {
         int[] worldCenter = HexMathUtil.hexToCartesian(hexPosition, hexGridSize);
         int[][] corners = HexMathUtil.getCornersForSide(side, hexGridSize);
-        return new int[][]{
+        return new int[][] {
             {worldCenter[0] + corners[0][0], worldCenter[1] + corners[0][1]},
             {worldCenter[0] + corners[1][0], worldCenter[1] + corners[1][1]}
         };
@@ -165,8 +164,8 @@ public class HexFlatUtil {
      * @param world        World configuration (chunk size, hex grid size)
      * @return A WFlat populated with chunk data, or null if no chunk data is available
      */
-    public static WFlat createChunkBackedFlat(WFlat centerFlat, WHexGrid.EDGE side,
-                                               WChunkService chunkService, WorldId worldId, WWorld world) {
+    public static WFlat createChunkBackedFlat(
+            WFlat centerFlat, WHexGrid.EDGE side, WChunkService chunkService, WorldId worldId, WWorld world) {
         HexVector2 centerHex = centerFlat.getHexGrid();
         if (centerHex == null) {
             log.warn("Center flat {} has no hexGrid set, cannot create chunk-backed neighbor", centerFlat.getFlatId());
@@ -240,9 +239,16 @@ public class HexFlatUtil {
             return null;
         }
 
-        log.debug("Created chunk-backed flat for {} neighbor of {}: mount=({},{}), size=({},{}), filled={}/{}",
-                side, centerFlat.getFlatId(), neighborMountX, neighborMountZ, sizeX, sizeZ,
-                filledCount, sizeX * sizeZ);
+        log.debug(
+                "Created chunk-backed flat for {} neighbor of {}: mount=({},{}), size=({},{}), filled={}/{}",
+                side,
+                centerFlat.getFlatId(),
+                neighborMountX,
+                neighborMountZ,
+                sizeX,
+                sizeZ,
+                filledCount,
+                sizeX * sizeZ);
 
         return WFlat.builder()
                 .flatId("chunk-backed-" + side.name().toLowerCase())
@@ -286,7 +292,7 @@ public class HexFlatUtil {
             float t = (float) step / (length - 1);
             int x = Math.round(startX + (endX - startX) * t);
             int z = Math.round(startZ + (endZ - startZ) * t);
-            return new int[]{x, z};
+            return new int[] {x, z};
         }
 
         /**
@@ -299,14 +305,31 @@ public class HexFlatUtil {
             int[] edgePos = getPosition(step);
             int perpX = -dirZ;
             int perpZ = dirX;
-            return new int[]{edgePos[0] + perpX * distance, edgePos[1] + perpZ * distance};
+            return new int[] {edgePos[0] + perpX * distance, edgePos[1] + perpZ * distance};
         }
 
-        public int getStartX() { return startX; }
-        public int getStartZ() { return startZ; }
-        public int getEndX() { return endX; }
-        public int getEndZ() { return endZ; }
-        public int getDirX() { return dirX; }
-        public int getDirZ() { return dirZ; }
+        public int getStartX() {
+            return startX;
+        }
+
+        public int getStartZ() {
+            return startZ;
+        }
+
+        public int getEndX() {
+            return endX;
+        }
+
+        public int getEndZ() {
+            return endZ;
+        }
+
+        public int getDirX() {
+            return dirX;
+        }
+
+        public int getDirZ() {
+            return dirZ;
+        }
     }
 }

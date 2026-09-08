@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import java.util.List;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 /**
  * MongoDB Repository for WEditCache entities.
@@ -65,7 +64,8 @@ public interface WEditCacheRepository extends MongoRepository<WEditCache, String
      * @param z Z coordinate
      * @return Cached block if found, empty list otherwise
      */
-    List<WEditCache> findByWorldIdAndLayerDataIdAndModelNameAndXAndYAndZ(String worldId, String layerDataId, String modelName, int x, int y, int z);
+    List<WEditCache> findByWorldIdAndLayerDataIdAndModelNameAndXAndYAndZ(
+            String worldId, String layerDataId, String modelName, int x, int y, int z);
 
     /**
      * Delete all cached blocks for a specific world and layer.

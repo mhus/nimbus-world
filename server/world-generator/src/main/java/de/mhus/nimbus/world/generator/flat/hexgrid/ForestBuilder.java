@@ -5,10 +5,9 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Forest scenario builder.
@@ -42,10 +41,16 @@ public class ForestBuilder extends HexGridBuilder {
         int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
-        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.6"), 0.6d);
+        double frequency =
+                CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.6"), 0.6d);
 
-        log.debug("Forest terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
-                baseHeight, hillHeight, seaLevel, seed, frequency);
+        log.debug(
+                "Forest terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                seed,
+                frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -55,19 +60,18 @@ public class ForestBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base forest terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set materials based on height
         setForestMaterials(flat, seaLevel);
 
-        log.debug("Forest scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, seaLevel);
+        log.debug(
+                "Forest scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight,
+                hillHeight,
+                seaLevel);
     }
 
     /**
@@ -99,10 +103,19 @@ public class ForestBuilder extends HexGridBuilder {
         int grassToStoneThreshold = oceanLevel + stoneOffset;
         int snowThreshold = oceanLevel + snowOffset;
 
-        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
-                grassToStoneThreshold, snowThreshold, oceanLevel);
-        log.debug("Materials: sand={}, grass={}, dirt={}, stone={}, snow={}, dirtRatio={}",
-                sandMaterial, grassMaterial, dirtMaterial, stoneMaterial, snowMaterial, dirtRatio);
+        log.debug(
+                "Material thresholds: stone={}, snow={} (oceanLevel={})",
+                grassToStoneThreshold,
+                snowThreshold,
+                oceanLevel);
+        log.debug(
+                "Materials: sand={}, grass={}, dirt={}, stone={}, snow={}, dirtRatio={}",
+                sandMaterial,
+                grassMaterial,
+                dirtMaterial,
+                stoneMaterial,
+                snowMaterial,
+                dirtRatio);
 
         // Use seed-based random for consistent dirt/grass distribution
         long seed = context.getWorld().getNoiseSeed();
@@ -137,12 +150,12 @@ public class ForestBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 5;  // FOREST: gentle rolling hills
+        return 5; // FOREST: gentle rolling hills
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 20;  // FOREST: moderate elevation
+        return 20; // FOREST: moderate elevation
     }
 
     @Override
@@ -252,7 +265,7 @@ public class ForestBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

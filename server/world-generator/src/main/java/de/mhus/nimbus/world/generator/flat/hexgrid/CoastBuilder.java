@@ -5,10 +5,9 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Coast scenario builder.
@@ -21,7 +20,7 @@ import java.util.Map;
 @Slf4j
 public class CoastBuilder extends HexGridBuilder {
 
-    private static final int COAST_STRIP_WIDTH = 30;  // Width of coastal strip along land sides
+    private static final int COAST_STRIP_WIDTH = 30; // Width of coastal strip along land sides
 
     @Override
     public void buildFlat() {
@@ -30,8 +29,8 @@ public class CoastBuilder extends HexGridBuilder {
         log.debug("Building coast scenario for flat: {}", flat.getFlatId());
 
         int oceanLevel = flat.getSeaLevel();
-        long seed = context.getWorld().getNoiseSeed();  // Use seed from world
-        float frequency = (float) context.getWorld().getNoiseFrequency();  // Use frequency from world
+        long seed = context.getWorld().getNoiseSeed(); // Use seed from world
+        float frequency = (float) context.getWorld().getNoiseFrequency(); // Use frequency from world
 
         log.debug("Coast generation: oceanLevel={}, seed={}, frequency={}", oceanLevel, seed, frequency);
 
@@ -62,13 +61,9 @@ public class CoastBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
 
         // Generate base terrain with noise
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set all to sand material
         for (int z = 0; z < flat.getSizeZ(); z++) {
@@ -108,9 +103,8 @@ public class CoastBuilder extends HexGridBuilder {
                 continue;
             }
 
-            String neighborBuilder = neighbor.getParameters() != null
-                ? neighbor.getParameters().get("g_builder")
-                : null;
+            String neighborBuilder =
+                    neighbor.getParameters() != null ? neighbor.getParameters().get("g_builder") : null;
 
             if (neighborBuilder == null) {
                 sideTargetLevels.put(side, null);
@@ -146,7 +140,7 @@ public class CoastBuilder extends HexGridBuilder {
         // Iterate over all points in the grid
         for (int x = 0; x < sizeX; x++) {
             for (int z = 0; z < sizeZ; z++) {
-                int baseLevel = flat.getLevel(x, z);  // Original noise level
+                int baseLevel = flat.getLevel(x, z); // Original noise level
 
                 // Calculate distance to each edge (rectangular approximation)
                 int distToWest = x;
@@ -183,8 +177,8 @@ public class CoastBuilder extends HexGridBuilder {
                     if (nwTarget != null || neTarget != null) {
                         // Interpolate between NW and NE based on X position
                         Integer northTarget = (nwTarget != null && neTarget != null)
-                            ? (int)((nwTarget + neTarget) / 2.0)
-                            : (nwTarget != null ? nwTarget : neTarget);
+                                ? (int) ((nwTarget + neTarget) / 2.0)
+                                : (nwTarget != null ? nwTarget : neTarget);
 
                         if (northTarget != null && distToNorth < minDistance) {
                             minDistance = distToNorth;
@@ -202,8 +196,8 @@ public class CoastBuilder extends HexGridBuilder {
                     if (swTarget != null || seTarget != null) {
                         // Interpolate between SW and SE based on X position
                         Integer southTarget = (swTarget != null && seTarget != null)
-                            ? (int)((swTarget + seTarget) / 2.0)
-                            : (swTarget != null ? swTarget : seTarget);
+                                ? (int) ((swTarget + seTarget) / 2.0)
+                                : (swTarget != null ? swTarget : seTarget);
 
                         if (southTarget != null && distToSouth < minDistance) {
                             minDistance = distToSouth;
@@ -214,14 +208,15 @@ public class CoastBuilder extends HexGridBuilder {
 
                 // If we found a target level, interpolate based on distance
                 if (targetLevel != null) {
-                    double blendFactor = minDistance / COAST_STRIP_WIDTH;  // 0.0 at edge, 1.0 at center
+                    double blendFactor = minDistance / COAST_STRIP_WIDTH; // 0.0 at edge, 1.0 at center
 
                     // Add noise variation
                     float noiseValue = noise.GetNoise((float) x, (float) z);
-                    int noiseVariation = (int) (noiseValue * 2);  // ±2 variation
+                    int noiseVariation = (int) (noiseValue * 2); // ±2 variation
 
                     // Interpolate: edge = targetLevel, center = baseLevel
-                    int newLevel = (int) Math.round(targetLevel * (1.0 - blendFactor) + baseLevel * blendFactor) + noiseVariation;
+                    int newLevel = (int) Math.round(targetLevel * (1.0 - blendFactor) + baseLevel * blendFactor)
+                            + noiseVariation;
 
                     flat.setLevel(x, z, newLevel);
 
@@ -241,12 +236,12 @@ public class CoastBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 5;  // COAST: medium variation for base noise
+        return 5; // COAST: medium variation for base noise
     }
 
     @Override
     protected int getDefaultAsl() {
-        return -5;  // COAST: below ocean level (for base noise)
+        return -5; // COAST: below ocean level (for base noise)
     }
 
     @Override

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
-public enum Direction  {
+public enum Direction {
     N,
     NE,
     E,

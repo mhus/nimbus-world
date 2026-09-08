@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for opening the player-interact widget when clicking on another player
@@ -24,8 +23,13 @@ public class PlayerInteractAction extends AbstractGamplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action,
-                                       String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         if (session.getWorldId() == null) return false;
 
         String worldId = session.getWorldId().getId();
@@ -34,20 +38,17 @@ public class PlayerInteractAction extends AbstractGamplayAction {
         Map<String, Object> leaseData = new HashMap<>();
         leaseData.put("targetEntityId", targetEntityId);
 
-        var lease = basic.getLeaseService().acquire(
-                worldId,
+        var lease =
+                basic.getLeaseService().acquire(worldId, playerId, "player-interact", targetEntityId, null, leaseData);
+
+        basic.getBasicClientService()
+                .sendCommand(session, "openComponent", List.of("player-interact", lease.getLeaseId()));
+
+        log.debug(
+                "Sent player-interact to player {}: target={}, leaseId={}",
                 playerId,
-                "player-interact",
                 targetEntityId,
-                null,
-                leaseData
-        );
-
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("player-interact", lease.getLeaseId()));
-
-        log.debug("Sent player-interact to player {}: target={}, leaseId={}",
-                playerId, targetEntityId, lease.getLeaseId());
+                lease.getLeaseId());
         return true;
     }
 

@@ -3,9 +3,8 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helper class for filling edges of hex grids with data from neighbors.
@@ -35,8 +34,8 @@ public class HexGridEdgeFiller {
         for (var side : WHexGrid.EDGE.values()) {
             String neighborFlatId = sideFlats.get(side);
             if (neighborFlatId != null) {
-                var neighborFlat = context.getFlatService().findByWorldAndFlatId(
-                        context.getWorld().getWorldId(), neighborFlatId);
+                var neighborFlat = context.getFlatService()
+                        .findByWorldAndFlatId(context.getWorld().getWorldId(), neighborFlatId);
                 if (neighborFlat != null) {
                     fillSideWithNeighbor(side, neighborFlat);
                 } else {
@@ -66,7 +65,9 @@ public class HexGridEdgeFiller {
      */
     private void fillSideWithChunkOrBedrock(WHexGrid.EDGE direction) {
         if (context.getChunkService() != null) {
-            var worldId = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+            var worldId = de.mhus.nimbus.shared.types.WorldId.of(
+                            context.getWorld().getWorldId())
+                    .orElse(null);
             if (worldId != null) {
                 WFlat chunkFlat = HexFlatUtil.createChunkBackedFlat(
                         flat, direction, context.getChunkService(), worldId, context.getWorld());
@@ -88,7 +89,8 @@ public class HexGridEdgeFiller {
 
         int hexGridSize = context.getHexGridSize();
 
-        int[][] sideCorners = HexFlatUtil.getHexSideCornersLocal(direction, flat.getSizeX(), flat.getSizeZ(), hexGridSize);
+        int[][] sideCorners =
+                HexFlatUtil.getHexSideCornersLocal(direction, flat.getSizeX(), flat.getSizeZ(), hexGridSize);
         int x1 = sideCorners[0][0];
         int z1 = sideCorners[0][1];
         int x2 = sideCorners[1][0];
@@ -135,8 +137,7 @@ public class HexGridEdgeFiller {
         private final WHexGrid.EDGE direction;
         private final WFlat neighborFlat;
 
-        public EdgeFiller(WFlat flat, BuilderContext context, WHexGrid.EDGE direction,
-                          WFlat neighborFlat) {
+        public EdgeFiller(WFlat flat, BuilderContext context, WHexGrid.EDGE direction, WFlat neighborFlat) {
             this.flat = flat;
             this.context = context;
             this.direction = direction;
@@ -193,12 +194,15 @@ public class HexGridEdgeFiller {
                             break;
                     }
 
-                    if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
-                        neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
+                    if (neighborX < 0
+                            || neighborX >= neighborFlat.getSizeX()
+                            || neighborZ < 0
+                            || neighborZ >= neighborFlat.getSizeZ()) {
                         continue;
                     }
                     int currentMaterial = flat.getColumnRobust(x, z);
-                    if (currentMaterial == WFlat.MATERIAL_NOT_SET || currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                    if (currentMaterial == WFlat.MATERIAL_NOT_SET
+                            || currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
                         var neighborLevel = neighborFlat.getLevelRobust(neighborX, neighborZ);
                         if (neighborLevel > 0) {
                             flat.setLevel(x, z, neighborLevel);
@@ -228,19 +232,19 @@ public class HexGridEdgeFiller {
 
             switch (direction) {
                 case NORTH_EAST:
-                    return new int[]{Math.min(cx1, cx2), Math.min(cz1, cz2), sizeX, sizeZ};
+                    return new int[] {Math.min(cx1, cx2), Math.min(cz1, cz2), sizeX, sizeZ};
                 case EAST:
-                    return new int[]{Math.min(cx1, cx2), Math.min(cz1, cz2), sizeX, Math.max(cz1, cz2)};
+                    return new int[] {Math.min(cx1, cx2), Math.min(cz1, cz2), sizeX, Math.max(cz1, cz2)};
                 case SOUTH_EAST:
-                    return new int[]{Math.min(cx1, cx2), 0, sizeX, Math.max(cz1, cz2)};
+                    return new int[] {Math.min(cx1, cx2), 0, sizeX, Math.max(cz1, cz2)};
                 case SOUTH_WEST:
-                    return new int[]{0, 0, Math.max(cx1, cx2), Math.max(cz1, cz2)};
+                    return new int[] {0, 0, Math.max(cx1, cx2), Math.max(cz1, cz2)};
                 case WEST:
-                    return new int[]{0, Math.min(cz1, cz2), Math.max(cx1, cx2), Math.max(cz1, cz2)};
+                    return new int[] {0, Math.min(cz1, cz2), Math.max(cx1, cx2), Math.max(cz1, cz2)};
                 case NORTH_WEST:
-                    return new int[]{0, Math.min(cz1, cz2), Math.max(cx1, cx2), sizeZ};
+                    return new int[] {0, Math.min(cz1, cz2), Math.max(cx1, cx2), sizeZ};
                 default:
-                    return new int[]{0, 0, sizeX, sizeZ};
+                    return new int[] {0, 0, sizeX, sizeZ};
             }
         }
     }

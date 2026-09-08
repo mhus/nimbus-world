@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Tunnel Block Manipulator - creates a tunnel between two points.
@@ -47,9 +47,9 @@ public class TunnelBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a tunnel between two points. " +
-                "Parameters: position {x,y,z}, endPosition {x,y,z}, width, height, blockType (optional). " +
-                "Example: {\"tunnel\": {\"transform\": \"position\", \"endPosition\": {\"x\": 150, \"y\": 64, \"z\": 150}, \"width\": 3, \"height\": 4}}";
+        return "Creates a tunnel between two points. "
+                + "Parameters: position {x,y,z}, endPosition {x,y,z}, width, height, blockType (optional). "
+                + "Example: {\"tunnel\": {\"transform\": \"position\", \"endPosition\": {\"x\": 150, \"y\": 64, \"z\": 150}, \"width\": 3, \"height\": 4}}";
     }
 
     @Override
@@ -116,8 +116,17 @@ public class TunnelBlockManipulator implements BlockManipulator {
         }
 
         // Generate tunnel
-        log.info("Generating tunnel: start=({},{},{}), end=({},{},{}), width={}, height={}, blockType={}",
-                x1, y1, z1, x2, y2, z2, width, height, blockType);
+        log.info(
+                "Generating tunnel: start=({},{},{}), end=({},{},{}), width={}, height={}, blockType={}",
+                x1,
+                y1,
+                z1,
+                x2,
+                y2,
+                z2,
+                width,
+                height,
+                blockType);
 
         painter.tunnel(x1, y1, z1, x2, y2, z2, width, height);
 
@@ -125,7 +134,8 @@ public class TunnelBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated tunnel: %d blocks (width %d, height %d) from (%d,%d,%d) to (%d,%d,%d)",
+        String message = String.format(
+                "Generated tunnel: %d blocks (width %d, height %d) from (%d,%d,%d) to (%d,%d,%d)",
                 blockCount, width, height, x1, y1, z1, x2, y2, z2);
 
         log.info(message);

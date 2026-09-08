@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
 
 /**
  * Shared combat data container for any entity (players and NPCs).
@@ -87,21 +86,21 @@ public class EntityCombatData extends GameplayData {
      * Suitable for NPCs that only need the basic combat vitals (no hunger/thirst/adrenaline/air).
      */
     public void initBaseDefaults() {
-        vitals.put("health",  VitalValue.of("health",  100, 0.5, "#FF4444", "Health",  0));
+        vitals.put("health", VitalValue.of("health", 100, 0.5, "#FF4444", "Health", 0));
         vitals.put("stamina", VitalValue.of("stamina", 100, 2.0, "#44CC44", "Stamina", 1));
-        vitals.put("mana",    VitalValue.of("mana",    100, 1.0, "#AA44FF", "Mana",    2));
+        vitals.put("mana", VitalValue.of("mana", 100, 1.0, "#AA44FF", "Mana", 2));
 
-        combatStats.put("physical.damage",   CombatStat.of("physical.damage",   5));
-        combatStats.put("physical.accuracy",  CombatStat.of("physical.accuracy",  0.7));
-        combatStats.put("physical.defense",   CombatStat.of("physical.defense",   0));
-        combatStats.put("physical.evasion",   CombatStat.of("physical.evasion",   0.1));
-        combatStats.put("magical.damage",     CombatStat.of("magical.damage",     0));
-        combatStats.put("magical.accuracy",   CombatStat.of("magical.accuracy",   0.7));
-        combatStats.put("magical.defense",    CombatStat.of("magical.defense",    0));
-        combatStats.put("magical.evasion",    CombatStat.of("magical.evasion",    0.05));
-        combatStats.put("attackSpeed",        CombatStat.of("attackSpeed",        1.0));
-        combatStats.put("critChance",         CombatStat.of("critChance",         0.05));
-        combatStats.put("critMultiplier",     CombatStat.of("critMultiplier",     1.5));
+        combatStats.put("physical.damage", CombatStat.of("physical.damage", 5));
+        combatStats.put("physical.accuracy", CombatStat.of("physical.accuracy", 0.7));
+        combatStats.put("physical.defense", CombatStat.of("physical.defense", 0));
+        combatStats.put("physical.evasion", CombatStat.of("physical.evasion", 0.1));
+        combatStats.put("magical.damage", CombatStat.of("magical.damage", 0));
+        combatStats.put("magical.accuracy", CombatStat.of("magical.accuracy", 0.7));
+        combatStats.put("magical.defense", CombatStat.of("magical.defense", 0));
+        combatStats.put("magical.evasion", CombatStat.of("magical.evasion", 0.05));
+        combatStats.put("attackSpeed", CombatStat.of("attackSpeed", 1.0));
+        combatStats.put("critChance", CombatStat.of("critChance", 0.05));
+        combatStats.put("critMultiplier", CombatStat.of("critMultiplier", 1.5));
 
         lastTickTimestamp = System.currentTimeMillis();
     }
@@ -123,8 +122,8 @@ public class EntityCombatData extends GameplayData {
     public static EntityCombatData fromEntityProperties(Map<String, String> server) {
         if (server == null) return null;
 
-        boolean hasCombatProps = server.keySet().stream()
-                .anyMatch(k -> k.startsWith("vital_") || k.startsWith("combat_"));
+        boolean hasCombatProps =
+                server.keySet().stream().anyMatch(k -> k.startsWith("vital_") || k.startsWith("combat_"));
         if (!hasCombatProps) return null;
 
         EntityCombatData data = new EntityCombatData();
@@ -197,8 +196,13 @@ public class EntityCombatData extends GameplayData {
         }
     }
 
-    private static void overrideVital(EntityCombatData data, Map<String, String> server,
-                                       String vitalName, String color, String displayName, int order) {
+    private static void overrideVital(
+            EntityCombatData data,
+            Map<String, String> server,
+            String vitalName,
+            String color,
+            String displayName,
+            int order) {
         String baseKey = "vital_" + vitalName;
         String baseVal = server.get(baseKey);
         if (baseVal != null) {
@@ -224,8 +228,8 @@ public class EntityCombatData extends GameplayData {
      * @param statName  Runtime stat name (with dots, e.g. "physical.damage")
      * @param propSuffix Property suffix in server map (with underscores, e.g. "physical_damage")
      */
-    private static void overrideCombatStat(EntityCombatData data, Map<String, String> server,
-                                            String statName, String propSuffix) {
+    private static void overrideCombatStat(
+            EntityCombatData data, Map<String, String> server, String statName, String propSuffix) {
         String key = "combat_" + propSuffix;
         String val = server.get(key);
         if (val != null) {

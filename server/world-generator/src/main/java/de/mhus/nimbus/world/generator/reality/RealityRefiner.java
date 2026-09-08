@@ -6,18 +6,17 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * B2 — refine loop. Repeatedly evaluates a {@link RealityPlan} with the mechanical validator (C1)
@@ -57,7 +56,10 @@ public class RealityRefiner {
     public RefineResult refine(RealityPlan plan, RefineOptions options) {
         List<String> log = new ArrayList<>();
         if (plan == null) {
-            return RefineResult.builder().converged(false).log(List.of("plan is null")).build();
+            return RefineResult.builder()
+                    .converged(false)
+                    .log(List.of("plan is null"))
+                    .build();
         }
         int maxIterations = Math.max(1, options.getMaxIterations());
 
@@ -85,16 +87,18 @@ public class RealityRefiner {
         boolean balanceChecked = verdict != null && verdict.isConclusive();
         log.add(converged ? "converged" : "not converged (limit reached or revise failed)");
         if (options.isUseJudge() && !balanceChecked) {
-            log.add("WARNING: balance was never judged" + (verdict == null ? ""
-                    : " (" + String.join("; ", verdict.getErrors()) + ")"));
+            log.add("WARNING: balance was never judged"
+                    + (verdict == null ? "" : " (" + String.join("; ", verdict.getErrors()) + ")"));
         }
         return RefineResult.builder()
                 .plan(current)
                 .iterations(iterations)
                 .converged(converged)
                 .balanceChecked(balanceChecked)
-                .judgeErrors(verdict == null || verdict.isConclusive()
-                        ? new ArrayList<>() : new ArrayList<>(verdict.getErrors()))
+                .judgeErrors(
+                        verdict == null || verdict.isConclusive()
+                                ? new ArrayList<>()
+                                : new ArrayList<>(verdict.getErrors()))
                 .finalReport(report)
                 .finalVerdict(verdict)
                 .log(log)
@@ -113,7 +117,11 @@ public class RealityRefiner {
         if (report != null && !report.errors().isEmpty()) {
             sb.append("Structural errors (MUST fix):\n");
             for (ValidationIssue e : report.errors()) {
-                sb.append("- [").append(e.getCode()).append("] ").append(e.getMessage()).append('\n');
+                sb.append("- [")
+                        .append(e.getCode())
+                        .append("] ")
+                        .append(e.getMessage())
+                        .append('\n');
             }
         }
         if (report != null && !report.warnings().isEmpty()) {
@@ -121,7 +129,8 @@ public class RealityRefiner {
             int n = 0;
             for (ValidationIssue w : report.warnings()) {
                 if (n++ >= MAX_WARNINGS_IN_FEEDBACK) {
-                    sb.append("- … (").append(report.warnings().size() - MAX_WARNINGS_IN_FEEDBACK)
+                    sb.append("- … (")
+                            .append(report.warnings().size() - MAX_WARNINGS_IN_FEEDBACK)
                             .append(" more warnings)\n");
                     break;
                 }
@@ -134,8 +143,15 @@ public class RealityRefiner {
                 if (f == null) {
                     continue;
                 }
-                sb.append("- [").append(f.getSeverity()).append("] ").append(f.getRef())
-                        .append(": ").append(f.getIssue()).append(" -> ").append(f.getSuggestion()).append('\n');
+                sb.append("- [")
+                        .append(f.getSeverity())
+                        .append("] ")
+                        .append(f.getRef())
+                        .append(": ")
+                        .append(f.getIssue())
+                        .append(" -> ")
+                        .append(f.getSuggestion())
+                        .append('\n');
             }
         }
         if (sb.length() == 0) {
@@ -193,14 +209,17 @@ public class RealityRefiner {
 
     private String describe(int iteration, ValidationReport report, JudgeVerdict verdict) {
         StringBuilder sb = new StringBuilder("iter ").append(iteration).append(": ");
-        sb.append(report == null ? "no report"
-                : report.errors().size() + " errors, " + report.warnings().size() + " warnings");
+        sb.append(
+                report == null
+                        ? "no report"
+                        : report.errors().size() + " errors, "
+                                + report.warnings().size() + " warnings");
         if (verdict != null) {
-            sb.append(verdict.isConclusive()
-                    ? "; judge score=" + verdict.getScore() + " acceptable=" + verdict.isAcceptable()
-                    : "; judge inconclusive");
+            sb.append(
+                    verdict.isConclusive()
+                            ? "; judge score=" + verdict.getScore() + " acceptable=" + verdict.isAcceptable()
+                            : "; judge inconclusive");
         }
         return sb.toString();
     }
-
 }

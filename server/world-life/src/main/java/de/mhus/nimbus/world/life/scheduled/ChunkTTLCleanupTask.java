@@ -7,13 +7,12 @@ import de.mhus.nimbus.world.life.service.ChunkTTLTracker;
 import de.mhus.nimbus.world.life.service.LifePodRegistrationService;
 import de.mhus.nimbus.world.life.service.MultiWorldChunkService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
+import java.util.ArrayList;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Set;
 
 /**
  * Scheduled task that removes chunks with expired TTL.
@@ -54,8 +53,12 @@ public class ChunkTTLCleanupTask {
                     aliveService.removeChunks(new ArrayList<>(staleChunks));
                     ttlTracker.removeChunks(staleChunks);
 
-                    log.info("World {}: TTL cleanup removed {} stale chunks (TTL: {}ms), {} active remain",
-                            worldId, staleChunks.size(), ttlMs, aliveService.getActiveChunkCount());
+                    log.info(
+                            "World {}: TTL cleanup removed {} stale chunks (TTL: {}ms), {} active remain",
+                            worldId,
+                            staleChunks.size(),
+                            ttlMs,
+                            aliveService.getActiveChunkCount());
                 }
 
                 // If no active chunks remain, remove the dynamic world registration
@@ -65,8 +68,7 @@ public class ChunkTTLCleanupTask {
                     multiWorldChunkService.removeWorld(worldId);
                     log.info("World {}: no active chunks, removed dynamic registration", worldId);
                 } else {
-                    log.trace("World {}: TTL cleanup: {} active chunks",
-                            worldId, aliveService.getActiveChunkCount());
+                    log.trace("World {}: TTL cleanup: {} active chunks", worldId, aliveService.getActiveChunkCount());
                 }
             }
 

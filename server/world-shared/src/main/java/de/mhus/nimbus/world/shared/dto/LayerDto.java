@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.shared.dto;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.world.shared.layer.LayerType;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -17,23 +16,19 @@ import java.util.Map;
  */
 @GenerateTypeScript("dto")
 public record LayerDto(
-        @TypeScript(optional = true)
-        String id,
+        @TypeScript(optional = true) String id,
 
         String worldId,
 
         String name,
 
-        @TypeScript(follow = true)
-        LayerType layerType,
+        @TypeScript(follow = true) LayerType layerType,
 
-        @TypeScript(optional = true)
-        String layerDataId,
+        @TypeScript(optional = true) String layerDataId,
 
         boolean allChunks,
 
-        @TypeScript(optional = true)
-        List<String> affectedChunks,
+        @TypeScript(optional = true) List<String> affectedChunks,
 
         int order,
 
@@ -41,16 +36,10 @@ public record LayerDto(
 
         boolean baseGround,
 
-        @TypeScript(optional = true)
-        Map<String, String> groups,
+        @TypeScript(optional = true) Map<String, String> groups,
 
-        @TypeScript(optional = true)
-        List<Integer> epoches,
+        @TypeScript(optional = true) List<Integer> epoches,
 
-        @TypeScript(optional = true)
-        Instant createdAt,
+        @TypeScript(optional = true) Instant createdAt,
 
-        @TypeScript(optional = true)
-        Instant updatedAt
-) {
-}
+        @TypeScript(optional = true) Instant updatedAt) {}

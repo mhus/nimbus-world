@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.DialogNodeResponse;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.DialogRequest;
-import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogFreeTextService;
 import de.mhus.nimbus.world.control.dialog.DialogService;
 import de.mhus.nimbus.world.control.dialog.DialogService.DialogException;
@@ -37,13 +37,11 @@ public class PlayerDialogController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get current dialog node with evaluated options")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Dialog node returned"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Not found")
+        @ApiResponse(responseCode = "200", description = "Dialog node returned"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Not found")
     })
-    public ResponseEntity<?> getDialog(
-            @RequestParam String progressId,
-            HttpServletRequest request) {
+    public ResponseEntity<?> getDialog(@RequestParam String progressId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -84,13 +82,11 @@ public class PlayerDialogController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Select a dialog option or send free text")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Next dialog node returned"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "503", description = "AI service unavailable for free text")
+        @ApiResponse(responseCode = "200", description = "Next dialog node returned"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "503", description = "AI service unavailable for free text")
     })
-    public ResponseEntity<?> postDialog(
-            @RequestBody DialogRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> postDialog(@RequestBody DialogRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -116,8 +112,7 @@ public class PlayerDialogController extends BaseEditorController {
                     return ResponseEntity.ok(response);
                 } catch (DialogException e) {
                     if ("AI not available".equals(e.getMessage())) {
-                        return ResponseEntity.status(503).body(
-                                java.util.Map.of("error", "AI service unavailable"));
+                        return ResponseEntity.status(503).body(java.util.Map.of("error", "AI service unavailable"));
                     }
                     throw e;
                 }
@@ -142,12 +137,10 @@ public class PlayerDialogController extends BaseEditorController {
     @PostMapping("/close")
     @Operation(summary = "Close dialog and resume NPC movement")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Dialog closed"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+        @ApiResponse(responseCode = "200", description = "Dialog closed"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> closeDialog(
-            @RequestParam String progressId,
-            HttpServletRequest request) {
+    public ResponseEntity<?> closeDialog(@RequestParam String progressId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -158,8 +151,8 @@ public class PlayerDialogController extends BaseEditorController {
         }
 
         try {
-            DialogContext ctx = dialogService.loadDialogContext(progressId, worldId, userId,
-                    characterId != null ? characterId : "");
+            DialogContext ctx = dialogService.loadDialogContext(
+                    progressId, worldId, userId, characterId != null ? characterId : "");
             dialogService.closeDialog(ctx);
             return ResponseEntity.ok(java.util.Map.of("closed", true));
         } catch (DialogException e) {

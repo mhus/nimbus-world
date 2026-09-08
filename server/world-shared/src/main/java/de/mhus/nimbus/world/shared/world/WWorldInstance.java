@@ -5,6 +5,9 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,10 +19,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MongoDB Entity for World Instances.
  * World Instances are temporary or persistent copies of worlds that can be played independently.
@@ -28,8 +27,8 @@ import java.util.List;
 @Document(collection = "w_world_instances")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_instance_idx", def = "{ 'worldId': 1, 'instanceId': 1 }"),
-        @CompoundIndex(name = "creator_idx", def = "{ 'creator': 1 }")
+    @CompoundIndex(name = "world_instance_idx", def = "{ 'worldId': 1, 'instanceId': 1 }"),
+    @CompoundIndex(name = "creator_idx", def = "{ 'creator': 1 }")
 })
 @Data
 @Builder

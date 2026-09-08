@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * House Block Manipulator - creates a predefined house template.
@@ -49,9 +49,9 @@ public class HouseBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a predefined house with walls, floor, roof, door and windows. " +
-                "Parameters: position {x,y,z}, width, length, wallHeight, roofHeight, blockType (optional). " +
-                "Example: {\"house\": {\"transform\": \"position\", \"width\": 10, \"length\": 12, \"wallHeight\": 5, \"roofHeight\": 4}}";
+        return "Creates a predefined house with walls, floor, roof, door and windows. "
+                + "Parameters: position {x,y,z}, width, length, wallHeight, roofHeight, blockType (optional). "
+                + "Example: {\"house\": {\"transform\": \"position\", \"width\": 10, \"length\": 12, \"wallHeight\": 5, \"roofHeight\": 4}}";
     }
 
     @Override
@@ -114,8 +114,16 @@ public class HouseBlockManipulator implements BlockManipulator {
         }
 
         // Generate house
-        log.info("Generating house: pos=({},{},{}), width={}, length={}, wallHeight={}, roofHeight={}, blockType={}",
-                x, y, z, width, length, wallHeight, roofHeight, blockType);
+        log.info(
+                "Generating house: pos=({},{},{}), width={}, length={}, wallHeight={}, roofHeight={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                length,
+                wallHeight,
+                roofHeight,
+                blockType);
 
         painter.house(x, y, z, width, length, wallHeight, roofHeight);
 
@@ -123,7 +131,8 @@ public class HouseBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated house: %d blocks (%dx%d, wall height %d, roof height %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated house: %d blocks (%dx%d, wall height %d, roof height %d) at (%d,%d,%d)",
                 blockCount, width, length, wallHeight, roofHeight, x, y, z);
 
         log.info(message);

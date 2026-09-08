@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.types.EntityStatusUpdate;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Publisher service for broadcasting entity status updates via Redis.
@@ -39,10 +38,7 @@ public class EntityStatusPublisher {
      * @param originatingSessionId Session ID that originated this update (null for server-side)
      */
     public void publishStatusUpdates(
-        String worldId,
-        List<EntityStatusUpdate> statusUpdates,
-        String originatingSessionId
-    ) {
+            String worldId, List<EntityStatusUpdate> statusUpdates, String originatingSessionId) {
         if (statusUpdates == null || statusUpdates.isEmpty()) {
             log.debug("No status updates to publish for world {}", worldId);
             return;
@@ -61,8 +57,11 @@ public class EntityStatusPublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "e.s.u", json);
 
-            log.trace("Published {} entity status updates to Redis for world {} [origin={}]",
-                statusUpdates.size(), worldId, originatingSessionId);
+            log.trace(
+                    "Published {} entity status updates to Redis for world {} [origin={}]",
+                    statusUpdates.size(),
+                    worldId,
+                    originatingSessionId);
 
         } catch (Exception e) {
             log.error("Failed to publish entity status updates to Redis for world {}", worldId, e);
@@ -78,11 +77,10 @@ public class EntityStatusPublisher {
      * @param originatingSessionId Session ID that originated this update (null for server-side)
      */
     public void publishStatusUpdatesWithChunks(
-        String worldId,
-        List<EntityStatusUpdate> statusUpdates,
-        List<EntityStatusBroadcastMessage.ChunkCoordinate> affectedChunks,
-        String originatingSessionId
-    ) {
+            String worldId,
+            List<EntityStatusUpdate> statusUpdates,
+            List<EntityStatusBroadcastMessage.ChunkCoordinate> affectedChunks,
+            String originatingSessionId) {
         if (statusUpdates == null || statusUpdates.isEmpty()) {
             log.debug("No status updates to publish for world {}", worldId);
             return;
@@ -112,10 +110,12 @@ public class EntityStatusPublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "e.s.u", json);
 
-            log.debug("Published {} entity status updates to Redis for world {} ({} chunks) [origin={}]",
-                statusUpdates.size(), worldId,
-                affectedChunks != null ? affectedChunks.size() : 0,
-                originatingSessionId);
+            log.debug(
+                    "Published {} entity status updates to Redis for world {} ({} chunks) [origin={}]",
+                    statusUpdates.size(),
+                    worldId,
+                    affectedChunks != null ? affectedChunks.size() : 0,
+                    originatingSessionId);
 
         } catch (Exception e) {
             log.error("Failed to publish entity status updates to Redis for world {}", worldId, e);
@@ -131,20 +131,16 @@ public class EntityStatusPublisher {
      * @param originatingSessionId Originating session ID (to prevent echo)
      */
     public void publishStatusUpdate(
-        String worldId,
-        String entityId,
-        Map<String, Object> statusFields,
-        String originatingSessionId
-    ) {
+            String worldId, String entityId, Map<String, Object> statusFields, String originatingSessionId) {
         if (statusFields == null || statusFields.isEmpty()) {
             log.warn("Cannot publish empty status update for entity {}", entityId);
             return;
         }
 
         EntityStatusUpdate dto = EntityStatusUpdate.builder()
-            .entityId(entityId)
-            .status(statusFields)
-            .build();
+                .entityId(entityId)
+                .status(statusFields)
+                .build();
 
         publishStatusUpdates(worldId, List.of(dto), originatingSessionId);
     }
@@ -160,26 +156,24 @@ public class EntityStatusPublisher {
      * @param originatingSessionId Originating session ID (to prevent echo)
      */
     public void publishStatusUpdateToChunk(
-        String worldId,
-        String entityId,
-        Map<String, Object> statusFields,
-        int cx,
-        int cz,
-        String originatingSessionId
-    ) {
+            String worldId,
+            String entityId,
+            Map<String, Object> statusFields,
+            int cx,
+            int cz,
+            String originatingSessionId) {
         if (statusFields == null || statusFields.isEmpty()) {
             log.warn("Cannot publish empty status update for entity {}", entityId);
             return;
         }
 
         EntityStatusUpdate dto = EntityStatusUpdate.builder()
-            .entityId(entityId)
-            .status(statusFields)
-            .build();
+                .entityId(entityId)
+                .status(statusFields)
+                .build();
 
-        List<EntityStatusBroadcastMessage.ChunkCoordinate> chunks = List.of(
-            new EntityStatusBroadcastMessage.ChunkCoordinate(cx, cz)
-        );
+        List<EntityStatusBroadcastMessage.ChunkCoordinate> chunks =
+                List.of(new EntityStatusBroadcastMessage.ChunkCoordinate(cx, cz));
 
         publishStatusUpdatesWithChunks(worldId, List.of(dto), chunks, originatingSessionId);
     }

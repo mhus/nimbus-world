@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Job executor for deleting orphaned world resources.
@@ -47,18 +46,23 @@ public class DeleteOrphanedWorldResourcesJobExecutor implements JobExecutor {
             StringBuilder resultMessage = new StringBuilder();
             resultMessage.append("Orphaned world resources cleanup:\n");
 
-            long successCount = results.stream().filter(ResourceRepairService.ProcessResult::success).count();
+            long successCount = results.stream()
+                    .filter(ResourceRepairService.ProcessResult::success)
+                    .count();
             long totalCount = results.size();
 
             resultMessage.append(String.format("Summary: %d/%d operations succeeded\n\n", successCount, totalCount));
 
             // Add details for each result
             for (ResourceRepairService.ProcessResult result : results) {
-                resultMessage.append("- ")
+                resultMessage
+                        .append("- ")
                         .append(result.serviceName())
                         .append(": ")
                         .append(result.success() ? "SUCCESS" : "FAILED")
-                        .append(" (").append(result.message()).append(")")
+                        .append(" (")
+                        .append(result.message())
+                        .append(")")
                         .append("\n");
             }
 

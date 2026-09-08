@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.world.shared.spel.SafeSpel;
+import java.util.*;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import de.mhus.nimbus.world.shared.spel.SafeSpel;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Read-only service for evaluating SpEL conditions against Logic Machine state.
@@ -35,8 +34,7 @@ public class LogicConditionService {
     /**
      * Matches unqualified state references: "state.xxx" NOT followed by ".yyy"
      */
-    private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
+    private static final Pattern UNQUALIFIED_STATE = Pattern.compile("state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     private final WProgressService progressService;
     private final WLogicRuleService ruleService;
@@ -57,8 +55,11 @@ public class LogicConditionService {
             Map<String, Object> state = loadState(worldId);
             return evaluateCondition(spelExpression, state);
         } catch (Exception e) {
-            log.warn("Failed to evaluate logic condition '{}' for worldId={}: {}",
-                    spelExpression, worldId, e.getMessage());
+            log.warn(
+                    "Failed to evaluate logic condition '{}' for worldId={}: {}",
+                    spelExpression,
+                    worldId,
+                    e.getMessage());
             return false;
         }
     }
@@ -67,8 +68,7 @@ public class LogicConditionService {
      * Test: evaluate a rule's condition against live state of a world instance.
      * Read-only, no state changes.
      */
-    public Map<String, Object> testCondition(String worldId, String ruleId,
-                                              Map<String, Object> inlineData) {
+    public Map<String, Object> testCondition(String worldId, String ruleId, Map<String, Object> inlineData) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("mode", "test");
         result.put("worldId", worldId);
@@ -117,8 +117,7 @@ public class LogicConditionService {
      * @param userState user-provided state as nested map: {"pkg": {"key": value}}
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> simulate(String ruleId,
-                                        Map<String, Object> userState) {
+    public Map<String, Object> simulate(String ruleId, Map<String, Object> userState) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("mode", "simulate");
 
@@ -150,12 +149,15 @@ public class LogicConditionService {
                     er.put("type", effect.getType());
                     er.put("parameters", effect.getParameters());
 
-                    String delayStr = effect.getParameters() != null ? effect.getParameters().get("delay") : null;
+                    String delayStr = effect.getParameters() != null
+                            ? effect.getParameters().get("delay")
+                            : null;
                     if (delayStr != null && !delayStr.isBlank()) {
                         er.put("status", "would be delayed " + delayStr + "s");
                     } else if ("state_update".equals(effect.getType()) && effect.getParameters() != null) {
                         Set<String> changed = new LinkedHashSet<>();
-                        for (Map.Entry<String, String> param : effect.getParameters().entrySet()) {
+                        for (Map.Entry<String, String> param :
+                                effect.getParameters().entrySet()) {
                             String key = param.getKey();
                             String qualifiedKey = key.contains(".") ? key : rulePackage + "." + key;
                             Object newValue = parseValue(param.getValue());
@@ -205,8 +207,7 @@ public class LogicConditionService {
         if (expression == null || rulePackage == null || rulePackage.isBlank()) {
             return expression;
         }
-        return UNQUALIFIED_STATE.matcher(expression)
-                .replaceAll("state." + rulePackage + ".$1");
+        return UNQUALIFIED_STATE.matcher(expression).replaceAll("state." + rulePackage + ".$1");
     }
 
     private Map<String, Object> loadState(String worldId) {

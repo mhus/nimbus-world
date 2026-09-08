@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Stairs Block Manipulator - creates stairs in a specified direction.
@@ -47,9 +47,9 @@ public class StairsBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates stairs in a specified direction. " +
-                "Parameters: position {x,y,z}, steps, direction (north/south/east/west), width (optional), blockType (optional). " +
-                "Example: {\"stairs\": {\"transform\": \"position\", \"steps\": 10, \"direction\": \"north\", \"width\": 3}}";
+        return "Creates stairs in a specified direction. "
+                + "Parameters: position {x,y,z}, steps, direction (north/south/east/west), width (optional), blockType (optional). "
+                + "Example: {\"stairs\": {\"transform\": \"position\", \"steps\": 10, \"direction\": \"north\", \"width\": 3}}";
     }
 
     @Override
@@ -123,8 +123,15 @@ public class StairsBlockManipulator implements BlockManipulator {
         }
 
         // Generate stairs
-        log.info("Generating stairs: pos=({},{},{}), steps={}, direction={}, width={}, blockType={}",
-                x, y, z, steps, direction, width, blockType);
+        log.info(
+                "Generating stairs: pos=({},{},{}), steps={}, direction={}, width={}, blockType={}",
+                x,
+                y,
+                z,
+                steps,
+                direction,
+                width,
+                blockType);
 
         painter.stairs(x, y, z, steps, dirX, dirZ, width);
 
@@ -132,7 +139,8 @@ public class StairsBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated stairs: %d blocks (%d steps, %s, width %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated stairs: %d blocks (%d steps, %s, width %d) at (%d,%d,%d)",
                 blockCount, steps, direction, width, x, y, z);
 
         log.info(message);

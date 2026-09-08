@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Modify Selection Block Manipulator - modifies the current ModelSelector in WSession.
@@ -75,10 +74,10 @@ public class ModifySelectionBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Modifies the current ModelSelector in WSession. " +
-                "Operations: enhance (expand/shrink bounding box), move (offset all blocks), " +
-                "add (add blocks), remove (remove blocks). " +
-                "Example: {\"modify-selection\": {\"enhance\": {\"x\": 1, \"y\": 0, \"z\": 1}}}";
+        return "Modifies the current ModelSelector in WSession. "
+                + "Operations: enhance (expand/shrink bounding box), move (offset all blocks), "
+                + "add (add blocks), remove (remove blocks). "
+                + "Example: {\"modify-selection\": {\"enhance\": {\"x\": 1, \"y\": 0, \"z\": 1}}}";
     }
 
     @Override
@@ -173,8 +172,8 @@ public class ModifySelectionBlockManipulator implements BlockManipulator {
         }
 
         int finalCount = selectedBlocks.size();
-        String message = String.format("Modified selection: %d blocks (was %d, %+d)",
-                finalCount, originalCount, finalCount - originalCount);
+        String message = String.format(
+                "Modified selection: %d blocks (was %d, %+d)", finalCount, originalCount, finalCount - originalCount);
 
         log.info(message);
 
@@ -200,11 +199,11 @@ public class ModifySelectionBlockManipulator implements BlockManipulator {
         }
 
         // Parse enhance parameters
-        int north = enhanceNode.has("north") ? enhanceNode.get("north").asInt() : 0;  // -Z
-        int south = enhanceNode.has("south") ? enhanceNode.get("south").asInt() : 0;  // +Z
-        int east = enhanceNode.has("east") ? enhanceNode.get("east").asInt() : 0;     // +X
-        int west = enhanceNode.has("west") ? enhanceNode.get("west").asInt() : 0;     // -X
-        int top = enhanceNode.has("top") ? enhanceNode.get("top").asInt() : 0;        // +Y
+        int north = enhanceNode.has("north") ? enhanceNode.get("north").asInt() : 0; // -Z
+        int south = enhanceNode.has("south") ? enhanceNode.get("south").asInt() : 0; // +Z
+        int east = enhanceNode.has("east") ? enhanceNode.get("east").asInt() : 0; // +X
+        int west = enhanceNode.has("west") ? enhanceNode.get("west").asInt() : 0; // -X
+        int top = enhanceNode.has("top") ? enhanceNode.get("top").asInt() : 0; // +Y
         int bottom = enhanceNode.has("bottom") ? enhanceNode.get("bottom").asInt() : 0; // -Y
 
         // Calculate new bounding box
@@ -215,18 +214,32 @@ public class ModifySelectionBlockManipulator implements BlockManipulator {
         int newMinZ = minZ - north;
         int newMaxZ = maxZ + south;
 
-        log.info("Enhance: bounds ({},{},{}) to ({},{},{}) -> new bounds ({},{},{}) to ({},{},{})",
-                minX, minY, minZ, maxX, maxY, maxZ,
-                newMinX, newMinY, newMinZ, newMaxX, newMaxY, newMaxZ);
+        log.info(
+                "Enhance: bounds ({},{},{}) to ({},{},{}) -> new bounds ({},{},{}) to ({},{},{})",
+                minX,
+                minY,
+                minZ,
+                maxX,
+                maxY,
+                maxZ,
+                newMinX,
+                newMinY,
+                newMinZ,
+                newMaxX,
+                newMaxY,
+                newMaxZ);
 
         // Create new selection with all blocks in new bounding box
         Set<BlockCoordinate> result = new HashSet<>();
 
         // Keep all existing blocks that are still in bounds
         for (BlockCoordinate block : blocks) {
-            if (block.x >= newMinX && block.x <= newMaxX &&
-                block.y >= newMinY && block.y <= newMaxY &&
-                block.z >= newMinZ && block.z <= newMaxZ) {
+            if (block.x >= newMinX
+                    && block.x <= newMaxX
+                    && block.y >= newMinY
+                    && block.y <= newMaxY
+                    && block.z >= newMinZ
+                    && block.z <= newMaxZ) {
                 result.add(block);
             }
         }

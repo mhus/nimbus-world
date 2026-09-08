@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.shared.world;
 
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 /**
  * Shared repair engine for finding and removing duplicate documents based on a
@@ -43,8 +42,7 @@ public final class DuplicateRepairHelper {
             Class<?> entityClass,
             String typeName,
             String worldId,
-            Function<Document, String> keyExtractor
-    ) {
+            Function<Document, String> keyExtractor) {
         String collectionName = mongoTemplate.getCollectionName(entityClass);
         log.info("Starting {} repair for world {}", typeName, worldId);
 
@@ -89,8 +87,7 @@ public final class DuplicateRepairHelper {
                 String.format("Duplicates found: %d, removed: %d", duplicatesFound, duplicatesRemoved),
                 System.currentTimeMillis(),
                 duplicatesFound,
-                duplicatesRemoved
-        );
+                duplicatesRemoved);
     }
 
     /**
@@ -101,9 +98,8 @@ public final class DuplicateRepairHelper {
      * repair) can reuse the exact same selection rule.
      */
     static Document selectDocumentToKeep(List<Document> documents) {
-        Optional<Document> withSchema = documents.stream()
-                .filter(doc -> doc.containsKey("_schema"))
-                .findFirst();
+        Optional<Document> withSchema =
+                documents.stream().filter(doc -> doc.containsKey("_schema")).findFirst();
         if (withSchema.isPresent()) return withSchema.get();
 
         return documents.stream()

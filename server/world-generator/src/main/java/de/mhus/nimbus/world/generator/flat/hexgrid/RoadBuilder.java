@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * RoadBuilder manipulator builder.
@@ -63,7 +62,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class RoadBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     /**
      * Extra pixels added to hexGridSize when computing edge endpoint coordinates.
@@ -73,17 +74,17 @@ public class RoadBuilder extends HexGridBuilder {
     private static final int GRID_EDGE_OVERLAP = 24;
 
     // Legacy parameters (kept for backward compatibility)
-    private static final int DEFAULT_CURVATURE = 10;  // Default maximum lateral offset for curves
-    private static final double DEFAULT_WAVES = 1.5;  // Default number of sine wave cycles
+    private static final int DEFAULT_CURVATURE = 10; // Default maximum lateral offset for curves
+    private static final double DEFAULT_WAVES = 1.5; // Default number of sine wave cycles
 
     // Maximum extra blocks to extend road width when cutting through higher terrain
     private static final int MAX_TERRAIN_EXTENSION = 4;
 
     // New pathfinding parameters
-    private static final int DEFAULT_MAX_SLOPE = 1;  // Maximum elevation change per block
-    private static final int DEFAULT_TERRAIN_THRESHOLD = 5;  // Distance from terrain to trigger TerrainPathFinder
-    private static final double DEFAULT_MAX_DRIFT_RATIO = 1.5;  // Max path length ratio (1.5 = 50% longer)
-    private static final double DEFAULT_STRAIGHTNESS = 0.7;  // 0.0 = very curvy, 1.0 = straight
+    private static final int DEFAULT_MAX_SLOPE = 1; // Maximum elevation change per block
+    private static final int DEFAULT_TERRAIN_THRESHOLD = 5; // Distance from terrain to trigger TerrainPathFinder
+    private static final double DEFAULT_MAX_DRIFT_RATIO = 1.5; // Max path length ratio (1.5 = 50% longer)
+    private static final double DEFAULT_STRAIGHTNESS = 0.7; // 0.0 = very curvy, 1.0 = straight
 
     @Override
     public void buildFlat() {
@@ -96,7 +97,8 @@ public class RoadBuilder extends HexGridBuilder {
         clearBridgeExtraBlocks(flat);
 
         // Get road parameter from hex grid
-        String roadParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_road") : null;
+        String roadParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_road") : null;
         if (roadParam == null || roadParam.isBlank()) {
             log.debug("No road parameter found, skipping");
             return;
@@ -109,8 +111,8 @@ public class RoadBuilder extends HexGridBuilder {
             // Determine center position (use position string or default to flat center)
             int centerX, centerZ;
             if (config.getCenter().getPosition() != null) {
-                int[] centerCoords = getAbsoluteCoordinates(config.getCenter().getPosition(),
-                    flat.getSizeX(), flat.getSizeZ());
+                int[] centerCoords =
+                        getAbsoluteCoordinates(config.getCenter().getPosition(), flat.getSizeX(), flat.getSizeZ());
                 centerX = centerCoords[0];
                 centerZ = centerCoords[1];
             } else {
@@ -122,8 +124,12 @@ public class RoadBuilder extends HexGridBuilder {
             // Calculate center level from average toLevel of all roads
             int centerLevel = calculateCenterLevel(config);
 
-            log.debug("Parsed {} roads with center at ({}, {}) and level {}",
-                    config.getRoute().size(), centerX, centerZ, centerLevel);
+            log.debug(
+                    "Parsed {} roads with center at ({}, {}) and level {}",
+                    config.getRoute().size(),
+                    centerX,
+                    centerZ,
+                    centerLevel);
 
             // Build each road from its side to the center
             for (Road road : config.getRoute()) {
@@ -138,10 +144,13 @@ public class RoadBuilder extends HexGridBuilder {
             // Build plaza at center if configured
             if (config.getCenter().getPlazaSize() > 0) {
                 String plazaMaterial = determinePlazaMaterial(config);
-                buildPlaza(flat, centerX, centerZ, centerLevel, config.getCenter().getPlazaSize(), plazaMaterial);
+                buildPlaza(
+                        flat, centerX, centerZ, centerLevel, config.getCenter().getPlazaSize(), plazaMaterial);
             }
 
-            log.debug("Roads completed for flat: {} roads built", config.getRoute().size());
+            log.debug(
+                    "Roads completed for flat: {} roads built",
+                    config.getRoute().size());
         } catch (Exception e) {
             log.error("Failed to build roads for flat: {}", flat.getFlatId(), e);
         }
@@ -157,10 +166,11 @@ public class RoadBuilder extends HexGridBuilder {
 
         // Parse center properties (optional, defaults to flat center)
         CenterDefinition center = new CenterDefinition();
-        center.setPosition(root.has("position") ? root.get("position").asText() : null);  // null means use flat center
+        center.setPosition(root.has("position") ? root.get("position").asText() : null); // null means use flat center
         center.setLevel(root.has("level") ? root.get("level").asInt() : 0);
         center.setPlazaSize(root.has("plazaSize") ? root.get("plazaSize").asInt() : 0);
-        center.setPlazaMaterial(root.has("plazaMaterial") ? root.get("plazaMaterial").asText() : null);
+        center.setPlazaMaterial(
+                root.has("plazaMaterial") ? root.get("plazaMaterial").asText() : null);
         config.setCenter(center);
 
         // Parse route array
@@ -187,9 +197,10 @@ public class RoadBuilder extends HexGridBuilder {
                     String sideStr = roadNode.get("side").asText();
                     // Convert "NORTH_EAST" to "NE", etc.
                     String edgeShort = convertEdgeToShortForm(sideStr);
-                    road.setPosition(String.format("<%s 2>", edgeShort));  // Default to middle of edge (2/4)
+                    road.setPosition(String.format("<%s 2>", edgeShort)); // Default to middle of edge (2/4)
                 } else {
-                    throw new IllegalArgumentException("Road route must have 'position' (HexLocal), 'lx'/'lz' (coordinates), or 'side' (EDGE) field");
+                    throw new IllegalArgumentException(
+                            "Road route must have 'position' (HexLocal), 'lx'/'lz' (coordinates), or 'side' (EDGE) field");
                 }
 
                 road.setWidth(roadNode.get("width").asInt());
@@ -202,7 +213,7 @@ public class RoadBuilder extends HexGridBuilder {
                 } else if (roadNode.has("level")) {
                     int level = roadNode.get("level").asInt();
                     road.setLevel(level);
-                    road.setFromLevel(level);  // Use same level for both
+                    road.setFromLevel(level); // Use same level for both
                     road.setToLevel(level);
                 } else {
                     throw new IllegalArgumentException("Road route must have 'level' or 'fromLevel'/'toLevel' fields");
@@ -223,7 +234,8 @@ public class RoadBuilder extends HexGridBuilder {
      */
     private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
         // Get start coordinates from position string (with edge overlap for grid transitions)
-        int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ(), GRID_EDGE_OVERLAP);
+        int[] startCoords =
+                getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ(), GRID_EDGE_OVERLAP);
         int startX = startCoords[0];
         int startZ = startCoords[1];
 
@@ -244,8 +256,14 @@ public class RoadBuilder extends HexGridBuilder {
         // Ensure endLevel is at least 1 (roads must be above sea level)
         endLevel = Math.max(1, endLevel);
 
-        log.debug("Building road from {} (fromLevel={}, toLevel={}) to center ({},{}) (centerLevel={})",
-            road.getPosition(), startLevel, endLevel, centerX, centerZ, centerLevel);
+        log.debug(
+                "Building road from {} (fromLevel={}, toLevel={}) to center ({},{}) (centerLevel={})",
+                road.getPosition(),
+                startLevel,
+                endLevel,
+                centerX,
+                centerZ,
+                centerLevel);
 
         // Read pathfinding parameters
         int maxSlopePerBlock = parseIntParameter(parameters, "maxSlopePerBlock", DEFAULT_MAX_SLOPE);
@@ -257,7 +275,7 @@ public class RoadBuilder extends HexGridBuilder {
         // Determine which pathfinder to use
         List<TerrainPathFinder.PathPoint> path = null;
         boolean useTerrainPathfinder = shouldUseTerrainPathfinder(
-            flat, startX, startZ, startLevel, centerX, centerZ, endLevel, terrainThreshold);
+                flat, startX, startZ, startLevel, centerX, centerZ, endLevel, terrainThreshold);
 
         if (useTerrainPathfinder) {
             // Try terrain-adaptive pathfinding
@@ -273,9 +291,9 @@ public class RoadBuilder extends HexGridBuilder {
         // Fall back to straight pathfinding if terrain pathfinder not used or failed
         if (path == null) {
             log.debug("Using StraightPathFinder (road elevated/deep or terrain path blocked)");
-            long seed = flat.getFlatId().hashCode();  // Deterministic seed
-            StraightPathFinder straightFinder = new StraightPathFinder(
-                maxSlopePerBlock, straightness, maxLateralOffset, seed);
+            long seed = flat.getFlatId().hashCode(); // Deterministic seed
+            StraightPathFinder straightFinder =
+                    new StraightPathFinder(maxSlopePerBlock, straightness, maxLateralOffset, seed);
             path = straightFinder.findPath(startX, startZ, startLevel, centerX, centerZ, endLevel);
         }
 
@@ -322,7 +340,8 @@ public class RoadBuilder extends HexGridBuilder {
                         dirZ /= dirLength;
                     }
                 }
-                drawRoadSegment(flat, lastPoint.x, lastPoint.z, road.getWidth(), lastPoint.level, road.getType(), dirX, dirZ);
+                drawRoadSegment(
+                        flat, lastPoint.x, lastPoint.z, road.getWidth(), lastPoint.level, road.getType(), dirX, dirZ);
             }
 
             log.debug("Road built with {} segments", path.size());
@@ -337,8 +356,15 @@ public class RoadBuilder extends HexGridBuilder {
      * @param terrainThreshold If road is within this distance from terrain, use TerrainPathFinder
      * @return true if TerrainPathFinder should be used
      */
-    private boolean shouldUseTerrainPathfinder(WFlat flat, int startX, int startZ, int startLevel,
-                                                 int endX, int endZ, int endLevel, int terrainThreshold) {
+    private boolean shouldUseTerrainPathfinder(
+            WFlat flat,
+            int startX,
+            int startZ,
+            int startLevel,
+            int endX,
+            int endZ,
+            int endLevel,
+            int terrainThreshold) {
         // Sample a few points along the direct path to check terrain distance
         int samples = 5;
         for (int i = 0; i <= samples; i++) {
@@ -364,7 +390,6 @@ public class RoadBuilder extends HexGridBuilder {
         // Road is elevated or deep - use straight pathfinder
         return false;
     }
-
 
     /**
      * Parse integer parameter with default value.
@@ -426,13 +451,13 @@ public class RoadBuilder extends HexGridBuilder {
 
         // Parse position string and get relative coordinates
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
-            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
+                de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
 
         // Convert to absolute WFlat coordinates (center offset stays at actual sizeX/2)
         int lx = sizeX / 2 + relativePos.getX();
         int lz = sizeZ / 2 + relativePos.getZ();
 
-        return new int[]{lx, lz};
+        return new int[] {lx, lz};
     }
 
     /**
@@ -441,13 +466,15 @@ public class RoadBuilder extends HexGridBuilder {
      * @param dirX Direction X component (normalized)
      * @param dirZ Direction Z component (normalized)
      */
-    private void drawRoadSegment(WFlat flat, int centerX, int centerZ, int width, int level,
-                                  String type, double dirX, double dirZ) {
+    private void drawRoadSegment(
+            WFlat flat, int centerX, int centerZ, int width, int level, String type, double dirX, double dirZ) {
         // Determine material based on type
         boolean isTrail = type.equalsIgnoreCase("trail") || type.equalsIgnoreCase("path");
         int centerMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
-        int borderMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BORDER : FlatMaterialService.STREET_BORDER;
-        int bridgeMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BRIDGE : FlatMaterialService.STREET_BRIDGE;
+        int borderMaterial =
+                type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BORDER : FlatMaterialService.STREET_BORDER;
+        int bridgeMaterial =
+                type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BRIDGE : FlatMaterialService.STREET_BRIDGE;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -478,11 +505,12 @@ public class RoadBuilder extends HexGridBuilder {
                     // Create position key for duplicate checking
                     String posKey = x + "," + z;
                     if (drawnPositions.contains(posKey)) {
-                        continue;  // Skip if already drawn
+                        continue; // Skip if already drawn
                     }
                     drawnPositions.add(posKey);
 
-                    drawRoadBlock(flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
+                    drawRoadBlock(
+                            flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
                 }
             }
         } else {
@@ -501,19 +529,31 @@ public class RoadBuilder extends HexGridBuilder {
                     // Create position key for duplicate checking
                     String posKey = x + "," + z;
                     if (drawnPositions.contains(posKey)) {
-                        continue;  // Skip if already drawn
+                        continue; // Skip if already drawn
                     }
                     drawnPositions.add(posKey);
 
-                    drawRoadBlock(flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
+                    drawRoadBlock(
+                            flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
                 }
             }
         }
 
         // Extend road width where adjacent terrain is higher than road level.
         // This ensures players can walk on roads that cut through elevated terrain.
-        extendRoadForHigherTerrain(flat, centerX, centerZ, level, effectiveHalfWidth,
-            perpX, perpZ, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef, drawnPositions);
+        extendRoadForHigherTerrain(
+                flat,
+                centerX,
+                centerZ,
+                level,
+                effectiveHalfWidth,
+                perpX,
+                perpZ,
+                centerMaterial,
+                borderMaterial,
+                bridgeMaterial,
+                waterBlockDef,
+                drawnPositions);
     }
 
     /**
@@ -521,10 +561,19 @@ public class RoadBuilder extends HexGridBuilder {
      * When a road cuts through elevated terrain, the road needs to be wider so players
      * can walk on it without being blocked by the terrain wall at the road edge.
      */
-    private void extendRoadForHigherTerrain(WFlat flat, int centerX, int centerZ, int level,
-                                             int effectiveHalfWidth, double perpX, double perpZ,
-                                             int centerMaterial, int borderMaterial, int bridgeMaterial,
-                                             String waterBlockDef, Set<String> drawnPositions) {
+    private void extendRoadForHigherTerrain(
+            WFlat flat,
+            int centerX,
+            int centerZ,
+            int level,
+            int effectiveHalfWidth,
+            double perpX,
+            double perpZ,
+            int centerMaterial,
+            int borderMaterial,
+            int bridgeMaterial,
+            String waterBlockDef,
+            Set<String> drawnPositions) {
         // Extend on negative perpendicular side
         for (int ext = effectiveHalfWidth + 1; ext <= effectiveHalfWidth + MAX_TERRAIN_EXTENSION; ext++) {
             int x = (int) Math.round(centerX + (-ext) * perpX);
@@ -557,9 +606,16 @@ public class RoadBuilder extends HexGridBuilder {
      *
      * @param offset Distance from road center (for material determination)
      */
-    private void drawRoadBlock(WFlat flat, int x, int z, int level, double offset,
-                                int centerMaterial, int borderMaterial, int bridgeMaterial,
-                                String waterBlockDef) {
+    private void drawRoadBlock(
+            WFlat flat,
+            int x,
+            int z,
+            int level,
+            double offset,
+            int centerMaterial,
+            int borderMaterial,
+            int bridgeMaterial,
+            String waterBlockDef) {
         // Check bounds
         if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
             return;
@@ -673,7 +729,8 @@ public class RoadBuilder extends HexGridBuilder {
      */
     private String determinePlazaMaterial(RoadConfiguration config) {
         // If explicitly specified, use that
-        if (config.getCenter().getPlazaMaterial() != null && !config.getCenter().getPlazaMaterial().isBlank()) {
+        if (config.getCenter().getPlazaMaterial() != null
+                && !config.getCenter().getPlazaMaterial().isBlank()) {
             return config.getCenter().getPlazaMaterial();
         }
 
@@ -775,8 +832,12 @@ public class RoadBuilder extends HexGridBuilder {
             }
         }
 
-        log.debug("Filled center point at ({}, {}) with radius {} and level {}",
-            centerX, centerZ, fillRadius, centerLevel);
+        log.debug(
+                "Filled center point at ({}, {}) with radius {} and level {}",
+                centerX,
+                centerZ,
+                fillRadius,
+                centerLevel);
     }
 
     /**
@@ -785,7 +846,8 @@ public class RoadBuilder extends HexGridBuilder {
      * If water is present, the plaza is not drawn at that position.
      */
     private void buildPlaza(WFlat flat, int centerX, int centerZ, int level, int plazaSize, String plazaMaterial) {
-        log.debug("Building plaza at ({}, {}) with size {} and material {}", centerX, centerZ, plazaSize, plazaMaterial);
+        log.debug(
+                "Building plaza at ({}, {}) with size {} and material {}", centerX, centerZ, plazaSize, plazaMaterial);
 
         // Determine material based on type
         int material = plazaMaterial.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
@@ -874,11 +936,11 @@ public class RoadBuilder extends HexGridBuilder {
      */
     @Data
     private static class Road {
-        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
+        private String position; // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int width;
-        private int level;        // Deprecated: use fromLevel/toLevel
+        private int level; // Deprecated: use fromLevel/toLevel
         private Integer fromLevel; // Level at entry point
-        private Integer toLevel;   // Level at exit point
+        private Integer toLevel; // Level at exit point
         private String type;
     }
 
@@ -903,7 +965,7 @@ public class RoadBuilder extends HexGridBuilder {
      */
     @Data
     private static class CenterDefinition {
-        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
+        private String position; // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int level;
         private int plazaSize;
         private String plazaMaterial;

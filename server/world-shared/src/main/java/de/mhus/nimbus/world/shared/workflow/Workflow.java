@@ -53,5 +53,4 @@ public interface Workflow {
      * @throws WorkflowException
      */
     void finalize(WorkflowContext context, String status) throws WorkflowException;
-
 }

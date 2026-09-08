@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.LakesPoint;
 import de.mhus.nimbus.world.generator.flat.manipulator.LakesManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * LakesBuilder builds a lake system from LakesPoint configuration.
@@ -22,7 +21,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class LakesBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     @Override
     public void buildFlat() {
@@ -35,8 +36,8 @@ public class LakesBuilder extends HexGridBuilder {
         log.debug("Building lakes for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get lakes parameter from hex grid
-        String lakesParam = hexGrid.getParameters() != null ?
-            hexGrid.getParameters().get("g_lakes") : null;
+        String lakesParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_lakes") : null;
 
         if (lakesParam == null || lakesParam.isBlank()) {
             log.debug("No lakes parameter found, skipping");
@@ -45,11 +46,13 @@ public class LakesBuilder extends HexGridBuilder {
 
         try {
             // Parse lakes configuration
-            LakesPoint.LakesConfig config = objectMapper.readValue(
-                lakesParam, LakesPoint.LakesConfig.class);
+            LakesPoint.LakesConfig config = objectMapper.readValue(lakesParam, LakesPoint.LakesConfig.class);
 
-            log.debug("Parsed lakes config for '{}': mainRadius={}, smallLakes={}",
-                config.getLakesName(), config.getMainLakeRadius(), config.getSmallLakes());
+            log.debug(
+                    "Parsed lakes config for '{}': mainRadius={}, smallLakes={}",
+                    config.getLakesName(),
+                    config.getMainLakeRadius(),
+                    config.getSmallLakes());
 
             // Build the lake system
             buildLakes(flat, config, hexGridSize);
@@ -71,16 +74,21 @@ public class LakesBuilder extends HexGridBuilder {
         int regionSizeX = flat.getSizeX();
         int regionSizeZ = flat.getSizeZ();
 
-        log.debug("Building lakes at flat center with mainRadius={}, depth={}, smallLakes={}",
-            config.getMainLakeRadius(), config.getMainLakeDepth(), config.getSmallLakes());
+        log.debug(
+                "Building lakes at flat center with mainRadius={}, depth={}, smallLakes={}",
+                config.getMainLakeRadius(),
+                config.getMainLakeDepth(),
+                config.getSmallLakes());
 
         // Create parameters map for LakesManipulator
         Map<String, String> manipulatorParams = new HashMap<>();
         manipulatorParams.put(LakesManipulator.PARAM_MAIN_LAKE_RADIUS, String.valueOf(config.getMainLakeRadius()));
         manipulatorParams.put(LakesManipulator.PARAM_MAIN_LAKE_DEPTH, String.valueOf(config.getMainLakeDepth()));
         manipulatorParams.put(LakesManipulator.PARAM_SMALL_LAKES, String.valueOf(config.getSmallLakes()));
-        manipulatorParams.put(LakesManipulator.PARAM_SMALL_LAKE_MIN_RADIUS, String.valueOf(config.getSmallLakeMinRadius()));
-        manipulatorParams.put(LakesManipulator.PARAM_SMALL_LAKE_MAX_RADIUS, String.valueOf(config.getSmallLakeMaxRadius()));
+        manipulatorParams.put(
+                LakesManipulator.PARAM_SMALL_LAKE_MIN_RADIUS, String.valueOf(config.getSmallLakeMinRadius()));
+        manipulatorParams.put(
+                LakesManipulator.PARAM_SMALL_LAKE_MAX_RADIUS, String.valueOf(config.getSmallLakeMaxRadius()));
         manipulatorParams.put(LakesManipulator.PARAM_SCATTER_DISTANCE, String.valueOf(config.getScatterDistance()));
         manipulatorParams.put(LakesManipulator.PARAM_SEED, String.valueOf(config.getSeed()));
 
@@ -88,9 +96,12 @@ public class LakesBuilder extends HexGridBuilder {
         LakesManipulator manipulator = new LakesManipulator();
         manipulator.manipulate(flat, regionX, regionZ, regionSizeX, regionSizeZ, manipulatorParams);
 
-        log.info("Lake system built: name='{}', mainRadius={}, mainDepth={}, smallLakes={}",
-            config.getLakesName(), config.getMainLakeRadius(), config.getMainLakeDepth(),
-            config.getSmallLakes());
+        log.info(
+                "Lake system built: name='{}', mainRadius={}, mainDepth={}, smallLakes={}",
+                config.getLakesName(),
+                config.getMainLakeRadius(),
+                config.getMainLakeDepth(),
+                config.getSmallLakes());
     }
 
     @Override

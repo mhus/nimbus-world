@@ -2,6 +2,10 @@ package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -12,11 +16,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Central service for dirty chunk management.
@@ -40,8 +39,7 @@ public class WDirtyChunkService {
      */
     @Transactional
     public void markChunkDirty(String worldId, String chunkKey, String reason) {
-        Optional<WDirtyChunk> existingOpt = dirtyChunkRepository
-                .findByWorldIdAndChunkKey(worldId, chunkKey);
+        Optional<WDirtyChunk> existingOpt = dirtyChunkRepository.findByWorldIdAndChunkKey(worldId, chunkKey);
 
         if (existingOpt.isPresent()) {
             // Update existing entry
@@ -49,8 +47,7 @@ public class WDirtyChunkService {
             existing.touch();
             existing.setReason(reason);
             dirtyChunkRepository.save(existing);
-            log.trace("Updated dirty chunk: world={} chunk={} reason={}",
-                    worldId, chunkKey, reason);
+            log.trace("Updated dirty chunk: world={} chunk={} reason={}", worldId, chunkKey, reason);
         } else {
             // Create new entry
             WDirtyChunk dirtyChunk = WDirtyChunk.builder()
@@ -60,8 +57,7 @@ public class WDirtyChunkService {
                     .build();
             dirtyChunk.touch();
             dirtyChunkRepository.save(dirtyChunk);
-            log.debug("Marked chunk dirty: world={} chunk={} reason={}",
-                    worldId, chunkKey, reason);
+            log.debug("Marked chunk dirty: world={} chunk={} reason={}", worldId, chunkKey, reason);
         }
     }
 
@@ -83,7 +79,8 @@ public class WDirtyChunkService {
         Instant now = Instant.now();
         BulkOperations bulk = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, WDirtyChunk.class);
         for (String chunkKey : chunkKeys) {
-            Query query = new Query(Criteria.where("worldId").is(worldId).and("chunkKey").is(chunkKey));
+            Query query = new Query(
+                    Criteria.where("worldId").is(worldId).and("chunkKey").is(chunkKey));
             Update update = new Update()
                     .set("worldId", worldId)
                     .set("chunkKey", chunkKey)
@@ -93,8 +90,7 @@ public class WDirtyChunkService {
         }
         bulk.execute();
 
-        log.info("Marked {} chunks dirty: world={} reason={}",
-                chunkKeys.size(), worldId, reason);
+        log.info("Marked {} chunks dirty: world={} reason={}", chunkKeys.size(), worldId, reason);
     }
 
     /**
@@ -165,8 +161,9 @@ public class WDirtyChunkService {
      */
     @Transactional
     public long deleteByWorldId(String worldId) {
-        long deleted = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)), WDirtyChunk.class).getDeletedCount();
+        long deleted = mongoTemplate
+                .remove(new Query(Criteria.where("worldId").is(worldId)), WDirtyChunk.class)
+                .getDeletedCount();
         log.info("Deleted {} dirty chunks for world {}", deleted, worldId);
         return deleted;
     }

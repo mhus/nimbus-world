@@ -1,22 +1,19 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
-import de.mhus.nimbus.world.generator.mcp.dto.CreateBillboardBlockTypeRequest;
-import de.mhus.nimbus.world.generator.mcp.dto.CreateCubeBlockTypeRequest;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -31,9 +28,7 @@ public class BlockTypeTools implements McpToolBean {
             @ToolParam(description = "Maximum number of results", required = false) Integer limit) {
         log.debug("MCP: Get block types: worldId={}, limit={}", worldId, limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         int effectiveLimit = limit != null ? limit : 100;
 
@@ -46,19 +41,21 @@ public class BlockTypeTools implements McpToolBean {
         return Map.of(
                 "blockTypes", blockTypeDtos,
                 "count", blockTypeDtos.size(),
-                "total", blockTypes.size()
-        );
+                "total", blockTypes.size());
     }
 
-    @Tool(name = "get_block_type", description = "Get a specific block type by ID (supports collection prefix like 'm:sand', 'n:air')")
+    @Tool(
+            name = "get_block_type",
+            description = "Get a specific block type by ID (supports collection prefix like 'm:sand', 'n:air')")
     public Map<String, Object> getBlockType(
             @ToolParam(description = "World ID") String worldId,
-            @ToolParam(description = "Block type ID, optionally with collection prefix (e.g., 'sand', 'm:sand', 'n:air')") String blockId) {
+            @ToolParam(
+                            description =
+                                    "Block type ID, optionally with collection prefix (e.g., 'sand', 'm:sand', 'n:air')")
+                    String blockId) {
         log.debug("MCP: Get block type: worldId={}, blockId={}", worldId, blockId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         Optional<WBlockType> blockTypeOpt = blockTypeService.findByBlockId(wid, blockId);
 
@@ -69,21 +66,25 @@ public class BlockTypeTools implements McpToolBean {
         return toBlockTypeDto(blockTypeOpt.get());
     }
 
-    @Tool(name = "create_cube_block_type", description = "Create a new cube block type with textures. Textures keys: 0=ALL, 1=TOP, 2=BOTTOM, 3=NORTH, 4=SOUTH, 5=EAST, 6=WEST.")
+    @Tool(
+            name = "create_cube_block_type",
+            description =
+                    "Create a new cube block type with textures. Textures keys: 0=ALL, 1=TOP, 2=BOTTOM, 3=NORTH, 4=SOUTH, 5=EAST, 6=WEST.")
     public Map<String, Object> createCubeBlockType(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Unique block type ID (e.g., 'stone', 'm:sand')") String blockTypeId,
             @ToolParam(description = "Display name of the block type") String title,
             @ToolParam(description = "Description of the block type", required = false) String description,
-            @ToolParam(description = "Texture definitions (keys: 0=ALL, 1=TOP, 2=BOTTOM, etc.)") Map<Integer, Object> textures,
-            @ToolParam(description = "Block type: GROUND, WATER, STRUCTURE, DECORATION, etc.", required = false) String type,
-            @ToolParam(description = "Whether the block is solid (cannot walk through)", required = false) Boolean solid,
+            @ToolParam(description = "Texture definitions (keys: 0=ALL, 1=TOP, 2=BOTTOM, etc.)")
+                    Map<Integer, Object> textures,
+            @ToolParam(description = "Block type: GROUND, WATER, STRUCTURE, DECORATION, etc.", required = false)
+                    String type,
+            @ToolParam(description = "Whether the block is solid (cannot walk through)", required = false)
+                    Boolean solid,
             @ToolParam(description = "Auto-jump height (0 = disabled)", required = false) Double autoJump) {
         log.debug("MCP: Create cube block type: worldId={}, blockTypeId={}", worldId, blockTypeId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(blockTypeId)) {
             throw new McpToolException("blockTypeId is required");
@@ -128,25 +129,29 @@ public class BlockTypeTools implements McpToolBean {
         return Map.of(
                 "id", saved.getId(),
                 "blockTypeId", saved.getName(),
-                "worldId", saved.getWorldId()
-        );
+                "worldId", saved.getWorldId());
     }
 
-    @Tool(name = "create_billboard_block_type", description = "Create a new billboard block type (flat sprite facing camera, ideal for plants). Texture is always transparent with back-face culling enabled.")
+    @Tool(
+            name = "create_billboard_block_type",
+            description =
+                    "Create a new billboard block type (flat sprite facing camera, ideal for plants). Texture is always transparent with back-face culling enabled.")
     public Map<String, Object> createBillboardBlockType(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Unique block type ID (e.g., 'grass', 'm:flower')") String blockTypeId,
             @ToolParam(description = "Display name of the block type") String title,
             @ToolParam(description = "Description of the block type", required = false) String description,
-            @ToolParam(description = "Single texture definition with path (e.g., {\"path\": \"m:textures/plants/grass.png\"})") Map<String, Object> texture,
+            @ToolParam(
+                            description =
+                                    "Single texture definition with path (e.g., {\"path\": \"m:textures/plants/grass.png\"})")
+                    Map<String, Object> texture,
             @ToolParam(description = "Block type: DECORATION, PLANT, etc.", required = false) String type,
-            @ToolParam(description = "Whether the block is solid (usually false for billboards)", required = false) Boolean solid,
+            @ToolParam(description = "Whether the block is solid (usually false for billboards)", required = false)
+                    Boolean solid,
             @ToolParam(description = "Auto-jump height (usually 0 for billboards)", required = false) Double autoJump) {
         log.debug("MCP: Create billboard block type: worldId={}, blockTypeId={}", worldId, blockTypeId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         if (Strings.isBlank(blockTypeId)) {
             throw new McpToolException("blockTypeId is required");
@@ -198,8 +203,7 @@ public class BlockTypeTools implements McpToolBean {
         return Map.of(
                 "id", saved.getId(),
                 "blockTypeId", saved.getName(),
-                "worldId", saved.getWorldId()
-        );
+                "worldId", saved.getWorldId());
     }
 
     private de.mhus.nimbus.generated.types.BlockTypeType parseBlockTypeType(String type) {

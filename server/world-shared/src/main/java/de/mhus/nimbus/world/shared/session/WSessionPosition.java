@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.session;
 
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 /**
  * Player position and rotation data stored separately from WSession.
@@ -29,6 +28,7 @@ public class WSessionPosition {
      * World coordinates - position
      */
     private Double x;
+
     private Double y;
     private Double z;
 
@@ -36,12 +36,14 @@ public class WSessionPosition {
      * Chunk coordinates (calculated from world position)
      */
     private Integer chunkX;
+
     private Integer chunkZ;
 
     /**
      * Rotation - yaw and pitch (in degrees)
      */
-    private Double yaw;   // y rotation (horizontal, 0-360)
+    private Double yaw; // y rotation (horizontal, 0-360)
+
     private Double pitch; // p rotation (vertical, -90 to 90)
 
     /**

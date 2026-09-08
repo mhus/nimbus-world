@@ -4,15 +4,14 @@ import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.*;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for managing World Instances.
@@ -45,8 +44,7 @@ public class WWorldInstanceController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            int epoch
-    ) {}
+            int epoch) {}
 
     public record InstanceUpdateRequest(
             String title,
@@ -55,8 +53,7 @@ public class WWorldInstanceController extends BaseEditorController {
             InstanceDurationType durationType,
             Instant expiresAt,
             Boolean enabled,
-            List<String> players
-    ) {}
+            List<String> players) {}
 
     private InstanceResponse toResponse(WWorldInstance instance) {
         return new InstanceResponse(
@@ -74,8 +71,7 @@ public class WWorldInstanceController extends BaseEditorController {
                 instance.getCreatedAt(),
                 instance.getUpdatedAt(),
                 instance.isEnabled(),
-                instance.getEpoch()
-        );
+                instance.getEpoch());
     }
 
     /**
@@ -132,7 +128,8 @@ public class WWorldInstanceController extends BaseEditorController {
             return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         }
 
-        return instanceService.findByInstanceId(instanceId)
+        return instanceService
+                .findByInstanceId(instanceId)
                 .<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Instance not found: " + instanceId)));
@@ -166,8 +163,7 @@ public class WWorldInstanceController extends BaseEditorController {
                 if (request.players() != null) instance.setPlayers(new ArrayList<>(request.players()));
             });
 
-            return updated
-                    .<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
+            return updated.<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
                     .orElseGet(() -> notFound("Instance not found: " + instanceId));
         } catch (Exception e) {
             return bad(e.getMessage());
@@ -206,9 +202,7 @@ public class WWorldInstanceController extends BaseEditorController {
      */
     @PutMapping("/{instanceId}/epoch")
     public ResponseEntity<?> switchEpoch(
-            @PathVariable String instanceId,
-            @RequestBody Map<String, Integer> body,
-            HttpServletRequest request) {
+            @PathVariable String instanceId, @RequestBody Map<String, Integer> body, HttpServletRequest request) {
 
         var error = validateId(instanceId, "instanceId");
         if (error != null) return error;
@@ -237,8 +231,7 @@ public class WWorldInstanceController extends BaseEditorController {
             }
 
             List<WEpochMeta> epoches = worldOpt.get().getEpoches();
-            boolean epochExists = epoches != null && epoches.stream()
-                    .anyMatch(e -> e.getEpoch() == newEpoch);
+            boolean epochExists = epoches != null && epoches.stream().anyMatch(e -> e.getEpoch() == newEpoch);
             if (!epochExists) {
                 return bad("Epoch " + newEpoch + " does not exist in world " + worldId);
             }
@@ -285,13 +278,11 @@ public class WWorldInstanceController extends BaseEditorController {
             Map<String, Object> stats = Map.of(
                     "totalCount", count,
                     "worldId", worldId != null ? worldId : "",
-                    "creator", creator != null ? creator : ""
-            );
+                    "creator", creator != null ? creator : "");
 
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             return bad(e.getMessage());
         }
     }
-
 }

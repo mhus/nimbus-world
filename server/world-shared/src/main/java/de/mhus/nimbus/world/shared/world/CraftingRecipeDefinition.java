@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * DTO for crafting recipe definitions stored in WAnything collection "craftingRecipes".
@@ -69,5 +68,4 @@ public class CraftingRecipeDefinition {
      * Spell word XP reward per word on success.
      */
     private int spellWordXpReward;
-
 }

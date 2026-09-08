@@ -6,11 +6,14 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.BuildContext;
 import de.mhus.nimbus.world.generator.composer.build.BuildFeature;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.structure.Structure;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,10 +22,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @SuperBuilder
@@ -183,10 +182,10 @@ public class Town extends Structure implements BuildFeature {
             // This allows the system to continue working while new logic is being developed
 
             return CompositionResult.builder()
-                .success(true)
-                .totalStructures(1)
-                .totalGrids(0)
-                .build();
+                    .success(true)
+                    .totalStructures(1)
+                    .totalGrids(0)
+                    .build();
 
         } catch (Exception e) {
             return CompositionResult.failed("Town build failed: " + e.getMessage());
@@ -202,8 +201,11 @@ public class Town extends Structure implements BuildFeature {
      * @param hexGridSize Size of each hex grid from world configuration
      */
     public void configureHexGrids(List<HexVector2> coordinates, int hexGridSize, StructuresIndex structuresIndex) {
-        log.debug("Configuring HexGrids for town '{}' with {} districts (hexGridSize: {})",
-            getName(), districts != null ? districts.size() : 0, hexGridSize);
+        log.debug(
+                "Configuring HexGrids for town '{}' with {} districts (hexGridSize: {})",
+                getName(),
+                districts != null ? districts.size() : 0,
+                hexGridSize);
 
         // Clear existing configurations
         if (getHexGrids() != null) {
@@ -219,7 +221,10 @@ public class Town extends Structure implements BuildFeature {
 
         // Use provided StructuresIndex (loaded from region collection)
         StructuresIndex buildingIndex = structuresIndex != null ? structuresIndex : new StructuresIndex();
-        log.debug("Using StructuresIndex for town '{}' with {} buildings", getName(), buildingIndex.getTotalBuildingCount());
+        log.debug(
+                "Using StructuresIndex for town '{}' with {} buildings",
+                getName(),
+                buildingIndex.getTotalBuildingCount());
 
         // Design the town using TownDesigner
         TownDesigner designer = new TownDesigner(buildingIndex);
@@ -247,8 +252,10 @@ public class Town extends Structure implements BuildFeature {
             throw new RuntimeException("Town design failed for '" + getName() + "': " + e.getMessage(), e);
         }
 
-        log.debug("Town design successful: {} districts, {} places",
-            designResult.getDistrictCount(), designResult.getTotalPlaceCount());
+        log.debug(
+                "Town design successful: {} districts, {} places",
+                designResult.getDistrictCount(),
+                designResult.getTotalPlaceCount());
 
         // Create FeatureHexGrid for each DistrictGrid with configuration
         for (DistrictGrid districtGrid : designResult.getDistrictGrids()) {
@@ -266,10 +273,10 @@ public class Town extends Structure implements BuildFeature {
 
             // Create FeatureHexGrid
             FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-                .coordinate(relativePos) // Will be translated to absolute by StructureComposer
-                .name(getName() + " - " + districtGrid.getName())
-                .description("District '" + districtGrid.getTitle() + "' of " + getName())
-                .build();
+                    .coordinate(relativePos) // Will be translated to absolute by StructureComposer
+                    .name(getName() + " - " + districtGrid.getName())
+                    .description("District '" + districtGrid.getTitle() + "' of " + getName())
+                    .build();
 
             // Add g_town parameter with configuration
             featureHexGrid.addParameter("g_village", configJson);
@@ -287,12 +294,19 @@ public class Town extends Structure implements BuildFeature {
             // Add to this feature
             addHexGrid(featureHexGrid);
 
-            log.debug("Configured grid for district '{}' at [{},{}] with {} places, {} streets",
-                districtGrid.getName(), relativePos.getQ(), relativePos.getR(),
-                districtGrid.getPlacedPlaces().size(), districtGrid.getStreets().size());
+            log.debug(
+                    "Configured grid for district '{}' at [{},{}] with {} places, {} streets",
+                    districtGrid.getName(),
+                    relativePos.getQ(),
+                    relativePos.getR(),
+                    districtGrid.getPlacedPlaces().size(),
+                    districtGrid.getStreets().size());
         }
 
-        log.debug("Town '{}' configured: {} grids created", getName(), getHexGrids().size());
+        log.debug(
+                "Town '{}' configured: {} grids created",
+                getName(),
+                getHexGrids().size());
     }
 
     /**
@@ -302,10 +316,10 @@ public class Town extends Structure implements BuildFeature {
         log.warn("Creating {} fallback grids for town '{}'", coordinates.size(), getName());
         for (HexVector2 coord : coordinates) {
             FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-                .coordinate(coord)
-                .name(getName() + " [" + coord.getQ() + ";" + coord.getR() + "]")
-                .description("Fallback grid for " + getName())
-                .build();
+                    .coordinate(coord)
+                    .name(getName() + " [" + coord.getQ() + ";" + coord.getR() + "]")
+                    .description("Fallback grid for " + getName())
+                    .build();
 
             featureHexGrid.addParameter("structure", "town");
             featureHexGrid.addParameter("structureName", getName());
@@ -314,47 +328,47 @@ public class Town extends Structure implements BuildFeature {
         }
     }
 
-//    /**
-//     * Creates fallback grids from district positions when design fails
-//     */
-//    private void createFallbackGridsFromDistricts() {
-//        if (districts == null || districts.isEmpty()) {
-//            log.warn("No districts to create fallback grids from");
-//            return;
-//        }
-//
-//        log.warn("Creating {} fallback grids from districts for town '{}'",
-//            districts.size(), getName());
-//
-//        // Resolve district positions using TownDesigner
-//        Map<String, HexVector2> districtPositions = TownDesigner.resolveDistrictPositions(districts);
-//
-//        for (District district : districts) {
-//            HexVector2 position = districtPositions.get(district.getName());
-//            if (position == null) {
-//                log.warn("District '{}' could not be positioned, skipping fallback", district.getName());
-//                continue;
-//            }
-//
-//            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-//                .coordinate(position)
-//                .name(getName() + " - " + district.getName())
-//                .description("Fallback grid for district " + district.getName())
-//                .build();
-//
-//            featureHexGrid.addParameter("structure", "town");
-//            featureHexGrid.addParameter("structureName", getName());
-//            featureHexGrid.addParameter("districtName", district.getName());
-//
-//            // Add minimal g_town parameter
-//            String minimalConfig = String.format(
-//                "{\"townName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
-//                getName(), district.getName(), baseLevel);
-//            featureHexGrid.addParameter("g_village", minimalConfig);
-//
-//            addHexGrid(featureHexGrid);
-//        }
-//    }
+    //    /**
+    //     * Creates fallback grids from district positions when design fails
+    //     */
+    //    private void createFallbackGridsFromDistricts() {
+    //        if (districts == null || districts.isEmpty()) {
+    //            log.warn("No districts to create fallback grids from");
+    //            return;
+    //        }
+    //
+    //        log.warn("Creating {} fallback grids from districts for town '{}'",
+    //            districts.size(), getName());
+    //
+    //        // Resolve district positions using TownDesigner
+    //        Map<String, HexVector2> districtPositions = TownDesigner.resolveDistrictPositions(districts);
+    //
+    //        for (District district : districts) {
+    //            HexVector2 position = districtPositions.get(district.getName());
+    //            if (position == null) {
+    //                log.warn("District '{}' could not be positioned, skipping fallback", district.getName());
+    //                continue;
+    //            }
+    //
+    //            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
+    //                .coordinate(position)
+    //                .name(getName() + " - " + district.getName())
+    //                .description("Fallback grid for district " + district.getName())
+    //                .build();
+    //
+    //            featureHexGrid.addParameter("structure", "town");
+    //            featureHexGrid.addParameter("structureName", getName());
+    //            featureHexGrid.addParameter("districtName", district.getName());
+    //
+    //            // Add minimal g_town parameter
+    //            String minimalConfig = String.format(
+    //                "{\"townName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
+    //                getName(), district.getName(), baseLevel);
+    //            featureHexGrid.addParameter("g_village", minimalConfig);
+    //
+    //            addHexGrid(featureHexGrid);
+    //        }
+    //    }
 
     /**
      * Creates TownGridConfig from DistrictGrid
@@ -362,23 +376,23 @@ public class Town extends Structure implements BuildFeature {
     private TownGridConfig createGridConfig(DistrictGrid districtGrid) {
         // Convert PlacedPlaces to config
         List<TownGridConfig.PlacedPlaceConfig> placesConfig = districtGrid.getPlacedPlaces().stream()
-            .map(this::convertPlacedPlace)
-            .toList();
+                .map(this::convertPlacedPlace)
+                .toList();
 
         // Convert Streets to config
         List<TownGridConfig.StreetSegmentConfig> streetsConfig = districtGrid.getStreets().stream()
-            .map(this::convertStreetSegment)
-            .toList();
+                .map(this::convertStreetSegment)
+                .toList();
 
         return TownGridConfig.builder()
-            .villageName(getName())
-            .style(style)
-            .districtName(districtGrid.getName())
-            .districtTitle(districtGrid.getTitle())
-            .baseLevel(baseLevel)
-            .places(placesConfig)
-            .streets(streetsConfig)
-            .build();
+                .villageName(getName())
+                .style(style)
+                .districtName(districtGrid.getName())
+                .districtTitle(districtGrid.getTitle())
+                .baseLevel(baseLevel)
+                .places(placesConfig)
+                .streets(streetsConfig)
+                .build();
     }
 
     /**
@@ -395,40 +409,44 @@ public class Town extends Structure implements BuildFeature {
             kind = ((BuildingPlace) place).getKind();
         } else if (place instanceof FreePlace) {
             type = "free";
-            kind = ((FreePlace) place).getKind() != null ?
-                ((FreePlace) place).getKind().name() : null;
+            kind = ((FreePlace) place).getKind() != null
+                    ? ((FreePlace) place).getKind().name()
+                    : null;
         } else if (place instanceof RoadPlace) {
             type = "road";
-            kind = ((RoadPlace) place).getKind() != null ?
-                ((RoadPlace) place).getKind().name() : null;
+            kind = ((RoadPlace) place).getKind() != null
+                    ? ((RoadPlace) place).getKind().name()
+                    : null;
         } else if (place instanceof RiverPlace) {
             type = "river";
-            kind = ((RiverPlace) place).getKind() != null ?
-                ((RiverPlace) place).getKind().name() : "STREAM";
+            kind = ((RiverPlace) place).getKind() != null
+                    ? ((RiverPlace) place).getKind().name()
+                    : "STREAM";
         } else if (place instanceof WallPlace) {
             type = "wall";
-            kind = ((WallPlace) place).getKind() != null ?
-                ((WallPlace) place).getKind().name() : null;
+            kind = ((WallPlace) place).getKind() != null
+                    ? ((WallPlace) place).getKind().name()
+                    : null;
         } else {
             type = "unknown";
         }
 
         return TownGridConfig.PlacedPlaceConfig.builder()
-            .name(place.getName())
-            .type(type)
-            .hexQ(placedPlace.getHexQ())
-            .hexR(placedPlace.getHexR())
-            .localX(placedPlace.getLocalX())
-            .localZ(placedPlace.getLocalZ())
-            .relativePos(placedPlace.getRelativePos())
-            .rotation(placedPlace.getRotation())
-            .divider(placedPlace.getDivider())
-            .buildingId(placedPlace.getBuildingId())
-            .kind(kind)
-            .oversized(placedPlace.isOversized())
-            .connectionPoint(place.isConnectionPoint())
-            .level(baseLevel + place.getLevelOffset())
-            .build();
+                .name(place.getName())
+                .type(type)
+                .hexQ(placedPlace.getHexQ())
+                .hexR(placedPlace.getHexR())
+                .localX(placedPlace.getLocalX())
+                .localZ(placedPlace.getLocalZ())
+                .relativePos(placedPlace.getRelativePos())
+                .rotation(placedPlace.getRotation())
+                .divider(placedPlace.getDivider())
+                .buildingId(placedPlace.getBuildingId())
+                .kind(kind)
+                .oversized(placedPlace.isOversized())
+                .connectionPoint(place.isConnectionPoint())
+                .level(baseLevel + place.getLevelOffset())
+                .build();
     }
 
     /**
@@ -436,14 +454,14 @@ public class Town extends Structure implements BuildFeature {
      */
     private TownGridConfig.StreetSegmentConfig convertStreetSegment(StreetSegment segment) {
         return TownGridConfig.StreetSegmentConfig.builder()
-            .fromX(segment.getFromX())
-            .fromZ(segment.getFromZ())
-            .toX(segment.getToX())
-            .toZ(segment.getToZ())
-            .width(segment.getWidth())
-            .type(segment.getType())
-            .level(segment.getLevel())
-            .build();
+                .fromX(segment.getFromX())
+                .fromZ(segment.getFromZ())
+                .toX(segment.getToX())
+                .toZ(segment.getToZ())
+                .width(segment.getWidth())
+                .type(segment.getType())
+                .level(segment.getLevel())
+                .build();
     }
 
     /**
@@ -451,8 +469,7 @@ public class Town extends Structure implements BuildFeature {
      */
     private String serializeToJson(TownGridConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize TownGridConfig to JSON", e);
@@ -476,8 +493,7 @@ public class Town extends Structure implements BuildFeature {
             return;
         }
 
-        log.debug("Connecting {} external connection points for town '{}'",
-            externalConnectionPoints.size(), getName());
+        log.debug("Connecting {} external connection points for town '{}'", externalConnectionPoints.size(), getName());
 
         // For each external connection point, find the corresponding internal connection point
         // and create street segments connecting them
@@ -498,8 +514,11 @@ public class Town extends Structure implements BuildFeature {
         String internalPointName = externalPoint.getInternalConnectionPointName();
         Direction externalDirection = externalPoint.getExternalDirection();
 
-        log.debug("Connecting external point '{}' (direction: {}, internal: {})",
-            externalPoint.getName(), externalDirection, internalPointName);
+        log.debug(
+                "Connecting external point '{}' (direction: {}, internal: {})",
+                externalPoint.getName(),
+                externalDirection,
+                internalPointName);
 
         if (designedDistrictGrids == null || designedDistrictGrids.isEmpty()) {
             log.warn("No district grids available for external connection routing");
@@ -542,28 +561,28 @@ public class Town extends Structure implements BuildFeature {
         // Create two RoadConfigParts: one at internal point position, one at edge position
         // These will be assembled by HexGridRoadConfigurator
         RoadConfigPart internalPart = RoadConfigPart.createRoutePositionPart(
-            internalPlace.getLocalX(),
-            internalPlace.getLocalZ(),
-            4,  // Standard street width
-            baseLevel,
-            "street"
-        );
+                internalPlace.getLocalX(),
+                internalPlace.getLocalZ(),
+                4, // Standard street width
+                baseLevel,
+                "street");
 
         RoadConfigPart edgePart = RoadConfigPart.createRoutePositionPart(
-            edgeX,
-            edgeZ,
-            4,  // Standard street width
-            baseLevel,
-            "street"
-        );
+                edgeX, edgeZ, 4, // Standard street width
+                baseLevel, "street");
 
         targetHexGrid.addRoadConfigPart(internalPart);
         targetHexGrid.addRoadConfigPart(edgePart);
 
-        log.debug("EXTERNAL_CONNECTION: district='{}' internal='{}' at ({},{}) → edge at ({},{}) direction {}",
-            targetDistrict.getName(), internalPointName,
-            internalPlace.getLocalX(), internalPlace.getLocalZ(),
-            edgeX, edgeZ, externalDirection);
+        log.debug(
+                "EXTERNAL_CONNECTION: district='{}' internal='{}' at ({},{}) → edge at ({},{}) direction {}",
+                targetDistrict.getName(),
+                internalPointName,
+                internalPlace.getLocalX(),
+                internalPlace.getLocalZ(),
+                edgeX,
+                edgeZ,
+                externalDirection);
     }
 
     /**
@@ -596,15 +615,14 @@ public class Town extends Structure implements BuildFeature {
         int center = hexGridSize / 2;
 
         return switch (direction) {
-            case N -> new int[]{center, 0};                      // North edge: center, top
-            case NE -> new int[]{hexGridSize, 0};                // Northeast edge: right, top
-            case E -> new int[]{hexGridSize, center};             // East edge: right, center
-            case SE -> new int[]{hexGridSize, hexGridSize};      // Southeast edge: right, bottom
-            case S -> new int[]{center, hexGridSize};            // South edge: center, bottom
-            case SW -> new int[]{0, hexGridSize};                // Southwest edge: left, bottom
-            case W -> new int[]{0, center};                      // West edge: left, center
-            case NW -> new int[]{0, 0};                          // Northwest edge: left, top
+            case N -> new int[] {center, 0}; // North edge: center, top
+            case NE -> new int[] {hexGridSize, 0}; // Northeast edge: right, top
+            case E -> new int[] {hexGridSize, center}; // East edge: right, center
+            case SE -> new int[] {hexGridSize, hexGridSize}; // Southeast edge: right, bottom
+            case S -> new int[] {center, hexGridSize}; // South edge: center, bottom
+            case SW -> new int[] {0, hexGridSize}; // Southwest edge: left, bottom
+            case W -> new int[] {0, center}; // West edge: left, center
+            case NW -> new int[] {0, 0}; // Northwest edge: left, top
         };
     }
-
 }

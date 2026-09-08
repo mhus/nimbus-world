@@ -2,11 +2,10 @@ package de.mhus.nimbus.world.generator.reality;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Result of the AI balance judge (C2). The AI fills {@code acceptable}, {@code score},
@@ -23,6 +22,7 @@ public class JudgeVerdict {
     private boolean acceptable;
     /** Overall balance score 0..100 (higher = better). */
     private Integer score;
+
     private String summary;
     private List<JudgeFinding> findings;
 
@@ -44,7 +44,9 @@ public class JudgeVerdict {
         List<JudgeFinding> out = new ArrayList<>();
         if (findings != null) {
             for (JudgeFinding f : findings) {
-                if (f != null && f.getSeverity() != null && f.getSeverity().trim().equalsIgnoreCase("major")) {
+                if (f != null
+                        && f.getSeverity() != null
+                        && f.getSeverity().trim().equalsIgnoreCase("major")) {
                     out.add(f);
                 }
             }

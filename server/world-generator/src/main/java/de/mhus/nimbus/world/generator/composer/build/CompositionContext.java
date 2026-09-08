@@ -2,9 +2,8 @@ package de.mhus.nimbus.world.generator.composer.build;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import lombok.Data;
-
 import java.util.*;
+import lombok.Data;
 
 /**
  * Context for biome composition process
@@ -59,8 +58,7 @@ public class CompositionContext {
      * Checks if a coordinate is occupied
      */
     public boolean isOccupied(HexVector2 coord) {
-        return occupiedCoordinates.stream()
-            .anyMatch(c -> c.getQ() == coord.getQ() && c.getR() == coord.getR());
+        return occupiedCoordinates.stream().anyMatch(c -> c.getQ() == coord.getQ() && c.getR() == coord.getR());
     }
 
     /**

@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.structure;
 
 import de.mhus.nimbus.world.generator.composer.town.Town;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,39 +27,46 @@ public enum StructureType {
     /**
      * Small town (40-60 buildings, 5-7 hexes, cross pattern)
      */
-    TOWN(Town.class, "mountain", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1",
-        "has_wall", "false"
-    )),
+    TOWN(
+            Town.class,
+            "mountain",
+            Map.of(
+                    "g_offset", "1",
+                    "default_level", "95",
+                    "default_material", "1",
+                    "has_wall", "false")),
 
     /**
      * Large town (60-100 buildings, 7-12 hexes)
      */
-    LARGE_TOWN(Town.class, "mountain", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1",
-        "has_wall", "true"
-    )),
+    LARGE_TOWN(
+            Town.class,
+            "mountain",
+            Map.of(
+                    "g_offset", "1",
+                    "default_level", "95",
+                    "default_material", "1",
+                    "has_wall", "true")),
 
     /**
      * City (100+ buildings, 12+ hexes)
      */
-    CITY(Town.class, "mountain", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1",
-        "has_wall", "true",
-        "has_districts", "true"
-    ));
+    CITY(
+            Town.class,
+            "mountain",
+            Map.of(
+                    "g_offset", "1",
+                    "default_level", "95",
+                    "default_material", "1",
+                    "has_wall", "true",
+                    "has_districts", "true"));
 
     private final Class<? extends Structure> structureClass;
     private final String defaultBuilder;
     private final Map<String, String> defaultParameters;
 
-    StructureType(Class<? extends Structure> structureClass, String defaultBuilder, Map<String, String> defaultParameters) {
+    StructureType(
+            Class<? extends Structure> structureClass, String defaultBuilder, Map<String, String> defaultParameters) {
         this.structureClass = structureClass;
         this.defaultBuilder = defaultBuilder;
         this.defaultParameters = Collections.unmodifiableMap(new HashMap<>(defaultParameters));

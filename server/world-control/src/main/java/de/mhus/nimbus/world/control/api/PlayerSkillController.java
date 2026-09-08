@@ -2,21 +2,20 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
+import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
-import de.mhus.nimbus.world.shared.gameplay.Skill;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/skills")
@@ -66,7 +65,7 @@ public class PlayerSkillController extends BaseEditorController {
         int totalSkillPoints = characterService.calculateTotalSkillPoints(character, name -> {
             Skill s = AdventureSkills.byName(name);
             if (s == null) return null;
-            return new int[]{s.getStart(), s.getMin(), s.getMax()};
+            return new int[] {s.getStart(), s.getMin(), s.getMax()};
         });
 
         long experienceToNext = characterService.calculateSkillExperienceToNext(totalSkillPoints);
@@ -101,7 +100,7 @@ public class PlayerSkillController extends BaseEditorController {
         int totalSkillPoints = characterService.calculateTotalSkillPoints(character, name -> {
             Skill s = AdventureSkills.byName(name);
             if (s == null) return null;
-            return new int[]{s.getStart(), s.getMin(), s.getMax()};
+            return new int[] {s.getStart(), s.getMin(), s.getMax()};
         });
 
         long experienceToNext = characterService.calculateSkillExperienceToNext(totalSkillPoints);
@@ -109,11 +108,14 @@ public class PlayerSkillController extends BaseEditorController {
 
         if (!converted) {
             return ResponseEntity.ok(Map.of(
-                    "converted", false,
-                    "skillPoints", character.getSkillPoints(),
-                    "skillExperience", character.getSkillExperience(),
-                    "experienceToNext", experienceToNext
-            ));
+                    "converted",
+                    false,
+                    "skillPoints",
+                    character.getSkillPoints(),
+                    "skillExperience",
+                    character.getSkillExperience(),
+                    "experienceToNext",
+                    experienceToNext));
         }
 
         // Re-read character to get updated values
@@ -121,23 +123,24 @@ public class PlayerSkillController extends BaseEditorController {
         int newTotal = characterService.calculateTotalSkillPoints(updated, name -> {
             Skill s = AdventureSkills.byName(name);
             if (s == null) return null;
-            return new int[]{s.getStart(), s.getMin(), s.getMax()};
+            return new int[] {s.getStart(), s.getMin(), s.getMax()};
         });
         long newExperienceToNext = characterService.calculateSkillExperienceToNext(newTotal);
 
         return ResponseEntity.ok(Map.of(
-                "converted", true,
-                "skillPoints", updated.getSkillPoints(),
-                "skillExperience", updated.getSkillExperience(),
-                "experienceToNext", newExperienceToNext
-        ));
+                "converted",
+                true,
+                "skillPoints",
+                updated.getSkillPoints(),
+                "skillExperience",
+                updated.getSkillExperience(),
+                "experienceToNext",
+                newExperienceToNext));
     }
 
     @PostMapping("/spend")
     @Operation(summary = "Spend skill points on skills")
-    public ResponseEntity<?> spendSkillPoints(
-            @RequestBody SpendRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> spendSkillPoints(@RequestBody SpendRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -184,29 +187,29 @@ public class PlayerSkillController extends BaseEditorController {
             for (int i = 0; i < points; i++) {
                 boolean spent = characterService.spendSkillPoint(character.getId(), skillName);
                 if (!spent) {
-                    return ResponseEntity.ok(Map.of(
-                            "success", false,
-                            "spent", totalSpent,
-                            "message", "Not enough skill points"
-                    ));
+                    return ResponseEntity.ok(
+                            Map.of("success", false, "spent", totalSpent, "message", "Not enough skill points"));
                 }
                 totalSpent++;
             }
         }
 
-        log.info("Spent {} skill points: userId={}, characterId={}, allocations={}",
-                totalSpent, userId, characterId, body.allocations());
+        log.info(
+                "Spent {} skill points: userId={}, characterId={}, allocations={}",
+                totalSpent,
+                userId,
+                characterId,
+                body.allocations());
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "spent", totalSpent
-        ));
+        return ResponseEntity.ok(Map.of("success", true, "spent", totalSpent));
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
-        return characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
+        return characterService
+                .getCharacter(userId, parsedWorldId.getRegionId(), characterId)
+                .orElse(null);
     }
 
     record SpendRequest(Map<String, Integer> allocations) {}

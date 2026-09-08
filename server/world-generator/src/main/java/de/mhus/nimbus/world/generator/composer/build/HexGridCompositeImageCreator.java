@@ -6,12 +6,6 @@ import de.mhus.nimbus.world.shared.generator.FlatLevelImageCreator;
 import de.mhus.nimbus.world.shared.generator.FlatMaterialImageCreator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -19,7 +13,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import javax.imageio.ImageIO;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Creates composite images from multiple hex grids.
@@ -132,8 +130,14 @@ public class HexGridCompositeImageCreator {
             // Calculate hex coordinate bounds
             HexBounds bounds = calculateHexBounds(flatProvider);
 
-            log.debug("Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
-                bounds.gridWidth, bounds.gridHeight, bounds.minQ, bounds.maxQ, bounds.minR, bounds.maxR);
+            log.debug(
+                    "Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
+                    bounds.gridWidth,
+                    bounds.gridHeight,
+                    bounds.minQ,
+                    bounds.maxQ,
+                    bounds.minR,
+                    bounds.maxR);
 
             // Calculate cartesian bounds using HexMathUtil
             CartesianBounds cartBounds = calculateCartesianBounds(flatProvider);
@@ -141,9 +145,14 @@ public class HexGridCompositeImageCreator {
             int imageWidth = (int) Math.ceil(cartBounds.maxX - cartBounds.minX);
             int imageHeight = (int) Math.ceil(cartBounds.maxZ - cartBounds.minZ);
 
-            log.debug("HEX composite Cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
-                (int)cartBounds.minX, (int)cartBounds.maxX, (int)cartBounds.minZ, (int)cartBounds.maxZ,
-                imageWidth, imageHeight);
+            log.debug(
+                    "HEX composite Cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
+                    (int) cartBounds.minX,
+                    (int) cartBounds.maxX,
+                    (int) cartBounds.minZ,
+                    (int) cartBounds.maxZ,
+                    imageWidth,
+                    imageHeight);
 
             // Create blank images
             BufferedImage levelImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
@@ -176,30 +185,36 @@ public class HexGridCompositeImageCreator {
                 levelFile = saveImage(levelImage, outputDirectory, imageName + "-level.png");
                 materialFile = saveImage(materialImage, outputDirectory, imageName + "-material.png");
 
-                log.debug("Saved composite level image: {} ({}x{} pixels)",
-                    levelFile.getAbsolutePath(), imageWidth, imageHeight);
-                log.debug("Saved composite material image: {} ({}x{} pixels)",
-                    materialFile.getAbsolutePath(), imageWidth, imageHeight);
+                log.debug(
+                        "Saved composite level image: {} ({}x{} pixels)",
+                        levelFile.getAbsolutePath(),
+                        imageWidth,
+                        imageHeight);
+                log.debug(
+                        "Saved composite material image: {} ({}x{} pixels)",
+                        materialFile.getAbsolutePath(),
+                        imageWidth,
+                        imageHeight);
             }
 
             return CompositeImageResult.builder()
-                .levelImage(levelImage)
-                .materialImage(materialImage)
-                .imageWidth(imageWidth)
-                .imageHeight(imageHeight)
-                .renderedGridCount(renderedCount)
-                .totalGridCount(gridCount)
-                .levelFile(levelFile)
-                .materialFile(materialFile)
-                .success(true)
-                .build();
+                    .levelImage(levelImage)
+                    .materialImage(materialImage)
+                    .imageWidth(imageWidth)
+                    .imageHeight(imageHeight)
+                    .renderedGridCount(renderedCount)
+                    .totalGridCount(gridCount)
+                    .levelFile(levelFile)
+                    .materialFile(materialFile)
+                    .success(true)
+                    .build();
 
         } catch (Exception e) {
             log.error("Failed to create composite images", e);
             return CompositeImageResult.builder()
-                .success(false)
-                .errorMessage(e.getMessage())
-                .build();
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
         }
     }
 
@@ -255,8 +270,9 @@ public class HexGridCompositeImageCreator {
      *
      * @return Number of successfully rendered grids
      */
-    private int renderHexGrids(BufferedImage levelImage, BufferedImage materialImage,
-                               CartesianBounds bounds, FlatProvider provider) throws IOException {
+    private int renderHexGrids(
+            BufferedImage levelImage, BufferedImage materialImage, CartesianBounds bounds, FlatProvider provider)
+            throws IOException {
         int renderedCount = 0;
 
         for (HexVector2 coord : provider.getCoordinates()) {
@@ -281,9 +297,9 @@ public class HexGridCompositeImageCreator {
      * Renders a single hex grid onto the composite images.
      * Only renders pixels that fall inside the hexagon boundary.
      */
-    private void renderSingleHexGrid(BufferedImage levelImage, BufferedImage materialImage,
-                                     HexVector2 coord, WFlat flat,
-                                     CartesianBounds bounds) throws IOException {
+    private void renderSingleHexGrid(
+            BufferedImage levelImage, BufferedImage materialImage, HexVector2 coord, WFlat flat, CartesianBounds bounds)
+            throws IOException {
         // Calculate cartesian center position
         // Flip Z so North (max worldZ) is at image top (Y=0)
         int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
@@ -308,7 +324,7 @@ public class HexGridCompositeImageCreator {
         int hexGridRadius = hexGridSize / 2;
 
         // Iterate over the area where the hex might be (use hexGridRadius for bounds)
-        int startX = Math.max(0,(hexCenterX - hexGridRadius));
+        int startX = Math.max(0, (hexCenterX - hexGridRadius));
         int endX = Math.min(levelImage.getWidth(), (hexCenterX + hexGridRadius));
         int startZ = Math.max(0, (hexCenterZ - hexGridRadius));
         int endZ = Math.min(levelImage.getHeight(), (hexCenterZ + hexGridRadius));
@@ -324,12 +340,11 @@ public class HexGridCompositeImageCreator {
                     // - Offset from hex center: (x - hexCenterX, z - hexCenterZ)
                     // - Flat center is at (flatHalfSizeX, flatHalfSizeZ)
                     // - So flat coordinate is: flatCenter + offsetFromHexCenter
-                    int flatX = (int)(x - hexCenterX + flatHalfSizeX);
-                    int flatZ = (int)(z - hexCenterZ + flatHalfSizeZ);
+                    int flatX = (int) (x - hexCenterX + flatHalfSizeX);
+                    int flatZ = (int) (z - hexCenterZ + flatHalfSizeZ);
 
                     // Bounds check using flat dimensions
-                    if (flatX >= 0 && flatX < flat.getSizeX() &&
-                        flatZ >= 0 && flatZ < flat.getSizeZ()) {
+                    if (flatX >= 0 && flatX < flat.getSizeX() && flatZ >= 0 && flatZ < flat.getSizeZ()) {
                         // Copy pixel from flat image to composite
                         int levelPixel = flatLevelImage.getRGB(flatX, flatZ);
                         int materialPixel = flatMaterialImage.getRGB(flatX, flatZ);

@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.generator.pricing;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.world.*;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Service that uses AI to categorize items and calculate base prices.
@@ -26,7 +25,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class ItemPriceGeneratorService {
 
-    private static final ObjectMapper MAPPER = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
     private static final String DEFAULT_AI_MODEL = "default:chat";
 
     private final WItemService itemService;
@@ -160,8 +161,16 @@ public class ItemPriceGeneratorService {
         double basePrice = materialPrice + craftingCost + usageBonus + rarityBonus;
         item.setBasePrice(basePrice);
 
-        log.debug("Item {} priced: tier={}, rarity={}, basePrice={} (mat={}, craft={}, use={}, rare={})",
-                item.getName(), tier, rarity, basePrice, materialPrice, craftingCost, usageBonus, rarityBonus);
+        log.debug(
+                "Item {} priced: tier={}, rarity={}, basePrice={} (mat={}, craft={}, use={}, rare={})",
+                item.getName(),
+                tier,
+                rarity,
+                basePrice,
+                materialPrice,
+                craftingCost,
+                usageBonus,
+                rarityBonus);
     }
 
     private double calculateCraftingCost(ItemTier tier) {
@@ -279,7 +288,9 @@ public class ItemPriceGeneratorService {
             String json = response.trim();
             // Strip markdown code blocks if present
             if (json.startsWith("```")) {
-                json = json.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
+                json = json.replaceAll("```json\\s*", "")
+                        .replaceAll("```\\s*$", "")
+                        .trim();
             }
             // Find array boundaries
             int start = json.indexOf('[');
@@ -296,10 +307,5 @@ public class ItemPriceGeneratorService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record AiItemCategorization(
-            String itemId,
-            String itemTier,
-            String rarityCategory,
-            Double materialPrice,
-            Double usageBonus
-    ) {}
+            String itemId, String itemTier, String rarityCategory, Double materialPrice, Double usageBonus) {}
 }

@@ -8,14 +8,13 @@ import de.mhus.nimbus.shared.settings.SettingInteger;
 import de.mhus.nimbus.shared.settings.SettingOptions;
 import de.mhus.nimbus.shared.settings.SettingPassword;
 import de.mhus.nimbus.shared.settings.SettingString;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Validated
@@ -97,7 +96,13 @@ public class SSettingsService {
     /**
      * Create or update a setting with full details
      */
-    public SSettings setSetting(String key, String value, String type, String defaultValue, String description, Map<String, String> options) {
+    public SSettings setSetting(
+            String key,
+            String value,
+            String type,
+            String defaultValue,
+            String description,
+            Map<String, String> options) {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("key is blank");
         }

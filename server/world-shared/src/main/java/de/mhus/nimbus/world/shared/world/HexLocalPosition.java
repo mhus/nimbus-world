@@ -9,7 +9,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
  * @param divider Optional or 0 for default divider 4
  * @param size Calculated size (not radius) of the inner hexagon
  */
-public record HexLocalPosition (HexVector2 position, int divider, int size) {
+public record HexLocalPosition(HexVector2 position, int divider, int size) {
 
     @SuppressWarnings("NullableProblems")
     @Override

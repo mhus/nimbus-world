@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.SessionManager;
@@ -11,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis listener for item block update broadcasts.
@@ -36,7 +36,8 @@ public class ItemBlockUpdateBroadcastListener {
 
     private void handleItemBlockUpdate(String topic, String message) {
         try {
-            ItemBlockUpdateBroadcastMessage broadcast = objectMapper.readValue(message, ItemBlockUpdateBroadcastMessage.class);
+            ItemBlockUpdateBroadcastMessage broadcast =
+                    objectMapper.readValue(message, ItemBlockUpdateBroadcastMessage.class);
 
             if (broadcast.getItems() == null || broadcast.getItems().isEmpty()) {
                 return;
@@ -63,8 +64,12 @@ public class ItemBlockUpdateBroadcastListener {
                 }
             }
 
-            log.debug("Broadcast item block update to {} sessions: worldId={}, chunk=({},{}), items={}",
-                    sentCount, broadcast.getWorldId(), broadcast.getCx(), broadcast.getCz(),
+            log.debug(
+                    "Broadcast item block update to {} sessions: worldId={}, chunk=({},{}), items={}",
+                    sentCount,
+                    broadcast.getWorldId(),
+                    broadcast.getCx(),
+                    broadcast.getCz(),
                     broadcast.getItems().size());
 
         } catch (Exception e) {

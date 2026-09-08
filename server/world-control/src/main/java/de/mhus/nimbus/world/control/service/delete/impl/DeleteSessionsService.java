@@ -3,13 +3,12 @@ package de.mhus.nimbus.world.control.service.delete.impl;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Deletes world instances and player sessions for a world.
@@ -34,8 +33,11 @@ public class DeleteSessionsService implements DeleteWorldResources {
         int playerSessions = playerSessionService.deleteByWorldId(worldId);
         int worldInstances = worldInstanceService.deleteByWorldId(worldId);
 
-        log.info("Deleted sessions for world {}: {} player sessions, {} world instances",
-                worldId, playerSessions, worldInstances);
+        log.info(
+                "Deleted sessions for world {}: {} player sessions, {} world instances",
+                worldId,
+                playerSessions,
+                worldInstances);
     }
 
     @Override

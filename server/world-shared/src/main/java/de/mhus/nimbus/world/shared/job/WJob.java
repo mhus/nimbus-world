@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.job;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +16,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * MongoDB Entity for async job execution across world pods.
  * Jobs are processed by JobProcessingScheduler using Redis locks for multi-pod safety.
@@ -24,14 +23,12 @@ import java.util.Map;
 @Document(collection = "w_jobs")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_status_created_idx",
-                def = "{ 'worldId': 1, 'status': 1, 'createdAt': 1 }"),
-        @CompoundIndex(name = "world_executor_status_idx",
-                def = "{ 'worldId': 1, 'executor': 1, 'status': 1 }"),
-        @CompoundIndex(name = "status_enabled_priority_created_idx",
-                def = "{ 'status': 1, 'enabled': 1, 'priority': -1, 'createdAt': 1 }"),
-        @CompoundIndex(name = "status_completedAt_idx",
-                def = "{ 'status': 1, 'completedAt': 1 }")
+    @CompoundIndex(name = "world_status_created_idx", def = "{ 'worldId': 1, 'status': 1, 'createdAt': 1 }"),
+    @CompoundIndex(name = "world_executor_status_idx", def = "{ 'worldId': 1, 'executor': 1, 'status': 1 }"),
+    @CompoundIndex(
+            name = "status_enabled_priority_created_idx",
+            def = "{ 'status': 1, 'enabled': 1, 'priority': -1, 'createdAt': 1 }"),
+    @CompoundIndex(name = "status_completedAt_idx", def = "{ 'status': 1, 'completedAt': 1 }")
 })
 @Data
 @Builder

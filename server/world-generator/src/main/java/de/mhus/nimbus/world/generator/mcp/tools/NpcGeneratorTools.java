@@ -4,16 +4,14 @@ import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.generator.npc.NpcGeneratorService;
 import de.mhus.nimbus.world.generator.npc.NpcGeneratorService.NpcGenerationRequest;
-import de.mhus.nimbus.world.generator.npc.NpcGeneratorService.ScheduleEntry;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -31,7 +29,10 @@ public class NpcGeneratorTools implements McpToolBean {
     public Map<String, Object> generateNpc(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
             @ToolParam(description = "Unique entity identifier for the NPC") String entityId,
-            @ToolParam(description = "Name of the WDocument (collection='lore') describing this NPC, e.g. 'npc:farmer_hans'") String npcDocumentName,
+            @ToolParam(
+                            description =
+                                    "Name of the WDocument (collection='lore') describing this NPC, e.g. 'npc:farmer_hans'")
+                    String npcDocumentName,
             @ToolParam(description = "Entity model ID (e.g. 'human_male_1')", required = false) String modelId,
             @ToolParam(description = "Position X", required = false) Double posX,
             @ToolParam(description = "Position Y", required = false) Double posY,
@@ -39,7 +40,10 @@ public class NpcGeneratorTools implements McpToolBean {
             @ToolParam(description = "Path to portrait image", required = false) String portraitPath,
             @ToolParam(description = "AI model to use (e.g. 'gemini:gemini-pro')", required = false) String aiModel,
             @ToolParam(description = "Epoch numbers this NPC belongs to", required = false) List<Integer> epoches,
-            @ToolParam(description = "Additional lore document names for context (e.g. ['lore:farmland_region'])", required = false) List<String> loreContext) {
+            @ToolParam(
+                            description = "Additional lore document names for context (e.g. ['lore:farmland_region'])",
+                            required = false)
+                    List<String> loreContext) {
 
         log.debug("MCP: Generate NPC: worldId={}, entityId={}, npcDoc={}", worldId, entityId, npcDocumentName);
 
@@ -59,13 +63,21 @@ public class NpcGeneratorTools implements McpToolBean {
 
         try {
             NpcGenerationRequest request = new NpcGenerationRequest(
-                    worldId, entityId, modelId, null, // gender from entity or lore
-                    posX, posY, posZ,
-                    null, null, null, // environment, description, background — loaded from lore document
-                    portraitPath, aiModel, epoches,
+                    worldId,
+                    entityId,
+                    modelId,
+                    null, // gender from entity or lore
+                    posX,
+                    posY,
+                    posZ,
+                    null,
+                    null,
+                    null, // environment, description, background — loaded from lore document
+                    portraitPath,
+                    aiModel,
+                    epoches,
                     null, // schedule — could be added later
-                    allLore
-            );
+                    allLore);
 
             return npcGeneratorService.generateNpc(request);
         } catch (NpcGeneratorService.NpcGenerationException e) {

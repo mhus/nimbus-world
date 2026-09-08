@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.life.service;
 
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for tracking which chunks are currently active (viewed by clients).
@@ -25,6 +24,7 @@ public class ChunkAliveService {
      */
     public interface ChunkChangeListener {
         void onChunksAdded(Set<ChunkCoordinate> added);
+
         void onChunksRemoved(Set<ChunkCoordinate> removed);
     }
 
@@ -115,8 +115,7 @@ public class ChunkAliveService {
         activeChunks.clear();
         activeChunks.addAll(newChunks);
 
-        log.info("Chunk refresh: {} active, {} added, {} removed",
-                activeChunks.size(), added.size(), removed.size());
+        log.info("Chunk refresh: {} active, {} added, {} removed", activeChunks.size(), added.size(), removed.size());
 
         if (!removed.isEmpty()) {
             notifyDeltaListenersRemoved(removed);

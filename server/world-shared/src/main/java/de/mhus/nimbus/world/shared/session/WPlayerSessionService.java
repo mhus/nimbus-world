@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.session;
 
 import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -9,10 +12,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Business logic service for WPlayerSession.
@@ -54,8 +53,8 @@ public class WPlayerSessionService {
      * @throws IllegalArgumentException if worldId or playerId is null or blank
      */
     @Transactional
-    public WPlayerSession updateSession(String worldId, String playerId,
-                                         Vector3 position, Rotation rotation, Map<String, Object> gameplayData) {
+    public WPlayerSession updateSession(
+            String worldId, String playerId, Vector3 position, Rotation rotation, Map<String, Object> gameplayData) {
         // Validation
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId cannot be null or blank");
@@ -71,7 +70,8 @@ public class WPlayerSessionService {
         normalizeLegacyPlayerIds(worldId, playerId);
 
         // Find existing session
-        Optional<WPlayerSession> existingOpt = repository.findFirstByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, playerId);
+        Optional<WPlayerSession> existingOpt =
+                repository.findFirstByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, playerId);
 
         WPlayerSession session;
         if (existingOpt.isPresent()) {
@@ -81,9 +81,15 @@ public class WPlayerSessionService {
             session.setRotation(rotation);
             session.setGameplayData(gameplayData);
             session.touchUpdate();
-            log.trace("Updated player session position/rotation: id={}, worldId={}, playerId={}, position={}, rotation={}, previousWorldId={}, previousPosition={}",
-                    session.getId(), worldId, playerId, position, rotation,
-                    session.getPreviousWorldId(), session.getPreviousPosition());
+            log.trace(
+                    "Updated player session position/rotation: id={}, worldId={}, playerId={}, position={}, rotation={}, previousWorldId={}, previousPosition={}",
+                    session.getId(),
+                    worldId,
+                    playerId,
+                    position,
+                    rotation,
+                    session.getPreviousWorldId(),
+                    session.getPreviousPosition());
         } else {
             // Create new session (regular world entry without teleport)
             session = WPlayerSession.builder()
@@ -93,8 +99,12 @@ public class WPlayerSessionService {
                     .rotation(rotation)
                     .build();
             session.touchCreate();
-            log.info("Created new player session (no teleport): worldId={}, playerId={}, position={}, rotation={}",
-                    worldId, playerId, position, rotation);
+            log.info(
+                    "Created new player session (no teleport): worldId={}, playerId={}, position={}, rotation={}",
+                    worldId,
+                    playerId,
+                    position,
+                    rotation);
         }
 
         repository.save(session);
@@ -132,16 +142,24 @@ public class WPlayerSessionService {
         // Check for legacy format without '@' prefix
         if (playerId.startsWith("@")) {
             String legacyPlayerId = playerId.substring(1); // Remove '@' prefix
-            List<WPlayerSession> legacySessions = repository.findByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, legacyPlayerId);
+            List<WPlayerSession> legacySessions =
+                    repository.findByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, legacyPlayerId);
 
             if (!legacySessions.isEmpty()) {
-                log.info("Found {} legacy player sessions (without '@') for worldId={}, playerId={} - normalizing",
-                        legacySessions.size(), worldId, legacyPlayerId);
+                log.info(
+                        "Found {} legacy player sessions (without '@') for worldId={}, playerId={} - normalizing",
+                        legacySessions.size(),
+                        worldId,
+                        legacyPlayerId);
 
                 // Update all legacy entries to use normalized playerId
                 for (WPlayerSession session : legacySessions) {
-                    log.info("Normalizing playerId from '{}' to '{}' in session {} (previousWorldId={})",
-                            session.getPlayerId(), playerId, session.getId(), session.getPreviousWorldId());
+                    log.info(
+                            "Normalizing playerId from '{}' to '{}' in session {} (previousWorldId={})",
+                            session.getPlayerId(),
+                            playerId,
+                            session.getId(),
+                            session.getPreviousWorldId());
                     session.setPlayerId(playerId);
                     session.touchUpdate();
                     repository.save(session);
@@ -232,14 +250,16 @@ public class WPlayerSessionService {
      * @throws IllegalArgumentException if worldId or playerId is null or blank
      */
     @Transactional
-    public WPlayerSession createTeleportSession(String worldId, String playerId,
-                                                  String sessionId, String actor,
-                                                  Vector3 position,
-                                                  Rotation rotation,
-                                                  String previousWorldId,
-                                                  Vector3 previousPosition,
-                                                  Rotation previousRotation
-                                                ) {
+    public WPlayerSession createTeleportSession(
+            String worldId,
+            String playerId,
+            String sessionId,
+            String actor,
+            Vector3 position,
+            Rotation rotation,
+            String previousWorldId,
+            Vector3 previousPosition,
+            Rotation previousRotation) {
         // Validation
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId cannot be null or blank");
@@ -255,7 +275,8 @@ public class WPlayerSessionService {
         normalizeLegacyPlayerIds(worldId, playerId);
 
         // Upsert: find existing or create new
-        Optional<WPlayerSession> existingOpt = repository.findFirstByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, playerId);
+        Optional<WPlayerSession> existingOpt =
+                repository.findFirstByWorldIdAndPlayerIdOrderByUpdatedAtDesc(worldId, playerId);
 
         WPlayerSession session;
         if (existingOpt.isPresent()) {
@@ -269,8 +290,12 @@ public class WPlayerSessionService {
             session.setPreviousPosition(previousPosition);
             session.setPreviousRotation(previousRotation);
             session.touchUpdate();
-            log.info("Updated existing player session for teleport: id={}, worldId={}, playerId={}, previousWorldId={}",
-                    session.getId(), worldId, playerId, previousWorldId);
+            log.info(
+                    "Updated existing player session for teleport: id={}, worldId={}, playerId={}, previousWorldId={}",
+                    session.getId(),
+                    worldId,
+                    playerId,
+                    previousWorldId);
         } else {
             // Create new session with previous values
             session = WPlayerSession.builder()
@@ -285,8 +310,11 @@ public class WPlayerSessionService {
                     .previousRotation(previousRotation)
                     .build();
             session.touchCreate();
-            log.info("Created new teleport player session: worldId={}, playerId={}, previousWorldId={}",
-                    worldId, playerId, previousWorldId);
+            log.info(
+                    "Created new teleport player session: worldId={}, playerId={}, previousWorldId={}",
+                    worldId,
+                    playerId,
+                    previousWorldId);
         }
 
         repository.save(session);
@@ -310,15 +338,22 @@ public class WPlayerSessionService {
         }
 
         // Transfer gameplayData from old to new session
-        if (oldSession.getGameplayData() != null && !oldSession.getGameplayData().isEmpty()) {
+        if (oldSession.getGameplayData() != null
+                && !oldSession.getGameplayData().isEmpty()) {
             newSession.setGameplayData(oldSession.getGameplayData());
             newSession.touchUpdate();
             repository.save(newSession);
-            log.info("Merged gameplay data from old session (worldId={}) to new session (worldId={}), playerId={}",
-                    oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
+            log.info(
+                    "Merged gameplay data from old session (worldId={}) to new session (worldId={}), playerId={}",
+                    oldSession.getWorldId(),
+                    newSession.getWorldId(),
+                    newSession.getPlayerId());
         } else {
-            log.debug("No gameplay data to merge: oldWorldId={}, newWorldId={}, playerId={}",
-                    oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
+            log.debug(
+                    "No gameplay data to merge: oldWorldId={}, newWorldId={}, playerId={}",
+                    oldSession.getWorldId(),
+                    newSession.getWorldId(),
+                    newSession.getPlayerId());
         }
     }
 

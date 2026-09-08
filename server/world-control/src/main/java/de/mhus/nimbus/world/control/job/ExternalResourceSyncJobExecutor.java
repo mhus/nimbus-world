@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.job;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.GitHelper;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncService;
@@ -10,12 +9,12 @@ import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Optional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Job executor for external resource sync operations (export, import, validate).
@@ -59,7 +58,8 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
         } else if ("validate".equals(jobType)) {
             return executeValidate(job);
         } else {
-            throw new JobExecutionException("Unknown job type: " + jobType + " (expected 'export', 'import', or 'validate')");
+            throw new JobExecutionException(
+                    "Unknown job type: " + jobType + " (expected 'export', 'import', or 'validate')");
         }
     }
 
@@ -80,7 +80,12 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
 
             String jobWorldIdStr = job.getWorldId();
 
-            log.info("Starting export job: jobWorldId={} title={} force={} remove={}", jobWorldIdStr, name, force, remove);
+            log.info(
+                    "Starting export job: jobWorldId={} title={} force={} remove={}",
+                    jobWorldIdStr,
+                    name,
+                    force,
+                    remove);
 
             // Load ExternalResource (use job worldId to find it)
             ExternalResourceDTO dto = loadExternalResource(jobWorldIdStr, name);
@@ -89,36 +94,38 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             WorldId worldId;
             try {
                 WorldId.validate(dto.getWorldId());
-                worldId = WorldId.of(dto.getWorldId()).orElseThrow(
-                        () -> new JobExecutionException("Invalid worldId in ExternalResourceDTO: " + dto.getWorldId())
-                );
+                worldId = WorldId.of(dto.getWorldId())
+                        .orElseThrow(() -> new JobExecutionException(
+                                "Invalid worldId in ExternalResourceDTO: " + dto.getWorldId()));
             } catch (Exception e) {
                 throw new JobExecutionException("Invalid worldId in ExternalResourceDTO: " + dto.getWorldId(), e);
             }
 
             // Execute export
-            log.info("Executing export: worldId={} (from DTO) localPath={} types={} force={} remove={}",
-                    worldId, dto.getLocalPath(), dto.getTypes(), force, remove);
+            log.info(
+                    "Executing export: worldId={} (from DTO) localPath={} types={} force={} remove={}",
+                    worldId,
+                    dto.getLocalPath(),
+                    dto.getTypes(),
+                    force,
+                    remove);
 
             ResourceSyncService.ExportResult result = syncService.export(worldId, dto, force, remove);
 
             // Update ExternalResourceDTO with sync result (use job worldId for lookup)
-            updateSyncStatus(jobWorldIdStr, name, dto, result.timestamp(),
-                    result.success() ? "Success" : result.errorMessage());
+            updateSyncStatus(
+                    jobWorldIdStr, name, dto, result.timestamp(), result.success() ? "Success" : result.errorMessage());
 
             // Return result
             if (result.success()) {
                 String resultMessage = String.format(
                         "Export completed successfully: worldId=%s (from DTO) title=%s exported=%d deleted=%d types=%s",
-                        worldId, name, result.entityCount(), result.deletedCount(), result.exportedByType()
-                );
+                        worldId, name, result.entityCount(), result.deletedCount(), result.exportedByType());
                 log.info(resultMessage);
                 return JobResult.success(resultMessage);
             } else {
                 String errorMessage = String.format(
-                        "Export failed: worldId=%s title=%s error=%s",
-                        worldId, name, result.errorMessage()
-                );
+                        "Export failed: worldId=%s title=%s error=%s", worldId, name, result.errorMessage());
                 log.error(errorMessage);
                 return JobResult.failure(errorMessage);
             }
@@ -148,8 +155,12 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
 
             String jobWorldIdStr = job.getWorldId();
 
-            log.info("Starting import job: jobWorldId={} title={} force={} remove={}",
-                    jobWorldIdStr, name, force, remove);
+            log.info(
+                    "Starting import job: jobWorldId={} title={} force={} remove={}",
+                    jobWorldIdStr,
+                    name,
+                    force,
+                    remove);
 
             // Load ExternalResource (use job worldId to find it)
             ExternalResourceDTO dto = loadExternalResource(jobWorldIdStr, name);
@@ -158,36 +169,38 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             WorldId worldId;
             try {
                 WorldId.validate(dto.getWorldId());
-                worldId = WorldId.of(dto.getWorldId()).orElseThrow(
-                        () -> new JobExecutionException("Invalid worldId in ExternalResourceDTO: " + dto.getWorldId())
-                );
+                worldId = WorldId.of(dto.getWorldId())
+                        .orElseThrow(() -> new JobExecutionException(
+                                "Invalid worldId in ExternalResourceDTO: " + dto.getWorldId()));
             } catch (Exception e) {
                 throw new JobExecutionException("Invalid worldId in ExternalResourceDTO: " + dto.getWorldId(), e);
             }
 
             // Execute import
-            log.info("Executing import: worldId={} (from DTO) localPath={} types={} force={} remove={}",
-                    worldId, dto.getLocalPath(), dto.getTypes(), force, remove);
+            log.info(
+                    "Executing import: worldId={} (from DTO) localPath={} types={} force={} remove={}",
+                    worldId,
+                    dto.getLocalPath(),
+                    dto.getTypes(),
+                    force,
+                    remove);
 
             ResourceSyncService.ImportResult result = syncService.importData(worldId, dto, force, remove);
 
             // Update ExternalResourceDTO with sync result (use job worldId for lookup)
-            updateSyncStatus(jobWorldIdStr, name, dto, result.timestamp(),
-                    result.success() ? "Success" : result.errorMessage());
+            updateSyncStatus(
+                    jobWorldIdStr, name, dto, result.timestamp(), result.success() ? "Success" : result.errorMessage());
 
             // Return result
             if (result.success()) {
                 String resultMessage = String.format(
                         "Import completed successfully: worldId=%s title=%s imported=%d deleted=%d types=%s",
-                        worldId, name, result.imported(), result.deleted(), result.importedByType()
-                );
+                        worldId, name, result.imported(), result.deleted(), result.importedByType());
                 log.info(resultMessage);
                 return JobResult.success(resultMessage);
             } else {
                 String errorMessage = String.format(
-                        "Import failed: worldId=%s title=%s error=%s",
-                        worldId, name, result.errorMessage()
-                );
+                        "Import failed: worldId=%s title=%s error=%s", worldId, name, result.errorMessage());
                 log.error(errorMessage);
                 return JobResult.failure(errorMessage);
             }
@@ -255,18 +268,15 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
      * Load ExternalResource from WAnything.
      */
     private ExternalResourceDTO loadExternalResource(String worldIdStr, String name) throws JobExecutionException {
-        log.debug("Searching for ExternalResource: worldId={} collection={} title={}",
-                worldIdStr, COLLECTION_NAME, name);
+        log.debug(
+                "Searching for ExternalResource: worldId={} collection={} title={}", worldIdStr, COLLECTION_NAME, name);
 
-        Optional<WAnything> entityOpt = anythingService.findByWorldIdAndCollectionAndName(
-                worldIdStr,
-                COLLECTION_NAME,
-                name
-        );
+        Optional<WAnything> entityOpt =
+                anythingService.findByWorldIdAndCollectionAndName(worldIdStr, COLLECTION_NAME, name);
 
         if (entityOpt.isEmpty()) {
-            log.error("ExternalResource not found: worldId={} collection={} title={}",
-                    worldIdStr, COLLECTION_NAME, name);
+            log.error(
+                    "ExternalResource not found: worldId={} collection={} title={}", worldIdStr, COLLECTION_NAME, name);
             throw new JobExecutionException("ExternalResource not found: " + name + " for worldId: " + worldIdStr);
         }
 
@@ -284,14 +294,11 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
     /**
      * Update sync status in WAnything.
      */
-    private void updateSyncStatus(String worldIdStr, String name, ExternalResourceDTO dto,
-                                   java.time.Instant timestamp, String result) {
+    private void updateSyncStatus(
+            String worldIdStr, String name, ExternalResourceDTO dto, java.time.Instant timestamp, String result) {
         try {
-            Optional<WAnything> entityOpt = anythingService.findByWorldIdAndCollectionAndName(
-                    worldIdStr,
-                    COLLECTION_NAME,
-                    name
-            );
+            Optional<WAnything> entityOpt =
+                    anythingService.findByWorldIdAndCollectionAndName(worldIdStr, COLLECTION_NAME, name);
 
             if (entityOpt.isPresent()) {
                 WAnything entity = entityOpt.get();

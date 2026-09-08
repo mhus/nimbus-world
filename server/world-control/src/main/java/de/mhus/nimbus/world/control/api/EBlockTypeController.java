@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
-import de.mhus.nimbus.generated.types.BlockStatus;
+import static de.mhus.nimbus.world.shared.world.BlockUtil.extractCollectionFromBlockId;
+
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -10,26 +11,22 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
-import de.mhus.nimbus.world.shared.world.WorldCollection;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static de.mhus.nimbus.world.shared.world.BlockUtil.extractCollectionFromBlockId;
 
 /**
  * REST Controller for BlockType CRUD operations.
@@ -58,16 +55,16 @@ public class EBlockTypeController extends BaseEditorController {
             Map<String, String> defaultClient,
             Map<String, String> defaultServer,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
-    public record CreateBlockTypeRequest(String name, BlockType publicData, String blockTypeGroup) {
-    }
+    public record CreateBlockTypeRequest(String name, BlockType publicData, String blockTypeGroup) {}
 
-    public record UpdateBlockTypeRequest(BlockType publicData, String blockTypeGroup, Boolean enabled,
-                                            Map<String, String> defaultClient, Map<String, String> defaultServer) {
-    }
+    public record UpdateBlockTypeRequest(
+            BlockType publicData,
+            String blockTypeGroup,
+            Boolean enabled,
+            Map<String, String> defaultClient,
+            Map<String, String> defaultServer) {}
 
     /**
      * Get single BlockType by ID.
@@ -76,9 +73,9 @@ public class EBlockTypeController extends BaseEditorController {
     @GetMapping("/type/{blockId}")
     @Operation(summary = "Get BlockType by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "BlockType found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "BlockType not found")
+        @ApiResponse(responseCode = "200", description = "BlockType found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "BlockType not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -86,9 +83,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("GET blocktype: worldId={}, blockId={}", worldId, blockId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
@@ -119,8 +114,8 @@ public class EBlockTypeController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all BlockTypes")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -130,9 +125,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("LIST blocktypes: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -155,8 +148,7 @@ public class EBlockTypeController extends BaseEditorController {
                 "blockTypes", publicDataList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -169,8 +161,8 @@ public class EBlockTypeController extends BaseEditorController {
     @GetMapping("../blocktypeschunk/{groupName}")
     @Operation(summary = "Get BlockTypes by group")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> getByGroup(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -178,9 +170,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("GET blocktypes by group: worldId={}, groupName={}", worldId, groupName);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(groupName)) {
             return bad("groupName required");
         }
@@ -210,9 +200,9 @@ public class EBlockTypeController extends BaseEditorController {
     @PostMapping("/type")
     @Operation(summary = "Create new BlockType")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "BlockType created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "BlockType already exists")
+        @ApiResponse(responseCode = "201", description = "BlockType created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "BlockType already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -220,9 +210,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("CREATE blocktype: worldId={}, blockId={}", worldId, request.name());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(request.name())) {
             return bad("blockId required");
         }
@@ -266,9 +254,9 @@ public class EBlockTypeController extends BaseEditorController {
     @PutMapping("/type/{blockId}")
     @Operation(summary = "Update BlockType")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "BlockType updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "BlockType not found")
+        @ApiResponse(responseCode = "200", description = "BlockType updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "BlockType not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -277,14 +265,15 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("UPDATE blocktype: worldId={}, blockId={}", worldId, blockId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
 
-        if (request.publicData() == null && request.blockTypeGroup() == null && request.enabled() == null
-                && request.defaultClient() == null && request.defaultServer() == null) {
+        if (request.publicData() == null
+                && request.blockTypeGroup() == null
+                && request.enabled() == null
+                && request.defaultClient() == null
+                && request.defaultServer() == null) {
             return bad("at least one field required for update");
         }
 
@@ -297,9 +286,8 @@ public class EBlockTypeController extends BaseEditorController {
 
         // Use the actual worldId from the existing entity (important for external collections)
         String actualWorldId = existing.get().getWorldId();
-        WorldId actualWid = WorldId.of(actualWorldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId in entity: " + actualWorldId)
-        );
+        WorldId actualWid = WorldId.of(actualWorldId)
+                .orElseThrow(() -> new IllegalStateException("Invalid worldId in entity: " + actualWorldId));
 
         final String finalBlockId = blockId;
         Optional<WBlockType> updated = blockTypeService.update(actualWid, blockId, blockType -> {
@@ -335,9 +323,9 @@ public class EBlockTypeController extends BaseEditorController {
     @DeleteMapping("/type/{blockId}")
     @Operation(summary = "Delete BlockType")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "BlockType deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "BlockType not found")
+        @ApiResponse(responseCode = "204", description = "BlockType deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "BlockType not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -345,9 +333,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("DELETE blocktype: worldId={}, blockId={}", worldId, blockId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
 
@@ -369,13 +355,12 @@ public class EBlockTypeController extends BaseEditorController {
      * Creates a copy of an existing BlockType with a new ID.
      */
     @PostMapping("/duplicate/{sourceBlockId}")
-    @Operation(summary = "Duplicate BlockType",
-               description = "Creates a copy of an existing BlockType with a new ID")
+    @Operation(summary = "Duplicate BlockType", description = "Creates a copy of an existing BlockType with a new ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "BlockType duplicated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Source BlockType not found"),
-            @ApiResponse(responseCode = "409", description = "New BlockType ID already exists")
+        @ApiResponse(responseCode = "201", description = "BlockType duplicated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Source BlockType not found"),
+        @ApiResponse(responseCode = "409", description = "New BlockType ID already exists")
     })
     public ResponseEntity<?> duplicate(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -384,12 +369,10 @@ public class EBlockTypeController extends BaseEditorController {
 
         String newBlockId = body.get("newBlockId");
 
-        log.debug("DUPLICATE blocktype: worldId={}, sourceBlockId={}, newBlockId={}",
-                  worldId, sourceBlockId, newBlockId);
+        log.debug(
+                "DUPLICATE blocktype: worldId={}, sourceBlockId={}, newBlockId={}", worldId, sourceBlockId, newBlockId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sourceBlockId, "sourceBlockId");
         if (validation != null) return validation;
 
@@ -417,18 +400,14 @@ public class EBlockTypeController extends BaseEditorController {
 
             // Create a deep copy of the publicData
             BlockType sourcePublicData = source.getPublicData();
-            BlockType newPublicData = engineMapper.readValue(
-                engineMapper.writeValueAsString(sourcePublicData),
-                BlockType.class
-            );
+            BlockType newPublicData =
+                    engineMapper.readValue(engineMapper.writeValueAsString(sourcePublicData), BlockType.class);
 
             // Set the new ID
             newPublicData.setName(newBlockId);
 
             // Update description to indicate it's a copy
-            String originalDescription = newPublicData.getDescription() != null
-                    ? newPublicData.getDescription()
-                    : "";
+            String originalDescription = newPublicData.getDescription() != null ? newPublicData.getDescription() : "";
             newPublicData.setDescription(originalDescription + " (Copy)");
 
             // Extract blockTypeGroup from newBlockId
@@ -445,13 +424,14 @@ public class EBlockTypeController extends BaseEditorController {
             // Reload to get updated entity
             saved = blockTypeService.findByBlockId(wid, newBlockId).orElse(saved);
 
-            log.info("Duplicated blocktype: sourceBlockId={}, newBlockId={}, group={}",
-                     sourceBlockId, newBlockId, blockTypeGroup);
+            log.info(
+                    "Duplicated blocktype: sourceBlockId={}, newBlockId={}, group={}",
+                    sourceBlockId,
+                    newBlockId,
+                    blockTypeGroup);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "name", saved.getName(),
-                    "message", "BlockType duplicated successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("name", saved.getName(), "message", "BlockType duplicated successfully"));
         } catch (Exception e) {
             log.error("Failed to duplicate blocktype", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -467,12 +447,13 @@ public class EBlockTypeController extends BaseEditorController {
      * The blockTypeId is provided in the URL path.
      */
     @PostMapping("/fromBlock/{blockTypeId}")
-    @Operation(summary = "Create BlockType from custom Block",
-               description = "Converts a custom Block instance into a reusable BlockType template")
+    @Operation(
+            summary = "Create BlockType from custom Block",
+            description = "Converts a custom Block instance into a reusable BlockType template")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "BlockType created from Block"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "BlockType already exists")
+        @ApiResponse(responseCode = "201", description = "BlockType created from Block"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "BlockType already exists")
     })
     public ResponseEntity<?> createFromBlock(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -481,9 +462,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("CREATE blocktype from block: worldId={}, blockTypeId={}", worldId, blockTypeId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(blockTypeId)) {
             return bad("blockTypeId required");
         }
@@ -514,10 +493,8 @@ public class EBlockTypeController extends BaseEditorController {
             saved = blockTypeService.findByBlockId(wid, blockTypeId).orElse(saved);
 
             log.info("Created blocktype from block: blockTypeId={}, group={}", blockTypeId, blockTypeGroup);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "name", saved.getName(),
-                    "message", "BlockType created successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("name", saved.getName(), "message", "BlockType created successfully"));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating blocktype from block: {}", e.getMessage());
             return bad(e.getMessage());
@@ -536,9 +513,7 @@ public class EBlockTypeController extends BaseEditorController {
         try {
             // First, deserialize the blockPayload to a Block object to validate structure
             de.mhus.nimbus.generated.types.Block block = engineMapper.readValue(
-                    engineMapper.writeValueAsString(blockPayload),
-                    de.mhus.nimbus.generated.types.Block.class
-            );
+                    engineMapper.writeValueAsString(blockPayload), de.mhus.nimbus.generated.types.Block.class);
 
             // Create new BlockType from Block data
             BlockType blockType = new BlockType();
@@ -558,8 +533,9 @@ public class EBlockTypeController extends BaseEditorController {
                 blockType.setInitialStatus(BlockUtil.DEFAULT_STATUS);
             }
 
-            log.debug("Converted Block to BlockType: {} modifiers",
-                     blockType.getModifiers() != null ? blockType.getModifiers().size() : 0);
+            log.debug(
+                    "Converted Block to BlockType: {} modifiers",
+                    blockType.getModifiers() != null ? blockType.getModifiers().size() : 0);
 
             return blockType;
         } catch (Exception e) {
@@ -579,9 +555,6 @@ public class EBlockTypeController extends BaseEditorController {
                 entity.getDefaultClient(),
                 entity.getDefaultServer(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
-
-
 }

@@ -1,10 +1,6 @@
 package de.mhus.nimbus.world.life.logic;
 
 import de.mhus.nimbus.shared.service.MetricService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -13,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Metrics for the Logic Machine.
@@ -45,13 +44,15 @@ public class LogicMetricsService {
     public void recordRuleFired(String worldId, String ruleName, long durationMs) {
         // In-memory
         String key = worldId + ":" + ruleName;
-        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName))
-                .recordFired(durationMs);
+        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName)).recordFired(durationMs);
         totalRulesFired.incrementAndGet();
 
         // Micrometer via MetricService
-        metricService.counter("logic.rules.fired", "worldId", worldId, "ruleName", ruleName).increment();
-        metricService.timer("logic.rule.execution", "worldId", worldId, "ruleName", ruleName)
+        metricService
+                .counter("logic.rules.fired", "worldId", worldId, "ruleName", ruleName)
+                .increment();
+        metricService
+                .timer("logic.rule.execution", "worldId", worldId, "ruleName", ruleName)
                 .record(Duration.ofMillis(durationMs));
 
         if (durationMs > 100) {
@@ -61,16 +62,16 @@ public class LogicMetricsService {
 
     public void recordRuleSkipped(String worldId, String ruleName) {
         String key = worldId + ":" + ruleName;
-        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName))
-                .recordSkipped();
+        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName)).recordSkipped();
     }
 
     public void recordRuleError(String worldId, String ruleName) {
         String key = worldId + ":" + ruleName;
-        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName))
-                .recordError();
+        metrics.computeIfAbsent(key, k -> new RuleMetrics(worldId, ruleName)).recordError();
         totalErrors.incrementAndGet();
-        metricService.counter("logic.rules.errors", "worldId", worldId, "ruleName", ruleName).increment();
+        metricService
+                .counter("logic.rules.errors", "worldId", worldId, "ruleName", ruleName)
+                .increment();
     }
 
     public void recordDelayedEffect() {

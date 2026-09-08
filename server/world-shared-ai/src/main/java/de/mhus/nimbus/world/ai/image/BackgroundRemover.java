@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.ai.image;
 
-import lombok.extern.slf4j.Slf4j;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Removes a flat, near-uniform background from an image and replaces it with a real alpha channel.
@@ -35,8 +34,7 @@ public final class BackgroundRemover {
      */
     public static final int DEFAULT_THRESHOLD = 60;
 
-    private BackgroundRemover() {
-    }
+    private BackgroundRemover() {}
 
     /**
      * Decode PNG bytes, remove the background and re-encode as a PNG with an alpha channel.
@@ -70,8 +68,8 @@ public final class BackgroundRemover {
 
         // Sample the background reference color from corners and edge midpoints.
         int[][] samples = {
-                {0, 0}, {w - 1, 0}, {0, h - 1}, {w - 1, h - 1},
-                {w / 2, 0}, {w / 2, h - 1}, {0, h / 2}, {w - 1, h / 2}
+            {0, 0}, {w - 1, 0}, {0, h - 1}, {w - 1, h - 1},
+            {w / 2, 0}, {w / 2, h - 1}, {0, h / 2}, {w - 1, h / 2}
         };
         long sr = 0, sg = 0, sb = 0;
         for (int[] s : samples) {
@@ -106,11 +104,14 @@ public final class BackgroundRemover {
             for (int i = 0; i < 4; i++) {
                 int nx = x + dx[i];
                 int ny = y + dy[i];
-                if (nx >= 0 && nx < w && ny >= 0 && ny < h
+                if (nx >= 0
+                        && nx < w
+                        && ny >= 0
+                        && ny < h
                         && !background[ny * w + nx]
                         && dist(src.getRGB(nx, ny), br, bg, bb) < threshold) {
                     background[ny * w + nx] = true;
-                    queue.add(new int[]{nx, ny});
+                    queue.add(new int[] {nx, ny});
                 }
             }
         }
@@ -135,16 +136,26 @@ public final class BackgroundRemover {
                 }
             }
         }
-        log.debug("BackgroundRemover: bgRef=({},{},{}) threshold={} removed={}% of {}x{}",
+        log.debug(
+                "BackgroundRemover: bgRef=({},{},{}) threshold={} removed={}% of {}x{}",
                 br, bg, bb, threshold, removed * 100L / ((long) w * h), w, h);
         return out;
     }
 
-    private static void seed(BufferedImage src, int x, int y, int br, int bg, int bb, int threshold,
-                             boolean[] mask, Deque<int[]> queue, int w) {
+    private static void seed(
+            BufferedImage src,
+            int x,
+            int y,
+            int br,
+            int bg,
+            int bb,
+            int threshold,
+            boolean[] mask,
+            Deque<int[]> queue,
+            int w) {
         if (!mask[y * w + x] && dist(src.getRGB(x, y), br, bg, bb) < threshold) {
             mask[y * w + x] = true;
-            queue.add(new int[]{x, y});
+            queue.add(new int[] {x, y});
         }
     }
 

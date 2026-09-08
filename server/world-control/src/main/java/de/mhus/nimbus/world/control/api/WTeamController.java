@@ -4,15 +4,14 @@ import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.team.*;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for managing Teams.
@@ -28,7 +27,8 @@ public class WTeamController extends BaseEditorController {
 
     private ResponseEntity<?> checkTeamAccess(String teamId, HttpServletRequest request) {
         var team = teamService.findByTeamId(teamId);
-        if (team.isPresent() && !accessValidator.hasEditorAccess(request, team.get().getWorldId()))
+        if (team.isPresent()
+                && !accessValidator.hasEditorAccess(request, team.get().getWorldId()))
             return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         return null;
     }
@@ -44,27 +44,15 @@ public class WTeamController extends BaseEditorController {
             WTeamStatus status,
             Map<String, String> parameters,
             Instant createdAt,
-            Instant updatedAt
-    ) {}
+            Instant updatedAt) {}
 
-    public record TeamCreateRequest(
-            String worldId,
-            String title,
-            String creatorPlayerName
-    ) {}
+    public record TeamCreateRequest(String worldId, String title, String creatorPlayerName) {}
 
-    public record TeamUpdateRequest(
-            String title,
-            Map<String, String> parameters
-    ) {}
+    public record TeamUpdateRequest(String title, Map<String, String> parameters) {}
 
-    public record TeamMemberRequest(
-            String playerName
-    ) {}
+    public record TeamMemberRequest(String playerName) {}
 
-    public record TeamEmigrateRequest(
-            String instanceWorldId
-    ) {}
+    public record TeamEmigrateRequest(String instanceWorldId) {}
 
     private TeamResponse toResponse(WTeam team) {
         return new TeamResponse(
@@ -77,8 +65,7 @@ public class WTeamController extends BaseEditorController {
                 team.getStatus() != null ? team.getStatus() : WTeamStatus.LOBBY,
                 team.getParameters() != null ? team.getParameters() : Map.of(),
                 team.getCreatedAt(),
-                team.getUpdatedAt()
-        );
+                team.getUpdatedAt());
     }
 
     /**
@@ -106,7 +93,8 @@ public class WTeamController extends BaseEditorController {
             // Filter results to accessible worlds
             return ResponseEntity.ok(teams.stream()
                     .filter(t -> accessValidator.hasEditorAccess(request, t.getWorldId()))
-                    .map(this::toResponse).toList());
+                    .map(this::toResponse)
+                    .toList());
         } catch (Exception e) {
             return bad(e.getMessage());
         }
@@ -120,9 +108,11 @@ public class WTeamController extends BaseEditorController {
     public ResponseEntity<?> get(@PathVariable String teamId, HttpServletRequest request) {
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, request); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, request);
+        if (ac != null) return ac;
 
-        return teamService.findByTeamId(teamId)
+        return teamService
+                .findByTeamId(teamId)
                 .<ResponseEntity<?>>map(team -> ResponseEntity.ok(toResponse(team)))
                 .orElseGet(() -> notFound("Team not found: " + teamId));
     }
@@ -159,12 +149,12 @@ public class WTeamController extends BaseEditorController {
      */
     @PutMapping("/{teamId}")
     public ResponseEntity<?> update(
-            @PathVariable String teamId,
-            @RequestBody TeamUpdateRequest request, HttpServletRequest httpRequest) {
+            @PathVariable String teamId, @RequestBody TeamUpdateRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, httpRequest); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, httpRequest);
+        if (ac != null) return ac;
 
         try {
             var teamOpt = teamService.findByTeamId(teamId);
@@ -189,7 +179,8 @@ public class WTeamController extends BaseEditorController {
     public ResponseEntity<?> delete(@PathVariable String teamId, HttpServletRequest request) {
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, request); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, request);
+        if (ac != null) return ac;
 
         if (teamService.findByTeamId(teamId).isEmpty()) {
             return notFound("Team not found: " + teamId);
@@ -209,12 +200,12 @@ public class WTeamController extends BaseEditorController {
      */
     @PutMapping("/{teamId}/status")
     public ResponseEntity<?> updateStatus(
-            @PathVariable String teamId,
-            @RequestBody Map<String, String> body, HttpServletRequest request) {
+            @PathVariable String teamId, @RequestBody Map<String, String> body, HttpServletRequest request) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, request); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, request);
+        if (ac != null) return ac;
 
         String statusStr = body.get("status");
         if (statusStr == null || statusStr.isBlank()) {
@@ -238,12 +229,12 @@ public class WTeamController extends BaseEditorController {
      */
     @PostMapping("/{teamId}/members")
     public ResponseEntity<?> addMember(
-            @PathVariable String teamId,
-            @RequestBody TeamMemberRequest request, HttpServletRequest httpRequest) {
+            @PathVariable String teamId, @RequestBody TeamMemberRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, httpRequest); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, httpRequest);
+        if (ac != null) return ac;
 
         if (request.playerName() == null || request.playerName().isBlank()) {
             return bad("playerName is required");
@@ -252,7 +243,8 @@ public class WTeamController extends BaseEditorController {
         try {
             boolean updated = teamService.addMemberAtomic(teamId, request.playerName());
             if (!updated) return notFound("Team not found or member already exists: " + teamId);
-            return teamService.findByTeamId(teamId)
+            return teamService
+                    .findByTeamId(teamId)
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toResponse(t)))
                     .orElseGet(() -> notFound("Team not found: " + teamId));
         } catch (Exception e) {
@@ -266,17 +258,18 @@ public class WTeamController extends BaseEditorController {
      */
     @DeleteMapping("/{teamId}/members/{playerName}")
     public ResponseEntity<?> removeMember(
-            @PathVariable String teamId,
-            @PathVariable String playerName, HttpServletRequest request) {
+            @PathVariable String teamId, @PathVariable String playerName, HttpServletRequest request) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, request); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, request);
+        if (ac != null) return ac;
 
         try {
             boolean updated = teamService.removeMemberAtomic(teamId, playerName);
             if (!updated) return notFound("Team not found or member not present: " + teamId);
-            return teamService.findByTeamId(teamId)
+            return teamService
+                    .findByTeamId(teamId)
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toResponse(t)))
                     .orElseGet(() -> notFound("Team not found: " + teamId));
         } catch (Exception e) {
@@ -290,12 +283,12 @@ public class WTeamController extends BaseEditorController {
      */
     @PostMapping("/{teamId}/invitations")
     public ResponseEntity<?> addInvitation(
-            @PathVariable String teamId,
-            @RequestBody TeamMemberRequest request, HttpServletRequest httpRequest) {
+            @PathVariable String teamId, @RequestBody TeamMemberRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, httpRequest); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, httpRequest);
+        if (ac != null) return ac;
 
         if (request.playerName() == null || request.playerName().isBlank()) {
             return bad("playerName is required");
@@ -304,7 +297,8 @@ public class WTeamController extends BaseEditorController {
         try {
             boolean updated = teamService.addInvitationAtomic(teamId, request.playerName());
             if (!updated) return notFound("Team not found or invitation already exists: " + teamId);
-            return teamService.findByTeamId(teamId)
+            return teamService
+                    .findByTeamId(teamId)
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toResponse(t)))
                     .orElseGet(() -> notFound("Team not found: " + teamId));
         } catch (Exception e) {
@@ -318,17 +312,18 @@ public class WTeamController extends BaseEditorController {
      */
     @DeleteMapping("/{teamId}/invitations/{playerName}")
     public ResponseEntity<?> removeInvitation(
-            @PathVariable String teamId,
-            @PathVariable String playerName, HttpServletRequest request) {
+            @PathVariable String teamId, @PathVariable String playerName, HttpServletRequest request) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, request); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, request);
+        if (ac != null) return ac;
 
         try {
             boolean updated = teamService.removeInvitationAtomic(teamId, playerName);
             if (!updated) return notFound("Team not found or invitation not present: " + teamId);
-            return teamService.findByTeamId(teamId)
+            return teamService
+                    .findByTeamId(teamId)
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toResponse(t)))
                     .orElseGet(() -> notFound("Team not found: " + teamId));
         } catch (Exception e) {
@@ -342,12 +337,12 @@ public class WTeamController extends BaseEditorController {
      */
     @PostMapping("/{teamId}/emigrate")
     public ResponseEntity<?> emigrate(
-            @PathVariable String teamId,
-            @RequestBody TeamEmigrateRequest request, HttpServletRequest httpRequest) {
+            @PathVariable String teamId, @RequestBody TeamEmigrateRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(teamId, "teamId");
         if (error != null) return error;
-        var ac = checkTeamAccess(teamId, httpRequest); if (ac != null) return ac;
+        var ac = checkTeamAccess(teamId, httpRequest);
+        if (ac != null) return ac;
 
         if (request.instanceWorldId() == null || request.instanceWorldId().isBlank()) {
             return bad("instanceWorldId is required");

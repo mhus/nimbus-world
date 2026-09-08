@@ -7,12 +7,11 @@ import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptField;
 import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptKind;
 import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptModel;
 import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptType;
-import org.apache.maven.plugin.logging.Log;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import org.apache.maven.plugin.logging.Log;
 
 /**
  * Erzeugt ein TypeScriptModel aus einer Liste von JavaClassModel.
@@ -130,7 +129,9 @@ public class TypeScriptGenerator {
                                 .anyMatch(ne -> ne.getName().equals(name));
                         if (isNestedEnum) continue;
                         String importSymbol = resolveTargetTsName(target);
-                        String relPath = buildRelativeImportPath(tt.getSubfolder(), target.getGenerateSubfolder(),
+                        String relPath = buildRelativeImportPath(
+                                tt.getSubfolder(),
+                                target.getGenerateSubfolder(),
                                 resolveTargetBaseFileName(target, importSymbol));
                         String line = "import { " + importSymbol + " } from '" + relPath + "'";
                         tt.getImports().add(ensureSemicolon(line));
@@ -141,7 +142,9 @@ public class TypeScriptGenerator {
             tsModel.getTypes().add(tt);
         }
 
-        if (log != null) log.info("TypeScriptGenerator: erzeugte Typen: " + tsModel.getTypes().size());
+        if (log != null)
+            log.info(
+                    "TypeScriptGenerator: erzeugte Typen: " + tsModel.getTypes().size());
         return tsModel;
     }
 
@@ -180,10 +183,10 @@ public class TypeScriptGenerator {
         StringBuilder sb = new StringBuilder();
         for (int j = i; j < fromParts.length; j++) sb.append("../");
         for (int j = i; j < toParts.length; j++) {
-            if (sb.length() > 0 && sb.charAt(sb.length()-1) != '/') sb.append('/');
+            if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/') sb.append('/');
             sb.append(toParts[j]);
         }
-        if (sb.length() > 0 && sb.charAt(sb.length()-1) != '/') sb.append('/');
+        if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/') sb.append('/');
         sb.append(baseName);
         return sb.toString();
     }
@@ -219,7 +222,9 @@ public class TypeScriptGenerator {
         return null;
     }
 
-    private String safe(String s) { return s == null ? "" : s.trim(); }
+    private String safe(String s) {
+        return s == null ? "" : s.trim();
+    }
 
     private void addDefaultImports(TypeScriptType tt) {
         if (configuration == null) return;
@@ -285,7 +290,7 @@ public class TypeScriptGenerator {
         if (raw.isBlank()) return "any";
 
         // Normalisieren (ohne Whitespaces)
-        String s = raw.replace("\n"," ").replaceAll("\\s+", " ").trim();
+        String s = raw.replace("\n", " ").replaceAll("\\s+", " ").trim();
 
         // Arrays: X[] → X[] (Type extrahieren)
         if (s.endsWith("[]")) {
@@ -381,7 +386,7 @@ public class TypeScriptGenerator {
     private String mapByConfiguration(String original, String simple) {
         if (configuration == null) return null;
         try {
-            java.util.Map<String,String> mappings = configuration.getTypeMappings();
+            java.util.Map<String, String> mappings = configuration.getTypeMappings();
             if (mappings == null || mappings.isEmpty()) return null;
             if (original != null) {
                 String hit = mappings.get(original.trim());
@@ -402,8 +407,16 @@ public class TypeScriptGenerator {
         StringBuilder current = new StringBuilder();
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (c == '<') { depth++; current.append(c); continue; }
-            if (c == '>') { depth--; current.append(c); continue; }
+            if (c == '<') {
+                depth++;
+                current.append(c);
+                continue;
+            }
+            if (c == '>') {
+                depth--;
+                current.append(c);
+                continue;
+            }
             if (c == ',' && depth == 0) {
                 parts.add(current.toString().trim());
                 current.setLength(0);

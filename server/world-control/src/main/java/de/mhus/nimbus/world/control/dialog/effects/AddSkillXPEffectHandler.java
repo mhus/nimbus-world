@@ -16,13 +16,19 @@ public class AddSkillXPEffectHandler implements DialogEffectHandler {
     private final RCharacterService characterService;
 
     @Override
-    public String getEffectType() { return "addSkillXP"; }
+    public String getEffectType() {
+        return "addSkillXP";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
         if (ctx.getCharacter() == null) return;
         int amount = effect.amount() != null ? effect.amount() : 0;
         characterService.incrementSkillAtomic(ctx.getCharacter().getId(), effect.skill(), amount);
-        log.debug("Added {} XP to skill {} for character {}", amount, effect.skill(), ctx.getCharacter().getId());
+        log.debug(
+                "Added {} XP to skill {} for character {}",
+                amount,
+                effect.skill(),
+                ctx.getCharacter().getId());
     }
 }

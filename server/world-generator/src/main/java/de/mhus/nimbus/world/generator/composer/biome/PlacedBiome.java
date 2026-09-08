@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Represents a biome that has been placed on the grid

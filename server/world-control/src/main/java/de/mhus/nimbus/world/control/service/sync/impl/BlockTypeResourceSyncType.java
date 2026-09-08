@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +14,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for block types.
@@ -46,7 +45,8 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path blocktypesDir = dataPath.resolve("blocktypes");
         Files.createDirectories(blocktypesDir);
 
@@ -85,7 +85,8 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(blocktypesDir)) {
             try (Stream<Path> files = Files.list(blocktypesDir)) {
-                for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                for (Path file :
+                        files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     try {
                         Document doc = yamlMapper.readValue(file.toFile(), Document.class);
                         // Handle legacy integer blockId or string blockId
@@ -107,7 +108,9 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path blocktypesDir = dataPath.resolve("blocktypes");
         if (!Files.exists(blocktypesDir)) {
             log.info("No blocktypes directory found");
@@ -152,8 +155,9 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                         if (publicDataObj instanceof Document publicData) {
                             Object publicDataId = publicData.get("_id");
                             if (publicDataId != null) {
-                                String normalizedPublicDataId = publicDataId instanceof String ?
-                                        (String) publicDataId : publicDataId.toString();
+                                String normalizedPublicDataId = publicDataId instanceof String
+                                        ? (String) publicDataId
+                                        : publicDataId.toString();
                                 publicData.put("_id", normalizedPublicDataId);
                             }
                         }
@@ -163,12 +167,15 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     String transformedWorldId = migratedDoc.getString("worldId");
 
                     // Find existing by unique constraint (worldId + blockId)
-                    Document existing = blockTypeService.findDocumentByWorldIdAndBlockId(
-                            transformedWorldId, transformedBlockId
-                    ).orElse(null);
+                    Document existing = blockTypeService
+                            .findDocumentByWorldIdAndBlockId(transformedWorldId, transformedBlockId)
+                            .orElse(null);
 
-                    log.debug("Checking for existing blocktype: worldId={}, blockId={}, found={}",
-                            transformedWorldId, transformedBlockId, existing != null);
+                    log.debug(
+                            "Checking for existing blocktype: worldId={}, blockId={}, found={}",
+                            transformedWorldId,
+                            transformedBlockId,
+                            existing != null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -183,10 +190,16 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     }
 
                     if (existing != null) {
-                        log.info("Updating existing blocktype: worldId={}, blockId={}, _id={}",
-                                transformedWorldId, transformedBlockId, existing.get("_id"));
+                        log.info(
+                                "Updating existing blocktype: worldId={}, blockId={}, _id={}",
+                                transformedWorldId,
+                                transformedBlockId,
+                                existing.get("_id"));
                     } else {
-                        log.info("Creating new blocktype: worldId={}, blockId={}", transformedWorldId, transformedBlockId);
+                        log.info(
+                                "Creating new blocktype: worldId={}, blockId={}",
+                                transformedWorldId,
+                                transformedBlockId);
                     }
 
                     // Upsert through the owner (reconciles _id by the unique key)

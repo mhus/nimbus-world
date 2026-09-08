@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -19,9 +21,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for player document viewing.
@@ -41,13 +40,11 @@ public class PlayerDocumentController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get document referenced by a progress entry")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Document found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Not found")
+        @ApiResponse(responseCode = "200", description = "Document found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Not found")
     })
-    public ResponseEntity<?> getDocument(
-            @RequestParam String progressId,
-            HttpServletRequest request) {
+    public ResponseEntity<?> getDocument(@RequestParam String progressId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -110,7 +107,6 @@ public class PlayerDocumentController extends BaseEditorController {
         return ResponseEntity.ok(Map.of(
                 "title", doc.getTitle() != null ? doc.getTitle() : "",
                 "content", doc.getContent() != null ? doc.getContent() : "",
-                "format", doc.getFormat() != null ? doc.getFormat() : "plaintext"
-        ));
+                "format", doc.getFormat() != null ? doc.getFormat() : "plaintext"));
     }
 }

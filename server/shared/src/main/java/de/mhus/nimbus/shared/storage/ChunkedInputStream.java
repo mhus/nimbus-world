@@ -1,11 +1,10 @@
 package de.mhus.nimbus.shared.storage;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 
 /**
  * Custom InputStream that lazy-loads chunks from MongoDB on-demand.
@@ -164,18 +163,16 @@ public class ChunkedInputStream extends InputStream {
 
             // Validate chunk sequence integrity
             if (chunk.getIndex() != currentChunkIndex) {
-                throw new IllegalStateException(
-                        String.format("Chunk sequence error: expected index %d but got %d for uuid: %s",
-                                currentChunkIndex, chunk.getIndex(), uuid)
-                );
+                throw new IllegalStateException(String.format(
+                        "Chunk sequence error: expected index %d but got %d for uuid: %s",
+                        currentChunkIndex, chunk.getIndex(), uuid));
             }
 
             // Load ONLY this chunk's data (critical for memory efficiency)
             currentChunkData = chunk.getData();
             positionInChunk = 0;
 
-            log.trace("Loaded chunk: uuid={} index={} size={}",
-                    uuid, currentChunkIndex, currentChunkData.length);
+            log.trace("Loaded chunk: uuid={} index={} size={}", uuid, currentChunkIndex, currentChunkData.length);
 
             // Check if this was the final chunk
             if (chunk.isFinal()) {

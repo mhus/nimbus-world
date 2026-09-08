@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.Backdrop;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -11,10 +14,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * Service for managing WBackdrop entities.
@@ -76,16 +75,18 @@ public class WBackdropService {
             throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
         }
 
-        WBackdrop entity = repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).orElseGet(() -> {
-            WBackdrop neu = WBackdrop.builder()
-                    .backdropId(backdropId)
-                    .worldId(worldId.getId())
-                    .enabled(true)
-                    .build();
-            neu.touchCreate();
-            log.debug("Creating new WBackdrop: {}", backdropId);
-            return neu;
-        });
+        WBackdrop entity = repository
+                .findByWorldIdAndBackdropId(worldId.getId(), backdropId)
+                .orElseGet(() -> {
+                    WBackdrop neu = WBackdrop.builder()
+                            .backdropId(backdropId)
+                            .worldId(worldId.getId())
+                            .enabled(true)
+                            .build();
+                    neu.touchCreate();
+                    log.debug("Creating new WBackdrop: {}", backdropId);
+                    return neu;
+                });
 
         entity.setPublicData(publicData);
         entity.touchUpdate();
@@ -123,14 +124,16 @@ public class WBackdropService {
         if (worldId.isInstanceOrZone()) {
             throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
         }
-        return repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).map(entity -> {
-            updater.accept(entity);
-            entity.touchUpdate();
-            entity.removeWorldPrefix();
-            WBackdrop saved = repository.save(entity);
-            log.debug("Updated WBackdrop: {}", backdropId);
-            return saved;
-        });
+        return repository
+                .findByWorldIdAndBackdropId(worldId.getId(), backdropId)
+                .map(entity -> {
+                    updater.accept(entity);
+                    entity.touchUpdate();
+                    entity.removeWorldPrefix();
+                    WBackdrop saved = repository.save(entity);
+                    log.debug("Updated WBackdrop: {}", backdropId);
+                    return saved;
+                });
     }
 
     /**
@@ -142,11 +145,14 @@ public class WBackdropService {
         if (worldId.isInstanceOrZone()) {
             throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
         }
-        return repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).map(entity -> {
-            repository.delete(entity);
-            log.debug("Deleted WBackdrop: {}", backdropId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndBackdropId(worldId.getId(), backdropId)
+                .map(entity -> {
+                    repository.delete(entity);
+                    log.debug("Deleted WBackdrop: {}", backdropId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Transactional
@@ -185,10 +191,7 @@ public class WBackdropService {
      */
     @Transactional
     public int deleteByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WBackdrop.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WBackdrop.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} backdrops for world {}", deleted, worldId);
         return (int) deleted;
@@ -247,13 +250,10 @@ public class WBackdropService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WBackdrop.class, "backdrop", worldId,
-                doc -> {
-                    String backdropId = doc.getString("backdropId");
-                    return backdropId != null ? doc.getString("worldId") + "|" + backdropId : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WBackdrop.class, "backdrop", worldId, doc -> {
+            String backdropId = doc.getString("backdropId");
+            return backdropId != null ? doc.getString("worldId") + "|" + backdropId : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -278,7 +278,8 @@ public class WBackdropService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndBackdropId(String worldId, String backdropId) {
         String collectionName = mongoTemplate.getCollectionName(WBackdrop.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("backdropId").is(backdropId));
+        Query query = new Query(
+                Criteria.where("worldId").is(worldId).and("backdropId").is(backdropId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -290,8 +291,10 @@ public class WBackdropService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WBackdrop.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("backdropId").is(doc.getString("backdropId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("backdropId")
+                .is(doc.getString("backdropId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -299,5 +302,4 @@ public class WBackdropService {
         }
         return mongoTemplate.save(doc, collectionName);
     }
-
 }

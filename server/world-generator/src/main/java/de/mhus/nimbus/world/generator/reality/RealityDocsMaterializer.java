@@ -2,13 +2,12 @@ package de.mhus.nimbus.world.generator.reality;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Stage D — deterministic (no-AI) documents that capture the design intent:
@@ -40,8 +39,13 @@ public class RealityDocsMaterializer {
             result.addError("design: " + e.getMessage());
         }
         try {
-            save(region, DIRECTIVES_COLLECTION, "world-directives", "World Directives",
-                    renderDirectives(region, plan), "reality_world_directives");
+            save(
+                    region,
+                    DIRECTIVES_COLLECTION,
+                    "world-directives",
+                    "World Directives",
+                    renderDirectives(region, plan),
+                    "reality_world_directives");
             result.inc();
         } catch (Exception e) {
             log.warn("Failed to write reality_world_directives", e);
@@ -67,9 +71,17 @@ public class RealityDocsMaterializer {
             sb.append("| rank | name | title | tier | material |\n|---|---|---|---|---|\n");
             for (RealityPlan.ItemClass c : plan.getItemClasses()) {
                 if (c == null) continue;
-                sb.append("| ").append(nz(c.getRank())).append(" | ").append(nz(c.getName()))
-                        .append(" | ").append(nz(c.getTitle())).append(" | ").append(nz(c.getTier()))
-                        .append(" | ").append(nz(c.getMaterial())).append(" |\n");
+                sb.append("| ")
+                        .append(nz(c.getRank()))
+                        .append(" | ")
+                        .append(nz(c.getName()))
+                        .append(" | ")
+                        .append(nz(c.getTitle()))
+                        .append(" | ")
+                        .append(nz(c.getTier()))
+                        .append(" | ")
+                        .append(nz(c.getMaterial()))
+                        .append(" |\n");
             }
             sb.append('\n');
         }
@@ -81,9 +93,15 @@ public class RealityDocsMaterializer {
             sb.append("## Creatures\n\n");
             for (RealityPlan.CreatureSpec c : plan.getCreatures()) {
                 if (c == null) continue;
-                sb.append("- **").append(nz(c.getName())).append("** (").append(nz(c.getType()))
-                        .append(") — model `").append(nz(c.getModelPath())).append("`; ")
-                        .append(nz(c.getBehavior())).append('\n');
+                sb.append("- **")
+                        .append(nz(c.getName()))
+                        .append("** (")
+                        .append(nz(c.getType()))
+                        .append(") — model `")
+                        .append(nz(c.getModelPath()))
+                        .append("`; ")
+                        .append(nz(c.getBehavior()))
+                        .append('\n');
             }
             sb.append('\n');
         }
@@ -92,8 +110,14 @@ public class RealityDocsMaterializer {
             sb.append("## Rules\n\n");
             for (RealityPlan.RuleSpec r : plan.getRules()) {
                 if (r == null) continue;
-                sb.append("- **").append(nz(r.getName())).append("** [").append(nz(r.getKind())).append("] — when `")
-                        .append(nz(r.getWhen())).append("` → ").append(String.join(", ", nzList(r.getEffects())))
+                sb.append("- **")
+                        .append(nz(r.getName()))
+                        .append("** [")
+                        .append(nz(r.getKind()))
+                        .append("] — when `")
+                        .append(nz(r.getWhen()))
+                        .append("` → ")
+                        .append(String.join(", ", nzList(r.getEffects())))
                         .append("\n");
             }
             sb.append('\n');
@@ -117,16 +141,26 @@ public class RealityDocsMaterializer {
             for (RealityPlan.BackgroundPower p : plan.getBackgroundPowers()) {
                 if (p == null) continue;
                 sb.append("### ").append(nz(p.getName())).append('\n');
-                sb.append("- influence: ").append(nz(p.getInfluence()))
-                        .append(" · visibility: ").append(nz(p.getVisibility()))
-                        .append(" · status: ").append(nz(p.getStatus())).append('\n');
-                if (!Strings.isBlank(p.getNature())) sb.append("- nature: ").append(p.getNature()).append('\n');
-                if (!Strings.isBlank(p.getGoal())) sb.append("- goal: ").append(p.getGoal()).append('\n');
+                sb.append("- influence: ")
+                        .append(nz(p.getInfluence()))
+                        .append(" · visibility: ")
+                        .append(nz(p.getVisibility()))
+                        .append(" · status: ")
+                        .append(nz(p.getStatus()))
+                        .append('\n');
+                if (!Strings.isBlank(p.getNature()))
+                    sb.append("- nature: ").append(p.getNature()).append('\n');
+                if (!Strings.isBlank(p.getGoal()))
+                    sb.append("- goal: ").append(p.getGoal()).append('\n');
                 if (notEmpty(p.getManifestations())) {
-                    sb.append("- manifestations: ").append(String.join("; ", p.getManifestations())).append('\n');
+                    sb.append("- manifestations: ")
+                            .append(String.join("; ", p.getManifestations()))
+                            .append('\n');
                 }
                 if (notEmpty(p.getOpposedBy())) {
-                    sb.append("- opposed by: ").append(String.join(", ", p.getOpposedBy())).append('\n');
+                    sb.append("- opposed by: ")
+                            .append(String.join(", ", p.getOpposedBy()))
+                            .append('\n');
                 }
                 sb.append('\n');
             }
@@ -136,9 +170,15 @@ public class RealityDocsMaterializer {
             sb.append("## World templates (starting hooks)\n\n");
             for (RealityPlan.WorldTemplate w : plan.getWorldTemplates()) {
                 if (w == null) continue;
-                sb.append("- **").append(nz(w.getName())).append("** — ").append(nz(w.getSummary()))
-                        .append(" (biome: ").append(nz(w.getBiomeFocus())).append(", danger: ")
-                        .append(nz(w.getDanger())).append(")\n");
+                sb.append("- **")
+                        .append(nz(w.getName()))
+                        .append("** — ")
+                        .append(nz(w.getSummary()))
+                        .append(" (biome: ")
+                        .append(nz(w.getBiomeFocus()))
+                        .append(", danger: ")
+                        .append(nz(w.getDanger()))
+                        .append(")\n");
             }
             sb.append('\n');
         }
@@ -165,13 +205,20 @@ public class RealityDocsMaterializer {
         for (RealityPlan.ItemSpec it : items) {
             if (it == null) continue;
             String classTier = !Strings.isBlank(it.getItemClass()) ? it.getItemClass() : nz(it.getTier());
-            sb.append("| ").append(nz(it.getName()))
-                    .append(" | ").append(nz(it.getType()))
-                    .append(" | ").append(classTier)
-                    .append(" | ").append(nz(it.getRarity()))
-                    .append(" | ").append(nz(it.getSource()))
-                    .append(" | ").append(String.join(", ", nzList(it.getRecipe())))
-                    .append(" | ").append(nz(it.getDescription()))
+            sb.append("| ")
+                    .append(nz(it.getName()))
+                    .append(" | ")
+                    .append(nz(it.getType()))
+                    .append(" | ")
+                    .append(classTier)
+                    .append(" | ")
+                    .append(nz(it.getRarity()))
+                    .append(" | ")
+                    .append(nz(it.getSource()))
+                    .append(" | ")
+                    .append(String.join(", ", nzList(it.getRecipe())))
+                    .append(" | ")
+                    .append(nz(it.getDescription()))
                     .append(" |\n");
         }
         sb.append('\n');

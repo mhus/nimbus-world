@@ -2,10 +2,9 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Map;
 
 /**
  * Interface for building terrain compositions in hex grid flats.
@@ -15,7 +14,9 @@ public abstract class HexGridBuilder {
     protected Map<String, String> parameters;
     private int asl;
     private int offset;
-    @Setter @Getter
+
+    @Setter
+    @Getter
     protected BuilderContext context;
 
     /**
@@ -30,6 +31,7 @@ public abstract class HexGridBuilder {
     }
 
     protected abstract int getDefaultOffset();
+
     protected abstract int getDefaultAsl();
 
     public abstract int getLandSideLevel(WHexGrid.EDGE side);
@@ -49,5 +51,4 @@ public abstract class HexGridBuilder {
     public int getSeaLevel() {
         return context.getWorld().getSeaLevel();
     }
-
 }

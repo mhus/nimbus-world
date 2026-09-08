@@ -1,16 +1,16 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
 import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.engine.EngineMapper;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Handles entity position update messages from clients.
@@ -48,7 +48,8 @@ public class EntityPositionUpdateHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Entity position update from unauthenticated session: {}",
+            log.warn(
+                    "Entity position update from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -83,14 +84,12 @@ public class EntityPositionUpdateHandler implements MessageHandler {
             }
 
             // Convert to typed objects
-            Vector3 position = posNode != null ?
-                    engineMapper.treeToValue(posNode, Vector3.class) : null;
-            Rotation rotation = rotNode != null ?
-                    engineMapper.treeToValue(rotNode, Rotation.class) : null;
-            Vector3 velocity = velNode != null ?
-                    engineMapper.treeToValue(velNode, Vector3.class) : null;
-            ENTITY_POSES pose = poseId != null && poseId >= 0 && poseId < ENTITY_POSES.values().length ?
-                    ENTITY_POSES.values()[poseId] : null;
+            Vector3 position = posNode != null ? engineMapper.treeToValue(posNode, Vector3.class) : null;
+            Rotation rotation = rotNode != null ? engineMapper.treeToValue(rotNode, Rotation.class) : null;
+            Vector3 velocity = velNode != null ? engineMapper.treeToValue(velNode, Vector3.class) : null;
+            ENTITY_POSES pose = poseId != null && poseId >= 0 && poseId < ENTITY_POSES.values().length
+                    ? ENTITY_POSES.values()[poseId]
+                    : null;
 
             // Update session state (no immediate broadcasting)
             session.updatePosition(position, rotation, velocity, pose);
@@ -108,8 +107,14 @@ public class EntityPositionUpdateHandler implements MessageHandler {
 
                     wSessionService.updatePosition(session.getSessionId(), x, y, z, cx, cz, yaw, pitch);
 
-                    log.trace("Stored position in Redis: sessionId={}, pos=({}, {}, {}), chunk=({}, {})",
-                        session.getSessionId(), x, y, z, cx, cz);
+                    log.trace(
+                            "Stored position in Redis: sessionId={}, pos=({}, {}, {}), chunk=({}, {})",
+                            session.getSessionId(),
+                            x,
+                            y,
+                            z,
+                            cx,
+                            cz);
                 } catch (Exception e) {
                     log.error("Failed to store position in Redis for session {}", session.getSessionId(), e);
                 }
@@ -117,10 +122,12 @@ public class EntityPositionUpdateHandler implements MessageHandler {
 
             // Throttling is handled by PathwayBroadcastService (scheduled task)
 
-            log.trace("Updated position for session {}: pos={}, chunk=({}, {})",
+            log.trace(
+                    "Updated position for session {}: pos={}, chunk=({}, {})",
                     session.getSessionId(),
-                    position != null ? String.format("%.2f,%.2f,%.2f",
-                            position.getX(), position.getY(), position.getZ()) : "null",
+                    position != null
+                            ? String.format("%.2f,%.2f,%.2f", position.getX(), position.getY(), position.getZ())
+                            : "null",
                     session.getCurrentChunkX(),
                     session.getCurrentChunkZ());
 

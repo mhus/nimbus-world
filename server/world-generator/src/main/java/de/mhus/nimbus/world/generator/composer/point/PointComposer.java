@@ -3,22 +3,21 @@ package de.mhus.nimbus.world.generator.composer.point;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
 
 /**
  * Composes Point features by calculating their precise locations within biomes.
@@ -56,16 +55,18 @@ public class PointComposer {
      * @param world The world (needed for hexGridSize and other world properties)
      * @return Result with statistics
      */
-    public PointCompositionResult composePoints(HexComposition prepared,
-                                                BiomePlacementResult placementResult,
-                                                de.mhus.nimbus.world.shared.world.WWorld world) {
+    public PointCompositionResult composePoints(
+            HexComposition prepared,
+            BiomePlacementResult placementResult,
+            de.mhus.nimbus.world.shared.world.WWorld world) {
         return composePoints(prepared, placementResult, world, null);
     }
 
-    public PointCompositionResult composePoints(HexComposition prepared,
-                                                BiomePlacementResult placementResult,
-                                                de.mhus.nimbus.world.shared.world.WWorld world,
-                                                StructuresIndex structuresIndex) {
+    public PointCompositionResult composePoints(
+            HexComposition prepared,
+            BiomePlacementResult placementResult,
+            de.mhus.nimbus.world.shared.world.WWorld world,
+            StructuresIndex structuresIndex) {
         log.debug("Starting point composition");
 
         List<String> errors = new ArrayList<>();
@@ -81,9 +82,8 @@ public class PointComposer {
             List<Point> allPoints = collectAllPoints(context);
 
             // Filter out precomposed points (synthetic/fixed points that don't need composition)
-            List<Point> points = allPoints.stream()
-                    .filter(p -> !p.isPrecomposed())
-                    .toList();
+            List<Point> points =
+                    allPoints.stream().filter(p -> !p.isPrecomposed()).toList();
 
             int precomposedCount = allPoints.size() - points.size();
             if (precomposedCount > 0) {
@@ -95,11 +95,11 @@ public class PointComposer {
             if (points.isEmpty()) {
                 log.debug("No points to compose");
                 return PointCompositionResult.builder()
-                    .totalPoints(0)
-                    .composedPoints(0)
-                    .failedPoints(0)
-                    .success(true)
-                    .build();
+                        .totalPoints(0)
+                        .composedPoints(0)
+                        .failedPoints(0)
+                        .success(true)
+                        .build();
             }
 
             log.debug("Found {} points to compose", totalPoints);
@@ -117,9 +117,8 @@ public class PointComposer {
             }
 
             // Iteratively solve positions (only for initialized points)
-            List<Point> initializedPoints = points.stream()
-                .filter(p -> p.getGridCoordinate() != null)
-                .toList();
+            List<Point> initializedPoints =
+                    points.stream().filter(p -> p.getGridCoordinate() != null).toList();
             boolean converged = iterativelySolvePositions(initializedPoints, constraintGraph, context);
 
             if (!converged) {
@@ -145,37 +144,38 @@ public class PointComposer {
                 }
             }
 
-            log.debug("Point composition complete: composed={}/{}, failed={}",
-                composedPoints, totalPoints, failedPoints);
+            log.debug(
+                    "Point composition complete: composed={}/{}, failed={}", composedPoints, totalPoints, failedPoints);
 
             return PointCompositionResult.builder()
-                .totalPoints(totalPoints)
-                .composedPoints(composedPoints)
-                .failedPoints(failedPoints)
-                .success(failedPoints == 0)
-                .errors(errors)
-                .build();
+                    .totalPoints(totalPoints)
+                    .composedPoints(composedPoints)
+                    .failedPoints(failedPoints)
+                    .success(failedPoints == 0)
+                    .errors(errors)
+                    .build();
 
         } catch (Exception e) {
             log.error("Point composition failed", e);
             return PointCompositionResult.builder()
-                .totalPoints(totalPoints)
-                .composedPoints(composedPoints)
-                .failedPoints(failedPoints)
-                .success(false)
-                .errorMessage(e.getMessage())
-                .errors(errors)
-                .build();
+                    .totalPoints(totalPoints)
+                    .composedPoints(composedPoints)
+                    .failedPoints(failedPoints)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .errors(errors)
+                    .build();
         }
     }
 
     /**
      * Builds a ComposeContext from biome placement result.
      */
-    private ComposeContext buildComposeContext(HexComposition composition,
-                                              BiomePlacementResult placementResult,
-                                              de.mhus.nimbus.world.shared.world.WWorld world,
-                                              StructuresIndex structuresIndex) {
+    private ComposeContext buildComposeContext(
+            HexComposition composition,
+            BiomePlacementResult placementResult,
+            de.mhus.nimbus.world.shared.world.WWorld world,
+            StructuresIndex structuresIndex) {
         // Build biome maps
         Map<String, PlacedBiome> biomeMap = new HashMap<>();
         Map<String, HexVector2> biomeCenterMap = new HashMap<>();
@@ -205,16 +205,16 @@ public class PointComposer {
         List<WHexGrid> hexGrids = new ArrayList<>();
 
         return ComposeContext.builder()
-            .composition(composition)
-            .world(world)
-            .structuresIndex(structuresIndex != null ? structuresIndex : new StructuresIndex())
-            .placedBiomes(placementResult.getPlacedBiomes())
-            .biomeMap(biomeMap)
-            .biomeCenterMap(biomeCenterMap)
-            .coordinateToBiomeMap(coordinateToBiomeMap)
-            .hexGrids(hexGrids)  // Empty - WHexGrids created later by HexGridGenerator
-            .hexGridMap(hexGridMap)  // Empty
-            .build();
+                .composition(composition)
+                .world(world)
+                .structuresIndex(structuresIndex != null ? structuresIndex : new StructuresIndex())
+                .placedBiomes(placementResult.getPlacedBiomes())
+                .biomeMap(biomeMap)
+                .biomeCenterMap(biomeCenterMap)
+                .coordinateToBiomeMap(coordinateToBiomeMap)
+                .hexGrids(hexGrids) // Empty - WHexGrids created later by HexGridGenerator
+                .hexGridMap(hexGridMap) // Empty
+                .build();
     }
 
     /**
@@ -250,8 +250,7 @@ public class PointComposer {
     /**
      * Builds constraint graph for point relationships.
      */
-    private Map<String, List<PointConstraint>> buildConstraintGraph(
-        List<Point> points, ComposeContext context) {
+    private Map<String, List<PointConstraint>> buildConstraintGraph(List<Point> points, ComposeContext context) {
 
         Map<String, List<PointConstraint>> graph = new HashMap<>();
 
@@ -267,11 +266,10 @@ public class PointComposer {
                     Point targetPoint = context.getPointMap().get(relative.getPointId());
                     if (targetPoint != null) {
                         constraints.add(new PointConstraint(
-                            ConstraintType.RELATIVE_TO_POINT,
-                            targetPoint,
-                            relative.getDirection(),
-                            relative.getDistance()
-                        ));
+                                ConstraintType.RELATIVE_TO_POINT,
+                                targetPoint,
+                                relative.getDirection(),
+                                relative.getDistance()));
                     }
                 }
             }
@@ -283,21 +281,19 @@ public class PointComposer {
                     // Direction + BiomeDistance constraint
                     if (point.getDirection() != null && point.getBiomeDistance() != null) {
                         constraints.add(new PointConstraint(
-                            ConstraintType.BIOME_DIRECTION_DISTANCE,
-                            biome.getBiome(),
-                            point.getDirection(),
-                            point.getBiomeDistance().getHexes()
-                        ));
+                                ConstraintType.BIOME_DIRECTION_DISTANCE,
+                                biome.getBiome(),
+                                point.getDirection(),
+                                point.getBiomeDistance().getHexes()));
                     }
 
                     // BiomeSide + SideOffset constraint
                     if (point.getBiomeSide() != null) {
                         constraints.add(new PointConstraint(
-                            ConstraintType.BIOME_SIDE,
-                            biome.getBiome(),
-                            point.getBiomeSide(),
-                            point.getSideOffset() != null ? point.getSideOffset() : 0.5
-                        ));
+                                ConstraintType.BIOME_SIDE,
+                                biome.getBiome(),
+                                point.getBiomeSide(),
+                                point.getSideOffset() != null ? point.getSideOffset() : 0.5));
                     }
                 }
             }
@@ -317,8 +313,7 @@ public class PointComposer {
     private boolean initializePointPosition(Point point, ComposeContext context) {
         Area biome = getBiomeForPoint(point, context);
         if (biome == null) {
-            log.warn("Point '{}': biome '{}' not found — skipping",
-                point.getName(), point.getBiomeId());
+            log.warn("Point '{}': biome '{}' not found — skipping", point.getName(), point.getBiomeId());
             return false;
         }
 
@@ -329,9 +324,8 @@ public class PointComposer {
     /**
      * Iteratively adjusts point positions until convergence.
      */
-    private boolean iterativelySolvePositions(List<Point> points,
-                                              Map<String, List<PointConstraint>> constraintGraph,
-                                              ComposeContext context) {
+    private boolean iterativelySolvePositions(
+            List<Point> points, Map<String, List<PointConstraint>> constraintGraph, ComposeContext context) {
         for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
             double maxMovement = 0.0;
 
@@ -375,7 +369,7 @@ public class PointComposer {
 
             if (gridCoord != null) {
                 de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                    HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
+                        HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
 
                 int lx = context.getHexGridSize() / 2 + relativePos.getX();
                 int lz = context.getHexGridSize() / 2 + relativePos.getZ();
@@ -387,8 +381,7 @@ public class PointComposer {
                 point.setStatus(FeatureStatus.COMPOSED);
                 configureHexGridForPoint(point, gridCoord, context);
 
-                log.debug("Finalized point {} at grid {} with lx={}, lz={}",
-                    point.getName(), gridCoord, lx, lz);
+                log.debug("Finalized point {} at grid {} with lx={}, lz={}", point.getName(), gridCoord, lx, lz);
                 return true;
             }
         }
@@ -399,8 +392,7 @@ public class PointComposer {
 
             if (gridCoord != null) {
                 de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                    HexLocalUtil.toHexgridLocalCenter(
-                        point.getHexLocalEdgeVector(), context.getHexGridSize());
+                        HexLocalUtil.toHexgridLocalCenter(point.getHexLocalEdgeVector(), context.getHexGridSize());
 
                 int lx = context.getHexGridSize() / 2 + relativePos.getX();
                 int lz = context.getHexGridSize() / 2 + relativePos.getZ();
@@ -412,8 +404,7 @@ public class PointComposer {
                 point.setStatus(FeatureStatus.COMPOSED);
                 configureHexGridForPoint(point, gridCoord, context);
 
-                log.debug("Finalized edge point {} at grid {} with lx={}, lz={}",
-                    point.getName(), gridCoord, lx, lz);
+                log.debug("Finalized edge point {} at grid {} with lx={}, lz={}", point.getName(), gridCoord, lx, lz);
                 return true;
             }
         }
@@ -425,16 +416,19 @@ public class PointComposer {
             gridCoord = HexVector2.builder().q(0).r(0).build();
             point.setGridCoordinate(gridCoord);
         }
-        log.warn("Point '{}': no position data after init, creating center fallback at ({},{})",
-            point.getName(), gridCoord.getQ(), gridCoord.getR());
+        log.warn(
+                "Point '{}': no position data after init, creating center fallback at ({},{})",
+                point.getName(),
+                gridCoord.getQ(),
+                gridCoord.getR());
 
         int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
         point.setHexLocalPosition(new de.mhus.nimbus.world.shared.world.HexLocalPosition(
-            HexVector2.builder().q(0).r(0).build(), divider, size));
+                HexVector2.builder().q(0).r(0).build(), divider, size));
 
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
-            HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
+                HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
         int lx = context.getHexGridSize() / 2 + relativePos.getX();
         int lz = context.getHexGridSize() / 2 + relativePos.getZ();
 
@@ -499,7 +493,7 @@ public class PointComposer {
         if (point.getHexLocalPosition() != null) {
             de.mhus.nimbus.world.shared.world.HexLocalPosition hexLocalPos = point.getHexLocalPosition();
             de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexGridLocalCenter(hexLocalPos);
+                    de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexGridLocalCenter(hexLocalPos);
 
             int lx = context.getHexGridSize() / 2 + relativePos.getX();
             int lz = context.getHexGridSize() / 2 + relativePos.getZ();
@@ -509,8 +503,8 @@ public class PointComposer {
         if (point.getHexLocalEdgeVector() != null) {
             de.mhus.nimbus.world.shared.world.HexLocalEdgeVector edgeVector = point.getHexLocalEdgeVector();
             de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
-                    edgeVector, context.getHexGridSize());
+                    de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
+                            edgeVector, context.getHexGridSize());
 
             int lx = context.getHexGridSize() / 2 + relativePos.getX();
             int lz = context.getHexGridSize() / 2 + relativePos.getZ();
@@ -520,9 +514,8 @@ public class PointComposer {
         return null;
     }
 
-    private PointPosition calculateTargetPosition(Point point,
-                                                  List<PointConstraint> constraints,
-                                                  ComposeContext context) {
+    private PointPosition calculateTargetPosition(
+            Point point, List<PointConstraint> constraints, ComposeContext context) {
         // Simple average of all constraint targets
         double sumQ = 0, sumR = 0, sumLx = 0, sumLz = 0;
         int count = 0;
@@ -541,24 +534,21 @@ public class PointComposer {
         if (count == 0) return null;
 
         return new PointPosition(
-            HexVector2.builder()
-                .q((int) Math.round(sumQ / count))
-                .r((int) Math.round(sumR / count))
-                .build(),
-            (int) Math.round(sumLx / count),
-            (int) Math.round(sumLz / count)
-        );
+                HexVector2.builder()
+                        .q((int) Math.round(sumQ / count))
+                        .r((int) Math.round(sumR / count))
+                        .build(),
+                (int) Math.round(sumLx / count),
+                (int) Math.round(sumLz / count));
     }
 
-    private PointPosition calculateConstraintTarget(PointConstraint constraint,
-                                                   ComposeContext context) {
+    private PointPosition calculateConstraintTarget(PointConstraint constraint, ComposeContext context) {
         // TODO: Implement constraint target calculation based on type
         return null;
     }
 
-    private double moveTowardsTarget(Point point, PointPosition current,
-                                    PointPosition target, double factor,
-                                    ComposeContext context) {
+    private double moveTowardsTarget(
+            Point point, PointPosition current, PointPosition target, double factor, ComposeContext context) {
         // Calculate movement vector
         int deltaQ = target.coordinate.getQ() - current.coordinate.getQ();
         int deltaR = target.coordinate.getR() - current.coordinate.getR();
@@ -579,25 +569,21 @@ public class PointComposer {
         // TODO: Convert pixel coordinates back to hex coordinates
         // For now: approximate by creating a position at (0,0) center
         de.mhus.nimbus.generated.types.HexVector2 hexPos =
-            de.mhus.nimbus.generated.types.HexVector2.builder()
-                .q(0)
-                .r(0)
-                .build();
+                de.mhus.nimbus.generated.types.HexVector2.builder().q(0).r(0).build();
 
         int divider = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
 
-        point.setHexLocalPosition(
-            new de.mhus.nimbus.world.shared.world.HexLocalPosition(hexPos, divider, size)
-        );
+        point.setHexLocalPosition(new de.mhus.nimbus.world.shared.world.HexLocalPosition(hexPos, divider, size));
 
         // Update grid coordinate if changed
         HexVector2 newGridCoord = HexVector2.builder().q(newQ).r(newR).build();
         point.setGridCoordinate(newGridCoord);
 
         // Calculate movement distance
-        double movement = Math.sqrt(deltaQ * deltaQ + deltaR * deltaR +
-            (deltaLx * deltaLx + deltaLz * deltaLz) / (context.getHexGridSize() * context.getHexGridSize()));
+        double movement = Math.sqrt(deltaQ * deltaQ
+                + deltaR * deltaR
+                + (deltaLx * deltaLx + deltaLz * deltaLz) / (context.getHexGridSize() * context.getHexGridSize()));
 
         return movement;
     }
@@ -606,9 +592,8 @@ public class PointComposer {
      * Calculates local position (lx, lz) from side and offset.
      * Uses denominator=4 as specified (numerator 1-3: NORTH, CENTER, SOUTH).
      */
-    private int[] calculateLocalPositionFromSide(WHexGrid.EDGE side, Double offset,
-                                                 int hexGridSize) {
-        if (offset == null) offset = 0.5;  // Default to center
+    private int[] calculateLocalPositionFromSide(WHexGrid.EDGE side, Double offset, int hexGridSize) {
+        if (offset == null) offset = 0.5; // Default to center
 
         // Convert offset to numerator (0.0->0, 0.25->1, 0.5->2, 0.75->3, 1.0->4)
         int numerator = (int) Math.round(offset * 4);
@@ -619,7 +604,7 @@ public class PointComposer {
 
         // Use HexLocalUtil to calculate actual lx, lz from side coordinates
         Vector2Int pos = HexLocalUtil.toHexgridLocalCenter(vector, hexGridSize);
-        return new int[]{pos.getX(), pos.getZ()};
+        return new int[] {pos.getX(), pos.getZ()};
     }
 
     // ========== Inner Classes ==========
@@ -639,9 +624,9 @@ public class PointComposer {
 
     private static class PointConstraint {
         ConstraintType type;
-        Object target;  // Can be Point, Area, etc.
+        Object target; // Can be Point, Area, etc.
         Direction direction;
-        Object value;  // Can be Integer (distance), Double (offset), etc.
+        Object value; // Can be Integer (distance), Double (offset), etc.
 
         PointConstraint(ConstraintType type, Object target, Direction direction, Object value) {
             this.type = type;

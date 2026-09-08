@@ -13,14 +13,13 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 
 /**
  * Access filter for world-generator service.
@@ -48,7 +47,13 @@ public class GeneratorAccessFilter extends AccessFilterBase {
 
     private SettingString settingMcpToken;
 
-    public GeneratorAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService) {
+    public GeneratorAccessFilter(
+            JwtService jwtService,
+            WSessionService sessionService,
+            AccessSettings accessProperties,
+            RegionSettings regionProperties,
+            SSettingsService settingsService,
+            MetricService metricService) {
         super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
         this.settingsService = settingsService;
@@ -79,8 +84,7 @@ public class GeneratorAccessFilter extends AccessFilterBase {
      * as MCP endpoints and fall through to standard authentication.
      */
     private boolean isMcpPath(String uri) {
-        return uri.equals("/sse") || uri.startsWith("/sse/")
-                || uri.equals("/mcp") || uri.startsWith("/mcp/");
+        return uri.equals("/sse") || uri.startsWith("/sse/") || uri.equals("/mcp") || uri.startsWith("/mcp/");
     }
 
     private boolean tokenMatches(String authHeader, String mcpToken) {

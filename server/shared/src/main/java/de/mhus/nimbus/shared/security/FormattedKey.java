@@ -1,8 +1,7 @@
 package de.mhus.nimbus.shared.security;
 
-import lombok.Getter;
-
 import java.util.Optional;
+import lombok.Getter;
 
 @Getter
 public class FormattedKey {
@@ -30,5 +29,4 @@ public class FormattedKey {
         var keyId = KeyId.of(parts[0], parts[1], parts[2]);
         return of(keyId, parts[3]);
     }
-
 }

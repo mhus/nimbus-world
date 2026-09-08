@@ -1,8 +1,8 @@
 package de.mhus.nimbus.evaluate;
 
-import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import de.mhus.nimbus.tools.generatets.GenerateTsToJavaMojo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -16,12 +16,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class EvaluatePluginTest {
 
-    private static void assertGeneratedIfTsExists(Path tsSubDir, List<File> javaFiles, String expectedPackage) throws IOException {
+    private static void assertGeneratedIfTsExists(Path tsSubDir, List<File> javaFiles, String expectedPackage)
+            throws IOException {
         if (tsSubDir == null) return;
         if (!Files.exists(tsSubDir)) return; // nothing to assert if folder absent
         try (var stream = Files.walk(tsSubDir)) {
@@ -30,8 +30,8 @@ public class EvaluatePluginTest {
         }
         String pkgPath = expectedPackage.replace('.', File.separatorChar);
         boolean found = javaFiles.stream().anyMatch(f -> f.getPath().contains(pkgPath));
-        assertTrue(found, "Expected generated Java under package '" + expectedPackage + "' for TS sources at " + tsSubDir);
-
+        assertTrue(
+                found, "Expected generated Java under package '" + expectedPackage + "' for TS sources at " + tsSubDir);
     }
 
     @Test
@@ -79,7 +79,10 @@ public class EvaluatePluginTest {
         // Validate generation into expected package directories based on TS folders present
         assertGeneratedIfTsExists(tsDir.resolve("types"), javaFiles, "de.mhus.nimbus.evaluate.generated.types");
         assertGeneratedIfTsExists(tsDir.resolve("configs"), javaFiles, "de.mhus.nimbus.evaluate.generated.configs");
-        assertGeneratedIfTsExists(tsDir.resolve("network").resolve("messages"), javaFiles, "de.mhus.nimbus.evaluate.generated.network.messages");
+        assertGeneratedIfTsExists(
+                tsDir.resolve("network").resolve("messages"),
+                javaFiles,
+                "de.mhus.nimbus.evaluate.generated.network.messages");
         assertGeneratedIfTsExists(tsDir.resolve("rest"), javaFiles, "de.mhus.nimbus.evaluate.generated.rest");
         assertGeneratedIfTsExists(tsDir.resolve("scrawl"), javaFiles, "de.mhus.nimbus.evaluate.generated.scrawl");
 
@@ -92,7 +95,7 @@ public class EvaluatePluginTest {
 
     private void generateJavaTsEnum(File outJavaDir) {
         var fsEnum = new File(outJavaDir, "de/mhus/nimbus/types/TsEnum.java");
-        //create root dir
+        // create root dir
         fsEnum.getParentFile().mkdirs();
         if (!fsEnum.exists()) {
             try {
@@ -108,10 +111,10 @@ public class EvaluatePluginTest {
         File messageTypeFile = new File(outJavaDir, "de/mhus/nimbus/evaluate/generated/network/MessageType.java");
         if (messageTypeFile.exists()) {
             String content = Files.readString(messageTypeFile.toPath());
-            assertTrue(content.contains("private final String tsIndex"),
-                      "MessageType should use String tsIndex for string values");
-            assertTrue(content.contains("LOGIN(\"login\")"),
-                      "MessageType LOGIN should have correct string value");
+            assertTrue(
+                    content.contains("private final String tsIndex"),
+                    "MessageType should use String tsIndex for string values");
+            assertTrue(content.contains("LOGIN(\"login\")"), "MessageType LOGIN should have correct string value");
             System.out.println("✓ MessageType enum validation passed (String values)");
         }
 
@@ -119,10 +122,12 @@ public class EvaluatePluginTest {
         File priorityFile = new File(outJavaDir, "de/mhus/nimbus/evaluate/generated/network/Priority.java");
         if (priorityFile.exists()) {
             String content = Files.readString(priorityFile.toPath());
-            assertTrue(content.contains("private final int tsIndex"),
-                      "Priority should use int tsIndex for numeric values");
-            assertTrue(content.contains("LOW(0)") && content.contains("CRITICAL(5)"),
-                      "Priority should have correct numeric values");
+            assertTrue(
+                    content.contains("private final int tsIndex"),
+                    "Priority should use int tsIndex for numeric values");
+            assertTrue(
+                    content.contains("LOW(0)") && content.contains("CRITICAL(5)"),
+                    "Priority should have correct numeric values");
             System.out.println("✓ Priority enum validation passed (int values)");
         }
 
@@ -130,10 +135,10 @@ public class EvaluatePluginTest {
         File mixedFile = new File(outJavaDir, "de/mhus/nimbus/evaluate/generated/network/MixedEnum.java");
         if (mixedFile.exists()) {
             String content = Files.readString(mixedFile.toPath());
-            assertTrue(content.contains("private final String tsIndex"),
-                      "MixedEnum should use String tsIndex as fallback for mixed types");
-            assertTrue(content.contains("NUMERIC_VAL(\"42\")"),
-                      "MixedEnum should convert numeric values to strings");
+            assertTrue(
+                    content.contains("private final String tsIndex"),
+                    "MixedEnum should use String tsIndex as fallback for mixed types");
+            assertTrue(content.contains("NUMERIC_VAL(\"42\")"), "MixedEnum should convert numeric values to strings");
             System.out.println("✓ MixedEnum validation passed (mixed types → String fallback)");
         }
     }
@@ -163,10 +168,7 @@ public class EvaluatePluginTest {
     private static List<File> listFilesDepthFirst(File dir) throws IOException {
         if (dir == null || !dir.exists()) return java.util.Collections.emptyList();
         try (var stream = Files.walk(dir.toPath())) {
-            return stream
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .collect(Collectors.toList());
+            return stream.sorted(Comparator.reverseOrder()).map(Path::toFile).collect(Collectors.toList());
         }
     }
 
@@ -196,7 +198,8 @@ public class EvaluatePluginTest {
         Process p = pb.start();
 
         StringBuilder out = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader br =
+                new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = br.readLine()) != null) {
                 out.append(line).append(System.lineSeparator());

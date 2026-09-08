@@ -2,13 +2,12 @@ package de.mhus.nimbus.world.control.service.sync;
 
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Helper service for Git operations using RepositoryControl.
@@ -43,8 +42,7 @@ public class GitHelper {
                 definition.getGitRepositoryUrl(),
                 getEffectiveBranch(definition),
                 getEffectiveUsername(definition),
-                getEffectivePassword(definition)
-        );
+                getEffectivePassword(definition));
     }
 
     /**
@@ -67,11 +65,7 @@ public class GitHelper {
             return;
         }
 
-        repositoryControl.pull(
-                localPath,
-                getEffectiveUsername(definition),
-                getEffectivePassword(definition)
-        );
+        repositoryControl.pull(localPath, getEffectiveUsername(definition), getEffectivePassword(definition));
     }
 
     /**
@@ -95,11 +89,7 @@ public class GitHelper {
         }
 
         repositoryControl.commitAndPush(
-                localPath,
-                message,
-                getEffectiveUsername(definition),
-                getEffectivePassword(definition)
-        );
+                localPath, message, getEffectiveUsername(definition), getEffectivePassword(definition));
     }
 
     /**
@@ -136,8 +126,7 @@ public class GitHelper {
                 localPath,
                 definition.getGitRepositoryUrl(),
                 getEffectiveUsername(definition),
-                getEffectivePassword(definition)
-        );
+                getEffectivePassword(definition));
 
         // Add credential source info
         StringBuilder enhanced = new StringBuilder(result);
@@ -149,8 +138,11 @@ public class GitHelper {
             enhanced.append("Username: not set (anonymous or public repository)\n");
         }
 
-        if (definition.getGitPasswordSetting() != null && !definition.getGitPasswordSetting().isBlank()) {
-            enhanced.append("Password: from SSettingsService (key: ").append(definition.getGitPasswordSetting()).append(")\n");
+        if (definition.getGitPasswordSetting() != null
+                && !definition.getGitPasswordSetting().isBlank()) {
+            enhanced.append("Password: from SSettingsService (key: ")
+                    .append(definition.getGitPasswordSetting())
+                    .append(")\n");
         } else {
             enhanced.append("Password: not set (anonymous or public repository)\n");
         }
@@ -181,13 +173,15 @@ public class GitHelper {
      * Returns null if not provided (anonymous access or no authentication needed).
      */
     private String getEffectivePassword(ExternalResourceDTO definition) {
-        if (definition.getGitPasswordSetting() != null && !definition.getGitPasswordSetting().isBlank()) {
+        if (definition.getGitPasswordSetting() != null
+                && !definition.getGitPasswordSetting().isBlank()) {
             // gitPassword is the key to read from SSettingsService
             String decryptedPassword = settingsService.getDecryptedPassword(definition.getGitPasswordSetting());
             if (decryptedPassword != null) {
                 return decryptedPassword;
             }
-            log.warn("No encrypted password found in SSettingsService for key '{}'", definition.getGitPasswordSetting());
+            log.warn(
+                    "No encrypted password found in SSettingsService for key '{}'", definition.getGitPasswordSetting());
         }
         return null;
     }
@@ -202,4 +196,3 @@ public class GitHelper {
         return DEFAULT_BRANCH;
     }
 }
-

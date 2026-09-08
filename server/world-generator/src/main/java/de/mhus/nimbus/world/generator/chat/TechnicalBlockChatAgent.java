@@ -1,8 +1,5 @@
 package de.mhus.nimbus.world.generator.chat;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.blocks.BlockManipulatorService;
 import de.mhus.nimbus.world.generator.blocks.BlockToolService;
@@ -12,16 +9,11 @@ import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
-import de.mhus.nimbus.world.shared.chat.WChatSessionQueue;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +22,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Technical Block Builder Chat Agent.
@@ -80,14 +78,23 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+    public List<WChatMessage> chat(
+            WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
         return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext chatContext) {
-        log.info("Technical Block Builder: player={}, session={}, message={}",
-                playerId, sessionId,
+    public List<WChatMessage> chatWithSession(
+            WorldId worldId,
+            String chatId,
+            String playerId,
+            String message,
+            String sessionId,
+            WChatContext chatContext) {
+        log.info(
+                "Technical Block Builder: player={}, session={}, message={}",
+                playerId,
+                sessionId,
                 message != null && message.length() > 100 ? message.substring(0, 100) + "..." : message);
 
         // Check if message is empty
@@ -121,8 +128,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
         JsonNode paramsNode = jsonObject.get(manipulatorName);
 
         if (!paramsNode.isObject()) {
-            return List.of(createErrorMessage(worldId,
-                    "Parameters for '" + manipulatorName + "' must be an object"));
+            return List.of(createErrorMessage(worldId, "Parameters for '" + manipulatorName + "' must be an object"));
         }
 
         ObjectNode params = (ObjectNode) paramsNode;
@@ -135,7 +141,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 ? sessionId
                 : (params.has("sessionId") ? params.get("sessionId").asText() : null);
 
-        String layerDataId = params.has("layerDataId") ? params.get("layerDataId").asText() : null;
+        String layerDataId =
+                params.has("layerDataId") ? params.get("layerDataId").asText() : null;
         String layerName = params.has("layerName") ? params.get("layerName").asText() : null;
         String modelName = params.has("modelName") ? params.get("modelName").asText() : null;
         String groupId = params.has("groupId") ? params.get("groupId").asText() : null;
@@ -146,14 +153,10 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 var editStateOpt = wSessionService.getEditState(contextSessionId);
                 if (editStateOpt.isPresent()) {
                     var editState = editStateOpt.get();
-                    if (layerDataId == null || layerDataId.isBlank())
-                        layerDataId = editState.getLayerDataId();
-                    if (layerName == null || layerName.isBlank())
-                        layerName = editState.getSelectedLayer();
-                    if (modelName == null || modelName.isBlank())
-                        modelName = editState.getModelName();
-                    if (groupId == null || groupId.isBlank())
-                        groupId = editState.getSelectedGroup();
+                    if (layerDataId == null || layerDataId.isBlank()) layerDataId = editState.getLayerDataId();
+                    if (layerName == null || layerName.isBlank()) layerName = editState.getSelectedLayer();
+                    if (modelName == null || modelName.isBlank()) modelName = editState.getModelName();
+                    if (groupId == null || groupId.isBlank()) groupId = editState.getSelectedGroup();
                 } else {
                     log.warn("No EditState found for sessionId: {}", contextSessionId);
                 }
@@ -164,12 +167,17 @@ public class TechnicalBlockChatAgent implements WChatAgent {
             log.debug("No sessionId available to load EditState");
         }
 
-        log.debug("Context: sessionId={}, layerDataId={}, layerName={}, modelName={}, groupId={}",
-                contextSessionId, layerDataId, layerName, modelName, groupId);
+        log.debug(
+                "Context: sessionId={}, layerDataId={}, layerName={}, modelName={}, groupId={}",
+                contextSessionId,
+                layerDataId,
+                layerName,
+                modelName,
+                groupId);
 
         // Use full worldId (with instance suffix) for block operations if available from chat context
-        WorldId effectiveWorldId = chatContext != null && chatContext.getFullWorldId() != null
-                ? chatContext.getFullWorldId() : worldId;
+        WorldId effectiveWorldId =
+                chatContext != null && chatContext.getFullWorldId() != null ? chatContext.getFullWorldId() : worldId;
 
         // Build context
         ManipulatorContext context = ManipulatorContext.builder()
@@ -189,19 +197,18 @@ public class TechnicalBlockChatAgent implements WChatAgent {
             chatService.saveMessages(worldId, chatId, sessionId, true, responses);
         });
 
-        return List.of(
-                WChatMessage.builder()
-                        .worldId(worldId.toBaseWorldId().getId())
-                        .messageId(UUID.randomUUID().toString())
-                        .senderId(AGENT_ID)
-                        .message("Processing manipulator '" + manipulatorName + "'...")
-                        .type("text")
-                        .createdAt(Instant.now())
-                        .build()
-        );
+        return List.of(WChatMessage.builder()
+                .worldId(worldId.toBaseWorldId().getId())
+                .messageId(UUID.randomUUID().toString())
+                .senderId(AGENT_ID)
+                .message("Processing manipulator '" + manipulatorName + "'...")
+                .type("text")
+                .createdAt(Instant.now())
+                .build());
     }
 
-    private List<WChatMessage> executeManipulator(String manipulatorName, WorldId worldId, String playerId, ManipulatorContext context) {
+    private List<WChatMessage> executeManipulator(
+            String manipulatorName, WorldId worldId, String playerId, ManipulatorContext context) {
         // Execute manipulator using BlockToolService
         BlockToolService.BlockToolResult result = blockToolService.executeManipulator(manipulatorName, context);
 
@@ -240,7 +247,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                         .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
-                        .message(modelSelectorJson)  // ModelSelector data as JSON
+                        .message(modelSelectorJson) // ModelSelector data as JSON
                         .type("model-selector")
                         .command(true)
                         .createdAt(Instant.now())
@@ -251,8 +258,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
             } catch (Exception e) {
                 log.error("Failed to create ModelSelector command message", e);
-                responses.add(createErrorMessage(worldId,
-                        "Warning: Failed to create model selector: " + e.getMessage()));
+                responses.add(
+                        createErrorMessage(worldId, "Warning: Failed to create model selector: " + e.getMessage()));
             }
         }
 
@@ -260,8 +267,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
-                                            String command, Map<String, Object> params) {
+    public List<WChatMessage> executeCommand(
+            WorldId worldId, String chatId, String playerId, String command, Map<String, Object> params) {
         log.info("Technical Block Builder command '{}' from player={}", command, playerId);
 
         // Handle "model-selector" command - reload ModelSelector from command message and display
@@ -285,8 +292,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
             try {
                 // Load the command message containing ModelSelector JSON
-                Optional<WChatMessage> messageOpt = chatService.findByWorldIdAndChatIdAndMessageId(
-                        worldId, chatId, messageId);
+                Optional<WChatMessage> messageOpt =
+                        chatService.findByWorldIdAndChatIdAndMessageId(worldId, chatId, messageId);
 
                 if (messageOpt.isEmpty()) {
                     return List.of(createErrorMessage(worldId, "Command message not found: " + messageId));
@@ -296,15 +303,15 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
                 // Parse ModelSelector data from message field (JSON array of strings)
                 List<String> modelSelectorData = objectMapper.readValue(
-                        commandMessage.getMessage(),
-                        new tools.jackson.core.type.TypeReference<List<String>>() {}
-                );
+                        commandMessage.getMessage(), new tools.jackson.core.type.TypeReference<List<String>>() {});
 
                 // Store in Redis
                 wSessionService.updateModelSelector(sessionId, modelSelectorData);
 
-                log.info("Re-activated ModelSelector in Redis: sessionId={}, blocks={}",
-                        sessionId, modelSelectorData.size());
+                log.info(
+                        "Re-activated ModelSelector in Redis: sessionId={}, blocks={}",
+                        sessionId,
+                        modelSelectorData.size());
 
                 // Send ShowModelSelectorCommand to player
                 sendShowModelSelectorCommand(worldId.getId(), sessionId);
@@ -323,8 +330,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
             } catch (Exception e) {
                 log.error("Failed to reactivate model selector", e);
-                return List.of(createErrorMessage(worldId,
-                        "Failed to reactivate model selector: " + e.getMessage()));
+                return List.of(createErrorMessage(worldId, "Failed to reactivate model selector: " + e.getMessage()));
             }
         }
 
@@ -389,9 +395,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                     sessionId,
                     playerUrl,
                     "client.ShowModelSelector",
-                    List.of(),  // No arguments needed - uses session ID from context
-                    ctx
-            );
+                    List.of(), // No arguments needed - uses session ID from context
+                    ctx);
 
             log.info("Sent ShowModelSelector command to player: sessionId={}, playerUrl={}", sessionId, playerUrl);
 
@@ -404,5 +409,4 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     public WChatAgentScope getScope() {
         return WChatAgentScope.EDITOR;
     }
-
 }

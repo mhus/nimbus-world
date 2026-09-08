@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
@@ -17,16 +16,15 @@ import de.mhus.nimbus.world.shared.world.WItemPositionService;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 @Service
 @Slf4j
@@ -67,10 +65,21 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param timestamp
      * @param params
      */
-    public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+    public void onPlayerPlayerInteraction(
+            PlayerSession session,
+            String entityId,
+            String userAction,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         if (isPlayerDead(session)) return;
-        log.info("Player {} interacted with player {}: action={}, shortcut={}, timestamp={}",
-                GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
+        log.info(
+                "Player {} interacted with player {}: action={}, shortcut={}, timestamp={}",
+                GameplayUtil.toString(session.getPlayer()),
+                entityId,
+                userAction,
+                shortcutKey,
+                timestamp);
         if (session.getWorldId() == null) {
             return;
         }
@@ -94,10 +103,21 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param timestamp
      * @param params
      */
-    public void onPlayerEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+    public void onPlayerEntityInteraction(
+            PlayerSession session,
+            String entityId,
+            String userAction,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         if (isPlayerDead(session)) return;
-        log.info("Player {} interacted with entity {}: action={}, shortcut={}, timestamp={}",
-                GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
+        log.info(
+                "Player {} interacted with entity {}: action={}, shortcut={}, timestamp={}",
+                GameplayUtil.toString(session.getPlayer()),
+                entityId,
+                userAction,
+                shortcutKey,
+                timestamp);
         if (session.getWorldId() == null) {
             return;
         }
@@ -122,8 +142,11 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      */
     public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
         if (isPlayerDead(session)) return;
-        log.info("Player {} simple interaction: action={}, shortcutKey={}",
-                GameplayUtil.toString(session.getPlayer()), action, shortcutKey);
+        log.info(
+                "Player {} simple interaction: action={}, shortcutKey={}",
+                GameplayUtil.toString(session.getPlayer()),
+                action,
+                shortcutKey);
         if (session.getWorldId() == null) {
             return;
         }
@@ -136,14 +159,18 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             String itemId = shortcutKey;
             // Resolve shortcut key to actual itemId (unless it's a backpack direct reference)
             if (!"backpack".equals(shortcutKey)) {
-                var character = session.getPlayer() != null ? session.getPlayer().character() : null;
+                var character =
+                        session.getPlayer() != null ? session.getPlayer().character() : null;
                 var playerInfo = character != null ? character.getPublicData() : null;
                 if (playerInfo != null && playerInfo.getShortcuts() != null) {
                     var shortcutDef = playerInfo.getShortcuts().get(shortcutKey);
                     if (shortcutDef != null && shortcutDef.getItemId() != null) {
                         itemId = shortcutDef.getItemId();
                     } else {
-                        log.warn("No shortcut definition found for key '{}' in session {}", shortcutKey, session.getSessionId());
+                        log.warn(
+                                "No shortcut definition found for key '{}' in session {}",
+                                shortcutKey,
+                                session.getSessionId());
                         return;
                     }
                 } else {
@@ -172,10 +199,27 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param shortcutKey
      * @param params
      */
-    public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+    public void onPlayerBlockInteraction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String userAction,
+            String shortcutKey,
+            JsonNode params) {
         if (isPlayerDead(session)) return;
-        log.info("Player {} interacted with block at ({}, {}, {}): action={}, shortcut={}, blockId={}, groupId={}",
-                GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, blockId, groupId);
+        log.info(
+                "Player {} interacted with block at ({}, {}, {}): action={}, shortcut={}, blockId={}, groupId={}",
+                GameplayUtil.toString(session.getPlayer()),
+                x,
+                y,
+                z,
+                userAction,
+                shortcutKey,
+                blockId,
+                groupId);
 
         if (session.getWorldId() == null) {
             return;
@@ -203,10 +247,27 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param shortcutKey
      * @param params
      */
-    public void onPlayerItemInteraction(PlayerSession session, int x, int y, int z, String itemId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+    public void onPlayerItemInteraction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String itemId,
+            String groupId,
+            String userAction,
+            String shortcutKey,
+            JsonNode params) {
         if (isPlayerDead(session)) return;
-        log.info("Player {} interacted with item at ({}, {}, {}): action={}, shortcut={}, itemId={}, groupId={}",
-                GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, itemId, groupId);
+        log.info(
+                "Player {} interacted with item at ({}, {}, {}): action={}, shortcut={}, itemId={}, groupId={}",
+                GameplayUtil.toString(session.getPlayer()),
+                x,
+                y,
+                z,
+                userAction,
+                shortcutKey,
+                itemId,
+                groupId);
 
         if (session.getWorldId() == null) {
             return;
@@ -217,13 +278,20 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return;
         }
         // check item pos
-        Optional<WItemPosition> itemPositionOpt = itemPositionService.getItemAt(session.getWorldId(), x, y, z, session.getEpoch());
+        Optional<WItemPosition> itemPositionOpt =
+                itemPositionService.getItemAt(session.getWorldId(), x, y, z, session.getEpoch());
         if (itemPositionOpt.isEmpty() || !itemId.equals(itemPositionOpt.get().getItemId())) {
-            log.warn("No item {} found at position ({}, {}, {}) for world {}, cannot handle item interaction",
-                    itemId, x, y, z, session.getWorldId());
+            log.warn(
+                    "No item {} found at position ({}, {}, {}) for world {}, cannot handle item interaction",
+                    itemId,
+                    x,
+                    y,
+                    z,
+                    session.getWorldId());
             return;
         }
-        gameplay.onItemInteraction(session, x, y, z, itemPositionOpt.get().getPublicData(), groupId, userAction, shortcutKey, params);
+        gameplay.onItemInteraction(
+                session, x, y, z, itemPositionOpt.get().getPublicData(), groupId, userAction, shortcutKey, params);
     }
 
     /**
@@ -246,8 +314,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             gameplay = world.getGameplay();
         }
         if (gameplay == null || !gameplayMap.containsKey(gameplay)) {
-            log.warn("Gameplay {} not found for world {}, defaulting to AdventureGameplay",
-                    gameplay, world.getId());
+            log.warn("Gameplay {} not found for world {}, defaulting to AdventureGameplay", gameplay, world.getId());
             gameplay = AdventureGameplay.class.getSimpleName();
         }
         session.setGameplay(gameplayMap.get(gameplay));
@@ -367,8 +434,11 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         // Consume the item (quantity 1)
         reduceItem(session, itemId, 1);
 
-        log.info("Player {} used item {} effect on {}",
-                session.getEntityId(), itemId, targetEntityId != null ? targetEntityId : "self");
+        log.info(
+                "Player {} used item {} effect on {}",
+                session.getEntityId(),
+                itemId,
+                targetEntityId != null ? targetEntityId : "self");
 
         return true;
     }
@@ -406,8 +476,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         }
 
         // Load character to get ID and check current state
-        var characterOpt = characterService.getCharacter(
-                playerId.getUserId(), regionId, playerId.getCharacterId());
+        var characterOpt = characterService.getCharacter(playerId.getUserId(), regionId, playerId.getCharacterId());
         if (characterOpt.isEmpty()) return false;
 
         RCharacter character = characterOpt.get();
@@ -430,7 +499,9 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         // If item fully removed, clean up shortcuts referencing this item
         boolean shortcutsChanged = false;
-        if (removed && character.getPublicData() != null && character.getPublicData().getShortcuts() != null) {
+        if (removed
+                && character.getPublicData() != null
+                && character.getPublicData().getShortcuts() != null) {
             var shortcuts = character.getPublicData().getShortcuts();
             List<String> keysToRemove = new ArrayList<>();
             for (var entry : shortcuts.entrySet()) {
@@ -448,8 +519,13 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             }
         }
 
-        log.info("Reduced item {} by {} for player {} (remaining: {}, removed: {})",
-                itemId, quantity, entityId, removed ? 0 : currentCount - quantity, removed);
+        log.info(
+                "Reduced item {} by {} for player {} (remaining: {}, removed: {})",
+                itemId,
+                quantity,
+                entityId,
+                removed ? 0 : currentCount - quantity,
+                removed);
 
         // Reload character from DB and refresh caches
         onBackpackModified(session);
@@ -480,17 +556,14 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         String regionId = session.getWorldId().getRegionId();
 
-        var characterOpt = characterService.getCharacter(
-                playerId.getUserId(), regionId, playerId.getCharacterId());
+        var characterOpt = characterService.getCharacter(playerId.getUserId(), regionId, playerId.getCharacterId());
         if (characterOpt.isEmpty()) return false;
 
         RCharacter character = characterOpt.get();
         var backpack = character.getBackpack();
 
         // Check capacity
-        int maxItems = session.getGameplay() != null
-                ? session.getGameplay().getMaxBackpackItems(session)
-                : 1000;
+        int maxItems = session.getGameplay() != null ? session.getGameplay().getMaxBackpackItems(session) : 1000;
 
         int currentCount = 0;
         if (backpack != null && backpack.getItemIds() != null) {
@@ -499,16 +572,26 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         // Check total amount for this item
         if (currentCount + quantity > maxItems) {
-            log.debug("Backpack amount limit reached for player {} item {} ({} + {} > {})",
-                    entityId, itemId, currentCount, quantity, maxItems);
+            log.debug(
+                    "Backpack amount limit reached for player {} item {} ({} + {} > {})",
+                    entityId,
+                    itemId,
+                    currentCount,
+                    quantity,
+                    maxItems);
             return false;
         }
 
         // Check distinct item count (only for new items)
-        if (currentCount == 0 && backpack != null && backpack.getItemIds() != null
+        if (currentCount == 0
+                && backpack != null
+                && backpack.getItemIds() != null
                 && backpack.getItemIds().size() >= maxItems) {
-            log.debug("Backpack item slot limit reached for player {} ({} >= {})",
-                    entityId, backpack.getItemIds().size(), maxItems);
+            log.debug(
+                    "Backpack item slot limit reached for player {} ({} >= {})",
+                    entityId,
+                    backpack.getItemIds().size(),
+                    maxItems);
             return false;
         }
 
@@ -519,8 +602,12 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return false;
         }
 
-        log.info("Put item {} x{} into backpack for player {} (total: {})",
-                itemId, quantity, entityId, currentCount + quantity);
+        log.info(
+                "Put item {} x{} into backpack for player {} (total: {})",
+                itemId,
+                quantity,
+                entityId,
+                currentCount + quantity);
 
         // Reload character from DB and refresh caches
         onBackpackModified(session);
@@ -539,7 +626,8 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @return List of matching WItems (never null, may be empty)
      */
     public List<WItem> findItemsByEffect(PlayerSession session, String effect) {
-        if (effect == null || !(session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData data)) {
+        if (effect == null
+                || !(session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData data)) {
             return List.of();
         }
 
@@ -598,8 +686,12 @@ public class GameplayService implements SessionAuthenticatedConsumer {
                 var playerSessionOpt = playerSessionService.loadSession(worldId, playerId);
                 if (playerSessionOpt.isPresent()) {
                     savedGameplayData = playerSessionOpt.get().getGameplayData();
-                    log.info("Loaded saved gameplay data for session {}: worldId={}, playerId={}, hasData={}",
-                            session.getSessionId(), worldId, playerId, savedGameplayData != null && !savedGameplayData.isEmpty());
+                    log.info(
+                            "Loaded saved gameplay data for session {}: worldId={}, playerId={}, hasData={}",
+                            session.getSessionId(),
+                            worldId,
+                            playerId,
+                            savedGameplayData != null && !savedGameplayData.isEmpty());
                 } else {
                     log.info("No saved player session found for worldId={}, playerId={}", worldId, playerId);
                 }
@@ -607,10 +699,10 @@ public class GameplayService implements SessionAuthenticatedConsumer {
                 log.debug("Cannot load saved gameplay data: worldId={}, playerId={}", worldId, playerId);
             }
         } catch (Exception e) {
-            log.error("Failed to load saved gameplay data for session {}: {}", session.getSessionId(), e.getMessage(), e);
+            log.error(
+                    "Failed to load saved gameplay data for session {}: {}", session.getSessionId(), e.getMessage(), e);
         }
 
         gameplay.onSessionAuthenticated(session, savedGameplayData);
     }
-
 }

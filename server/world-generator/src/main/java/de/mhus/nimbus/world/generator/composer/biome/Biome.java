@@ -3,16 +3,14 @@ package de.mhus.nimbus.world.generator.composer.biome;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.Area;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @SuperBuilder
@@ -62,16 +60,16 @@ public class Biome extends Area {
      */
     private String getDefaultColorForType(BiomeType type) {
         return switch (type) {
-            case MOUNTAINS -> "#8B7355";      // Brown
-            case FOREST -> "#228B22";         // Forest Green
-            case PLAINS -> "#90EE90";         // Light Green
-            case DESERT -> "#EDC9AF";         // Desert Sand
-            case SWAMP -> "#2F4F2F";          // Dark Green
-            case MARSH -> "#556B2F";          // Dark Olive Green
-            case COAST -> "#F0E68C";          // Khaki (sandy coast)
-            case ISLAND -> "#98FB98";         // Pale Green
-            case OCEAN -> "#4682B4";          // Steel Blue
-            case TOWN -> "#CD853F";           // Peru (darker brown)
+            case MOUNTAINS -> "#8B7355"; // Brown
+            case FOREST -> "#228B22"; // Forest Green
+            case PLAINS -> "#90EE90"; // Light Green
+            case DESERT -> "#EDC9AF"; // Desert Sand
+            case SWAMP -> "#2F4F2F"; // Dark Green
+            case MARSH -> "#556B2F"; // Dark Olive Green
+            case COAST -> "#F0E68C"; // Khaki (sandy coast)
+            case ISLAND -> "#98FB98"; // Pale Green
+            case OCEAN -> "#4682B4"; // Steel Blue
+            case TOWN -> "#CD853F"; // Peru (darker brown)
         };
     }
 

@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.shared.team;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -10,11 +12,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 @Slf4j
@@ -27,8 +26,11 @@ public class WTeamService {
     private final WorldRedisMessagingService redisMessaging;
     private final ObjectMapper objectMapper;
 
-    public WTeamService(WTeamRepository teamRepository, MongoTemplate mongoTemplate,
-                        WorldRedisMessagingService redisMessaging, ObjectMapper objectMapper) {
+    public WTeamService(
+            WTeamRepository teamRepository,
+            MongoTemplate mongoTemplate,
+            WorldRedisMessagingService redisMessaging,
+            ObjectMapper objectMapper) {
         this.teamRepository = teamRepository;
         this.mongoTemplate = mongoTemplate;
         this.redisMessaging = redisMessaging;
@@ -68,8 +70,12 @@ public class WTeamService {
                 .build();
         team.getMembers().add(creatorPlayerName);
         teamRepository.save(team);
-        log.info("Created team: worldId={} teamId={} title={} creator={}",
-                worldId, team.getTeamId(), title, creatorPlayerName);
+        log.info(
+                "Created team: worldId={} teamId={} title={} creator={}",
+                worldId,
+                team.getTeamId(),
+                title,
+                creatorPlayerName);
         publishTeamMembershipEvent(team.getTeamId(), creatorPlayerName, "JOINED");
         return team;
     }
@@ -110,7 +116,8 @@ public class WTeamService {
      */
     @Transactional(readOnly = true)
     public List<WTeam> findInvitationsForPlayer(String worldId, String mainInstanceId, String playerName) {
-        var result = new java.util.ArrayList<>(teamRepository.findByWorldIdAndInvitationContaining(worldId, playerName));
+        var result =
+                new java.util.ArrayList<>(teamRepository.findByWorldIdAndInvitationContaining(worldId, playerName));
         if (mainInstanceId != null && !mainInstanceId.equals(worldId)) {
             teamRepository.findByWorldIdAndInvitationContaining(mainInstanceId, playerName).stream()
                     .filter(t -> result.stream().noneMatch(r -> r.getTeamId().equals(t.getTeamId())))
@@ -145,7 +152,9 @@ public class WTeamService {
      */
     @Transactional(readOnly = true)
     public boolean isPlayerInvitedToTeam(String worldId, String playerName) {
-        return !teamRepository.findByWorldIdAndInvitationContaining(worldId, playerName).isEmpty();
+        return !teamRepository
+                .findByWorldIdAndInvitationContaining(worldId, playerName)
+                .isEmpty();
     }
 
     // --- Atomic MongoDB Operations ---
@@ -165,9 +174,7 @@ public class WTeamService {
     }
 
     public boolean removeMemberAtomic(String teamId, String playerName) {
-        Update update = new Update()
-                .pull("members", playerName)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().pull("members", playerName).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Removed member {} from team {} (atomic)", playerName, teamId);
@@ -179,9 +186,7 @@ public class WTeamService {
     }
 
     public boolean addInvitationAtomic(String teamId, String playerName) {
-        Update update = new Update()
-                .addToSet("invitation", playerName)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().addToSet("invitation", playerName).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Invited {} to team {} (atomic)", playerName, teamId);
@@ -191,9 +196,7 @@ public class WTeamService {
     }
 
     public boolean removeInvitationAtomic(String teamId, String playerName) {
-        Update update = new Update()
-                .pull("invitation", playerName)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().pull("invitation", playerName).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Removed invitation for {} from team {} (atomic)", playerName, teamId);
@@ -205,7 +208,8 @@ public class WTeamService {
 
     @Transactional
     public WTeam updateStatus(String teamId, WTeamStatus status) {
-        WTeam team = teamRepository.findByTeamId(teamId)
+        WTeam team = teamRepository
+                .findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("Team not found: " + teamId));
         team.setStatus(status);
         team.setUpdatedAt(Instant.now());
@@ -234,9 +238,7 @@ public class WTeamService {
      * Set a single team parameter atomically.
      */
     public boolean setParameterAtomic(String teamId, String key, String value) {
-        Update update = new Update()
-                .set("parameters." + key, value)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("parameters." + key, value).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.debug("Set parameter {}={} on team {}", key, value, teamId);
@@ -249,9 +251,7 @@ public class WTeamService {
      * Remove a single team parameter atomically.
      */
     public boolean removeParameterAtomic(String teamId, String key) {
-        Update update = new Update()
-                .unset("parameters." + key)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().unset("parameters." + key).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.debug("Removed parameter {} from team {}", key, teamId);
@@ -265,9 +265,7 @@ public class WTeamService {
      * If the parameter does not exist yet, it is initialized to the given delta.
      */
     public boolean incrementParameterAtomic(String teamId, String key, long delta) {
-        Update update = new Update()
-                .inc("parameters." + key, delta)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().inc("parameters." + key, delta).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.debug("Incremented parameter {} by {} on team {}", key, delta, teamId);
@@ -288,9 +286,7 @@ public class WTeamService {
      */
     @Transactional
     public long deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WTeam.class);
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WTeam.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} teams for worldId {}", deleted, worldId);
         return deleted;
@@ -306,7 +302,8 @@ public class WTeamService {
 
     @Transactional
     public WTeam emigrateToInstance(String teamId, String instanceWorldId) {
-        WTeam team = teamRepository.findByTeamId(teamId)
+        WTeam team = teamRepository
+                .findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("Team not found: " + teamId));
         if (team.getStatus() != WTeamStatus.LOBBY) {
             throw new IllegalStateException("Only LOBBY teams can be emigrated, current status: " + team.getStatus());
@@ -316,7 +313,11 @@ public class WTeamService {
         team.setStatus(WTeamStatus.ACTIVE);
         team.setUpdatedAt(Instant.now());
         teamRepository.save(team);
-        log.info("Emigrated team {} from world {} to instance {}, status set to ACTIVE", teamId, oldWorldId, instanceWorldId);
+        log.info(
+                "Emigrated team {} from world {} to instance {}, status set to ACTIVE",
+                teamId,
+                oldWorldId,
+                instanceWorldId);
         return team;
     }
 }

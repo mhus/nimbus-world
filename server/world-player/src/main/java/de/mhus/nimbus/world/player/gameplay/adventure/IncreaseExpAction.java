@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
@@ -8,9 +7,9 @@ import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 public class IncreaseExpAction implements GameplayAction {
@@ -22,23 +21,53 @@ public class IncreaseExpAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
-        return applyExp(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", serverInfo, null), null);
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
+        return applyExp(
+                session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", serverInfo, null), null);
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (entity == null || entity.getServer() == null) return false;
-        return applyExp(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null), null);
+        return applyExp(
+                session,
+                GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null),
+                null);
     }
 
     @Override
     public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
-        return applyExp(session, GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()), item.getName());
+        return applyExp(
+                session,
+                GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()),
+                item.getName());
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 
@@ -70,8 +99,9 @@ public class IncreaseExpAction implements GameplayAction {
         }
 
         adventure.getCharacterService().addSkillExperience(docId, exp);
-        adventure.getClientService().sendNotification(session, 3, "",
-                "+ " + exp + " Exp", "n:textures/actions/exp.png");
+        adventure
+                .getClientService()
+                .sendNotification(session, 3, "", "+ " + exp + " Exp", "n:textures/actions/exp.png");
         log.info("Player {} gained {} exp", session.getEntityId(), exp);
         return true;
     }

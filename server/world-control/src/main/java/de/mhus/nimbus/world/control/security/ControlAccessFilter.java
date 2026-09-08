@@ -15,12 +15,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Access filter for world-control service.
@@ -54,13 +53,17 @@ public class ControlAccessFilter extends AccessFilterBase {
      * - Colon ':' is mandatory after prefix
      * - After colon, any path is allowed (with or without leading slash)
      */
-    private static final Pattern PUBLIC_ASSET_PATTERN = Pattern.compile(
-            "^/control/worlds/[^/]+/assets/(p|rp):.*$"
-    );
+    private static final Pattern PUBLIC_ASSET_PATTERN = Pattern.compile("^/control/worlds/[^/]+/assets/(p|rp):.*$");
 
-    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties,
-                               RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService,
-                               @org.springframework.beans.factory.annotation.Value("${nimbus.devlogin.enabled:false}") boolean devLoginEnvEnabled) {
+    public ControlAccessFilter(
+            JwtService jwtService,
+            WSessionService sessionService,
+            AccessSettings accessProperties,
+            RegionSettings regionProperties,
+            SSettingsService settingsService,
+            MetricService metricService,
+            @org.springframework.beans.factory.annotation.Value("${nimbus.devlogin.enabled:false}")
+                    boolean devLoginEnvEnabled) {
         super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
         this.jwtService = jwtService;
@@ -69,7 +72,8 @@ public class ControlAccessFilter extends AccessFilterBase {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         // Dev-mode convenience: when dev-login is enabled, the dev-login key (from
         // confidential/dev-login-key.txt) may be presented as a Bearer token to gain full dev
         // access. Gated by nimbus/access dev-login being enabled, so it is inert in production.
@@ -114,7 +118,8 @@ public class ControlAccessFilter extends AccessFilterBase {
                 expected.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             return false;
         }
-        log.warn("DEV-LOGIN Bearer token accepted — granting FULL dev access (dev-login enabled). uri={}",
+        log.warn(
+                "DEV-LOGIN Bearer token accepted — granting FULL dev access (dev-login enabled). uri={}",
                 request.getRequestURI());
         request.setAttribute(AccessFilterBase.ATTR_IS_AUTHENTICATED, true);
         request.setAttribute(AccessFilterBase.ATTR_IS_AGENT, true);
@@ -167,10 +172,10 @@ public class ControlAccessFilter extends AccessFilterBase {
             return false;
         }
 
-//        // Allow DELETE on /control/aaa/login (logout)
-//        if (requestUri.startsWith("/control/aaa/login") && "DELETE".equals(method)) {
-//            return false;
-//        }
+        //        // Allow DELETE on /control/aaa/login (logout)
+        //        if (requestUri.startsWith("/control/aaa/login") && "DELETE".equals(method)) {
+        //            return false;
+        //        }
 
         // All other endpoints require authentication
         return true;
@@ -196,9 +201,7 @@ public class ControlAccessFilter extends AccessFilterBase {
      * Check if the HTTP method is read-only (GET, HEAD, OPTIONS).
      */
     private boolean isReadOnlyMethod(String method) {
-        return "GET".equalsIgnoreCase(method)
-            || "HEAD".equalsIgnoreCase(method)
-            || "OPTIONS".equalsIgnoreCase(method);
+        return "GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method);
     }
 
     @Override
@@ -224,8 +227,10 @@ public class ControlAccessFilter extends AccessFilterBase {
                     || requestUri.startsWith("/control/aaa/")
                     || isPublicAssetPath(requestUri);
             if (!isAllowed) {
-                log.debug("PLAYER actor attempted to access non-player endpoint: userId={}, path={}",
-                        claims.userId(), requestUri);
+                log.debug(
+                        "PLAYER actor attempted to access non-player endpoint: userId={}, path={}",
+                        claims.userId(),
+                        requestUri);
             }
             return isAllowed;
         }

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.shared.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import lombok.AllArgsConstructor;
@@ -29,8 +31,6 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Full @SpringBootTest that verifies _schema behavior across ALL MongoDB write paths.
  * Uses Testcontainers with a real MongoDB to test the complete Spring Boot pipeline
@@ -59,17 +59,16 @@ class SchemaVersionSpringBootTest {
     static class TestSchemaEntity implements Identifiable {
         @Id
         private String id;
+
         private String name;
         private String value;
     }
 
     @Repository
-    interface TestSchemaEntityRepository extends MongoRepository<TestSchemaEntity, String> {
-    }
+    interface TestSchemaEntityRepository extends MongoRepository<TestSchemaEntity, String> {}
 
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0")
-            .withExposedPorts(27017);
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0").withExposedPorts(27017);
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
@@ -93,11 +92,7 @@ class SchemaVersionSpringBootTest {
     // --- Helper ---
 
     private Document readRawDocument(String id) {
-        return mongoTemplate.findOne(
-                new Query(Criteria.where("_id").is(id)),
-                Document.class,
-                COLLECTION
-        );
+        return mongoTemplate.findOne(new Query(Criteria.where("_id").is(id)), Document.class, COLLECTION);
     }
 
     // =========================================================================
@@ -127,7 +122,8 @@ class SchemaVersionSpringBootTest {
         @Test
         @DisplayName("repository.save() should add _schema")
         void repositorySave() {
-            var entity = TestSchemaEntity.builder().name("repo-save").value("v1").build();
+            var entity =
+                    TestSchemaEntity.builder().name("repo-save").value("v1").build();
             var saved = repository.save(entity);
 
             Document doc = readRawDocument(saved.getId());
@@ -138,7 +134,8 @@ class SchemaVersionSpringBootTest {
         @Test
         @DisplayName("mongoTemplate.save(entity) should add _schema")
         void mongoTemplateSaveEntity() {
-            var entity = TestSchemaEntity.builder().name("template-save").value("v1").build();
+            var entity =
+                    TestSchemaEntity.builder().name("template-save").value("v1").build();
             var saved = mongoTemplate.save(entity);
 
             Document doc = readRawDocument(saved.getId());
@@ -149,7 +146,8 @@ class SchemaVersionSpringBootTest {
         @Test
         @DisplayName("repository.save() update should keep _schema")
         void repositoryUpdateKeepsSchema() {
-            var entity = TestSchemaEntity.builder().name("update-test").value("v1").build();
+            var entity =
+                    TestSchemaEntity.builder().name("update-test").value("v1").build();
             var saved = repository.save(entity);
 
             saved.setValue("v2");
@@ -178,18 +176,14 @@ class SchemaVersionSpringBootTest {
 
             // Remove _schema to simulate old data
             mongoTemplate.updateFirst(
-                    new Query(Criteria.where("_id").is(saved.getId())),
-                    new Update().unset("_schema"),
-                    COLLECTION
-            );
+                    new Query(Criteria.where("_id").is(saved.getId())), new Update().unset("_schema"), COLLECTION);
             assertThat(readRawDocument(saved.getId()).getString("_schema")).isNull();
 
             // updateFirst with Class parameter should restore _schema
             mongoTemplate.updateFirst(
                     new Query(Criteria.where("_id").is(saved.getId())),
                     new Update().set("value", "v2"),
-                    TestSchemaEntity.class
-            );
+                    TestSchemaEntity.class);
 
             Document doc = readRawDocument(saved.getId());
             assertThat(doc.getString("value")).isEqualTo("v2");
@@ -204,23 +198,15 @@ class SchemaVersionSpringBootTest {
 
             // Remove _schema
             mongoTemplate.updateMulti(
-                    new Query(Criteria.where("value").is("old")),
-                    new Update().unset("_schema"),
-                    COLLECTION
-            );
+                    new Query(Criteria.where("value").is("old")), new Update().unset("_schema"), COLLECTION);
 
             // updateMulti with Class should restore _schema
             mongoTemplate.updateMulti(
                     new Query(Criteria.where("value").is("old")),
                     new Update().set("value", "new"),
-                    TestSchemaEntity.class
-            );
+                    TestSchemaEntity.class);
 
-            var docs = mongoTemplate.find(
-                    new Query(Criteria.where("name").regex("^um-")),
-                    Document.class,
-                    COLLECTION
-            );
+            var docs = mongoTemplate.find(new Query(Criteria.where("name").regex("^um-")), Document.class, COLLECTION);
             assertThat(docs).hasSize(2);
             for (Document doc : docs) {
                 assertThat(doc.getString("_schema"))
@@ -234,17 +220,11 @@ class SchemaVersionSpringBootTest {
         void upsertCreateSetsSchema() {
             mongoTemplate.upsert(
                     new Query(Criteria.where("name").is("upsert-new")),
-                    new Update()
-                            .set("name", "upsert-new")
-                            .set("value", "v1"),
-                    TestSchemaEntity.class
-            );
+                    new Update().set("name", "upsert-new").set("value", "v1"),
+                    TestSchemaEntity.class);
 
             Document doc = mongoTemplate.findOne(
-                    new Query(Criteria.where("name").is("upsert-new")),
-                    Document.class,
-                    COLLECTION
-            );
+                    new Query(Criteria.where("name").is("upsert-new")), Document.class, COLLECTION);
             assertThat(doc).isNotNull();
             assertThat(doc.getString("_schema")).isEqualTo("1.0.0");
         }
@@ -252,20 +232,19 @@ class SchemaVersionSpringBootTest {
         @Test
         @DisplayName("upsert(query, update, Class) updating existing should keep _schema")
         void upsertUpdateKeepsSchema() {
-            var entity = TestSchemaEntity.builder().name("upsert-existing").value("v1").build();
+            var entity = TestSchemaEntity.builder()
+                    .name("upsert-existing")
+                    .value("v1")
+                    .build();
             repository.save(entity);
 
             mongoTemplate.upsert(
                     new Query(Criteria.where("name").is("upsert-existing")),
                     new Update().set("value", "v2"),
-                    TestSchemaEntity.class
-            );
+                    TestSchemaEntity.class);
 
             Document doc = mongoTemplate.findOne(
-                    new Query(Criteria.where("name").is("upsert-existing")),
-                    Document.class,
-                    COLLECTION
-            );
+                    new Query(Criteria.where("name").is("upsert-existing")), Document.class, COLLECTION);
             assertThat(doc).isNotNull();
             assertThat(doc.getString("value")).isEqualTo("v2");
             assertThat(doc.getString("_schema")).isEqualTo("1.0.0");
@@ -288,17 +267,11 @@ class SchemaVersionSpringBootTest {
 
             // Remove _schema
             mongoTemplate.updateFirst(
-                    new Query(Criteria.where("_id").is(saved.getId())),
-                    new Update().unset("_schema"),
-                    COLLECTION
-            );
+                    new Query(Criteria.where("_id").is(saved.getId())), new Update().unset("_schema"), COLLECTION);
 
             // updateFirst with String-only has no Class to resolve → no _schema
             mongoTemplate.updateFirst(
-                    new Query(Criteria.where("_id").is(saved.getId())),
-                    new Update().set("value", "v2"),
-                    COLLECTION
-            );
+                    new Query(Criteria.where("_id").is(saved.getId())), new Update().set("value", "v2"), COLLECTION);
 
             Document doc = readRawDocument(saved.getId());
             assertThat(doc.getString("value")).isEqualTo("v2");

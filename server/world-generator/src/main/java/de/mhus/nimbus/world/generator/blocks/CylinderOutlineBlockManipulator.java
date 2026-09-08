@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Cylinder Outline Block Manipulator - creates a hollow cylinder (tube).
@@ -57,9 +57,9 @@ public class CylinderOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow cylinder (tube). " +
-                "Parameters: position {x,y,z}, radius, height, blockType (optional). " +
-                "Example: {\"cylinder-outline\": {\"transform\": \"position\", \"radius\": 5, \"height\": 10}}";
+        return "Creates a hollow cylinder (tube). "
+                + "Parameters: position {x,y,z}, radius, height, blockType (optional). "
+                + "Example: {\"cylinder-outline\": {\"transform\": \"position\", \"radius\": 5, \"height\": 10}}";
     }
 
     @Override
@@ -112,8 +112,14 @@ public class CylinderOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate cylinder outline
-        log.info("Generating cylinder outline: pos=({},{},{}), radius={}, height={}, blockType={}",
-                x, y, z, radius, height, blockType);
+        log.info(
+                "Generating cylinder outline: pos=({},{},{}), radius={}, height={}, blockType={}",
+                x,
+                y,
+                z,
+                radius,
+                height,
+                blockType);
 
         painter.cylinderOutline(x, y, z, radius, height);
 
@@ -121,7 +127,8 @@ public class CylinderOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated cylinder outline: %d blocks (radius %d, height %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated cylinder outline: %d blocks (radius %d, height %d) at (%d,%d,%d)",
                 blockCount, radius, height, x, y, z);
 
         log.info(message);

@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.generator.genesis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.LocationService;
@@ -13,16 +12,15 @@ import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.workflow.WorkflowJobExecutor;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Debug workflow that creates a composed document with 7 hex grids
@@ -89,7 +87,9 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         List<FeatureHexGrid> grids = new ArrayList<>();
 
         // Center hex: level=100, base=GRASS, circles=DIRT/STONE/SAND
-        grids.add(createDebugHexGrid(centerQ, centerR,
+        grids.add(createDebugHexGrid(
+                centerQ,
+                centerR,
                 "150",
                 String.valueOf(FlatMaterialService.GRASS),
                 String.valueOf(FlatMaterialService.DIRT),
@@ -99,21 +99,31 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
 
         // 6 neighbors using offset-coordinate neighbor lookup
         HexVector2 centerHex = HexVector2.builder().q(centerQ).r(centerR).build();
-        de.mhus.nimbus.world.shared.world.WHexGrid.EDGE[] directions = de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values();
+        de.mhus.nimbus.world.shared.world.WHexGrid.EDGE[] directions =
+                de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values();
         String[] neighborNames = {"NE", "E", "SE", "SW", "W", "NW"};
-        String[] neighborBases = {String.valueOf(FlatMaterialService.GRASS), String.valueOf(FlatMaterialService.SAND), String.valueOf(FlatMaterialService.STONE),
-                String.valueOf(FlatMaterialService.DIRT), String.valueOf(FlatMaterialService.BEDROCK), String.valueOf(FlatMaterialService.SNOW)};
+        String[] neighborBases = {
+            String.valueOf(FlatMaterialService.GRASS),
+            String.valueOf(FlatMaterialService.SAND),
+            String.valueOf(FlatMaterialService.STONE),
+            String.valueOf(FlatMaterialService.DIRT),
+            String.valueOf(FlatMaterialService.BEDROCK),
+            String.valueOf(FlatMaterialService.SNOW)
+        };
 
         for (int i = 0; i < directions.length; i++) {
-            HexVector2 neighbor = de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(centerHex, directions[i]);
+            HexVector2 neighbor =
+                    de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(centerHex, directions[i]);
             int nq = neighbor.getQ();
             int nr = neighbor.getR();
-            grids.add(createDebugHexGrid(nq, nr,
-                    "" + (140 - i*10),
-//                    String.valueOf(FlatMaterialService.GRASS),
-//                    String.valueOf(FlatMaterialService.DIRT),
-//                    String.valueOf(FlatMaterialService.STONE),
-//                    String.valueOf(FlatMaterialService.SAND),
+            grids.add(createDebugHexGrid(
+                    nq,
+                    nr,
+                    "" + (140 - i * 10),
+                    //                    String.valueOf(FlatMaterialService.GRASS),
+                    //                    String.valueOf(FlatMaterialService.DIRT),
+                    //                    String.valueOf(FlatMaterialService.STONE),
+                    //                    String.valueOf(FlatMaterialService.SAND),
                     neighborBases[i],
                     String.valueOf(FlatMaterialService.SAND),
                     String.valueOf(FlatMaterialService.STONE),
@@ -173,8 +183,7 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
                 "genesis-day3-generation",
                 locationService.getApplicationServiceName(),
                 "Day3: Debug Generation",
-                day3Params
-        );
+                day3Params);
     }
 
     @OnSuccess("day3Generation")
@@ -183,13 +192,7 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
 
         // Start Day3 Generation workflow
         context.updateWorkflowStatus("waitForDirtyChunks");
-        context.enqueueJob(
-                WaitForDirtyChunksJobExecutor.EXECUTOR_NAME,
-                "",
-                null,
-                "Wait",
-                Map.of()
-        );
+        context.enqueueJob(WaitForDirtyChunksJobExecutor.EXECUTOR_NAME, "", null, "Wait", Map.of());
     }
 
     @OnSuccess("waitForDirtyChunks")
@@ -197,13 +200,11 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         String compositionDocId = context.getLastJournalRecord(CompositionDocIdRecord.class)
                 .orElseThrow(() -> new WorkflowException(null, "compositionDocId not found"))
                 .getValue();
-        context.doComplete(Map.of(
-                "compositionDocId", compositionDocId
-        ));
+        context.doComplete(Map.of("compositionDocId", compositionDocId));
     }
 
-    private FeatureHexGrid createDebugHexGrid(int q, int r, String level,
-            String base, String circle1, String circle2, String circle3, String name) {
+    private FeatureHexGrid createDebugHexGrid(
+            int q, int r, String level, String base, String circle1, String circle2, String circle3, String name) {
         Map<String, String> params = new HashMap<>();
         params.put("g_builder", "debug");
         params.put("g_level", level);
@@ -221,6 +222,5 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
-    }
+    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
 }

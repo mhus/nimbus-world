@@ -1,19 +1,17 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.ItemRef;
-import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +20,9 @@ public class ChestTools implements McpToolBean {
 
     private final WChestService chestService;
 
-    @Tool(name = "list_chests", description = "List all chests for a world. Returns name, title, type, userId, capacity, and item count.")
+    @Tool(
+            name = "list_chests",
+            description = "List all chests for a world. Returns name, title, type, userId, capacity, and item count.")
     public Map<String, Object> listChests(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist' or '@region:earth616')") String worldId) {
         log.debug("MCP: List chests: worldId={}", worldId);
@@ -33,25 +33,28 @@ public class ChestTools implements McpToolBean {
 
         List<WChest> entities = chestService.findByWorldId(worldId);
 
-        var dtos = entities.stream().map(e -> {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("name", e.getName());
-            map.put("title", e.getTitle() != null ? e.getTitle() : "");
-            map.put("type", e.getType() != null ? e.getType().name() : "");
-            map.put("playerId", e.getPlayerId() != null ? e.getPlayerId() : "");
-            map.put("capacity", e.getCapacity());
-            map.put("itemCount", e.getItems() != null ? e.getItems().size() : 0);
-            return map;
-        }).toList();
+        var dtos = entities.stream()
+                .map(e -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("name", e.getName());
+                    map.put("title", e.getTitle() != null ? e.getTitle() : "");
+                    map.put("type", e.getType() != null ? e.getType().name() : "");
+                    map.put("playerId", e.getPlayerId() != null ? e.getPlayerId() : "");
+                    map.put("capacity", e.getCapacity());
+                    map.put("itemCount", e.getItems() != null ? e.getItems().size() : 0);
+                    return map;
+                })
+                .toList();
 
         return Map.of(
                 "worldId", worldId,
                 "count", dtos.size(),
-                "chests", dtos
-        );
+                "chests", dtos);
     }
 
-    @Tool(name = "get_chest", description = "Get a chest by world ID and name. Returns full chest data including items.")
+    @Tool(
+            name = "get_chest",
+            description = "Get a chest by world ID and name. Returns full chest data including items.")
     public Map<String, Object> getChest(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist' or '@region:earth616')") String worldId,
             @ToolParam(description = "Chest name (technical identifier)") String name) {
@@ -61,7 +64,8 @@ public class ChestTools implements McpToolBean {
             throw new McpToolException("worldId and name are required");
         }
 
-        WChest chest = chestService.getByWorldIdAndName(worldId, name)
+        WChest chest = chestService
+                .getByWorldIdAndName(worldId, name)
                 .orElseThrow(() -> new McpToolException("Chest not found: " + name));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -77,17 +81,23 @@ public class ChestTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "create_chest", description = "Create a new chest. Type must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL. For PLAYER, BANK, and TRANSFER chests, playerId is required.")
+    @Tool(
+            name = "create_chest",
+            description =
+                    "Create a new chest. Type must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL. For PLAYER, BANK, and TRANSFER chests, playerId is required.")
     public Map<String, Object> createChest(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist' or '@region:earth616')") String worldId,
             @ToolParam(description = "Unique chest name (technical identifier)") String name,
-            @ToolParam(description = "Chest type: REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL") String type,
+            @ToolParam(description = "Chest type: REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL")
+                    String type,
             @ToolParam(description = "Display title", required = false) String title,
             @ToolParam(description = "Description", required = false) String description,
-            @ToolParam(description = "Player ID for PLAYER type chests (format: @userId:characterId)", required = false) String playerId,
+            @ToolParam(description = "Player ID for PLAYER type chests (format: @userId:characterId)", required = false)
+                    String playerId,
             @ToolParam(description = "Maximum item capacity (default 10)", required = false) Integer capacity,
             @ToolParam(description = "Key item ID required to open", required = false) String keyId,
-            @ToolParam(description = "Lock picking difficulty (0 = not possible)", required = false) Integer lockPickingDifficulty) {
+            @ToolParam(description = "Lock picking difficulty (0 = not possible)", required = false)
+                    Integer lockPickingDifficulty) {
         log.debug("MCP: Create chest: worldId={}, name={}, type={}", worldId, name, type);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(name) || Strings.isBlank(type)) {
@@ -98,10 +108,13 @@ public class ChestTools implements McpToolBean {
         try {
             chestType = WChest.ChestType.valueOf(type.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid chest type: " + type + ". Must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL");
+            throw new McpToolException("Invalid chest type: " + type
+                    + ". Must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL");
         }
 
-        if ((chestType == WChest.ChestType.PLAYER || chestType == WChest.ChestType.BANK || chestType == WChest.ChestType.TRANSFER)
+        if ((chestType == WChest.ChestType.PLAYER
+                        || chestType == WChest.ChestType.BANK
+                        || chestType == WChest.ChestType.TRANSFER)
                 && Strings.isBlank(playerId)) {
             throw new McpToolException("playerId is required for " + chestType + " type chests");
         }
@@ -114,12 +127,7 @@ public class ChestTools implements McpToolBean {
             if (lockPickingDifficulty != null) chest.setLockPickingDifficulty(lockPickingDifficulty);
             chestService.save(chest);
 
-            return Map.of(
-                    "name", chest.getName(),
-                    "worldId", worldId,
-                    "type", chestType.name(),
-                    "status", "created"
-            );
+            return Map.of("name", chest.getName(), "worldId", worldId, "type", chestType.name(), "status", "created");
         } catch (Exception e) {
             throw new McpToolException("Failed to create chest: " + e.getMessage());
         }
@@ -139,7 +147,8 @@ public class ChestTools implements McpToolBean {
             throw new McpToolException("worldId, chestName, and itemId are required");
         }
 
-        WChest chest = chestService.getByWorldIdAndName(worldId, chestName)
+        WChest chest = chestService
+                .getByWorldIdAndName(worldId, chestName)
                 .orElseThrow(() -> new McpToolException("Chest not found: " + chestName));
 
         ItemRef itemRef = ItemRef.builder()
@@ -151,12 +160,7 @@ public class ChestTools implements McpToolBean {
 
         chestService.addItem(chest.getId(), itemRef);
 
-        return Map.of(
-                "chestName", chestName,
-                "itemId", itemId,
-                "amount", itemRef.getAmount(),
-                "status", "added"
-        );
+        return Map.of("chestName", chestName, "itemId", itemId, "amount", itemRef.getAmount(), "status", "added");
     }
 
     @Tool(name = "remove_chest_item", description = "Remove an item reference from a chest by item ID.")
@@ -170,7 +174,8 @@ public class ChestTools implements McpToolBean {
             throw new McpToolException("worldId, chestName, and itemId are required");
         }
 
-        WChest chest = chestService.getByWorldIdAndName(worldId, chestName)
+        WChest chest = chestService
+                .getByWorldIdAndName(worldId, chestName)
                 .orElseThrow(() -> new McpToolException("Chest not found: " + chestName));
 
         chestService.removeItem(chest.getId(), itemId);
@@ -178,8 +183,7 @@ public class ChestTools implements McpToolBean {
         return Map.of(
                 "chestName", chestName,
                 "itemId", itemId,
-                "status", "removed"
-        );
+                "status", "removed");
     }
 
     @Tool(name = "delete_chest", description = "Delete a chest by world ID and name.")
@@ -192,14 +196,12 @@ public class ChestTools implements McpToolBean {
             throw new McpToolException("worldId and name are required");
         }
 
-        WChest chest = chestService.getByWorldIdAndName(worldId, name)
+        WChest chest = chestService
+                .getByWorldIdAndName(worldId, name)
                 .orElseThrow(() -> new McpToolException("Chest not found: " + name));
 
         chestService.deleteChest(worldId, name);
 
-        return Map.of(
-                "deleted", true,
-                "name", name
-        );
+        return Map.of("deleted", true, "name", name);
     }
 }

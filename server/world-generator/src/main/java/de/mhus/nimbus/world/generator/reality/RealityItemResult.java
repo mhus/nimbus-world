@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Summary of a Phase 4 (item) generation run: which items were created and how many icons were

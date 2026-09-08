@@ -2,6 +2,11 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -11,12 +16,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing WBlockType entities.
@@ -94,7 +93,7 @@ public class WBlockTypeService {
             throw new IllegalArgumentException("Invalid initial status: " + publicData.getInitialStatus());
         }
         if (!publicData.getModifiers().containsKey(BlockUtil.DEFAULT_STATUS)) {
-            throw  new IllegalArgumentException("publicData.modifiers must contain default status");
+            throw new IllegalArgumentException("publicData.modifiers must contain default status");
         }
         if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
             throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
@@ -135,26 +134,28 @@ public class WBlockTypeService {
     @Transactional
     public Optional<WBlockType> update(WorldId worldId, String blockId, Consumer<WBlockType> updater) {
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
-        return repository.findByWorldIdAndName(collection.worldId().getId(), collection.path()).map(entity -> {
-            updater.accept(entity);
-            entity.touchUpdate();
-            entity.removeWorldPrefix();
+        return repository
+                .findByWorldIdAndName(collection.worldId().getId(), collection.path())
+                .map(entity -> {
+                    updater.accept(entity);
+                    entity.touchUpdate();
+                    entity.removeWorldPrefix();
 
-            var publicData = entity.getPublicData();
-            if (!BlockUtil.isStatus(publicData.getInitialStatus())) {
-                throw new IllegalArgumentException("Invalid initial status: " + publicData.getInitialStatus());
-            }
-            if (!publicData.getModifiers().containsKey(BlockUtil.DEFAULT_STATUS)) {
-                throw  new IllegalArgumentException("publicData.modifiers must contain default status");
-            }
-            if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
-                throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
-            }
+                    var publicData = entity.getPublicData();
+                    if (!BlockUtil.isStatus(publicData.getInitialStatus())) {
+                        throw new IllegalArgumentException("Invalid initial status: " + publicData.getInitialStatus());
+                    }
+                    if (!publicData.getModifiers().containsKey(BlockUtil.DEFAULT_STATUS)) {
+                        throw new IllegalArgumentException("publicData.modifiers must contain default status");
+                    }
+                    if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
+                        throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
+                    }
 
-            WBlockType saved = repository.save(entity);
-            log.debug("Updated WBlockType: {}", blockId);
-            return saved;
-        });
+                    WBlockType saved = repository.save(entity);
+                    log.debug("Updated WBlockType: {}", blockId);
+                    return saved;
+                });
     }
 
     /**
@@ -165,11 +166,14 @@ public class WBlockTypeService {
     public boolean delete(WorldId worldId, String blockId) {
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
 
-        return repository.findByWorldIdAndName(collection.worldId().getId(), collection.path()).map(entity -> {
-            repository.delete(entity);
-            log.debug("Deleted WBlockType: {}", blockId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndName(collection.worldId().getId(), collection.path())
+                .map(entity -> {
+                    repository.delete(entity);
+                    log.debug("Deleted WBlockType: {}", blockId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Transactional
@@ -227,8 +231,8 @@ public class WBlockTypeService {
         // 1. Search in @shared collections first (preferred)
         // We check common shared collections: @shared:n, @shared:default
         for (String sharedName : List.of("n", "default")) {
-            WorldId sharedCollection = WorldId.of(WorldId.COLLECTION_SHARED, sharedName)
-                    .orElse(null);
+            WorldId sharedCollection =
+                    WorldId.of(WorldId.COLLECTION_SHARED, sharedName).orElse(null);
             if (sharedCollection != null) {
                 List<WBlockType> sharedBlocks = repository.findByWorldId(sharedCollection.getId());
                 for (WBlockType block : sharedBlocks) {
@@ -306,13 +310,16 @@ public class WBlockTypeService {
                 .filter(blockType -> {
                     String blockId = blockType.getName();
                     BlockType publicData = blockType.getPublicData();
-                    return (blockId != null && blockId.toLowerCase().contains(lowerQuery)) ||
-                            (publicData != null && publicData.getTitle() != null &&
-                                    publicData.getTitle().toLowerCase().contains(lowerQuery)) ||
-                            (publicData != null && publicData.getDescription() != null &&
-                                    publicData.getDescription().toLowerCase().contains(lowerQuery)) ||
-                            (publicData != null && publicData.getType() != null &&
-                                    publicData.getType().name().toLowerCase().contains(lowerQuery));
+                    return (blockId != null && blockId.toLowerCase().contains(lowerQuery))
+                            || (publicData != null
+                                    && publicData.getTitle() != null
+                                    && publicData.getTitle().toLowerCase().contains(lowerQuery))
+                            || (publicData != null
+                                    && publicData.getDescription() != null
+                                    && publicData.getDescription().toLowerCase().contains(lowerQuery))
+                            || (publicData != null
+                                    && publicData.getType() != null
+                                    && publicData.getType().name().toLowerCase().contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }
@@ -367,8 +374,7 @@ public class WBlockTypeService {
             repository.save(targetBlockType);
             duplicatedCount++;
         }
-        log.info("Duplicated {} block types from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} block types from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -381,13 +387,10 @@ public class WBlockTypeService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WBlockType.class, "blocktype", worldId,
-                doc -> {
-                    Object name = doc.get("name");
-                    return name != null ? doc.getString("worldId") + "|" + name : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WBlockType.class, "blocktype", worldId, doc -> {
+            Object name = doc.get("name");
+            return name != null ? doc.getString("worldId") + "|" + name : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -414,7 +417,8 @@ public class WBlockTypeService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndBlockId(String worldId, String blockId) {
         String collectionName = mongoTemplate.getCollectionName(WBlockType.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("blockId").is(blockId));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("blockId").is(blockId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -426,8 +430,10 @@ public class WBlockTypeService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WBlockType.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("blockId").is(doc.getString("blockId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("blockId")
+                .is(doc.getString("blockId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -435,5 +441,4 @@ public class WBlockTypeService {
         }
         return mongoTemplate.save(doc, collectionName);
     }
-
 }

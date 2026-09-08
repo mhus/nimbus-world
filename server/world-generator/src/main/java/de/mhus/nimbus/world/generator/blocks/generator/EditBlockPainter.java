@@ -11,16 +11,20 @@ import lombok.Setter;
  */
 public class EditBlockPainter {
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private BlockWriteTarget writeTarget;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private BlockDef blockDef;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private String groupId;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private Integer level;
 
     /**
@@ -208,9 +212,7 @@ public class EditBlockPainter {
         }
     }
 
-    public void fillTriangle(int x1, int y1, int z1,
-                              int x2, int y2, int z2,
-                              int x3, int y3, int z3) {
+    public void fillTriangle(int x1, int y1, int z1, int x2, int y2, int z2, int x3, int y3, int z3) {
         int dx = Math.max(Math.max(Math.abs(x1 - x2), Math.abs(x2 - x3)), Math.abs(x3 - x1));
         int dy = Math.max(Math.max(Math.abs(y1 - y2), Math.abs(y2 - y3)), Math.abs(y3 - y1));
         int dz = Math.max(Math.max(Math.abs(z1 - z2), Math.abs(z2 - z3)), Math.abs(z3 - z1));
@@ -223,8 +225,7 @@ public class EditBlockPainter {
         }
     }
 
-    private void fillTriangle2D(int a1, int a2, int b1, int b2, int c1, int c2,
-                                 int fixed, int dim1, int dim2) {
+    private void fillTriangle2D(int a1, int a2, int b1, int b2, int c1, int c2, int fixed, int dim1, int dim2) {
         int minA = Math.min(a1, Math.min(b1, c1));
         int maxA = Math.max(a1, Math.max(b1, c1));
         int minB = Math.min(a2, Math.min(b2, c2));

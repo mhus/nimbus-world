@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * SideWallBuilder manipulator builder.
@@ -35,7 +34,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class SideWallBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
     private static final int DEFAULT_WIDTH = 3;
     private static final int DEFAULT_DISTANCE = 5;
     private static final int DEFAULT_TYPE = FlatMaterialService.STONE;
@@ -48,7 +49,8 @@ public class SideWallBuilder extends HexGridBuilder {
         log.info("Building side walls for flat: {}", flat.getFlatId());
 
         // Get sidewall parameter from hex grid
-        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_sidewall") : null;
+        String wallParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_sidewall") : null;
         if (wallParam == null || wallParam.isBlank()) {
             log.debug("No sidewall parameter found, skipping");
             return;
@@ -57,10 +59,18 @@ public class SideWallBuilder extends HexGridBuilder {
         try {
             // Parse wall definition
             WallDefinition wallDef = parseWallDefinition(wallParam);
-            log.debug("Parsed sidewall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}, material={}, respectRoad={}, respectRiver={}",
-                    wallDef.getSides(), wallDef.getHeight(), wallDef.getLevel(), wallDef.getWidth(),
-                    wallDef.getDistance(), wallDef.getMinimum(), wallDef.getType(), wallDef.getMaterial(),
-                    wallDef.isRespectRoad(), wallDef.isRespectRiver());
+            log.debug(
+                    "Parsed sidewall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}, material={}, respectRoad={}, respectRiver={}",
+                    wallDef.getSides(),
+                    wallDef.getHeight(),
+                    wallDef.getLevel(),
+                    wallDef.getWidth(),
+                    wallDef.getDistance(),
+                    wallDef.getMinimum(),
+                    wallDef.getType(),
+                    wallDef.getMaterial(),
+                    wallDef.isRespectRoad(),
+                    wallDef.isRespectRiver());
 
             // Build wall for each specified side
             for (WHexGrid.EDGE side : wallDef.getSides()) {
@@ -98,8 +108,10 @@ public class SideWallBuilder extends HexGridBuilder {
         wallDef.setMinimum(root.has("minimum") ? root.get("minimum").asInt() : 0);
         wallDef.setType(root.has("type") ? root.get("type").asInt() : DEFAULT_TYPE);
         wallDef.setMaterial(root.has("material") ? root.get("material").asInt() : DEFAULT_TYPE);
-        wallDef.setRespectRoad(root.has("respectRoad") && root.get("respectRoad").asBoolean());
-        wallDef.setRespectRiver(root.has("respectRiver") && root.get("respectRiver").asBoolean());
+        wallDef.setRespectRoad(
+                root.has("respectRoad") && root.get("respectRoad").asBoolean());
+        wallDef.setRespectRiver(
+                root.has("respectRiver") && root.get("respectRiver").asBoolean());
 
         return wallDef;
     }
@@ -180,19 +192,19 @@ public class SideWallBuilder extends HexGridBuilder {
     private int[][] getSideCorners(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         switch (side) {
             case NORTH_WEST:
-                return new int[][]{{0, 0}, {sizeX / 2, 0}};
+                return new int[][] {{0, 0}, {sizeX / 2, 0}};
             case NORTH_EAST:
-                return new int[][]{{sizeX / 2, 0}, {sizeX - 1, 0}};
+                return new int[][] {{sizeX / 2, 0}, {sizeX - 1, 0}};
             case EAST:
-                return new int[][]{{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
+                return new int[][] {{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
             case SOUTH_EAST:
-                return new int[][]{{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
+                return new int[][] {{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
             case SOUTH_WEST:
-                return new int[][]{{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
+                return new int[][] {{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
             case WEST:
-                return new int[][]{{0, sizeZ - 1}, {0, 0}};
+                return new int[][] {{0, sizeZ - 1}, {0, 0}};
             default:
-                return new int[][]{{0, 0}, {sizeX - 1, sizeZ - 1}};
+                return new int[][] {{0, 0}, {sizeX - 1, sizeZ - 1}};
         }
     }
 
@@ -203,16 +215,16 @@ public class SideWallBuilder extends HexGridBuilder {
         switch (side) {
             case NORTH_WEST:
             case NORTH_EAST:
-                return new int[]{0, 1};  // Inward is south
+                return new int[] {0, 1}; // Inward is south
             case SOUTH_EAST:
             case SOUTH_WEST:
-                return new int[]{0, -1}; // Inward is north
+                return new int[] {0, -1}; // Inward is north
             case EAST:
-                return new int[]{-1, 0}; // Inward is west
+                return new int[] {-1, 0}; // Inward is west
             case WEST:
-                return new int[]{1, 0};  // Inward is east
+                return new int[] {1, 0}; // Inward is east
             default:
-                return new int[]{0, 0};
+                return new int[] {0, 0};
         }
     }
 
@@ -221,8 +233,8 @@ public class SideWallBuilder extends HexGridBuilder {
      * Builds perpendicular to the wall direction.
      * Wall is interrupted when it hits a street/trail or river (if respectRoad/respectRiver is true).
      */
-    private void buildWallSegment(WFlat flat, int centerX, int centerZ, int width,
-                                   WallDefinition wallDef, int[] inwardDir) {
+    private void buildWallSegment(
+            WFlat flat, int centerX, int centerZ, int width, WallDefinition wallDef, int[] inwardDir) {
         int halfWidth = width / 2;
 
         // Get water block definition if needed

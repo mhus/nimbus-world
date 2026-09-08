@@ -2,16 +2,15 @@ package de.mhus.nimbus.world.ai.tool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * AI Tool for searching the web via DuckDuckGo HTML interface.
@@ -23,13 +22,12 @@ public class DuckDuckGoSearchToolService {
     private static final String DUCKDUCKGO_SEARCH_URL = "https://html.duckduckgo.com/html/?q=";
 
     @Tool("Search the web for information about a topic")
-    public String searchWeb(
-            @P("Search query") String query
-    ) {
+    public String searchWeb(@P("Search query") String query) {
         log.info("Searching DuckDuckGo for: {}", query);
         try {
             Document doc = Jsoup.connect(DUCKDUCKGO_SEARCH_URL + URLEncoder.encode(query, StandardCharsets.UTF_8))
-                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    .userAgent(
+                            "Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                     .referrer(DUCKDUCKGO_SEARCH_URL)
                     .timeout(12000)
                     .followRedirects(true)

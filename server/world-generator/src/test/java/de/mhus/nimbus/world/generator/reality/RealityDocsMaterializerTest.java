@@ -1,12 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WDocumentService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -15,12 +8,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 /** Offline test for the deterministic design + world-directives document rendering. */
 class RealityDocsMaterializerTest {
 
     private final WDocumentService docs = mock(WDocumentService.class);
     private final RealityDocsMaterializer materializer = new RealityDocsMaterializer(docs);
-    private final WorldId region = WorldId.of(WorldId.COLLECTION_REGION, "duskmoor").orElseThrow();
+    private final WorldId region =
+            WorldId.of(WorldId.COLLECTION_REGION, "duskmoor").orElseThrow();
 
     private RealityPlan plan() {
         RealityPlan p = new RealityPlan();
@@ -51,8 +51,7 @@ class RealityDocsMaterializerTest {
         assertThat(r.getCreated()).isEqualTo(2);
         ArgumentCaptor<String> collectionCap = ArgumentCaptor.forClass(String.class);
         verify(docs, times(2)).save(eq(region), collectionCap.capture(), anyString(), any());
-        assertThat(collectionCap.getAllValues())
-                .containsExactly("reality_design", "reality_world_directives");
+        assertThat(collectionCap.getAllValues()).containsExactly("reality_design", "reality_world_directives");
     }
 
     @Test

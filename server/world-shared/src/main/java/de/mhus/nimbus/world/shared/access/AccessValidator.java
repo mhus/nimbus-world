@@ -11,14 +11,13 @@ import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Utility class for extracting and validating access control information from HTTP requests.
@@ -42,6 +41,7 @@ public class AccessValidator {
      * EDITOR_PATH_PATTERN: matches /control/editor/{worldId}/... for EditorController.
      */
     private static final Pattern WORLD_PATH_PATTERN = Pattern.compile(".*/worlds?/([^/]+)(?:/.*)?$");
+
     private static final Pattern EDITOR_PATH_PATTERN = Pattern.compile("^/control/editor/([^/]+)(?:/.*)?$");
 
     /**
@@ -164,9 +164,7 @@ public class AccessValidator {
      * @return true if world is an instance, false otherwise
      */
     public boolean isWorldInstance(HttpServletRequest request) {
-        return getWorldId(request)
-                .map(WorldId::isInstance)
-                .orElse(false);
+        return getWorldId(request).map(WorldId::isInstance).orElse(false);
     }
 
     /**
@@ -176,9 +174,7 @@ public class AccessValidator {
      * @return true if world is a zone, false otherwise
      */
     public boolean isWorldZone(HttpServletRequest request) {
-        return getWorldId(request)
-                .map(WorldId::isZone)
-                .orElse(false);
+        return getWorldId(request).map(WorldId::isZone).orElse(false);
     }
 
     /**
@@ -188,9 +184,7 @@ public class AccessValidator {
      * @return true if world is a collection, false otherwise
      */
     public boolean isWorldCollection(HttpServletRequest request) {
-        return getWorldId(request)
-                .map(WorldId::isCollection)
-                .orElse(false);
+        return getWorldId(request).map(WorldId::isCollection).orElse(false);
     }
 
     /**
@@ -200,9 +194,7 @@ public class AccessValidator {
      * @return true if world is main, false otherwise
      */
     public boolean isWorldSet(HttpServletRequest request) {
-        return getWorldId(request)
-                .map(WorldId::isMain)
-                .orElse(false);
+        return getWorldId(request).map(WorldId::isMain).orElse(false);
     }
 
     // ===== Role Checks =====
@@ -228,7 +220,10 @@ public class AccessValidator {
             var userRoles = userService.getRoles(userIdOpt.get().getId());
             return userRoles.contains(SectorRoles.ADMIN) || userRoles.contains(role);
         } catch (Exception e) {
-            log.error("Error checking sector role for user {}: {}", userIdOpt.get().getId(), e.getMessage());
+            log.error(
+                    "Error checking sector role for user {}: {}",
+                    userIdOpt.get().getId(),
+                    e.getMessage());
             return false;
         }
     }
@@ -285,8 +280,7 @@ public class AccessValidator {
             List<WorldRoles> userRoles = world.getRolesForUser(userIdOpt.get());
             return userRoles.contains(role);
         } catch (Exception e) {
-            log.error("Error checking world role for user {} in world {}: {}",
-                    userId, worldId, e.getMessage());
+            log.error("Error checking world role for user {} in world {}: {}", userId, worldId, e.getMessage());
             return false;
         }
     }
@@ -365,8 +359,11 @@ public class AccessValidator {
 
             return regionOpt.get().hasMaintainer(userIdOpt.get().getId());
         } catch (Exception e) {
-            log.error("Error checking region maintainer for user {} in region {}: {}",
-                    userIdOpt.get().getId(), regionIdOpt.get(), e.getMessage());
+            log.error(
+                    "Error checking region maintainer for user {} in region {}: {}",
+                    userIdOpt.get().getId(),
+                    regionIdOpt.get(),
+                    e.getMessage());
             return false;
         }
     }

@@ -4,11 +4,10 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * FlatProvider implementation that loads flats on demand from the database.
@@ -62,14 +61,16 @@ public class DatabaseFlatProvider implements FlatProvider {
                     .filter(f -> f.getFlatId() != null && f.getFlatId().startsWith(flatIdSuffix))
                     .map(f -> {
                         // Parse coordinate from flatId (e.g., "genesis_0_1" -> HexVector2(0, 1))
-                        String[] parts = f.getFlatId().substring(flatIdSuffix.length()).split("_");
+                        String[] parts =
+                                f.getFlatId().substring(flatIdSuffix.length()).split("_");
                         if (parts.length == 2) {
                             try {
                                 int q = Integer.parseInt(parts[0]);
                                 int r = Integer.parseInt(parts[1]);
                                 return TypeUtil.hexVector2(q, r);
                             } catch (NumberFormatException e) {
-                                log.warn("Failed to parse coordinate from flatId {}: {}", f.getFlatId(), e.getMessage());
+                                log.warn(
+                                        "Failed to parse coordinate from flatId {}: {}", f.getFlatId(), e.getMessage());
                             }
                         }
                         return null;

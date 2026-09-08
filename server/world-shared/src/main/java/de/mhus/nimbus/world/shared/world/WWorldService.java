@@ -3,8 +3,16 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingString;
+import de.mhus.nimbus.shared.types.UserId;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.world.shared.access.EditorWorldAccessService;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,16 +22,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import de.mhus.nimbus.shared.user.ActorRoles;
-import de.mhus.nimbus.shared.types.UserId;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -125,8 +123,11 @@ public class WWorldService {
             // Override worldId in WWorld with the full instance ID
             world.setWorldId(fullInstanceId);
 
-            log.debug("Enriched world with instance data: instanceId={}, title={}, creator={}",
-                    fullInstanceId, instance.getTitle(), instance.getCreator());
+            log.debug(
+                    "Enriched world with instance data: instanceId={}, title={}, creator={}",
+                    fullInstanceId,
+                    instance.getTitle(),
+                    instance.getCreator());
 
             return Optional.of(world);
 
@@ -182,8 +183,8 @@ public class WWorldService {
         WWorld world = baseWorldOpt.get();
 
         // Validate epoch exists in world definition
-        boolean epochValid = world.getEpoches() != null &&
-                world.getEpoches().stream().anyMatch(e -> e.getEpoch() == epoch);
+        boolean epochValid =
+                world.getEpoches() != null && world.getEpoches().stream().anyMatch(e -> e.getEpoch() == epoch);
         if (!epochValid) {
             log.warn("Epoch {} not defined in world {} for synthetic instance {}", epoch, baseWorldId, fullInstanceId);
             return Optional.empty();
@@ -221,8 +222,10 @@ public class WWorldService {
 
             // Check if both worlds have publicData
             if (zoneWorld.getPublicData() == null || mainWorld.getPublicData() == null) {
-                log.warn("Cannot enrich zone world - missing publicData: zone={}, main={}",
-                        zoneWorld.getPublicData() == null, mainWorld.getPublicData() == null);
+                log.warn(
+                        "Cannot enrich zone world - missing publicData: zone={}, main={}",
+                        zoneWorld.getPublicData() == null,
+                        mainWorld.getPublicData() == null);
                 return zoneWorld;
             }
 
@@ -270,7 +273,8 @@ public class WWorldService {
             var mainWorldTime = mainPublicData.getSettings().getWorldTime();
             zonePublicData.getSettings().setWorldTime(mainWorldTime);
 
-            log.debug("Copied time system data: seasonStatus={}, seasonProgress={}, currentEra={}",
+            log.debug(
+                    "Copied time system data: seasonStatus={}, seasonProgress={}, currentEra={}",
                     mainPublicData.getSeasonStatus(),
                     mainPublicData.getSeasonProgress(),
                     mainWorldTime.getCurrentEra());
@@ -373,12 +377,7 @@ public class WWorldService {
 
         log.debug("Found {} worlds (total: {})", page.getNumberOfElements(), page.getTotalElements());
 
-        return new WorldSearchResult(
-                page.getContent(),
-                (int) page.getTotalElements(),
-                offset,
-                limit
-        );
+        return new WorldSearchResult(page.getContent(), (int) page.getTotalElements(), offset, limit);
     }
 
     /**
@@ -515,7 +514,8 @@ public class WWorldService {
         log.debug("Initialized {} default environment scripts", scripts.size());
     }
 
-    private static de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO envScript(String name, String script) {
+    private static de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO envScript(
+            String name, String script) {
         return de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO.builder()
                 .name(name)
                 .script(script)
@@ -546,13 +546,11 @@ public class WWorldService {
                 .regionId(worldId.getRegionId())
                 .publicData(info)
                 .owner(owners)
-                .epoches(List.of(
-                        WEpochMeta.builder()
-                                .epoch(0)
-                                .name("base")
-                                .description("Base world")
-                                .build()
-                ))
+                .epoches(List.of(WEpochMeta.builder()
+                        .epoch(0)
+                        .name("base")
+                        .description("Base world")
+                        .build()))
                 .build();
         entity.touchForCreate();
         repository.save(entity);
@@ -560,7 +558,6 @@ public class WWorldService {
         log.debug("WWorld angelegt: {} (Era 1 started, Epoch 0 created, admin owner: {})", worldId, admin);
         return entity;
     }
-
 
     @Transactional
     public Optional<WWorld> updateWorld(WorldId worldId, java.util.function.Consumer<WWorld> updater) {
@@ -585,12 +582,15 @@ public class WWorldService {
 
     @Transactional
     public boolean deleteWorld(WorldId worldId) {
-        return repository.findByWorldId(worldId.getId()).map(e -> {
-            repository.delete(e);
-            editorWorldAccessService.evictAll();
-            log.debug("WWorld geloescht: {}", worldId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldId(worldId.getId())
+                .map(e -> {
+                    repository.delete(e);
+                    editorWorldAccessService.evictAll();
+                    log.debug("WWorld geloescht: {}", worldId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -619,7 +619,8 @@ public class WWorldService {
         }
 
         // Load source world
-        WWorld sourceWorld = repository.findByWorldId(sourceWorldId.getId())
+        WWorld sourceWorld = repository
+                .findByWorldId(sourceWorldId.getId())
                 .orElseThrow(() -> new IllegalStateException("Source world not found: " + sourceWorldId));
 
         // Build zone worldId: sourceWorldId:zoneName
@@ -640,7 +641,7 @@ public class WWorldService {
                 .worldId(zoneWorldId.getId())
                 .regionId(sourceWorld.getRegionId())
                 .description(sourceWorld.getDescription())
-                .publicData(zonePublicData)  // Copy publicData with updated worldId
+                .publicData(zonePublicData) // Copy publicData with updated worldId
                 .enabled(sourceWorld.isEnabled())
                 .instanceType(sourceWorld.getInstanceType())
                 .maxPlayersPerInstance(sourceWorld.getMaxPlayersPerInstance())
@@ -693,8 +694,7 @@ public class WWorldService {
             return Optional.empty();
         }
 
-        return worldCollectionRepository.findByWorldId(worldId.getId())
-                .map(collection -> worldId);
+        return worldCollectionRepository.findByWorldId(worldId.getId()).map(collection -> worldId);
     }
 
     /**
@@ -778,7 +778,8 @@ public class WWorldService {
             return null;
         }
 
-        return worldCollectionRepository.findByWorldId(worldId.getId())
+        return worldCollectionRepository
+                .findByWorldId(worldId.getId())
                 .map(WWorldCollection::getTitle)
                 .orElse(null);
     }
@@ -808,7 +809,8 @@ public class WWorldService {
         }
 
         if (publicData.getSettings() == null || publicData.getSettings().getWorldTime() == null) {
-            throw new IllegalStateException("Cannot increment era: worldTime settings not configured for world: " + worldId);
+            throw new IllegalStateException(
+                    "Cannot increment era: worldTime settings not configured for world: " + worldId);
         }
 
         var worldTime = publicData.getSettings().getWorldTime();
@@ -835,8 +837,12 @@ public class WWorldService {
             eraHistory.add(eraDurationMinutes);
             world.setEraHistory(eraHistory);
 
-            log.info("Era {} completed for world {}: duration {} minutes ({} days)",
-                    currentEra, worldId, eraDurationMinutes, eraDurationMinutes / 1440.0);
+            log.info(
+                    "Era {} completed for world {}: duration {} minutes ({} days)",
+                    currentEra,
+                    worldId,
+                    eraDurationMinutes,
+                    eraDurationMinutes / 1440.0);
         } else {
             log.warn("Cannot calculate era duration for world {}: no previous epoch delta", worldId);
         }
@@ -849,8 +855,12 @@ public class WWorldService {
         world.touchForUpdate();
         repository.save(world);
 
-        log.info("Incremented era for world {}: Era {} -> Era {}, new epoch delta: {} minutes",
-                worldId, currentEra, newEra, currentUnixMinutes);
+        log.info(
+                "Incremented era for world {}: Era {} -> Era {}, new epoch delta: {} minutes",
+                worldId,
+                currentEra,
+                newEra,
+                currentUnixMinutes);
 
         return Optional.of(world);
     }
@@ -870,12 +880,8 @@ public class WWorldService {
      * @throws IllegalStateException if publicData or worldTime settings are not configured
      */
     @Transactional
-    public Optional<WWorld> skipTime(WorldId worldId,
-                                     Integer minutes,
-                                     Integer hours,
-                                     Integer days,
-                                     Integer months,
-                                     Integer years) {
+    public Optional<WWorld> skipTime(
+            WorldId worldId, Integer minutes, Integer hours, Integer days, Integer months, Integer years) {
         Optional<WWorld> worldOpt = repository.findByWorldId(worldId.getId());
         if (worldOpt.isEmpty()) {
             log.warn("Cannot skip time: World not found: {}", worldId);
@@ -890,7 +896,8 @@ public class WWorldService {
         }
 
         if (publicData.getSettings() == null || publicData.getSettings().getWorldTime() == null) {
-            throw new IllegalStateException("Cannot skip time: worldTime settings not configured for world: " + worldId);
+            throw new IllegalStateException(
+                    "Cannot skip time: worldTime settings not configured for world: " + worldId);
         }
 
         var worldTime = publicData.getSettings().getWorldTime();
@@ -945,10 +952,14 @@ public class WWorldService {
         world.touchForUpdate();
         repository.save(world);
 
-        log.info("Skipped time for world {}: {} minutes ({} hours, {} days) - epoch delta: {} -> {}",
-                worldId, totalMinutes, totalMinutes / (double) minutesPerHour,
+        log.info(
+                "Skipped time for world {}: {} minutes ({} hours, {} days) - epoch delta: {} -> {}",
+                worldId,
+                totalMinutes,
+                totalMinutes / (double) minutesPerHour,
                 totalMinutes / (double) (minutesPerHour * hoursPerDay),
-                currentEpochDelta, newEpochDelta);
+                currentEpochDelta,
+                newEpochDelta);
 
         return Optional.of(world);
     }
@@ -967,7 +978,8 @@ public class WWorldService {
 
         var world = worldOpt.get();
         var publicData = world.getPublicData();
-        if (publicData == null || publicData.getSettings() == null
+        if (publicData == null
+                || publicData.getSettings() == null
                 || publicData.getSettings().getWorldTime() == null) {
             return null;
         }
@@ -1032,9 +1044,8 @@ public class WWorldService {
     @Transactional(readOnly = true)
     public List<WEpochMeta> getEpochOrder(String worldId, int epochId) {
         // Resolve to base worldId (strip instance/zone) since WWorld is stored by base worldId
-        String baseWorldId = WorldId.of(worldId)
-                .map(wid -> wid.toBaseWorldId().getId())
-                .orElse(worldId);
+        String baseWorldId =
+                WorldId.of(worldId).map(wid -> wid.toBaseWorldId().getId()).orElse(worldId);
         Optional<WWorld> worldOpt = repository.findByWorldId(baseWorldId);
         if (worldOpt.isEmpty()) {
             log.warn("getEpochOrder: world not found: {}", worldId);
@@ -1060,7 +1071,10 @@ public class WWorldService {
 
         while (current != null) {
             if (visited.contains(current)) {
-                log.warn("getEpochOrder: circular parentEpoch reference detected at epoch {} in world {}", current, worldId);
+                log.warn(
+                        "getEpochOrder: circular parentEpoch reference detected at epoch {} in world {}",
+                        current,
+                        worldId);
                 break;
             }
             WEpochMeta meta = epochMap.get(current);
@@ -1079,10 +1093,5 @@ public class WWorldService {
     /**
      * Result wrapper for world search with pagination info.
      */
-    public record WorldSearchResult(
-            List<WWorld> worlds,
-            int totalCount,
-            int offset,
-            int limit
-    ) {}
+    public record WorldSearchResult(List<WWorld> worlds, int totalCount, int offset, int limit) {}
 }

@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Publishes block status changes via Redis to all world-player pods.
@@ -45,11 +44,19 @@ public class BlockStatusPublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, CHANNEL, json);
 
-            log.debug("Published block status change: worldId={}, chunk={}, block={}, status={}",
-                    worldId, chunkKey, blockKey, status);
+            log.debug(
+                    "Published block status change: worldId={}, chunk={}, block={}, status={}",
+                    worldId,
+                    chunkKey,
+                    blockKey,
+                    status);
         } catch (Exception e) {
-            log.error("Failed to publish block status change: worldId={}, chunk={}, block={}",
-                    worldId, chunkKey, blockKey, e);
+            log.error(
+                    "Failed to publish block status change: worldId={}, chunk={}, block={}",
+                    worldId,
+                    chunkKey,
+                    blockKey,
+                    e);
         }
     }
 }

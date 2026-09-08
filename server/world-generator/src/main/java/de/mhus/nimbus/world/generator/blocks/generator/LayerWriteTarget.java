@@ -6,10 +6,9 @@ import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
 
 /**
  * BlockWriteTarget implementation that writes blocks directly into LayerChunkData maps.
@@ -34,17 +33,14 @@ public class LayerWriteTarget implements BlockWriteTarget {
         }
 
         String chunkKey = world.getChunkKey(x, z);
-        LayerChunkData chunkData = chunkDataMap.computeIfAbsent(chunkKey, k ->
-                LayerChunkData.builder()
+        LayerChunkData chunkData = chunkDataMap.computeIfAbsent(
+                chunkKey,
+                k -> LayerChunkData.builder()
                         .cx(world.getChunkX(x))
                         .cz(world.getChunkZ(z))
-                        .build()
-        );
+                        .build());
 
-        LayerBlock layerBlock = LayerBlock.builder()
-                .block(block)
-                .group(groupId)
-                .build();
+        LayerBlock layerBlock = LayerBlock.builder().block(block).group(groupId).build();
         chunkData.getBlocks().add(layerBlock);
     }
 

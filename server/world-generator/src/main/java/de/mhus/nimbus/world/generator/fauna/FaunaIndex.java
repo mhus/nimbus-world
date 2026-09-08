@@ -1,8 +1,6 @@
 package de.mhus.nimbus.world.generator.fauna;
 
 import de.mhus.nimbus.world.shared.world.WAnything;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Index for fauna options loaded from WAnything entities.

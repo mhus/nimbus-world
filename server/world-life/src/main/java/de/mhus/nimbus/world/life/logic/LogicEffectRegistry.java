@@ -2,14 +2,13 @@ package de.mhus.nimbus.world.life.logic;
 
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Registry for Logic Machine effect handlers.
@@ -44,8 +43,7 @@ public class LogicEffectRegistry {
     public Set<String> executeEffect(LogicEffect effect, LogicContext context) {
         LogicEffectHandler handler = handlers.get(effect.getType());
         if (handler == null) {
-            throw new LogicEvaluationException(
-                    "Unknown LogicEffect type: " + effect.getType(), null);
+            throw new LogicEvaluationException("Unknown LogicEffect type: " + effect.getType(), null);
         }
 
         // Check for delay parameter

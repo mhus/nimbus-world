@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Represents an active effect (buff/debuff) applied to an entity.
@@ -175,7 +174,8 @@ public class ActiveEffect {
 
         String[] parts = definition.split(":");
         if (parts.length < 4) {
-            throw new IllegalArgumentException("DoT definition must have damage:interval:duration:probability, got: " + definition);
+            throw new IllegalArgumentException(
+                    "DoT definition must have damage:interval:duration:probability, got: " + definition);
         }
 
         double damage = Double.parseDouble(parts[0].trim());
@@ -264,7 +264,11 @@ public class ActiveEffect {
     private static double doubleVal(Object v, double def) {
         if (v instanceof Number n) return n.doubleValue();
         if (v instanceof String s) {
-            try { return Double.parseDouble(s); } catch (NumberFormatException e) { return def; }
+            try {
+                return Double.parseDouble(s);
+            } catch (NumberFormatException e) {
+                return def;
+            }
         }
         return def;
     }

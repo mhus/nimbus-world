@@ -3,8 +3,8 @@ package de.mhus.nimbus.world.shared.util;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
+import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 
 /**
@@ -22,13 +22,11 @@ public class HexLocalUtil {
     public static final int DEFAULT_EDGE_DIVIDER = 4;
     public static final int DEFAULT_POSITION_DIVIDER = 5;
 
-
     public enum LOCAL_TYPE {
         EDGE,
         POSITION,
         UNKNOWN
     }
-
 
     /**
      * Parse a hex local side vector from a string representation.
@@ -141,8 +139,7 @@ public class HexLocalUtil {
         if (position.divider() != DEFAULT_POSITION_DIVIDER && position.divider() > 0) {
             sb.append('/');
             sb.append(position.divider());
-        } else
-        if (position.size() > 0) {
+        } else if (position.size() > 0) {
             sb.append('#');
             sb.append(position.size());
         }
@@ -235,34 +232,40 @@ public class HexLocalUtil {
         // Consistent with HexMathUtil.isPointInHex edge constraints
         // Z+ = North, Z- = South
         int[][] corners = {
-            {0, halfHeight},              // N  (0) - top vertex
-            {halfWidth, quarterHeight},    // NE (1)
-            {halfWidth, -quarterHeight},   // SE (2)
-            {0, -halfHeight},             // S  (3) - bottom vertex
-            {-halfWidth, -quarterHeight},  // SW (4)
-            {-halfWidth, quarterHeight}    // NW (5)
+            {0, halfHeight}, // N  (0) - top vertex
+            {halfWidth, quarterHeight}, // NE (1)
+            {halfWidth, -quarterHeight}, // SE (2)
+            {0, -halfHeight}, // S  (3) - bottom vertex
+            {-halfWidth, -quarterHeight}, // SW (4)
+            {-halfWidth, quarterHeight} // NW (5)
         };
 
         // Determine start and end corners for each edge (North to South direction)
         int startCorner, endCorner;
         switch (edge.side()) {
-            case NORTH_WEST:  // NW: N -> NW
-                startCorner = 0; endCorner = 5;
+            case NORTH_WEST: // NW: N -> NW
+                startCorner = 0;
+                endCorner = 5;
                 break;
-            case NORTH_EAST:  // NE: N -> NE
-                startCorner = 0; endCorner = 1;
+            case NORTH_EAST: // NE: N -> NE
+                startCorner = 0;
+                endCorner = 1;
                 break;
-            case EAST:        // E: NE -> SE
-                startCorner = 1; endCorner = 2;
+            case EAST: // E: NE -> SE
+                startCorner = 1;
+                endCorner = 2;
                 break;
-            case SOUTH_EAST:  // SE: SE -> S
-                startCorner = 2; endCorner = 3;
+            case SOUTH_EAST: // SE: SE -> S
+                startCorner = 2;
+                endCorner = 3;
                 break;
-            case SOUTH_WEST:  // SW: SW -> S
-                startCorner = 4; endCorner = 3;
+            case SOUTH_WEST: // SW: SW -> S
+                startCorner = 4;
+                endCorner = 3;
                 break;
-            case WEST:        // W: NW -> SW
-                startCorner = 5; endCorner = 4;
+            case WEST: // W: NW -> SW
+                startCorner = 5;
+                endCorner = 4;
                 break;
             default:
                 throw new IllegalArgumentException("Unknown edge: " + edge.side());
@@ -317,5 +320,4 @@ public class HexLocalUtil {
                 throw new IllegalArgumentException("Unknown or invalid local coordinate format: " + value);
         }
     }
-
 }

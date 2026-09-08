@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 public class RestoreConstitutionAction implements GameplayAction {
@@ -21,13 +20,30 @@ public class RestoreConstitutionAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (shortcutKey != null) return false;
         return restoreConstitution(session, serverInfo);
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (shortcutKey != null) return false;
         if (entity == null || entity.getServer() == null) return false;
         return restoreConstitution(session, entity.getServer());
@@ -39,7 +55,13 @@ public class RestoreConstitutionAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 
@@ -57,8 +79,10 @@ public class RestoreConstitutionAction implements GameplayAction {
                 if (cost > 0) {
                     boolean paid = adventure.getCharacterService().changeSilver(docId, -cost);
                     if (!paid) {
-                        adventure.getClientService().sendNotification(session, 3, "",
-                                "Not enough Silver", "n:textures/currencies/silver-coin.png");
+                        adventure
+                                .getClientService()
+                                .sendNotification(
+                                        session, 3, "", "Not enough Silver", "n:textures/currencies/silver-coin.png");
                         return false;
                     }
                 }
@@ -95,8 +119,7 @@ public class RestoreConstitutionAction implements GameplayAction {
 
         if (restored) {
             adventure.getGameplayService().onConstitutionModified(session);
-            adventure.getClientService().sendNotification(session, 3, "",
-                    "Repaired", "n:textures/actions/repair.png");
+            adventure.getClientService().sendNotification(session, 3, "", "Repaired", "n:textures/actions/repair.png");
             log.info("Player {} restored constitution at block/entity", session.getEntityId());
         }
 

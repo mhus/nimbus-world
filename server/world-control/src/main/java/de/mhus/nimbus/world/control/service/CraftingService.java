@@ -10,17 +10,16 @@ import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for the crafting system.
@@ -66,7 +65,8 @@ public class CraftingService {
      */
     @Transactional(readOnly = true)
     public Optional<CraftingRecipeDefinition> findRecipeData(String regionWorldId, String recipeName) {
-        return anythingService.findByWorldIdAndCollectionAndName(regionWorldId, COLLECTION_CRAFTING_RECIPES, recipeName)
+        return anythingService
+                .findByWorldIdAndCollectionAndName(regionWorldId, COLLECTION_CRAFTING_RECIPES, recipeName)
                 .flatMap(a -> a.getDataAs(CraftingRecipeDefinition.class));
     }
 
@@ -77,7 +77,8 @@ public class CraftingService {
      */
     @Transactional(readOnly = true)
     public boolean isRecipeKnown(String worldId, String playerId, String recipeName) {
-        return progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, PROGRESS_TYPE_CRAFTING, recipeName)
+        return progressService
+                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, PROGRESS_TYPE_CRAFTING, recipeName)
                 .isPresent();
     }
 
@@ -86,8 +87,7 @@ public class CraftingService {
      */
     @Transactional(readOnly = true)
     public List<String> getKnownRecipeNames(String worldId, String playerId) {
-        return progressService.findByWorldIdAndPlayerIdAndType(worldId, playerId, PROGRESS_TYPE_CRAFTING)
-                .stream()
+        return progressService.findByWorldIdAndPlayerIdAndType(worldId, playerId, PROGRESS_TYPE_CRAFTING).stream()
                 .map(WProgress::getQuest)
                 .collect(Collectors.toList());
     }
@@ -98,7 +98,8 @@ public class CraftingService {
     @Transactional
     public void learnRecipe(String worldId, String playerId, String recipeName, String recipeTitle) {
         if (isRecipeKnown(worldId, playerId, recipeName)) return;
-        progressService.save(worldId, playerId, PROGRESS_TYPE_CRAFTING, recipeName, recipeTitle, Map.of("learnedBy", "crafting"));
+        progressService.save(
+                worldId, playerId, PROGRESS_TYPE_CRAFTING, recipeName, recipeTitle, Map.of("learnedBy", "crafting"));
         log.info("Player {} learned recipe: {}", playerId, recipeName);
     }
 
@@ -114,7 +115,8 @@ public class CraftingService {
      * @return matching recipe name or empty
      */
     @Transactional(readOnly = true)
-    public Optional<String> findMatchingRecipe(String regionWorldId, Map<String, Integer> materials, String category, int craftingLevel) {
+    public Optional<String> findMatchingRecipe(
+            String regionWorldId, Map<String, Integer> materials, String category, int craftingLevel) {
         var recipes = findRecipesByCategory(regionWorldId, category);
         for (WAnything recipeEntity : recipes) {
             var recipeDef = recipeEntity.getDataAs(CraftingRecipeDefinition.class);
@@ -140,8 +142,13 @@ public class CraftingService {
      * @return the result item ID (with spell suffix if applicable), or empty on failure
      */
     @Transactional
-    public Optional<String> craft(String worldId, WorldId regionWorldId, String characterId, String playerId,
-                                   String recipeName, List<String> spellWords) {
+    public Optional<String> craft(
+            String worldId,
+            WorldId regionWorldId,
+            String characterId,
+            String playerId,
+            String recipeName,
+            List<String> spellWords) {
 
         // Load recipe
         var recipeDef = findRecipeData(regionWorldId.getId(), recipeName);
@@ -160,12 +167,15 @@ public class CraftingService {
             log.warn("Crafting failed: character not found: {}", characterId);
             return Optional.empty();
         }
-        Map<String, Integer> backpackItems = craftingChar.getBackpack() != null
-                ? craftingChar.getBackpack().getItemIds() : Map.of();
+        Map<String, Integer> backpackItems =
+                craftingChar.getBackpack() != null ? craftingChar.getBackpack().getItemIds() : Map.of();
         for (var entry : recipe.getMaterials().entrySet()) {
             if (backpackItems.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
-                log.warn("Crafting failed: insufficient material {} x{} for character {}",
-                        entry.getKey(), entry.getValue(), characterId);
+                log.warn(
+                        "Crafting failed: insufficient material {} x{} for character {}",
+                        entry.getKey(),
+                        entry.getValue(),
+                        characterId);
                 return Optional.empty();
             }
         }
@@ -180,8 +190,11 @@ public class CraftingService {
                 for (var done : removedMaterials) {
                     characterService.addBackpackItem(characterId, done.getKey(), done.getValue());
                 }
-                log.warn("Crafting aborted: insufficient material {} x{} for character {} (concurrent change)",
-                        entry.getKey(), entry.getValue(), characterId);
+                log.warn(
+                        "Crafting aborted: insufficient material {} x{} for character {} (concurrent change)",
+                        entry.getKey(),
+                        entry.getValue(),
+                        characterId);
                 return Optional.empty();
             }
         }
@@ -244,8 +257,8 @@ public class CraftingService {
      * Ensure the spell variant WItem exists. If not, create it based on the base item
      * with spell properties merged in.
      */
-    void ensureSpellItemExists(WorldId regionWorldId, String spellItemId, String baseItemId,
-                                List<String> words, String characterId) {
+    void ensureSpellItemExists(
+            WorldId regionWorldId, String spellItemId, String baseItemId, List<String> words, String characterId) {
         if (itemService.findByItemId(regionWorldId, spellItemId).isPresent()) return;
 
         var baseItem = itemService.findByItemId(regionWorldId, baseItemId);
@@ -328,5 +341,4 @@ public class CraftingService {
         }
         return true;
     }
-
 }

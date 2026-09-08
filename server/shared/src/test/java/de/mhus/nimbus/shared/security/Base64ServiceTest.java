@@ -1,10 +1,10 @@
 package de.mhus.nimbus.shared.security;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class Base64ServiceTest {
 
@@ -127,8 +127,7 @@ class Base64ServiceTest {
     void decode_invalidCharacters_shouldThrowException() {
         String invalidBase64 = "SGVs bG8h"; // Contains space which is invalid
 
-        assertThatThrownBy(() -> base64Service.decode(invalidBase64))
-                .isInstanceOf(Base64Service.Base64Exception.class);
+        assertThatThrownBy(() -> base64Service.decode(invalidBase64)).isInstanceOf(Base64Service.Base64Exception.class);
     }
 
     @Test
@@ -368,13 +367,11 @@ class Base64ServiceTest {
 
     @Test
     void decode_nullInput_shouldThrowException() {
-        assertThatThrownBy(() -> base64Service.decode(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> base64Service.decode(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void encode_nullInput_shouldThrowException() {
-        assertThatThrownBy(() -> base64Service.encode(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> base64Service.encode(null)).isInstanceOf(NullPointerException.class);
     }
 }

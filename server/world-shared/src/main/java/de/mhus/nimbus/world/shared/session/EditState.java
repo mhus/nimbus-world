@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.shared.session;
 
 import de.mhus.nimbus.generated.types.EditAction;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 /**
  * Edit state for a session.
@@ -89,5 +88,4 @@ public class EditState {
      * World ID (for validation).
      */
     private String worldId;
-
 }

@@ -1,37 +1,36 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.area.AreaSize;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.CoastBiome;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.biome.ForestBiome;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
 import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.point.PositionPoint;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.point.SnapConfig;
 import de.mhus.nimbus.world.generator.composer.point.SnapMode;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for PointComposer - placing Points within biomes with snap configuration
@@ -66,8 +65,8 @@ public class PointComposerTest {
 
         // Compose points
         PointComposer pointComposer = new PointComposer();
-        PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, placementResult, testWorld);
+        PointComposer.PointCompositionResult pointResult =
+                pointComposer.composePoints(composition, placementResult, testWorld);
 
         // Verify results
         assertTrue(pointResult.isSuccess(), "Point composition should succeed");
@@ -116,10 +115,8 @@ public class PointComposerTest {
         edgePoint.setName("edge-marker");
         edgePoint.setFeatureId("edge-marker");
         edgePoint.setStatus(FeatureStatus.NEW);
-        edgePoint.setSnap(SnapConfig.builder()
-            .mode(SnapMode.EDGE)
-            .target("large-plains")
-            .build());
+        edgePoint.setSnap(
+                SnapConfig.builder().mode(SnapMode.EDGE).target("large-plains").build());
 
         composition.setFeatures(List.of(plains, edgePoint));
 
@@ -140,8 +137,8 @@ public class PointComposerTest {
         testWorld.setPublicData(publicData);
 
         PointComposer pointComposer = new PointComposer();
-        PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, placementResult, testWorld);
+        PointComposer.PointCompositionResult pointResult =
+                pointComposer.composePoints(composition, placementResult, testWorld);
 
         assertTrue(pointResult.isSuccess());
         assertTrue(edgePoint.isPlaced());
@@ -150,9 +147,9 @@ public class PointComposerTest {
 
         // Verify point is actually at the edge
         PlacedBiome placedPlains = placementResult.getPlacedBiomes().stream()
-            .filter(p -> p.getBiome().getName().equals("large-plains"))
-            .findFirst()
-            .orElse(null);
+                .filter(p -> p.getBiome().getName().equals("large-plains"))
+                .findFirst()
+                .orElse(null);
 
         assertNotNull(placedPlains);
 
@@ -184,11 +181,11 @@ public class PointComposerTest {
         forest.setSize(AreaSize.MEDIUM);
         forest.setShape(AreaShape.CIRCLE);
         forest.setPositions(List.of(RelativePosition.builder()
-            .anchor("plains")
-            .direction(Direction.E)
-            .distanceFrom(1)
-            .distanceTo(3)
-            .build()));
+                .anchor("plains")
+                .direction(Direction.E)
+                .distanceFrom(1)
+                .distanceTo(3)
+                .build()));
         forest.initialize();
 
         // Create point that avoids forest
@@ -197,10 +194,10 @@ public class PointComposerTest {
         point.setFeatureId("avoid-forest-point");
         point.setStatus(FeatureStatus.NEW);
         point.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("plains")
-            .avoid(List.of("forest"))
-            .build());
+                .mode(SnapMode.INSIDE)
+                .target("plains")
+                .avoid(List.of("forest"))
+                .build());
 
         composition.setFeatures(List.of(plains, forest, point));
 
@@ -220,8 +217,8 @@ public class PointComposerTest {
         testWorld.setPublicData(publicData);
 
         PointComposer pointComposer = new PointComposer();
-        PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, placementResult, testWorld);
+        PointComposer.PointCompositionResult pointResult =
+                pointComposer.composePoints(composition, placementResult, testWorld);
 
         assertTrue(pointResult.isSuccess());
         assertTrue(point.isPlaced());
@@ -230,9 +227,9 @@ public class PointComposerTest {
 
         // Verify point is NOT near forest
         PlacedBiome placedForest = placementResult.getPlacedBiomes().stream()
-            .filter(p -> p.getBiome().getName().equals("forest"))
-            .findFirst()
-            .orElse(null);
+                .filter(p -> p.getBiome().getName().equals("forest"))
+                .findFirst()
+                .orElse(null);
 
         assertNotNull(placedForest);
 
@@ -269,11 +266,11 @@ public class PointComposerTest {
         whiteMountains.setShape(AreaShape.CIRCLE);
         whiteMountains.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
         whiteMountains.setPositions(List.of(RelativePosition.builder()
-            .anchor("gondor-heartlands")
-            .direction(Direction.N)
-            .distanceFrom(1)
-            .distanceTo(3)
-            .build()));
+                .anchor("gondor-heartlands")
+                .direction(Direction.N)
+                .distanceFrom(1)
+                .distanceTo(3)
+                .build()));
         whiteMountains.initialize();
         features.add(whiteMountains);
 
@@ -284,11 +281,11 @@ public class PointComposerTest {
         anduinRiver.setSize(AreaSize.SMALL);
         anduinRiver.setShape(AreaShape.CIRCLE);
         anduinRiver.setPositions(List.of(RelativePosition.builder()
-            .anchor("gondor-heartlands")
-            .direction(Direction.W)
-            .distanceFrom(1)
-            .distanceTo(2)
-            .build()));
+                .anchor("gondor-heartlands")
+                .direction(Direction.W)
+                .distanceFrom(1)
+                .distanceTo(2)
+                .build()));
         anduinRiver.initialize();
         features.add(anduinRiver);
 
@@ -299,11 +296,11 @@ public class PointComposerTest {
         coast.setSize(AreaSize.SMALL);
         coast.setShape(AreaShape.CIRCLE);
         coast.setPositions(List.of(RelativePosition.builder()
-            .anchor("gondor-heartlands")
-            .direction(Direction.S)
-            .distanceFrom(3)
-            .distanceTo(5)
-            .build()));
+                .anchor("gondor-heartlands")
+                .direction(Direction.S)
+                .distanceFrom(3)
+                .distanceTo(5)
+                .build()));
         coast.initialize();
         features.add(coast);
 
@@ -313,11 +310,11 @@ public class PointComposerTest {
         minasTirith.setFeatureId("minas-tirith");
         minasTirith.setStatus(FeatureStatus.NEW);
         minasTirith.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("gondor-heartlands")
-            .avoid(List.of("anduin-great-river"))
-            .preferNear(List.of("white-mountains"))
-            .build());
+                .mode(SnapMode.INSIDE)
+                .target("gondor-heartlands")
+                .avoid(List.of("anduin-great-river"))
+                .preferNear(List.of("white-mountains"))
+                .build());
         features.add(minasTirith);
 
         // Point: Coastal Lighthouse
@@ -325,10 +322,8 @@ public class PointComposerTest {
         lighthouse.setName("coastal-lighthouse");
         lighthouse.setFeatureId("coastal-lighthouse");
         lighthouse.setStatus(FeatureStatus.NEW);
-        lighthouse.setSnap(SnapConfig.builder()
-            .mode(SnapMode.EDGE)
-            .target("coast")
-            .build());
+        lighthouse.setSnap(
+                SnapConfig.builder().mode(SnapMode.EDGE).target("coast").build());
         features.add(lighthouse);
 
         composition.setFeatures(features);
@@ -360,7 +355,7 @@ public class PointComposerTest {
         }
 
         // Check if at least one neighbor is NOT in the biome
-        int[][] directions = {{1,-1}, {1,0}, {0,1}, {-1,1}, {-1,0}, {0,-1}};
+        int[][] directions = {{1, -1}, {1, 0}, {0, 1}, {-1, 1}, {-1, 0}, {0, -1}};
         for (int[] dir : directions) {
             String neighborKey = (coord.getQ() + dir[0]) + ":" + (coord.getR() + dir[1]);
             if (!coordSet.contains(neighborKey)) {
@@ -385,7 +380,7 @@ public class PointComposerTest {
         }
 
         // Check if any neighbor is in biome
-        int[][] directions = {{1,-1}, {1,0}, {0,1}, {-1,1}, {-1,0}, {0,-1}};
+        int[][] directions = {{1, -1}, {1, 0}, {0, 1}, {-1, 1}, {-1, 0}, {0, -1}};
         for (int[] dir : directions) {
             String neighborKey = (coord.getQ() + dir[0]) + ":" + (coord.getR() + dir[1]);
             if (coordSet.contains(neighborKey)) {

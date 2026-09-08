@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
-import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.area.Area;
@@ -10,9 +9,8 @@ import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Composes biomes on a hex grid by placing them step by step
@@ -41,11 +39,19 @@ public class BiomeComposer {
      * @param maxPlacementTolerance Maximum jitter tolerance
      * @return Result with placed biomes and generated HexGrids
      */
-    public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed,
-                                         int placementToleranceStart, int placementToleranceIncrement,
-                                         int maxPlacementTolerance) {
-        log.debug("Starting biome composition with seed: {}, tolerance: start={}, increment={}, max={}",
-            seed, placementToleranceStart, placementToleranceIncrement, maxPlacementTolerance);
+    public BiomePlacementResult compose(
+            HexComposition prepared,
+            String worldId,
+            long seed,
+            int placementToleranceStart,
+            int placementToleranceIncrement,
+            int maxPlacementTolerance) {
+        log.debug(
+                "Starting biome composition with seed: {}, tolerance: start={}, increment={}, max={}",
+                seed,
+                placementToleranceStart,
+                placementToleranceIncrement,
+                maxPlacementTolerance);
 
         CompositionContext context = new CompositionContext(seed);
 
@@ -58,8 +64,7 @@ public class BiomeComposer {
 
             // Calculate placement tolerance for this attempt
             int tolerance = Math.min(
-                placementToleranceStart + placementToleranceIncrement * totalRetries,
-                maxPlacementTolerance);
+                    placementToleranceStart + placementToleranceIncrement * totalRetries, maxPlacementTolerance);
             context.setPlacementTolerance(tolerance);
             log.debug("Composition attempt {}: placementTolerance={}", totalRetries + 1, tolerance);
 
@@ -76,16 +81,18 @@ public class BiomeComposer {
                     }
                 }
 
-                log.debug("Placing {} normal biomes and {} enclosed biomes",
-                    normalBiomes.size(), enclosedBiomes.size());
+                log.debug(
+                        "Placing {} normal biomes and {} enclosed biomes", normalBiomes.size(), enclosedBiomes.size());
 
                 // Phase 1: Place normal biomes
                 for (Biome biome : normalBiomes) {
                     boolean placed = placeBiome(biome, context);
 
                     if (!placed) {
-                        log.warn("Failed to place biome: {} after {} attempts, retrying composition",
-                            biome.getName(), context.getMaxRetriesPerBiome());
+                        log.warn(
+                                "Failed to place biome: {} after {} attempts, retrying composition",
+                                biome.getName(),
+                                context.getMaxRetriesPerBiome());
                         throw new BiomePlacementException("Could not place biome: " + biome.getName());
                     }
 
@@ -101,8 +108,10 @@ public class BiomeComposer {
                     boolean placed = placeEnclosedBiome(biome, context);
 
                     if (!placed) {
-                        log.warn("Failed to place enclosed biome: {} after {} attempts, retrying composition",
-                            biome.getName(), context.getMaxRetriesPerBiome());
+                        log.warn(
+                                "Failed to place enclosed biome: {} after {} attempts, retrying composition",
+                                biome.getName(),
+                                context.getMaxRetriesPerBiome());
                         throw new BiomePlacementException("Could not place enclosed biome: " + biome.getName());
                     }
 
@@ -114,8 +123,11 @@ public class BiomeComposer {
                 }
 
                 success = true;
-                log.debug("Successfully placed all {} biomes ({} normal, {} enclosed)",
-                    prepared.getBiomes().size(), normalBiomes.size(), enclosedBiomes.size());
+                log.debug(
+                        "Successfully placed all {} biomes ({} normal, {} enclosed)",
+                        prepared.getBiomes().size(),
+                        normalBiomes.size(),
+                        enclosedBiomes.size());
 
             } catch (BiomePlacementException e) {
                 totalRetries++;
@@ -126,11 +138,11 @@ public class BiomeComposer {
         if (!success) {
             log.error("Failed to compose biomes after {} total retries", totalRetries);
             return BiomePlacementResult.builder()
-                .composition(prepared)
-                .success(false)
-                .retries(totalRetries)
-                .errorMessage("Failed to place all biomes after " + totalRetries + " retries")
-                .build();
+                    .composition(prepared)
+                    .success(false)
+                    .retries(totalRetries)
+                    .errorMessage("Failed to place all biomes after " + totalRetries + " retries")
+                    .build();
         }
 
         // Configure FeatureHexGrids for all placed biomes - register in central composition registry
@@ -138,11 +150,11 @@ public class BiomeComposer {
         configureHexGridsForPlacedBiomes(context.getPlacedBiomes(), prepared);
 
         return BiomePlacementResult.builder()
-            .composition(prepared)
-            .placedBiomes(context.getPlacedBiomes())
-            .retries(totalRetries)
-            .success(true)
-            .build();
+                .composition(prepared)
+                .placedBiomes(context.getPlacedBiomes())
+                .retries(totalRetries)
+                .success(true)
+                .build();
     }
 
     /**
@@ -153,12 +165,16 @@ public class BiomeComposer {
      * @return true if successfully placed
      */
     private boolean placeBiome(Biome biome, CompositionContext context) {
-        log.debug("Attempting to place biome: {} (type: {}, shape: {})",
-            biome.getName(), biome.getType(), biome.getShape());
+        log.debug(
+                "Attempting to place biome: {} (type: {}, shape: {})",
+                biome.getName(),
+                biome.getType(),
+                biome.getShape());
 
         // Sort positions by priority (use preparedPositions from Area)
         List<PreparedPosition> sortedPositions = new ArrayList<>(biome.getPreparedPositions());
-        sortedPositions.sort(Comparator.comparingInt(PreparedPosition::getPriority).reversed());
+        sortedPositions.sort(
+                Comparator.comparingInt(PreparedPosition::getPriority).reversed());
 
         for (PreparedPosition position : sortedPositions) {
             int attempts = 0;
@@ -178,9 +194,10 @@ public class BiomeComposer {
                 targetCenter = applyPlacementJitter(targetCenter, context.getPlacementTolerance(), context.getRandom());
 
                 // Generate coordinates for this biome (use calculated values)
-                int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
-                List<HexVector2> coordinates = generateBiomeCoordinates(
-                    targetCenter, size, biome.getShape(), context, biome);
+                int size =
+                        randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
+                List<HexVector2> coordinates =
+                        generateBiomeCoordinates(targetCenter, size, biome.getShape(), context, biome);
 
                 // Check if all coordinates are available
                 if (areCoordinatesAvailable(coordinates, context)) {
@@ -194,16 +211,20 @@ public class BiomeComposer {
                     biome.setAssignedCoordinates(coordinates);
 
                     PlacedBiome placed = PlacedBiome.builder()
-                        .biome(biome)
-                        .coordinates(coordinates)
-                        .center(targetCenter)
-                        .actualSize(size)
-                        .build();
+                            .biome(biome)
+                            .coordinates(coordinates)
+                            .center(targetCenter)
+                            .actualSize(size)
+                            .build();
 
                     context.getPlacedBiomes().add(placed);
 
-                    log.debug("Placed biome '{}' at {} with {} hexes (attempt {})",
-                        biome.getName(), targetCenter, coordinates.size(), attempts);
+                    log.debug(
+                            "Placed biome '{}' at {} with {} hexes (attempt {})",
+                            biome.getName(),
+                            targetCenter,
+                            coordinates.size(),
+                            attempts);
 
                     return true;
                 }
@@ -211,8 +232,10 @@ public class BiomeComposer {
                 // If coordinates not available, try again with different random values
             }
 
-            log.debug("Failed to place biome '{}' with position priority {}, trying next position",
-                biome.getName(), position.getPriority());
+            log.debug(
+                    "Failed to place biome '{}' with position priority {}, trying next position",
+                    biome.getName(),
+                    position.getPriority());
         }
 
         return false;
@@ -227,8 +250,7 @@ public class BiomeComposer {
      * @return true if successfully placed
      */
     private boolean placeEnclosedBiome(Biome biome, CompositionContext context) {
-        log.debug("Attempting to place enclosed biome: {} (enclosed by: {})",
-            biome.getName(), biome.getEnclosedBy());
+        log.debug("Attempting to place enclosed biome: {} (enclosed by: {})", biome.getName(), biome.getEnclosedBy());
 
         // Find enclosing biomes
         List<PlacedBiome> enclosingBiomes = new ArrayList<>();
@@ -237,8 +259,7 @@ public class BiomeComposer {
             if (enclosing != null) {
                 enclosingBiomes.add(enclosing);
             } else {
-                log.warn("Enclosing biome not found: {} (required by {})",
-                    enclosingName, biome.getName());
+                log.warn("Enclosing biome not found: {} (required by {})", enclosingName, biome.getName());
             }
         }
 
@@ -260,16 +281,17 @@ public class BiomeComposer {
             int offsetQ = context.getRandom().nextInt(5) - 2; // -2 to +2
             int offsetR = context.getRandom().nextInt(5) - 2;
             HexVector2 targetCenter = applyPlacementJitter(
-                HexVector2.builder()
-                    .q(centroid.getQ() + offsetQ)
-                    .r(centroid.getR() + offsetR)
-                    .build(),
-                context.getPlacementTolerance(), context.getRandom());
+                    HexVector2.builder()
+                            .q(centroid.getQ() + offsetQ)
+                            .r(centroid.getR() + offsetR)
+                            .build(),
+                    context.getPlacementTolerance(),
+                    context.getRandom());
 
             // Generate coordinates for this biome
             int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
-            List<HexVector2> coordinates = generateBiomeCoordinates(
-                targetCenter, size, biome.getShape(), context, biome);
+            List<HexVector2> coordinates =
+                    generateBiomeCoordinates(targetCenter, size, biome.getShape(), context, biome);
 
             // Check if all coordinates are available
             if (areCoordinatesAvailable(coordinates, context)) {
@@ -283,16 +305,20 @@ public class BiomeComposer {
                 biome.setAssignedCoordinates(coordinates);
 
                 PlacedBiome placed = PlacedBiome.builder()
-                    .biome(biome)
-                    .coordinates(coordinates)
-                    .center(targetCenter)
-                    .actualSize(size)
-                    .build();
+                        .biome(biome)
+                        .coordinates(coordinates)
+                        .center(targetCenter)
+                        .actualSize(size)
+                        .build();
 
                 context.getPlacedBiomes().add(placed);
 
-                log.debug("Placed enclosed biome '{}' at {} with {} hexes (attempt {})",
-                    biome.getName(), targetCenter, coordinates.size(), attempts);
+                log.debug(
+                        "Placed enclosed biome '{}' at {} with {} hexes (attempt {})",
+                        biome.getName(),
+                        targetCenter,
+                        coordinates.size(),
+                        attempts);
 
                 return true;
             }
@@ -321,9 +347,9 @@ public class BiomeComposer {
         }
 
         return HexVector2.builder()
-            .q(sumQ / biomes.size())
-            .r(sumR / biomes.size())
-            .build();
+                .q(sumQ / biomes.size())
+                .r(sumR / biomes.size())
+                .build();
     }
 
     /**
@@ -358,9 +384,9 @@ public class BiomeComposer {
         HexVector2 offset = calculateHexOffset(actualAngle, distance);
 
         return HexVector2.builder()
-            .q(anchor.getQ() + offset.getQ())
-            .r(anchor.getR() + offset.getR())
-            .build();
+                .q(anchor.getQ() + offset.getQ())
+                .r(anchor.getR() + offset.getR())
+                .build();
     }
 
     /**
@@ -387,26 +413,40 @@ public class BiomeComposer {
         // Get direction unit vector for pointy-top hex (North = r+)
         int dq = 0, dr = 0;
         switch (closestAngle) {
-            case 0:   dq = 1;  dr = 1;  break; // NE (north-east, r+ = north)
-            case 60:  dq = 1;  dr = 0;  break; // E  (east)
-            case 120: dq = 0;  dr = -1; break; // SE (south-east, r- = south)
-            case 180: dq = -1; dr = -1; break; // SW (south-west, r- = south)
-            case 240: dq = -1; dr = 0;  break; // W  (west)
-            case 300: dq = 0;  dr = 1;  break; // NW (north-west, r+ = north)
+            case 0:
+                dq = 1;
+                dr = 1;
+                break; // NE (north-east, r+ = north)
+            case 60:
+                dq = 1;
+                dr = 0;
+                break; // E  (east)
+            case 120:
+                dq = 0;
+                dr = -1;
+                break; // SE (south-east, r- = south)
+            case 180:
+                dq = -1;
+                dr = -1;
+                break; // SW (south-west, r- = south)
+            case 240:
+                dq = -1;
+                dr = 0;
+                break; // W  (west)
+            case 300:
+                dq = 0;
+                dr = 1;
+                break; // NW (north-west, r+ = north)
         }
 
-        return HexVector2.builder()
-            .q(dq * distance)
-            .r(dr * distance)
-            .build();
+        return HexVector2.builder().q(dq * distance).r(dr * distance).build();
     }
 
     /**
      * Generates coordinates for a biome based on shape and size
      */
-    private List<HexVector2> generateBiomeCoordinates(HexVector2 center, int size,
-                                                      AreaShape shape, CompositionContext context,
-                                                      Biome biome) {
+    private List<HexVector2> generateBiomeCoordinates(
+            HexVector2 center, int size, AreaShape shape, CompositionContext context, Biome biome) {
         List<HexVector2> coordinates = new ArrayList<>();
 
         if (shape == null) {
@@ -419,7 +459,7 @@ public class BiomeComposer {
             case LINE -> coordinates = generateLineCoordinates(center, size, context.getRandom(), biome);
             case RECTANGLE ->
                 // For now, treat RECTANGLE like CIRCLE (can be improved later)
-                    coordinates = generateCircularCoordinates(center, size);
+                coordinates = generateCircularCoordinates(center, size);
             default -> coordinates.add(center); // Single hex
         }
 
@@ -633,7 +673,7 @@ public class BiomeComposer {
             for (de.mhus.nimbus.generated.types.HexVector2 coord : coordinates) {
                 // Get or create grid from central registry (prevents duplicates)
                 de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid featureHexGrid =
-                    composition.getOrCreateFeatureHexGrid(coord);
+                        composition.getOrCreateFeatureHexGrid(coord);
 
                 // Set source biome reference
                 if (featureHexGrid.getSourceBiomeName() == null) {
@@ -646,7 +686,8 @@ public class BiomeComposer {
                     featureHexGrid.setName(biome.getName() + " [" + coord.getQ() + ";" + coord.getR() + "]");
                 }
                 if (featureHexGrid.getDescription() == null) {
-                    featureHexGrid.setDescription("Part of " + (biome.getType() != null ? biome.getType().name() : "unknown") + " biome");
+                    featureHexGrid.setDescription("Part of "
+                            + (biome.getType() != null ? biome.getType().name() : "unknown") + " biome");
                 }
 
                 // Copy biome parameters to grid (only if not already present)
@@ -673,29 +714,36 @@ public class BiomeComposer {
 
                 // Set filler information from parameters
                 if (featureHexGrid.getParameters().containsKey("filler")) {
-                    boolean isFiller = "true".equals(featureHexGrid.getParameters().get("filler"));
+                    boolean isFiller =
+                            "true".equals(featureHexGrid.getParameters().get("filler"));
                     featureHexGrid.setFiller(isFiller);
 
                     if (isFiller && featureHexGrid.getParameters().containsKey("fillerType")) {
                         String fillerTypeStr = featureHexGrid.getParameters().get("fillerType");
                         try {
                             de.mhus.nimbus.world.generator.composer.filler.FillerType fillerType =
-                                de.mhus.nimbus.world.generator.composer.filler.FillerType.valueOf(fillerTypeStr.toUpperCase());
+                                    de.mhus.nimbus.world.generator.composer.filler.FillerType.valueOf(
+                                            fillerTypeStr.toUpperCase());
                             featureHexGrid.setFillerType(fillerType);
                         } catch (IllegalArgumentException e) {
-                            log.warn("Invalid fillerType '{}' for grid [{},{}], ignoring",
-                                fillerTypeStr, coord.getQ(), coord.getR());
+                            log.warn(
+                                    "Invalid fillerType '{}' for grid [{},{}], ignoring",
+                                    fillerTypeStr,
+                                    coord.getQ(),
+                                    coord.getR());
                         }
                     }
                 }
 
-                log.trace("Registered FeatureHexGrid [{},{}] for biome '{}' in central registry",
-                    coord.getQ(), coord.getR(), biome.getName());
+                log.trace(
+                        "Registered FeatureHexGrid [{},{}] for biome '{}' in central registry",
+                        coord.getQ(),
+                        coord.getR(),
+                        biome.getName());
             }
         }
 
-        log.debug("Registered {} biomes with their HexGrids in central composition registry",
-            placedBiomes.size());
+        log.debug("Registered {} biomes with their HexGrids in central composition registry", placedBiomes.size());
     }
 
     /**
@@ -712,9 +760,9 @@ public class BiomeComposer {
         int offsetQ = random.nextInt(2 * tolerance + 1) - tolerance;
         int offsetR = random.nextInt(2 * tolerance + 1) - tolerance;
         return HexVector2.builder()
-            .q(target.getQ() + offsetQ)
-            .r(target.getR() + offsetR)
-            .build();
+                .q(target.getQ() + offsetQ)
+                .r(target.getR() + offsetR)
+                .build();
     }
 
     /**

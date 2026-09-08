@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.npc;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -9,13 +8,13 @@ import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.world.*;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Generates NPCs with Entity, NPC-Profile, and Dialog-Playbook using AI.
@@ -26,7 +25,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class NpcGeneratorService {
 
-    private static final ObjectMapper MAPPER = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
     private static final String DEFAULT_AI_MODEL = "default:dialog";
 
     private final WEntityService entityService;
@@ -48,20 +49,32 @@ public class NpcGeneratorService {
 
         // 1. Load NPC description from lore document (if npcDocumentName given)
         String npcDocumentName = request.loreContext() != null
-                ? request.loreContext().stream().filter(n -> n.startsWith("npc:")).findFirst().orElse(null)
+                ? request.loreContext().stream()
+                        .filter(n -> n.startsWith("npc:"))
+                        .findFirst()
+                        .orElse(null)
                 : null;
         NpcDescriptionFromLore npcDesc = loadNpcDescription(worldId, npcDocumentName, request);
 
         // Build effective request with lore-overridden fields
         NpcGenerationRequest effectiveRequest = new NpcGenerationRequest(
-                request.worldId(), request.entityId(), request.modelId(), request.gender(),
-                request.posX(), request.posY(), request.posZ(),
+                request.worldId(),
+                request.entityId(),
+                request.modelId(),
+                request.gender(),
+                request.posX(),
+                request.posY(),
+                request.posZ(),
                 npcDesc.environment() != null ? npcDesc.environment() : request.environment(),
-                npcDesc.characterDescription() != null ? npcDesc.characterDescription() : request.characterDescription(),
+                npcDesc.characterDescription() != null
+                        ? npcDesc.characterDescription()
+                        : request.characterDescription(),
                 npcDesc.characterBackground() != null ? npcDesc.characterBackground() : request.characterBackground(),
-                request.portraitPath(), request.aiModel(), request.epoches(),
-                request.schedule(), request.loreContext()
-        );
+                request.portraitPath(),
+                request.aiModel(),
+                request.epoches(),
+                request.schedule(),
+                request.loreContext());
 
         // 2. Load general lore context
         String loreContext = loadLoreContext(worldId, request.loreContext());
@@ -82,15 +95,22 @@ public class NpcGeneratorService {
         log.info("NPC '{}' generated successfully", request.entityId());
 
         return Map.of(
-                "entityId", request.entityId(),
-                "worldId", request.worldId(),
-                "profileCollection", "npc-profiles",
-                "profileName", request.entityId(),
-                "playbookCollection", "dialogs",
-                "playbookName", request.entityId(),
-                "npcTitle", generated.title != null ? generated.title : request.entityId(),
-                "status", "created"
-        );
+                "entityId",
+                request.entityId(),
+                "worldId",
+                request.worldId(),
+                "profileCollection",
+                "npc-profiles",
+                "profileName",
+                request.entityId(),
+                "playbookCollection",
+                "dialogs",
+                "playbookName",
+                request.entityId(),
+                "npcTitle",
+                generated.title != null ? generated.title : request.entityId(),
+                "status",
+                "created");
     }
 
     // --- Lore loading ---
@@ -119,8 +139,11 @@ public class NpcGeneratorService {
 
                 // Auto-load world and region lore as base context
                 if (name.startsWith("lore:world") || name.startsWith("lore:region")) {
-                    sb.append("## ").append(doc.getTitle() != null ? doc.getTitle() : name).append("\n");
-                    sb.append(doc.getSummary() != null ? doc.getSummary() : truncate(doc.getContent(), 500)).append("\n\n");
+                    sb.append("## ")
+                            .append(doc.getTitle() != null ? doc.getTitle() : name)
+                            .append("\n");
+                    sb.append(doc.getSummary() != null ? doc.getSummary() : truncate(doc.getContent(), 500))
+                            .append("\n\n");
                 }
             }
         } catch (Exception e) {
@@ -133,9 +156,13 @@ public class NpcGeneratorService {
                 try {
                     documentService.findByName(worldId, "lore", loreName).ifPresent(doc -> {
                         String header = loreName.startsWith("npc:") ? "NPC-Beschreibung" : "Kontext";
-                        sb.append("## ").append(header).append(": ")
-                                .append(doc.getTitle() != null ? doc.getTitle() : loreName).append("\n");
-                        sb.append(doc.getContent() != null ? doc.getContent() : "").append("\n\n");
+                        sb.append("## ")
+                                .append(header)
+                                .append(": ")
+                                .append(doc.getTitle() != null ? doc.getTitle() : loreName)
+                                .append("\n");
+                        sb.append(doc.getContent() != null ? doc.getContent() : "")
+                                .append("\n\n");
                     });
                 } catch (Exception e) {
                     log.warn("Lore document '{}' not found in world {}", loreName, worldId);
@@ -150,8 +177,8 @@ public class NpcGeneratorService {
      * Extract NPC description from a npc: lore document.
      * Falls back to request parameters if no document found.
      */
-    private NpcDescriptionFromLore loadNpcDescription(WorldId worldId, String npcDocumentName,
-                                                        NpcGenerationRequest request) {
+    private NpcDescriptionFromLore loadNpcDescription(
+            WorldId worldId, String npcDocumentName, NpcGenerationRequest request) {
         String environment = request.environment();
         String characterDescription = request.characterDescription();
         String characterBackground = request.characterBackground();
@@ -193,12 +220,14 @@ public class NpcGeneratorService {
         String systemPrompt = buildSystemPrompt(loreContext);
         String userPrompt = buildUserPrompt(request);
 
-        Optional<AiChat> chatOpt = aiModelService.createChat(aiModel, AiChatOptions.builder()
-                .systemMessage(systemPrompt)
-                .temperature(0.8)
-                .maxTokens(2000)
-                .timeoutSeconds(60)
-                .build());
+        Optional<AiChat> chatOpt = aiModelService.createChat(
+                aiModel,
+                AiChatOptions.builder()
+                        .systemMessage(systemPrompt)
+                        .temperature(0.8)
+                        .maxTokens(2000)
+                        .timeoutSeconds(60)
+                        .build());
 
         if (chatOpt.isEmpty()) {
             throw new NpcGenerationException("AI model not available: " + aiModel);
@@ -287,8 +316,7 @@ public class NpcGeneratorService {
             String faction,
             List<String> knowledgeTopics,
             String defaultGreeting,
-            List<SmallTalkTopic> smalltalkTopics
-    ) {
+            List<SmallTalkTopic> smalltalkTopics) {
         AiGeneratedNpc {
             if (secrets == null) secrets = List.of();
             if (knowledgeTopics == null) knowledgeTopics = List.of();
@@ -304,12 +332,14 @@ public class NpcGeneratorService {
             String json = response.trim();
             // Strip markdown code blocks if present
             if (json.startsWith("```")) {
-                json = json.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
+                json = json.replaceAll("```json\\s*", "")
+                        .replaceAll("```\\s*$", "")
+                        .trim();
             }
             return MAPPER.readValue(json, AiGeneratedNpc.class);
         } catch (Exception e) {
-            throw new NpcGenerationException("Failed to parse AI response: " + e.getMessage()
-                    + "\nResponse: " + truncate(response, 500), e);
+            throw new NpcGenerationException(
+                    "Failed to parse AI response: " + e.getMessage() + "\nResponse: " + truncate(response, 500), e);
         }
     }
 
@@ -377,17 +407,18 @@ public class NpcGeneratorService {
     }
 
     private List<EntitySchedulePhase> buildSchedule(List<ScheduleEntry> entries) {
-        return entries.stream().map(e -> EntitySchedulePhase.builder()
-                .name(e.name())
-                .fromHour(e.fromHour())
-                .toHour(e.toHour())
-                .present(e.present() == null || e.present())
-                .point(e.point())
-                .behavior(e.behavior())
-                .roamRadius(e.roamRadius())
-                .speed(e.speed())
-                .build()
-        ).toList();
+        return entries.stream()
+                .map(e -> EntitySchedulePhase.builder()
+                        .name(e.name())
+                        .fromHour(e.fromHour())
+                        .toHour(e.toHour())
+                        .present(e.present() == null || e.present())
+                        .point(e.point())
+                        .behavior(e.behavior())
+                        .roamRadius(e.roamRadius())
+                        .speed(e.speed())
+                        .build())
+                .toList();
     }
 
     // --- Profile creation ---
@@ -401,23 +432,38 @@ public class NpcGeneratorService {
         profileData.put("speechStyle", generated.speechStyle());
         profileData.put("faction", generated.faction());
         profileData.put("knowledgeTopics", generated.knowledgeTopics());
-        profileData.put("cacheConfig", Map.of(
-                "maxVersions", 10,
-                "warmUpCount", 3,
-                "buckets", Map.of(
-                        "memory_conversationCount", Map.of("first", List.of(0, 0), "few", List.of(1, 3), "many", List.of(4, 1000))
-                )
-        ));
-        profileData.put("freeText", Map.of(
-                "enabled", true,
-                "maxTokens", 300,
-                "boundaries", List.of(),
-                "forbiddenTopics", List.of("real world", "game mechanics"),
-                "allowedEffects", List.of("addMemory", "setMemory")
-        ));
+        profileData.put(
+                "cacheConfig",
+                Map.of(
+                        "maxVersions", 10,
+                        "warmUpCount", 3,
+                        "buckets",
+                                Map.of(
+                                        "memory_conversationCount",
+                                        Map.of(
+                                                "first",
+                                                List.of(0, 0),
+                                                "few",
+                                                List.of(1, 3),
+                                                "many",
+                                                List.of(4, 1000)))));
+        profileData.put(
+                "freeText",
+                Map.of(
+                        "enabled", true,
+                        "maxTokens", 300,
+                        "boundaries", List.of(),
+                        "forbiddenTopics", List.of("real world", "game mechanics"),
+                        "allowedEffects", List.of("addMemory", "setMemory")));
 
-        anythingService.create(mainWorldId, "npc-profiles", entityId,
-                generated.title(), "Generated NPC profile", "npc-profile", profileData);
+        anythingService.create(
+                mainWorldId,
+                "npc-profiles",
+                entityId,
+                generated.title(),
+                "Generated NPC profile",
+                "npc-profile",
+                profileData);
 
         log.debug("Created NPC profile: npc-profiles/{}", entityId);
     }
@@ -434,49 +480,58 @@ public class NpcGeneratorService {
             greetingOptions.add(Map.of(
                     "text", topic.label(),
                     "next", "topic_" + topic.id(),
-                    "intent", topic.id()
-            ));
+                    "intent", topic.id()));
         }
         greetingOptions.add(Map.of(
                 "text", "Auf Wiedersehen.",
-                "next", "",  // null in JSON would be better, using empty for Jackson compat
-                "intent", "goodbye"
-        ));
+                "next", "", // null in JSON would be better, using empty for Jackson compat
+                "intent", "goodbye"));
         // Fix: null next for goodbye
-        greetingOptions.set(greetingOptions.size() - 1, new LinkedHashMap<>(Map.of(
-                "text", "Auf Wiedersehen.",
-                "intent", "goodbye"
-        )));
+        greetingOptions.set(
+                greetingOptions.size() - 1,
+                new LinkedHashMap<>(Map.of(
+                        "text", "Auf Wiedersehen.",
+                        "intent", "goodbye")));
 
-        nodes.put("greeting", Map.of(
-                "textPrompt", generated.defaultGreeting() != null
-                        ? generated.defaultGreeting()
-                        : "Begruesse den Spieler. Beim ersten Besuch sei neugierig. Bei wiederholtem Besuch erkenne ihn wieder und sei vertrauter. Bei haeufigem Besuch behandle ihn wie einen alten Bekannten.",
-                "cacheKeys", List.of("memory_conversationCount"),
-                "freeTextAllowed", true,
-                "options", greetingOptions,
-                "effects", List.of(),
-                "conditions", List.of()
-        ));
+        nodes.put(
+                "greeting",
+                Map.of(
+                        "textPrompt",
+                        generated.defaultGreeting() != null
+                                ? generated.defaultGreeting()
+                                : "Begruesse den Spieler. Beim ersten Besuch sei neugierig. Bei wiederholtem Besuch erkenne ihn wieder und sei vertrauter. Bei haeufigem Besuch behandle ihn wie einen alten Bekannten.",
+                        "cacheKeys",
+                        List.of("memory_conversationCount"),
+                        "freeTextAllowed",
+                        true,
+                        "options",
+                        greetingOptions,
+                        "effects",
+                        List.of(),
+                        "conditions",
+                        List.of()));
 
         // Topic nodes — each topic shows all options so the player can navigate freely
         for (var topic : generated.smalltalkTopics()) {
             // Reuse the same options as greeting (all topics + goodbye)
-            nodes.put("topic_" + topic.id(), Map.of(
-                    "textPrompt", topic.prompt(),
-                    "cacheKeys", List.of(),
-                    "options", greetingOptions,
-                    "effects", List.of(),
-                    "conditions", List.of()
-            ));
+            nodes.put(
+                    "topic_" + topic.id(),
+                    Map.of(
+                            "textPrompt", topic.prompt(),
+                            "cacheKeys", List.of(),
+                            "options", greetingOptions,
+                            "effects", List.of(),
+                            "conditions", List.of()));
         }
 
         // Build playbook with default situation
         Map<String, Object> defaultSituation = new LinkedHashMap<>();
         defaultSituation.put("conditions", List.of());
         defaultSituation.put("priority", 0);
-        defaultSituation.put("aiContext", "Du bist " + (generated.title() != null ? generated.title() : entityId) + ". "
-                + (generated.personality() != null ? generated.personality() : "Ein freundlicher NPC."));
+        defaultSituation.put(
+                "aiContext",
+                "Du bist " + (generated.title() != null ? generated.title() : entityId) + ". "
+                        + (generated.personality() != null ? generated.personality() : "Ein freundlicher NPC."));
         defaultSituation.put("availableTopics", generated.knowledgeTopics());
         defaultSituation.put("nodes", nodes);
         defaultSituation.put("onEnter", List.of());
@@ -487,8 +542,14 @@ public class NpcGeneratorService {
         playbookData.put("version", 1);
         playbookData.put("situations", Map.of("default", defaultSituation));
 
-        anythingService.create(mainWorldId, "dialogs", entityId,
-                generated.title(), "Generated NPC dialog", "npc-dialog", playbookData);
+        anythingService.create(
+                mainWorldId,
+                "dialogs",
+                entityId,
+                generated.title(),
+                "Generated NPC dialog",
+                "npc-dialog",
+                playbookData);
 
         log.debug("Created NPC playbook: dialogs/{}", entityId);
     }
@@ -517,8 +578,7 @@ public class NpcGeneratorService {
             String aiModel,
             List<Integer> epoches,
             List<ScheduleEntry> schedule,
-            List<String> loreContext
-    ) {}
+            List<String> loreContext) {}
 
     public record ScheduleEntry(
             String name,
@@ -528,11 +588,15 @@ public class NpcGeneratorService {
             String point,
             String behavior,
             Double roamRadius,
-            Double speed
-    ) {}
+            Double speed) {}
 
     public static class NpcGenerationException extends RuntimeException {
-        public NpcGenerationException(String message) { super(message); }
-        public NpcGenerationException(String message, Throwable cause) { super(message, cause); }
+        public NpcGenerationException(String message) {
+            super(message);
+        }
+
+        public NpcGenerationException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

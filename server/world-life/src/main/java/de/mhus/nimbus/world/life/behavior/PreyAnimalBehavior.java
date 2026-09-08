@@ -10,13 +10,12 @@ import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.movement.BlockBasedMovement;
 import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.world.WEntity;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Prey animal behavior - slow-moving passive animals that roam around.
@@ -79,7 +78,8 @@ public class PreyAnimalBehavior implements EntityBehavior {
      * If the entity is outside its roam radius (relative to middlePoint/spawn),
      * it generates a path back towards the center instead of a random direction.
      */
-    private EntityPathway generatePathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
+    private EntityPathway generatePathway(
+            WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         // Get entity's current position (server-side simulation data)
         Vector3 currentPosition = entity.getPosition();
         if (currentPosition == null) {
@@ -103,14 +103,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
 
         // Generate waypoints using terrain-aware movement
         List<Waypoint> movementWaypoints = blockMovement.generatePathway(
-                worldId,
-                startPosition,
-                direction,
-                DEFAULT_WAYPOINTS_PER_PATH,
-                speed,
-                currentTime,
-                epoch
-        );
+                worldId, startPosition, direction, DEFAULT_WAYPOINTS_PER_PATH, speed, currentTime, epoch);
 
         if (movementWaypoints.isEmpty()) {
             log.trace("No valid waypoints generated for entity {}", entity.getName());
@@ -129,8 +122,10 @@ public class PreyAnimalBehavior implements EntityBehavior {
                 .idlePose(ENTITY_POSES.IDLE)
                 .build();
 
-        log.trace("Generated pathway for entity {}: {} waypoints (includes idle)",
-                entity.getName(), waypointsWithIdle.size());
+        log.trace(
+                "Generated pathway for entity {}: {} waypoints (includes idle)",
+                entity.getName(),
+                waypointsWithIdle.size());
 
         return pathway;
     }
@@ -154,13 +149,12 @@ public class PreyAnimalBehavior implements EntityBehavior {
         if (distFromHome > roamRadius) {
             // Head back towards home
             double length = distFromHome;
-            log.trace("Entity {} is {} blocks from home (radius={}), heading back",
-                    entity.getName(), String.format("%.1f", distFromHome), roamRadius);
-            return Vector3.builder()
-                    .x(-dx / length)
-                    .y(0.0)
-                    .z(-dz / length)
-                    .build();
+            log.trace(
+                    "Entity {} is {} blocks from home (radius={}), heading back",
+                    entity.getName(),
+                    String.format("%.1f", distFromHome),
+                    roamRadius);
+            return Vector3.builder().x(-dx / length).y(0.0).z(-dz / length).build();
         }
 
         return blockMovement.getRandomDirection();
@@ -181,12 +175,12 @@ public class PreyAnimalBehavior implements EntityBehavior {
             result.add(waypoint);
 
             // Add idle pause after movement
-            long idleDuration = DEFAULT_MIN_IDLE_DURATION_MS +
-                    (long) (random.nextDouble() * (DEFAULT_MAX_IDLE_DURATION_MS - DEFAULT_MIN_IDLE_DURATION_MS));
+            long idleDuration = DEFAULT_MIN_IDLE_DURATION_MS
+                    + (long) (random.nextDouble() * (DEFAULT_MAX_IDLE_DURATION_MS - DEFAULT_MIN_IDLE_DURATION_MS));
 
             Waypoint idleWaypoint = Waypoint.builder()
                     .timestamp(waypoint.getTimestamp() + idleDuration)
-                    .target(waypoint.getTarget())  // Stay at same position
+                    .target(waypoint.getTarget()) // Stay at same position
                     .rotation(waypoint.getRotation())
                     .pose(ENTITY_POSES.IDLE)
                     .build();

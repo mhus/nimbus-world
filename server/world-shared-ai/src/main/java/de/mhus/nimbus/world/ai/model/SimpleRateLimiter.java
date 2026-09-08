@@ -1,9 +1,7 @@
 package de.mhus.nimbus.world.ai.model;
 
-import lombok.extern.slf4j.Slf4j;
-
-import java.time.Instant;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Simple rate limiter implementation using a sliding window.
@@ -38,8 +36,11 @@ public class SimpleRateLimiter implements RateLimiter {
             long waitTime = expiryTime - now;
 
             if (waitTime > 0) {
-                log.debug("Rate limit reached ({}/{}), waiting {}ms",
-                        requestTimestamps.size(), maxRequestsPerMinute, waitTime);
+                log.debug(
+                        "Rate limit reached ({}/{}), waiting {}ms",
+                        requestTimestamps.size(),
+                        maxRequestsPerMinute,
+                        waitTime);
                 Thread.sleep(waitTime);
             }
 

@@ -1,34 +1,31 @@
 package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.generated.types.Block;
-import de.mhus.nimbus.generated.types.ChunkData;
-import de.mhus.nimbus.generated.types.Vector3;
-import de.mhus.nimbus.generated.types.Vector3Int;
-import de.mhus.nimbus.generated.types.WorldInfo;
-import de.mhus.nimbus.shared.storage.StorageService;
-import de.mhus.nimbus.shared.types.SchemaVersion;
-import de.mhus.nimbus.shared.types.WorldId;
-
-import java.util.Date;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.test.context.TestPropertySource;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.ChunkData;
+import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.shared.storage.StorageService;
+import de.mhus.nimbus.shared.types.SchemaVersion;
+import de.mhus.nimbus.shared.types.WorldId;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Integration tests for WChunk compression feature.
@@ -37,9 +34,7 @@ import static org.mockito.Mockito.when;
  * For full end-to-end tests with real MongoDB, use @DataMongoTest.
  */
 @SpringBootTest(classes = {WChunkService.class, WChunkRepository.class})
-@TestPropertySource(properties = {
-        "nimbus.chunk.compression.enabled=true"
-})
+@TestPropertySource(properties = {"nimbus.chunk.compression.enabled=true"})
 class WChunkCompressionIntegrationTest {
 
     @Autowired(required = false)
@@ -73,19 +68,14 @@ class WChunkCompressionIntegrationTest {
         WWorld world = WWorld.builder()
                 .id("test-region:test-world")
                 .regionId("test-region")
-                .publicData(
-                        WorldInfo.builder()
-                                .title("Test World")
-                                .hexGridSize(400)
-                                .chunkSize(32)
-                                .build()
-                )
+                .publicData(WorldInfo.builder()
+                        .title("Test World")
+                        .hexGridSize(400)
+                        .chunkSize(32)
+                        .build())
                 .build();
-        lenient().when(worldService.getByWorldId("test-region:test-world"))
-                .thenReturn(Optional.of(world));
-        lenient().when(worldService.getByWorldId(any(WorldId.class)))
-                .thenReturn(Optional.of(world));
-
+        lenient().when(worldService.getByWorldId("test-region:test-world")).thenReturn(Optional.of(world));
+        lenient().when(worldService.getByWorldId(any(WorldId.class))).thenReturn(Optional.of(world));
 
         // Given: Test chunk data
         WorldId worldId = WorldId.unchecked("test-region:integration-test-world");
@@ -93,13 +83,17 @@ class WChunkCompressionIntegrationTest {
         ChunkData originalData = createLargeChunkData(10, 10, 150);
 
         // Mock repository behavior
-        when(repository.save(any(WChunk.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(WChunk.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Mock storage service
         when(storageService.store(anyString(), any(), anyString(), anyString(), any(InputStream.class)))
-                .thenReturn(new StorageService.StorageInfo("test-storage-id", 5000,
-                        new Date(), "integration-test-world", "chunk/10:10", "WChunkStorage",
+                .thenReturn(new StorageService.StorageInfo(
+                        "test-storage-id",
+                        5000,
+                        new Date(),
+                        "integration-test-world",
+                        "chunk/10:10",
+                        "WChunkStorage",
                         SchemaVersion.create("1.0.1")));
 
         // When: Save chunk
@@ -166,7 +160,7 @@ class WChunkCompressionIntegrationTest {
             int worldX = cx * 32 + localX;
             int worldZ = cz * 32 + localZ;
             String key = worldX + "," + worldZ;
-            heightData.put(key, new int[]{5, -1}); // [groundLevel, waterLevel (-1=none)]
+            heightData.put(key, new int[] {5, -1}); // [groundLevel, waterLevel (-1=none)]
         }
         chunkData.setHeightData(heightData);
 

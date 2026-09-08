@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,11 +17,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * End-to-end orchestrator for the Reality Generator pipeline (Stages A→D of
@@ -63,8 +62,7 @@ public class RealityWorkflow {
      * @param options           pipeline options
      * @return the workflow result
      */
-    public RealityWorkflowResult generate(WorldId regionId, String instructionsDocId,
-                                          RealityWorkflowOptions options) {
+    public RealityWorkflowResult generate(WorldId regionId, String instructionsDocId, RealityWorkflowOptions options) {
         List<String> log = new ArrayList<>();
         if (regionId == null || Strings.isBlank(instructionsDocId)) {
             return RealityWorkflowResult.failure("regionId and instructionsDocId are required", log);
@@ -74,8 +72,7 @@ public class RealityWorkflow {
         // A — Intake
         Optional<WDocument> docOpt = documentService.findByDocumentId(region, instructionsDocId);
         if (docOpt.isEmpty() || Strings.isBlank(docOpt.get().getContent())) {
-            return RealityWorkflowResult.failure(
-                    "Instruction document not found or empty: " + instructionsDocId, log);
+            return RealityWorkflowResult.failure("Instruction document not found or empty: " + instructionsDocId, log);
         }
         log.add("A intake: loaded instructions " + instructionsDocId);
 
@@ -87,8 +84,8 @@ public class RealityWorkflow {
             return r;
         }
         RealityPlan plan = seed.getPlan();
-        log.add("B0 seed: " + count(plan.getOutline()) + " chapters, "
-                + count(plan.getBackgroundPowers()) + " background powers");
+        log.add("B0 seed: " + count(plan.getOutline()) + " chapters, " + count(plan.getBackgroundPowers())
+                + " background powers");
 
         // B1 — Elaborate lore (phase 2, low temperature, per chapter with rolling summary)
         if (options.isElaborateLore()) {
@@ -106,19 +103,21 @@ public class RealityWorkflow {
             RealityPlanResult expanded = expander.expand(plan, options.getModelName());
             if (expanded.isSuccessful()) {
                 plan = expanded.getPlan();
-                log.add("B2 mechanical: " + count(plan.getItems()) + " items, "
-                        + count(plan.getItemClasses()) + " classes");
+                log.add("B2 mechanical: " + count(plan.getItems()) + " items, " + count(plan.getItemClasses())
+                        + " classes");
             } else {
                 log.add("B2 mechanical skipped/failed: " + String.join("; ", expanded.getErrors()));
             }
         }
 
         // B2 — Refine (runs C1 + C2 internally)
-        RefineResult refine = refiner.refine(plan, RefineOptions.builder()
-                .modelName(options.getModelName())
-                .maxIterations(options.getRefineIterations())
-                .useJudge(options.isUseJudge())
-                .build());
+        RefineResult refine = refiner.refine(
+                plan,
+                RefineOptions.builder()
+                        .modelName(options.getModelName())
+                        .maxIterations(options.getRefineIterations())
+                        .useJudge(options.isUseJudge())
+                        .build());
         plan = refine.getPlan();
         log.addAll(refine.getLog());
         ValidationReport report = refine.getFinalReport();
@@ -143,7 +142,8 @@ public class RealityWorkflow {
         if (report == null) {
             log.add("gate: no validation report -> NOT materialized");
             return result.materialized(false)
-                    .errors(new ArrayList<>(List.of("no validation report available"))).build();
+                    .errors(new ArrayList<>(List.of("no validation report available")))
+                    .build();
         }
         if (report.hasErrors()) {
             log.add("gate: " + report.errors().size() + " structural error(s) -> NOT materialized");
@@ -158,7 +158,8 @@ public class RealityWorkflow {
             planJson = MAPPER.writeValueAsString(plan);
         } catch (Exception e) {
             return result.materialized(false)
-                    .errors(new ArrayList<>(List.of("serialize plan failed: " + e.getMessage()))).build();
+                    .errors(new ArrayList<>(List.of("serialize plan failed: " + e.getMessage())))
+                    .build();
         }
         String planDocId = parser.savePlan(region, planJson);
         log.add("snapshot: saved reality_plan " + planDocId);
@@ -166,14 +167,15 @@ public class RealityWorkflow {
         RealityItemResult itemResult = null;
         if (options.isGenerateItems()) {
             itemResult = itemGenerator.generateItems(region, plan);
-            log.add("D4 items: created " + itemResult.getItemsCreated() + ", icons "
-                    + itemResult.getIconsGenerated() + ", errors " + itemResult.getErrors().size());
+            log.add("D4 items: created " + itemResult.getItemsCreated() + ", icons " + itemResult.getIconsGenerated()
+                    + ", errors " + itemResult.getErrors().size());
         }
 
         MaterializeResult loreResult = null;
         if (options.isGenerateLore()) {
             loreResult = loreMaterializer.materialize(region, plan);
-            log.add("D1 lore: " + loreResult.getCreated() + " docs, " + loreResult.getErrors().size() + " errors");
+            log.add("D1 lore: " + loreResult.getCreated() + " docs, "
+                    + loreResult.getErrors().size() + " errors");
         }
         MaterializeResult creatureResult = null;
         if (options.isGenerateCreatures()) {
@@ -184,7 +186,8 @@ public class RealityWorkflow {
         MaterializeResult ruleResult = null;
         if (options.isGenerateRules()) {
             ruleResult = ruleMaterializer.materialize(region, plan);
-            log.add("D6 rules: " + ruleResult.getCreated() + " rules, " + ruleResult.getErrors().size() + " errors");
+            log.add("D6 rules: " + ruleResult.getCreated() + " rules, "
+                    + ruleResult.getErrors().size() + " errors");
         }
         MaterializeResult docsResult = null;
         if (options.isGenerateDocs()) {
@@ -196,19 +199,27 @@ public class RealityWorkflow {
         // Collect the per-entry errors of every enabled Stage-D step. A run that wrote entities but
         // hit errors is "partial", not successful — reporting it as success would hide a region
         // whose items point at textures that were never generated.
-        List<String> stageErrors = collectStageErrors(itemResult, loreResult, creatureResult,
-                ruleResult, docsResult);
+        List<String> stageErrors = collectStageErrors(itemResult, loreResult, creatureResult, ruleResult, docsResult);
 
-        String manifestDocId = saveManifest(region, plan, report, verdict, itemResult,
-                loreResult, creatureResult, ruleResult, planDocId, refine.isConverged(),
-                refine.isBalanceChecked(), refine.getJudgeErrors());
+        String manifestDocId = saveManifest(
+                region,
+                plan,
+                report,
+                verdict,
+                itemResult,
+                loreResult,
+                creatureResult,
+                ruleResult,
+                planDocId,
+                refine.isConverged(),
+                refine.isBalanceChecked(),
+                refine.getJudgeErrors());
         log.add("manifest: saved reality_manifest " + manifestDocId);
         if (!stageErrors.isEmpty()) {
             log.add("PARTIAL: " + stageErrors.size() + " error(s) during materialization");
         }
 
-        return result
-                .success(stageErrors.isEmpty())
+        return result.success(stageErrors.isEmpty())
                 .partial(!stageErrors.isEmpty())
                 .materialized(true)
                 .errors(stageErrors)
@@ -223,8 +234,8 @@ public class RealityWorkflow {
     }
 
     /** Flatten the error lists of all Stage-D results that actually ran. */
-    private static List<String> collectStageErrors(RealityItemResult itemResult,
-                                                   MaterializeResult... materializeResults) {
+    private static List<String> collectStageErrors(
+            RealityItemResult itemResult, MaterializeResult... materializeResults) {
         List<String> errors = new ArrayList<>();
         if (itemResult != null) {
             errors.addAll(itemResult.getErrors());
@@ -237,11 +248,19 @@ public class RealityWorkflow {
         return errors;
     }
 
-    private String saveManifest(WorldId region, RealityPlan plan, ValidationReport report,
-                                JudgeVerdict verdict, RealityItemResult itemResult,
-                                MaterializeResult loreResult, MaterializeResult creatureResult,
-                                MaterializeResult ruleResult, String planDocId, boolean converged,
-                                boolean balanceChecked, List<String> judgeErrors) {
+    private String saveManifest(
+            WorldId region,
+            RealityPlan plan,
+            ValidationReport report,
+            JudgeVerdict verdict,
+            RealityItemResult itemResult,
+            MaterializeResult loreResult,
+            MaterializeResult creatureResult,
+            MaterializeResult ruleResult,
+            String planDocId,
+            boolean converged,
+            boolean balanceChecked,
+            List<String> judgeErrors) {
         Manifest manifest = new Manifest();
         manifest.setBalanceChecked(balanceChecked);
         if (judgeErrors != null && !judgeErrors.isEmpty()) {
@@ -278,13 +297,14 @@ public class RealityWorkflow {
         final String content = json;
         // Use the id of the persisted document: save() de-duplicates by name, so on a re-run the
         // existing manifest is updated and keeps its original documentId.
-        WDocument saved = documentService.save(region, MANIFEST_COLLECTION, UUID.randomUUID().toString(), doc -> {
-            doc.setName("reality-manifest");
-            doc.setTitle("Reality Manifest");
-            doc.setContent(content);
-            doc.setFormat("json");
-            doc.setType("reality_manifest");
-        });
+        WDocument saved = documentService.save(
+                region, MANIFEST_COLLECTION, UUID.randomUUID().toString(), doc -> {
+                    doc.setName("reality-manifest");
+                    doc.setTitle("Reality Manifest");
+                    doc.setContent(content);
+                    doc.setFormat("json");
+                    doc.setType("reality_manifest");
+                });
         return saved.getDocumentId();
     }
 
@@ -316,10 +336,12 @@ public class RealityWorkflow {
          * it was assessed and found unremarkable.
          */
         private boolean balanceChecked;
+
         private Integer balanceScore;
         private Boolean balanceAcceptable;
         /** Why the judge could not produce a verdict (empty/absent when it ran). */
         private List<String> judgeErrors;
+
         private List<String> itemErrors;
     }
 }

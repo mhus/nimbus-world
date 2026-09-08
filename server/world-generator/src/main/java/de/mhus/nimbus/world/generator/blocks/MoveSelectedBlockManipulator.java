@@ -10,15 +10,14 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Move Selected Blocks Manipulator.
@@ -62,9 +61,9 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Moves all blocks that are currently selected in the ModelSelector by the specified offset. " +
-                "Parameters: x (default 0), y (default 0), z (default 0). " +
-                "Example: {\"move-selected\": {\"x\": 5, \"y\": 0, \"z\": -3}}";
+        return "Moves all blocks that are currently selected in the ModelSelector by the specified offset. "
+                + "Parameters: x (default 0), y (default 0), z (default 0). "
+                + "Example: {\"move-selected\": {\"x\": 5, \"y\": 0, \"z\": -3}}";
     }
 
     @Override
@@ -121,8 +120,13 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
             return ManipulatorResult.error("No movement specified. At least one of x, y, or z must be non-zero.");
         }
 
-        log.info("Moving {} selected blocks by offset ({},{},{}) in layer {}",
-                modelSelector.getBlockCount(), dx, dy, dz, layerDataId);
+        log.info(
+                "Moving {} selected blocks by offset ({},{},{}) in layer {}",
+                modelSelector.getBlockCount(),
+                dx,
+                dy,
+                dz,
+                layerDataId);
 
         // Load all cached blocks for the layer
         List<WEditCache> cachedBlocks = editCacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
@@ -134,9 +138,9 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
             if (layerBlock != null && layerBlock.getBlock() != null) {
                 Block block = layerBlock.getBlock();
                 if (block.getPosition() != null) {
-                    String key = block.getPosition().getX() + "," +
-                               block.getPosition().getY() + "," +
-                               block.getPosition().getZ();
+                    String key = block.getPosition().getX() + ","
+                            + block.getPosition().getY()
+                            + "," + block.getPosition().getZ();
                     blockMap.put(key, cache);
                 }
             }
@@ -151,9 +155,7 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
 
         // Create new ModelSelector for the moved blocks
         String layerName = context.getLayerName();
-        String autoSelectName = layerName != null && !layerName.isBlank()
-                ? layerDataId + ":" + layerName
-                : layerDataId;
+        String autoSelectName = layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
         ModelSelector newModelSelector = ModelSelector.builder()
                 .defaultColor(modelSelector.getDefaultColor())
@@ -204,11 +206,7 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
 
                 // Create a new block with updated position
                 Block newBlock = Block.builder()
-                        .position(Vector3Int.builder()
-                                .x(newX)
-                                .y(newY)
-                                .z(newZ)
-                                .build())
+                        .position(Vector3Int.builder().x(newX).y(newY).z(newZ).build())
                         .blockTypeId(originalBlock.getBlockTypeId())
                         .offsets(originalBlock.getOffsets())
                         .rotation(originalBlock.getRotation())
@@ -221,12 +219,11 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
                         .build();
 
                 // Queue for two-phase apply (see below)
-                sourcesToDelete.add(new int[]{x, y, z});
+                sourcesToDelete.add(new int[] {x, y, z});
                 pendingSets.add(new PendingSet(newBlock, newX, newY, newZ, color));
 
                 movedCount++;
-                log.debug("Queued move from ({},{},{}) to ({},{},{})",
-                        x, y, z, newX, newY, newZ);
+                log.debug("Queued move from ({},{},{}) to ({},{},{})", x, y, z, newX, newY, newZ);
 
             } catch (NumberFormatException e) {
                 log.warn("Failed to parse block coordinates from entry: {}", blockEntry, e);
@@ -255,12 +252,11 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
         // Build result message
         String message;
         if (errorCount > 0) {
-            message = String.format("Moved %d blocks by (%d,%d,%d), %d errors occurred",
-                    movedCount, dx, dy, dz, errorCount);
+            message = String.format(
+                    "Moved %d blocks by (%d,%d,%d), %d errors occurred", movedCount, dx, dy, dz, errorCount);
             log.warn(message);
         } else {
-            message = String.format("Successfully moved %d blocks by (%d,%d,%d)",
-                    movedCount, dx, dy, dz);
+            message = String.format("Successfully moved %d blocks by (%d,%d,%d)", movedCount, dx, dy, dz);
             log.info(message);
         }
 

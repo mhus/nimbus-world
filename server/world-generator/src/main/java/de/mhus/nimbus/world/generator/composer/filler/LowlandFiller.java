@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.composer.filler;
 
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
-import lombok.extern.slf4j.Slf4j;
-
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills areas between land features with lowland/plains grids.
@@ -27,9 +26,7 @@ public class LowlandFiller {
      * @param placementResult Placement result from BiomeComposer
      * @return Number of biomes added
      */
-    public int fill(HexComposition composition,
-                    Set<String> existingCoords,
-                    BiomePlacementResult placementResult) {
+    public int fill(HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
 
         log.debug("Starting LowlandFiller (stub - not yet implemented)");
 

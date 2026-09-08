@@ -1,13 +1,12 @@
 package de.mhus.nimbus.tools.generatej2ts;
 
-import org.apache.maven.plugin.logging.Log;
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.maven.plugin.logging.Log;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Minimale Konfigurationsklasse für das Java→TS-Plugin.
@@ -74,8 +73,8 @@ public class Configuration {
         java.util.LinkedHashMap<String, String> result = new java.util.LinkedHashMap<>();
 
         Object tm = raw.get("typeMappings");
-        if (tm instanceof Map<?,?> map) {
-            for (Map.Entry<?,?> e : map.entrySet()) {
+        if (tm instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> e : map.entrySet()) {
                 Object k = e.getKey();
                 Object v = e.getValue();
                 if (k != null && v != null) {
@@ -84,7 +83,7 @@ public class Configuration {
             }
         } else if (tm instanceof java.util.Collection<?> coll) {
             for (Object it : coll) {
-                if (it instanceof Map<?,?> m) {
+                if (it instanceof Map<?, ?> m) {
                     Object j = m.get("java");
                     Object t = m.get("ts");
                     if (j != null && t != null) {
@@ -127,7 +126,7 @@ public class Configuration {
                 String s = String.valueOf(o).trim();
                 if (!s.isBlank()) out.add(s);
             }
-        } else if (di instanceof Map<?,?> map) {
+        } else if (di instanceof Map<?, ?> map) {
             // selten, aber zur Robustheit: jede Value-Zeile übernehmen
             for (Object v : map.values()) {
                 if (v == null) continue;

@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Shared effect processor with generic tick logic for any entity (players and NPCs).
@@ -41,9 +40,12 @@ public class BaseEffectProcessor {
      * @param sourceEntityId Entity ID owning these effects (source of remote deltas)
      * @return true if the entity died (health <= 0)
      */
-    public boolean processTick(EntityCombatData data, double deltaSeconds,
-                               List<VitalDeltaBroadcastMessage> outgoingDeltas,
-                               String worldId, String sourceEntityId) {
+    public boolean processTick(
+            EntityCombatData data,
+            double deltaSeconds,
+            List<VitalDeltaBroadcastMessage> outgoingDeltas,
+            String worldId,
+            String sourceEntityId) {
 
         // 1. Remove expired effects
         removeExpiredEffects(data);
@@ -151,7 +153,8 @@ public class BaseEffectProcessor {
                 case "max" -> vital.setBuffFlat(vital.getBuffFlat() + value);
                 case "maxPercent" -> vital.setBuffPercent(vital.getBuffPercent() + value);
                 case "regen" -> {
-                    if (effect.getProbability() >= 1.0 || ThreadLocalRandom.current().nextDouble() < effect.getProbability()) {
+                    if (effect.getProbability() >= 1.0
+                            || ThreadLocalRandom.current().nextDouble() < effect.getProbability()) {
                         vital.setEffectiveRegenRate(vital.getEffectiveRegenRate() + value);
                     }
                 }
@@ -179,9 +182,12 @@ public class BaseEffectProcessor {
     /**
      * Process periodic (DoT) effects: check tick timers and apply damage.
      */
-    protected void processPeriodicEffects(EntityCombatData data, double deltaSeconds,
-                                           List<VitalDeltaBroadcastMessage> outgoingDeltas,
-                                           String worldId, String sourceEntityId) {
+    protected void processPeriodicEffects(
+            EntityCombatData data,
+            double deltaSeconds,
+            List<VitalDeltaBroadcastMessage> outgoingDeltas,
+            String worldId,
+            String sourceEntityId) {
         var health = data.getVital("health");
 
         for (var effect : data.getActiveEffects()) {
@@ -193,7 +199,8 @@ public class BaseEffectProcessor {
                 effect.setTickTimer(effect.getTickTimer() - effect.getTickInterval());
 
                 // Probability check
-                if (effect.getProbability() < 1.0 && ThreadLocalRandom.current().nextDouble() >= effect.getProbability()) {
+                if (effect.getProbability() < 1.0
+                        && ThreadLocalRandom.current().nextDouble() >= effect.getProbability()) {
                     continue;
                 }
 
@@ -217,8 +224,12 @@ public class BaseEffectProcessor {
                     // Local periodic effect: apply directly to own health
                     if (health != null) {
                         health.setCurrent(health.getCurrent() + damage);
-                        log.debug("DoT {} from {}: {} damage, health now {}",
-                                effect.getStat(), effect.getSource(), damage, health.getCurrent());
+                        log.debug(
+                                "DoT {} from {}: {} damage, health now {}",
+                                effect.getStat(),
+                                effect.getSource(),
+                                damage,
+                                health.getCurrent());
                     }
                 }
             }
@@ -228,9 +239,12 @@ public class BaseEffectProcessor {
     /**
      * Process remote regen effects (non-periodic, continuous regen on remote targets).
      */
-    protected void processRemoteRegenEffects(EntityCombatData data, double deltaSeconds,
-                                              List<VitalDeltaBroadcastMessage> outgoingDeltas,
-                                              String worldId, String sourceEntityId) {
+    protected void processRemoteRegenEffects(
+            EntityCombatData data,
+            double deltaSeconds,
+            List<VitalDeltaBroadcastMessage> outgoingDeltas,
+            String worldId,
+            String sourceEntityId) {
         if (outgoingDeltas == null) return;
 
         for (var effect : data.getActiveEffects()) {

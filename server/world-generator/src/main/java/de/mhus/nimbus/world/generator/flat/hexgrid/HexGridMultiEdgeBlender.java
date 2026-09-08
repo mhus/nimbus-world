@@ -2,10 +2,9 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helper class for blending edges between multiple neighboring hex grids simultaneously.
@@ -22,8 +21,8 @@ public class HexGridMultiEdgeBlender {
     private final FlatProjection projection;
     private final int range;
 
-    public HexGridMultiEdgeBlender(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors,
-                                   int width, int range, BuilderContext context) {
+    public HexGridMultiEdgeBlender(
+            WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors, int width, int range, BuilderContext context) {
         this.centerFlat = centerFlat;
         this.neighbors = neighbors;
         this.width = width;
@@ -39,8 +38,10 @@ public class HexGridMultiEdgeBlender {
      * Blend all edges between center flat and its neighbors.
      */
     public void blendAllEdges() {
-        log.debug("Starting multi-edge blending for center flat: {}, neighbors: {}",
-                centerFlat.getFlatId(), neighbors.keySet());
+        log.debug(
+                "Starting multi-edge blending for center flat: {}, neighbors: {}",
+                centerFlat.getFlatId(),
+                neighbors.keySet());
 
         for (var entry : neighbors.entrySet()) {
             WHexGrid.EDGE side = entry.getKey();
@@ -59,7 +60,9 @@ public class HexGridMultiEdgeBlender {
      */
     private void blendEdge(WHexGrid.EDGE direction, int range) {
         // Get edge corners in world coordinates (both at once to avoid duplicate calculation)
-        int[][] corners = HexFlatUtil.getHexSideCornersWorld(direction, centerFlat.getHexGrid(),
+        int[][] corners = HexFlatUtil.getHexSideCornersWorld(
+                direction,
+                centerFlat.getHexGrid(),
                 context.getWorld().getPublicData().getHexGridSize());
         int[] corner1World = corners[0];
         int[] corner2World = corners[1];
@@ -74,8 +77,14 @@ public class HexGridMultiEdgeBlender {
         int totalPixels = 0;
         int skippedEmpty = 0;
 
-        log.debug("Blend zone for {}: world coords ({},{}) to ({},{}) with range {}",
-                  direction, worldMinX, worldMinZ, worldMaxX, worldMaxZ, range);
+        log.debug(
+                "Blend zone for {}: world coords ({},{}) to ({},{}) with range {}",
+                direction,
+                worldMinX,
+                worldMinZ,
+                worldMaxX,
+                worldMaxZ,
+                range);
 
         // Iterate over the blend zone in world coordinates
         for (int worldZ = worldMinZ; worldZ < worldMaxZ; worldZ++) {
@@ -90,8 +99,7 @@ public class HexGridMultiEdgeBlender {
                 }
 
                 // Calculate perpendicular distance to edge line in world coordinates
-                double distanceToEdge = calculateDistanceToEdgeLine(
-                    worldX, worldZ, corner1World, corner2World);
+                double distanceToEdge = calculateDistanceToEdgeLine(worldX, worldZ, corner1World, corner2World);
 
                 // Skip if outside blend zone
                 if (distanceToEdge > width) {
@@ -125,7 +133,7 @@ public class HexGridMultiEdgeBlender {
                 int heightDifference = avgHeight - currentHeight;
                 double adjustmentFactor = (1.0 - blendFactor); // Stronger effect near edge
                 double rawAdjustment = heightDifference * adjustmentFactor;
-                //double rawAdjustment = 255; //XXX
+                // double rawAdjustment = 255; //XXX
                 int adjustment = (int) Math.round(rawAdjustment);
 
                 // Apply adjustment
@@ -138,15 +146,18 @@ public class HexGridMultiEdgeBlender {
             }
         }
 
-        log.debug("Blended {} pixels for edge {} (total={}, empty={})",
-                  blendedPixels, direction, totalPixels, skippedEmpty);
+        log.debug(
+                "Blended {} pixels for edge {} (total={}, empty={})",
+                blendedPixels,
+                direction,
+                totalPixels,
+                skippedEmpty);
     }
 
     /**
      * Calculate perpendicular distance from point to edge line in world coordinates.
      */
-    private double calculateDistanceToEdgeLine(int worldX, int worldZ,
-                                               int[] corner1, int[] corner2) {
+    private double calculateDistanceToEdgeLine(int worldX, int worldZ, int[] corner1, int[] corner2) {
         // Calculate perpendicular distance to line from corner1 to corner2
         double dx = corner2[0] - corner1[0];
         double dz = corner2[1] - corner1[1];
@@ -195,11 +206,12 @@ public class HexGridMultiEdgeBlender {
                 int localX = worldX - flat.getMountX();
                 int localZ = worldZ - flat.getMountZ();
 
-                if (localX >= 0 && localX < flat.getSizeX() &&
-                    localZ >= 0 && localZ < flat.getSizeZ()) {
+                if (localX >= 0 && localX < flat.getSizeX() && localZ >= 0 && localZ < flat.getSizeZ()) {
                     // This flat maybe contains the coordinate
                     var material = flat.getColumn(localX, localZ); // Ensure column is loaded for debugging
-                    if (material != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in the border
+                    if (material
+                            != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in
+                        // the border
                         return flat.getLevel(localX, localZ);
                     }
                 }
@@ -225,19 +237,27 @@ public class HexGridMultiEdgeBlender {
                 int localX = worldX - flat.getMountX();
                 int localZ = worldZ - flat.getMountZ();
 
-                if (localX >= 0 && localX < flat.getSizeX() &&
-                    localZ >= 0 && localZ < flat.getSizeZ()) {
+                if (localX >= 0 && localX < flat.getSizeX() && localZ >= 0 && localZ < flat.getSizeZ()) {
 
                     var material = flat.getColumn(localX, localZ); // Ensure column is loaded for debugging
-                    if (material != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in the border
+                    if (material
+                            != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in
+                        // the border
                         // This flat contains the coordinate
                         int oldLevel = flat.getLevel(localX, localZ);
                         flat.setLevel(localX, localZ, level);
 
                         // Debug: log first few writes
                         if (writeCount++ < 5) {
-                            log.debug("Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
-                                    worldX, worldZ, flat.getFlatId(), localX, localZ, oldLevel, level);
+                            log.debug(
+                                    "Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
+                                    worldX,
+                                    worldZ,
+                                    flat.getFlatId(),
+                                    localX,
+                                    localZ,
+                                    oldLevel,
+                                    level);
                         }
                         found = true;
                     }
@@ -249,5 +269,4 @@ public class HexGridMultiEdgeBlender {
 
         private int writeCount = 0;
     }
-
 }

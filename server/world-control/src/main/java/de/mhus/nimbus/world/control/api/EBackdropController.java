@@ -12,18 +12,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for Backdrop CRUD operations.
@@ -48,15 +47,11 @@ public class EBackdropController extends BaseEditorController {
             String worldId,
             boolean enabled,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
-    public record CreateBackdropRequest(String backdropId, Backdrop publicData) {
-    }
+    public record CreateBackdropRequest(String backdropId, Backdrop publicData) {}
 
-    public record UpdateBackdropRequest(Backdrop publicData, Boolean enabled) {
-    }
+    public record UpdateBackdropRequest(Backdrop publicData, Boolean enabled) {}
 
     /**
      * Get single backdrop by ID.
@@ -65,9 +60,9 @@ public class EBackdropController extends BaseEditorController {
     @GetMapping("/{backdropId}")
     @Operation(summary = "Get backdrop by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Backdrop found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Backdrop not found")
+        @ApiResponse(responseCode = "200", description = "Backdrop found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Backdrop not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -75,9 +70,7 @@ public class EBackdropController extends BaseEditorController {
 
         log.debug("GET backdrop: worldId={}, backdropId={}", worldId, backdropId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(backdropId, "backdropId");
         if (validation != null) return validation;
 
@@ -99,8 +92,8 @@ public class EBackdropController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all backdrops")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -110,9 +103,7 @@ public class EBackdropController extends BaseEditorController {
 
         log.debug("LIST backdrops: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -140,8 +131,7 @@ public class EBackdropController extends BaseEditorController {
                 "backdrops", backdropList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -151,9 +141,9 @@ public class EBackdropController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new backdrop")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Backdrop created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Backdrop already exists")
+        @ApiResponse(responseCode = "201", description = "Backdrop created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Backdrop already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -161,9 +151,7 @@ public class EBackdropController extends BaseEditorController {
 
         log.debug("CREATE backdrop: worldId={}, backdropId={}", worldId, request.backdropId());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         if (Strings.isBlank(request.backdropId())) {
             return bad("backdropId required");
         }
@@ -198,9 +186,9 @@ public class EBackdropController extends BaseEditorController {
     @PutMapping("/{backdropId}")
     @Operation(summary = "Update backdrop")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Backdrop updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Backdrop not found")
+        @ApiResponse(responseCode = "200", description = "Backdrop updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Backdrop not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -209,9 +197,7 @@ public class EBackdropController extends BaseEditorController {
 
         log.debug("UPDATE backdrop: worldId={}, backdropId={}", worldId, backdropId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(backdropId, "backdropId");
         if (validation != null) return validation;
 
@@ -244,9 +230,9 @@ public class EBackdropController extends BaseEditorController {
     @DeleteMapping("/{backdropId}")
     @Operation(summary = "Delete backdrop")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Backdrop deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Backdrop not found")
+        @ApiResponse(responseCode = "204", description = "Backdrop deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Backdrop not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -254,9 +240,7 @@ public class EBackdropController extends BaseEditorController {
 
         log.debug("DELETE backdrop: worldId={}, backdropId={}", worldId, backdropId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(backdropId, "backdropId");
         if (validation != null) return validation;
 
@@ -279,7 +263,6 @@ public class EBackdropController extends BaseEditorController {
                 entity.getWorldId(),
                 entity.isEnabled(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

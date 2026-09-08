@@ -2,6 +2,7 @@ package de.mhus.nimbus.shared.config;
 
 import com.mongodb.client.result.UpdateResult;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -9,8 +10,6 @@ import org.springframework.data.mongodb.core.convert.MongoConverter;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.UpdateDefinition;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Extended MongoTemplate that automatically adds the {@code _schema} field

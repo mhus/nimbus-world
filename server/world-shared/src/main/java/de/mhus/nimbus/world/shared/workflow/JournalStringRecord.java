@@ -7,6 +7,6 @@ package de.mhus.nimbus.world.shared.workflow;
 public interface JournalStringRecord extends JournalRecord {
 
     String entryToString();
-    void stringToRecord(String data);
 
+    void stringToRecord(String data);
 }

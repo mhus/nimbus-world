@@ -3,23 +3,22 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.control.service.EditSettingsService;
-import de.mhus.nimbus.world.control.service.WWorldEditSettings;
 import de.mhus.nimbus.world.control.service.PaletteBlockDefinition;
+import de.mhus.nimbus.world.control.service.WWorldEditSettings;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for managing editor settings per world and user.
@@ -47,9 +46,7 @@ public class EditorSettingsController extends BaseEditorController {
      */
     @GetMapping("/worlds/{worldId}/editsettings")
     @Operation(summary = "Load editor settings", description = "Load editor settings for a world and the current user")
-    public ResponseEntity<?> getEditSettings(
-            @PathVariable String worldId,
-            @RequestParam String sessionId) {
+    public ResponseEntity<?> getEditSettings(@PathVariable String worldId, @RequestParam String sessionId) {
 
         // Validate worldId
         Optional<WorldId> worldIdOpt = WorldId.of(worldId);
@@ -94,7 +91,9 @@ public class EditorSettingsController extends BaseEditorController {
      * @return Updated settings
      */
     @PostMapping("/worlds/{worldId}/editsettings/palette")
-    @Operation(summary = "Set palette", description = "Set the palette for a world and the current user (replaces entire palette)")
+    @Operation(
+            summary = "Set palette",
+            description = "Set the palette for a world and the current user (replaces entire palette)")
     public ResponseEntity<?> setPalette(
             @PathVariable String worldId,
             @RequestParam String sessionId,

@@ -6,11 +6,6 @@ import de.mhus.nimbus.world.ai.image.AiImageModel;
 import de.mhus.nimbus.world.ai.image.AiImageOptions;
 import de.mhus.nimbus.world.ai.image.BackgroundRemover;
 import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
-import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -21,6 +16,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Google Gemini implementation of {@link AiImageModel}.
@@ -45,8 +44,8 @@ public class GeminiImageModelImpl implements AiImageModel {
      */
     private static final String FLAT_BACKGROUND_HINT =
             " Place the subject centered and fully visible on a perfectly flat, uniform, solid pure"
-            + " white (#FFFFFF) background that fills the whole frame edge to edge, with NO border,"
-            + " NO frame, NO vignette, NO drop shadow and NO gradient.";
+                    + " white (#FFFFFF) background that fills the whole frame edge to edge, with NO border,"
+                    + " NO frame, NO vignette, NO drop shadow and NO gradient.";
 
     private final String name;
     private final String modelName;
@@ -56,13 +55,17 @@ public class GeminiImageModelImpl implements AiImageModel {
     private final SimpleRateLimiter rateLimiter;
     private final int backgroundThreshold;
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .build();
+    private final HttpClient httpClient =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
-    public GeminiImageModelImpl(String name, String modelName, String apiKey, AiImageOptions options,
-                                ObjectMapper objectMapper, SimpleRateLimiter rateLimiter,
-                                int backgroundThreshold) {
+    public GeminiImageModelImpl(
+            String name,
+            String modelName,
+            String apiKey,
+            AiImageOptions options,
+            ObjectMapper objectMapper,
+            SimpleRateLimiter rateLimiter,
+            int backgroundThreshold) {
         this.name = name;
         this.modelName = modelName;
         this.apiKey = apiKey;
@@ -104,8 +107,7 @@ public class GeminiImageModelImpl implements AiImageModel {
             if (transparent) {
                 // Background removal always re-encodes as PNG with an alpha channel, whatever the
                 // model delivered.
-                return toAiImage(BackgroundRemover.removePng(generated.bytes(), backgroundThreshold),
-                        "image/png");
+                return toAiImage(BackgroundRemover.removePng(generated.bytes(), backgroundThreshold), "image/png");
             }
 
             return toAiImage(generated.bytes(), generated.mimeType());
@@ -129,8 +131,7 @@ public class GeminiImageModelImpl implements AiImageModel {
     private GeneratedImage requestImage(String prompt) throws Exception {
         // Typed request body -> JSON (no manual string building).
         GenerateContentRequest body = new GenerateContentRequest(
-                List.of(new Content(List.of(new Part(prompt)))),
-                new GenerationConfig(List.of("IMAGE")));
+                List.of(new Content(List.of(new Part(prompt)))), new GenerationConfig(List.of("IMAGE")));
         String json = objectMapper.writeValueAsString(body);
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -143,8 +144,7 @@ public class GeminiImageModelImpl implements AiImageModel {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
-            throw new AiImageException("Gemini API HTTP " + response.statusCode() + ": "
-                    + abbreviate(response.body()));
+            throw new AiImageException("Gemini API HTTP " + response.statusCode() + ": " + abbreviate(response.body()));
         }
 
         JsonNode root = objectMapper.readTree(response.body());
@@ -157,23 +157,22 @@ public class GeminiImageModelImpl implements AiImageModel {
                     // Honour the mime type the model reports — Gemini does not always return PNG,
                     // and mislabelling it would store e.g. JPEG bytes under a .png asset path.
                     String mimeType = inlineData.path("mimeType").asString("");
-                    return new GeneratedImage(Base64.getDecoder().decode(data.asString("")),
-                            mimeType.isBlank() ? "image/png" : mimeType);
+                    return new GeneratedImage(
+                            Base64.getDecoder().decode(data.asString("")), mimeType.isBlank() ? "image/png" : mimeType);
                 }
             }
         }
         // No image -> surface the block reason / any text the model returned instead.
         String blockReason = root.path("promptFeedback").path("blockReason").asString("");
-        String text = parts.isArray() && parts.size() > 0 ? parts.path(0).path("text").asString("") : "";
+        String text =
+                parts.isArray() && parts.size() > 0 ? parts.path(0).path("text").asString("") : "";
         throw new AiImageException("Gemini returned no image"
                 + (blockReason.isBlank() ? "" : " (blocked: " + blockReason + ")")
                 + (text.isBlank() ? "" : ": " + abbreviate(text)));
     }
 
     private AiImage toAiImage(byte[] imageBytes, String mimeType) {
-        AiImage.AiImageBuilder builder = AiImage.builder()
-                .bytes(imageBytes)
-                .mimeType(mimeType);
+        AiImage.AiImageBuilder builder = AiImage.builder().bytes(imageBytes).mimeType(mimeType);
         try {
             BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageBytes));
             if (img != null) {
@@ -193,20 +192,15 @@ public class GeminiImageModelImpl implements AiImageModel {
     }
 
     /** Raw image as returned by the model, with the mime type the model reported for it. */
-    private record GeneratedImage(byte[] bytes, String mimeType) {
-    }
+    private record GeneratedImage(byte[] bytes, String mimeType) {}
 
     // ---- Typed request DTOs (serialized to the Gemini generateContent body) ----
 
-    private record GenerateContentRequest(List<Content> contents, GenerationConfig generationConfig) {
-    }
+    private record GenerateContentRequest(List<Content> contents, GenerationConfig generationConfig) {}
 
-    private record Content(List<Part> parts) {
-    }
+    private record Content(List<Part> parts) {}
 
-    private record Part(String text) {
-    }
+    private record Part(String text) {}
 
-    private record GenerationConfig(List<String> responseModalities) {
-    }
+    private record GenerationConfig(List<String> responseModalities) {}
 }

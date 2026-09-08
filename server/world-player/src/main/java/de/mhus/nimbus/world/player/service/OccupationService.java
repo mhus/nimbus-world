@@ -1,8 +1,6 @@
 package de.mhus.nimbus.world.player.service;
 
-import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.generated.types.EntityModel;
-import de.mhus.nimbus.generated.types.EntityStatusUpdate;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
@@ -10,14 +8,12 @@ import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
 import de.mhus.nimbus.world.shared.world.WItemPosition;
 import de.mhus.nimbus.world.shared.world.WItemPositionService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Service for managing player overlay models (occupation and mounts).
@@ -83,7 +79,8 @@ public class OccupationService implements SessionClosedConsumer {
 
         // Capture the item's full data BEFORE removing it, so it can be recreated
         // faithfully (texture/scale/title/...) on release or disconnect.
-        ItemBlockRef occupiedRef = itemPositionService.findItem(worldId, itemId)
+        ItemBlockRef occupiedRef = itemPositionService
+                .findItem(worldId, itemId)
                 .map(WItemPosition::getPublicData)
                 .orElse(null);
 
@@ -124,7 +121,8 @@ public class OccupationService implements SessionClosedConsumer {
 
         var worldId = session.getWorldId();
         var modelOpt = entityModelService.findByModelId(worldId, overlayModelId);
-        if (modelOpt.isEmpty() || modelOpt.get().getPublicData() == null
+        if (modelOpt.isEmpty()
+                || modelOpt.get().getPublicData() == null
                 || modelOpt.get().getPublicData().getOverlayMovement() == null) {
             clientService.sendSystemNotification(session, "Overlay", "Model not found or not an overlay model.");
             return false;
@@ -169,8 +167,11 @@ public class OccupationService implements SessionClosedConsumer {
         // Broadcast: player no longer has overlay
         broadcastPlayerOverlayUpdate(session, null);
 
-        log.info("Player {} released occupation (model={}, item={})",
-                session.getEntityId(), occupiedModelId, occupiedItemId);
+        log.info(
+                "Player {} released occupation (model={}, item={})",
+                session.getEntityId(),
+                occupiedModelId,
+                occupiedItemId);
         return true;
     }
 
@@ -200,10 +201,8 @@ public class OccupationService implements SessionClosedConsumer {
         }
 
         // 2. Broadcast entity status update to all other nearby clients (remote rendering)
-        Map<String, Object> statusFields = Map.of(
-                "overlayModel", overlayModelId != null ? overlayModelId : "",
-                "overlayModelModifier", Map.of()
-        );
+        Map<String, Object> statusFields =
+                Map.of("overlayModel", overlayModelId != null ? overlayModelId : "", "overlayModelModifier", Map.of());
         entityStatusPublisher.publishStatusUpdate(worldId, entityId, statusFields, session.getSessionId());
     }
 
@@ -219,8 +218,11 @@ public class OccupationService implements SessionClosedConsumer {
         ref.setPosition(session.getLastPosition());
         try {
             itemPositionService.saveItemPosition(session.getWorldId(), ref);
-            log.info("Recreated occupied item {} at position {} for player {}",
-                    itemId, session.getLastPosition(), session.getEntityId());
+            log.info(
+                    "Recreated occupied item {} at position {} for player {}",
+                    itemId,
+                    session.getLastPosition(),
+                    session.getEntityId());
         } catch (Exception e) {
             log.error("Failed to recreate occupied item {} for player {}", itemId, session.getEntityId(), e);
         }

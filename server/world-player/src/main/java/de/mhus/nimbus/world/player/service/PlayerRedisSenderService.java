@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 @Service
 @Slf4j
@@ -35,8 +35,8 @@ public class PlayerRedisSenderService {
      * @param timestamp Client timestamp
      * @param params Action-specific parameters
      */
-    public void publishEntityInteraction(PlayerSession session, String entityId, String action,
-                                         Long timestamp, JsonNode params) {
+    public void publishEntityInteraction(
+            PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
         try {
             tools.jackson.databind.node.ObjectNode message = objectMapper.createObjectNode();
             message.put("entityId", entityId);
@@ -58,8 +58,7 @@ public class PlayerRedisSenderService {
             log.trace("Published entity interaction to Redis: entityId={}, action={}", entityId, action);
 
         } catch (Exception e) {
-            log.error("Failed to publish entity interaction to Redis: entityId={}, action={}",
-                    entityId, action, e);
+            log.error("Failed to publish entity interaction to Redis: entityId={}, action={}", entityId, action, e);
         }
     }
 }

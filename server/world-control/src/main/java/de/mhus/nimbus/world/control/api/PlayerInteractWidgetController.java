@@ -15,13 +15,12 @@ import de.mhus.nimbus.world.shared.world.WLeaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for the player-interact widget.
@@ -45,8 +44,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
             "sad", "\uD83D\uDE22",
             "laugh", "\uD83D\uDE02",
             "heart", "❤\uFE0F",
-            "question", "❓"
-    );
+            "question", "❓");
 
     private final WLeaseService leaseService;
     private final RCharacterService characterService;
@@ -63,13 +61,14 @@ public class PlayerInteractWidgetController extends BaseEditorController {
             boolean hasTeam,
             String myTeamId,
             List<TeamInviteInfo> teamInvitations,
-            List<TradeOfferInfo> tradeOffers
-    ) {}
+            List<TradeOfferInfo> tradeOffers) {}
 
     public record TeamInviteInfo(String teamId, String title) {}
+
     public record TradeOfferInfo(String leaseId, String fromName) {}
 
     public record EmojiRequest(String emoji) {}
+
     public record TradeOfferRequest() {}
 
     // In-memory cooldown tracking (per-pod, sufficient for spam prevention)
@@ -80,9 +79,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     @GetMapping
     @Operation(summary = "Get player interact widget data")
-    public ResponseEntity<?> getWidgetData(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> getWidgetData(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -134,10 +131,14 @@ public class PlayerInteractWidgetController extends BaseEditorController {
                 .toList();
 
         return ResponseEntity.ok(new InteractWidgetData(
-                targetEntityId, targetName, targetPortrait,
-                isBlocked, hasTeam, myTeamId,
-                teamInvitations, tradeOffers
-        ));
+                targetEntityId,
+                targetName,
+                targetPortrait,
+                isBlocked,
+                hasTeam,
+                myTeamId,
+                teamInvitations,
+                tradeOffers));
     }
 
     /**
@@ -146,9 +147,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
     @PostMapping("/emoji")
     @Operation(summary = "Send emoji to target player")
     public ResponseEntity<?> sendEmoji(
-            HttpServletRequest request,
-            @RequestParam String progressId,
-            @RequestBody EmojiRequest body) {
+            HttpServletRequest request, @RequestParam String progressId, @RequestBody EmojiRequest body) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -179,13 +178,14 @@ public class PlayerInteractWidgetController extends BaseEditorController {
 
         // Send notification to target player with emoji symbol + interact action
         sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId,
+                SessionCommandTarget.PLAYER,
+                targetEntityId,
+                1,
+                characterId,
                 I18nUtil.builder()
                         .en(emojiSymbol)
                         .put("action", "interact:" + playerName)
-                        .build()
-        );
+                        .build());
 
         log.debug("Player {} sent emoji '{}' ({}) to {}", playerName, body.emoji(), emojiSymbol, targetEntityId);
         return ResponseEntity.ok(Map.of("sent", true));
@@ -196,9 +196,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     @PostMapping("/block")
     @Operation(summary = "Block a player")
-    public ResponseEntity<?> blockPlayer(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> blockPlayer(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -226,9 +224,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     @PostMapping("/unblock")
     @Operation(summary = "Unblock a player")
-    public ResponseEntity<?> unblockPlayer(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> unblockPlayer(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -256,9 +252,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     @PostMapping("/invite-team")
     @Operation(summary = "Invite target player to team")
-    public ResponseEntity<?> inviteToTeam(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> inviteToTeam(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -298,14 +292,15 @@ public class PlayerInteractWidgetController extends BaseEditorController {
 
         // Send notification to target player — opens team panel on click
         sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId,
+                SessionCommandTarget.PLAYER,
+                targetEntityId,
+                1,
+                characterId,
                 I18nUtil.builder()
                         .en("Team invitation: " + team.getTitle())
                         .de("Team Einladung: " + team.getTitle())
                         .put("action", "modal:team-panel")
-                        .build()
-        );
+                        .build());
 
         log.info("Player {} invited {} to team {}", playerName, targetEntityId, team.getTeamId());
         return ResponseEntity.ok(Map.of("invited", true));
@@ -316,9 +311,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     @PostMapping("/offer-trade")
     @Operation(summary = "Offer trade to target player")
-    public ResponseEntity<?> offerTrade(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> offerTrade(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -350,21 +343,21 @@ public class PlayerInteractWidgetController extends BaseEditorController {
                 worldId,
                 targetEntityId, // target is the playerId on the lease
                 "trade-offer",
-                playerName,     // resourceId = who sent the offer
+                playerName, // resourceId = who sent the offer
                 null,
-                leaseData
-        );
+                leaseData);
 
         // Notify target player with interact action
         sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId,
+                SessionCommandTarget.PLAYER,
+                targetEntityId,
+                1,
+                characterId,
                 I18nUtil.builder()
                         .en("Trade offer received")
                         .de("Tauschangebot erhalten")
                         .put("action", "interact:" + playerName)
-                        .build()
-        );
+                        .build());
 
         log.info("Player {} offered trade to {}", playerName, targetEntityId);
         return ResponseEntity.ok(Map.of("offered", true));
@@ -376,9 +369,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
     @PostMapping("/accept-trade")
     @Operation(summary = "Accept a trade offer")
     public ResponseEntity<?> acceptTrade(
-            HttpServletRequest request,
-            @RequestParam String progressId,
-            @RequestParam String offerId) {
+            HttpServletRequest request, @RequestParam String progressId, @RequestParam String offerId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -420,18 +411,17 @@ public class PlayerInteractWidgetController extends BaseEditorController {
 
         // Open exchange widget for both players
         sessionCommandService.sendCommand(
-                SessionCommandTarget.PLAYER, fromEntityId,
-                "openComponent", List.of("exchange", leaseA.getLeaseId())
-        );
+                SessionCommandTarget.PLAYER, fromEntityId, "openComponent", List.of("exchange", leaseA.getLeaseId()));
         sessionCommandService.sendCommand(
-                SessionCommandTarget.PLAYER, playerName,
-                "openComponent", List.of("exchange", leaseB.getLeaseId())
-        );
+                SessionCommandTarget.PLAYER, playerName, "openComponent", List.of("exchange", leaseB.getLeaseId()));
 
-        log.info("Player {} accepted trade from {} — exchange leases: {}, {}",
-                playerName, fromEntityId, leaseA.getLeaseId(), leaseB.getLeaseId());
-        return ResponseEntity.ok(Map.of("accepted", true,
-                "exchangeLeaseId", leaseB.getLeaseId()));
+        log.info(
+                "Player {} accepted trade from {} — exchange leases: {}, {}",
+                playerName,
+                fromEntityId,
+                leaseA.getLeaseId(),
+                leaseB.getLeaseId());
+        return ResponseEntity.ok(Map.of("accepted", true, "exchangeLeaseId", leaseB.getLeaseId()));
     }
 
     /**
@@ -440,9 +430,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
     @PostMapping("/decline-trade")
     @Operation(summary = "Decline a trade offer")
     public ResponseEntity<?> declineTrade(
-            HttpServletRequest request,
-            @RequestParam String progressId,
-            @RequestParam String offerId) {
+            HttpServletRequest request, @RequestParam String progressId, @RequestParam String offerId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -461,9 +449,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         // Notify sender
         if (fromEntityId != null) {
             sessionCommandService.sendNotification(
-                    SessionCommandTarget.PLAYER, fromEntityId,
-                    1, characterId, "Trade offer declined"
-            );
+                    SessionCommandTarget.PLAYER, fromEntityId, 1, characterId, "Trade offer declined");
         }
 
         log.info("Player {} declined trade from {}", playerName, fromEntityId);

@@ -6,17 +6,16 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * B1 — catalog expansion. Takes the (usually small) parsed {@link RealityPlan} and expands it, in
@@ -103,9 +102,12 @@ public class RealityCatalogExpander {
         RealityPlanResult result = parser.parseJson(RealityAiSupport.extractJson(response));
         if (result.isSuccessful()) {
             RealityPlan expanded = result.getPlan();
-            log.info("Catalog expanded: items {} -> {}, classes {} -> {}",
-                    size(plan.getItems()), size(expanded.getItems()),
-                    size(plan.getItemClasses()), size(expanded.getItemClasses()));
+            log.info(
+                    "Catalog expanded: items {} -> {}, classes {} -> {}",
+                    size(plan.getItems()),
+                    size(expanded.getItems()),
+                    size(plan.getItemClasses()),
+                    size(expanded.getItemClasses()));
         }
         return result;
     }
@@ -120,7 +122,8 @@ public class RealityCatalogExpander {
 
     /** Build the per-category coverage directive from controls (or a preset-default hint). */
     String buildCoverageDirective(RealityPlan plan) {
-        RealityPlan.GenerationControls controls = plan.getMeta() != null ? plan.getMeta().getControls() : null;
+        RealityPlan.GenerationControls controls =
+                plan.getMeta() != null ? plan.getMeta().getControls() : null;
         StringBuilder sb = new StringBuilder();
         // Target total: explicit targetItemCount wins, else fall back to maxItems as an upper bound.
         Integer target = null;
@@ -131,16 +134,19 @@ public class RealityCatalogExpander {
                 target = controls.getMaxItems();
             }
         }
-        boolean hasCoverage = controls != null && controls.getCategoryCoverage() != null
+        boolean hasCoverage = controls != null
+                && controls.getCategoryCoverage() != null
                 && !controls.getCategoryCoverage().isEmpty();
         if (target != null) {
-            sb.append("Aim for about ").append(target)
+            sb.append("Aim for about ")
+                    .append(target)
                     .append(" items in total — this is a HARD CAP, do not exceed it.\n");
         }
         if (hasCoverage) {
             sb.append("Per-category targets:\n");
-            controls.getCategoryCoverage().forEach((cat, n) ->
-                    sb.append("- ").append(cat).append(": ~").append(n).append('\n'));
+            controls.getCategoryCoverage()
+                    .forEach((cat, n) ->
+                            sb.append("- ").append(cat).append(": ~").append(n).append('\n'));
         }
         if (target == null && !hasCoverage) {
             sb.append("No explicit per-category targets given — use the default preset ranges below.");
@@ -162,9 +168,9 @@ public class RealityCatalogExpander {
 
     private Optional<AiChat> createChatModel(String modelName) {
         AiChatOptions options = AiChatOptions.builder()
-                .temperature(0.3)     // a bit of variety for creative catalog filling
-                .maxTokens(0)         // model maximum for a large plan
-                .timeoutSeconds(300)  // full-catalog output is large and slow
+                .temperature(0.3) // a bit of variety for creative catalog filling
+                .maxTokens(0) // model maximum for a large plan
+                .timeoutSeconds(300) // full-catalog output is large and slow
                 .build();
         return RealityAiSupport.createChat(aiModelService, modelName, options);
     }

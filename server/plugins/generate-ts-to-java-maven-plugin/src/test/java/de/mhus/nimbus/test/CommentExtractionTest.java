@@ -1,7 +1,8 @@
 package de.mhus.nimbus.test;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Test für das Extrahieren von Kommentaren und javaType-Hints
@@ -61,7 +62,7 @@ public class CommentExtractionTest {
     // Simuliere die TsParser Methode
     private String[] extractCommentAndJavaTypeHint(String originalBody, String propertyName) {
         if (originalBody == null || propertyName == null) {
-            return new String[]{null, null};
+            return new String[] {null, null};
         }
 
         // Search the original body for a line containing this property name and a comment
@@ -76,11 +77,11 @@ public class CommentExtractionTest {
                 // Extract javaType hint from this comment
                 String javaTypeHint = parseJavaTypeHintFromLine(line);
 
-                return new String[]{fullComment, javaTypeHint};
+                return new String[] {fullComment, javaTypeHint};
             }
         }
 
-        return new String[]{null, null};
+        return new String[] {null, null};
     }
 
     private String parseJavaTypeHintFromLine(String line) {

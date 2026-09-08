@@ -1,15 +1,13 @@
 package de.mhus.nimbus.shared.storage;
 
+import java.util.Date;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
-import java.util.List;
 
 /**
  * Scheduled task for cleaning up soft-deleted storage data.
@@ -22,11 +20,7 @@ import java.util.List;
  * safely before data is permanently removed.
  */
 @Component
-@ConditionalOnProperty(
-        value = "nimbus.services.storage-cleanup",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.storage-cleanup", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class StorageCleanupScheduler {
@@ -46,8 +40,7 @@ public class StorageCleanupScheduler {
 
         try {
             Date now = new Date();
-            List<StorageDelete> toDelete = storageDeleteRepository
-                    .findByDeletedAtLessThanEqual(now);
+            List<StorageDelete> toDelete = storageDeleteRepository.findByDeletedAtLessThanEqual(now);
 
             if (toDelete.isEmpty()) {
                 log.debug("No storage deletions scheduled");
@@ -78,8 +71,11 @@ public class StorageCleanupScheduler {
                 }
             }
 
-            log.info("Storage cleanup completed: deleted={} errors={} total={}",
-                    deletedCount, errorCount, toDelete.size());
+            log.info(
+                    "Storage cleanup completed: deleted={} errors={} total={}",
+                    deletedCount,
+                    errorCount,
+                    toDelete.size());
 
         } catch (Exception e) {
             log.error("Error during storage cleanup task", e);

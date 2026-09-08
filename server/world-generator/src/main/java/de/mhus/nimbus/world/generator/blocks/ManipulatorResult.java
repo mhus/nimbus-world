@@ -38,10 +38,7 @@ public class ManipulatorResult {
      * @return successful result
      */
     public static ManipulatorResult success(String message) {
-        return ManipulatorResult.builder()
-                .success(true)
-                .message(message)
-                .build();
+        return ManipulatorResult.builder().success(true).message(message).build();
     }
 
     /**
@@ -66,9 +63,6 @@ public class ManipulatorResult {
      * @return error result
      */
     public static ManipulatorResult error(String message) {
-        return ManipulatorResult.builder()
-                .success(false)
-                .message(message)
-                .build();
+        return ManipulatorResult.builder().success(false).message(message).build();
     }
 }

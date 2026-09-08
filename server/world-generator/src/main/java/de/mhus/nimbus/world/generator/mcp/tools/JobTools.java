@@ -1,22 +1,21 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpJobException;
 import de.mhus.nimbus.world.generator.mcp.McpJobExecutor;
 import de.mhus.nimbus.world.generator.mcp.McpJobTimeoutException;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -26,19 +25,24 @@ public class JobTools implements McpToolBean {
     private final McpJobExecutor mcpJobExecutor;
     private final WJobService jobService;
 
-    @Tool(name = "execute_job", description = "Execute a job synchronously. Blocks until the job completes, fails, or times out. Returns job result or error.")
+    @Tool(
+            name = "execute_job",
+            description =
+                    "Execute a job synchronously. Blocks until the job completes, fails, or times out. Returns job result or error.")
     public Map<String, Object> executeJob(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Executor name to use") String executor,
             @ToolParam(description = "Optional layer name", required = false) String layer,
-            @ToolParam(description = "Optional job type (e.g. workflow name for workflow-job-executor)", required = false) String type,
+            @ToolParam(
+                            description = "Optional job type (e.g. workflow name for workflow-job-executor)",
+                            required = false)
+                    String type,
             @ToolParam(description = "Executor-specific parameters", required = false) Map<String, String> parameters,
-            @ToolParam(description = "Timeout in seconds (max 600, default 300)", required = false) Integer timeoutSeconds) {
+            @ToolParam(description = "Timeout in seconds (max 600, default 300)", required = false)
+                    Integer timeoutSeconds) {
         log.debug("MCP: Execute job: worldId={}, executor={}", worldId, executor);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         long timeoutMs = 300000; // Default: 5 minutes
         if (timeoutSeconds != null) {
@@ -97,8 +101,7 @@ public class JobTools implements McpToolBean {
     }
 
     @Tool(name = "get_job_status", description = "Get the status of a previously executed job by its job ID")
-    public Map<String, Object> getJobStatus(
-            @ToolParam(description = "Job ID") String jobId) {
+    public Map<String, Object> getJobStatus(@ToolParam(description = "Job ID") String jobId) {
         log.debug("MCP: Get job status: jobId={}", jobId);
 
         Optional<WJob> jobOpt = jobService.getJob(jobId);

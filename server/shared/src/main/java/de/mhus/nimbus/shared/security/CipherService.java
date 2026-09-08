@@ -1,17 +1,16 @@
 package de.mhus.nimbus.shared.security;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Optional;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for encrypting and decrypting text using cryptographic keys from KeyService.
@@ -35,12 +34,12 @@ public class CipherService {
      * Default algorithm used for encryption with symmetric keys.
      */
     private static final String DEFAULT_CIPHER_ALGORITHM = "AES/GCM/NoPadding";
-    
+
     /**
      * GCM tag length in bits (128 bits = 16 bytes is standard).
      */
     private static final int GCM_TAG_LENGTH = 128;
-    
+
     /**
      * IV length in bytes (12 bytes is recommended for GCM).
      */
@@ -143,7 +142,8 @@ public class CipherService {
     private CipherParts parseCipher(String cipherString) {
         String[] parts = cipherString.split(";", 4);
         if (parts.length != 4) {
-            throw new CipherException("Invalid cipher format. Expected 'keyIdBase64:algorithm:encryptedDataBase64:ivBase64'");
+            throw new CipherException(
+                    "Invalid cipher format. Expected 'keyIdBase64:algorithm:encryptedDataBase64:ivBase64'");
         }
         // Decode the Base64-encoded keyId
         String keyIdBase64 = parts[0];

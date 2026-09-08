@@ -2,16 +2,15 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.ToIntFunction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.ToIntFunction;
 
 @Data
 @SuperBuilder
@@ -53,8 +52,8 @@ public class Road extends Flow {
      * - No monotonic constraint — roads can go uphill and downhill
      */
     @Override
-    public List<Integer> calculateRouteLevels(List<HexVector2> route,
-            ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
+    public List<Integer> calculateRouteLevels(
+            List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
         int minLevel = seaLevel + 1;
         List<Integer> levels = new ArrayList<>(route.size());
 
@@ -80,12 +79,16 @@ public class Road extends Flow {
      * Road level must never be below 1 (minimum for roads/paths).
      */
     @Override
-    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
-                                      Integer gridBLandLevel, Integer gridBLandOffset,
-                                      Integer previousLevel, Integer fixedLevel) {
+    public int calculateSegmentLevel(
+            Integer gridALandLevel,
+            Integer gridALandOffset,
+            Integer gridBLandLevel,
+            Integer gridBLandOffset,
+            Integer previousLevel,
+            Integer fixedLevel) {
         // Use parent calculation
-        int level = super.calculateSegmentLevel(gridALandLevel, gridALandOffset,
-            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+        int level = super.calculateSegmentLevel(
+                gridALandLevel, gridALandOffset, gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
 
         // Road level must never go below 1 (absolute minimum)
         level = Math.max(1, level);

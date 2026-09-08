@@ -2,27 +2,25 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.build.HexGridRoadConfigurator;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Composes flow features (roads, rivers, walls) by calculating routes
@@ -54,8 +52,7 @@ public class FlowComposer {
      * @param placementResult Result from BiomeComposer with placed biomes
      * @return Composition result with statistics
      */
-    public FlowCompositionResult composeFlows(HexComposition prepared,
-                                              BiomePlacementResult placementResult) {
+    public FlowCompositionResult composeFlows(HexComposition prepared, BiomePlacementResult placementResult) {
         log.debug("Starting flow composition");
 
         List<String> errors = new ArrayList<>();
@@ -99,29 +96,33 @@ public class FlowComposer {
             // in HexCompositeBuilder after populateCentralRegistry(), so that
             // HexGridRoadConfigurator works with the complete central registry
 
-            log.debug("Flow composition complete: composed={}/{}, segments={}, failed={}",
-                composedFlows, totalFlows, totalSegments, failedFlows);
+            log.debug(
+                    "Flow composition complete: composed={}/{}, segments={}, failed={}",
+                    composedFlows,
+                    totalFlows,
+                    totalSegments,
+                    failedFlows);
 
             return FlowCompositionResult.builder()
-                .totalFlows(totalFlows)
-                .composedFlows(composedFlows)
-                .failedFlows(failedFlows)
-                .totalSegments(totalSegments)
-                .success(failedFlows == 0)
-                .errors(errors)
-                .build();
+                    .totalFlows(totalFlows)
+                    .composedFlows(composedFlows)
+                    .failedFlows(failedFlows)
+                    .totalSegments(totalSegments)
+                    .success(failedFlows == 0)
+                    .errors(errors)
+                    .build();
 
         } catch (Exception e) {
             log.error("Flow composition failed", e);
             return FlowCompositionResult.builder()
-                .totalFlows(totalFlows)
-                .composedFlows(composedFlows)
-                .failedFlows(failedFlows)
-                .totalSegments(totalSegments)
-                .success(false)
-                .errorMessage(e.getMessage())
-                .errors(errors)
-                .build();
+                    .totalFlows(totalFlows)
+                    .composedFlows(composedFlows)
+                    .failedFlows(failedFlows)
+                    .totalSegments(totalSegments)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .errors(errors)
+                    .build();
         }
     }
 
@@ -136,8 +137,7 @@ public class FlowComposer {
      * @param placementResult The placement result with all PlacedBiomes
      * @return Number of flows processed
      */
-    public int convertAllFlowSegmentsToConfigParts(HexComposition composition,
-                                                    BiomePlacementResult placementResult) {
+    public int convertAllFlowSegmentsToConfigParts(HexComposition composition, BiomePlacementResult placementResult) {
         int processedFlows = 0;
 
         if (composition.getFeatures() == null) {
@@ -171,9 +171,8 @@ public class FlowComposer {
     /**
      * Composes a single flow feature
      */
-    private int composeFlow(Flow flow, Map<String, Biome> gridMap,
-                            HexComposition prepared,
-                            BiomePlacementResult placementResult) {
+    private int composeFlow(
+            Flow flow, Map<String, Biome> gridMap, HexComposition prepared, BiomePlacementResult placementResult) {
         log.debug("Composing flow: {} (type: {})", flow.getName(), flow.getType());
 
         // SideWalls are handled differently - they don't route from A to B
@@ -215,8 +214,7 @@ public class FlowComposer {
     /**
      * Resolves start/end points from feature IDs to coordinates
      */
-    private boolean resolveFlowEndpoints(Flow flow, HexComposition prepared,
-                                         BiomePlacementResult placementResult) {
+    private boolean resolveFlowEndpoints(Flow flow, HexComposition prepared, BiomePlacementResult placementResult) {
         // Find start point
         if (flow.getStartPointId() != null) {
             // First try to find a Point
@@ -224,13 +222,15 @@ public class FlowComposer {
             if (startPoint != null) {
                 flow.setStartPoint(startPoint.getPlacedCoordinate());
                 flow.setStartPointFeature(startPoint);
-                log.debug("Flow '{}' starts at Point '{}' with lx={}, lz={}",
-                    flow.getName(), startPoint.getName(),
-                    startPoint.getPlacedLx(), startPoint.getPlacedLz());
+                log.debug(
+                        "Flow '{}' starts at Point '{}' with lx={}, lz={}",
+                        flow.getName(),
+                        startPoint.getName(),
+                        startPoint.getPlacedLx(),
+                        startPoint.getPlacedLz());
             } else {
                 // Fall back to Biome
-                HexVector2 startCoord = findFeatureCoordinate(flow.getStartPointId(),
-                    placementResult, prepared);
+                HexVector2 startCoord = findFeatureCoordinate(flow.getStartPointId(), placementResult, prepared);
                 if (startCoord == null) {
                     log.warn("Could not find start point: {}", flow.getStartPointId());
                     return false;
@@ -248,13 +248,15 @@ public class FlowComposer {
                 if (endPoint != null) {
                     flow.setEndPoint(endPoint.getPlacedCoordinate());
                     flow.setEndPointFeature(endPoint);
-                    log.debug("Flow '{}' ends at Point '{}' with lx={}, lz={}",
-                        flow.getName(), endPoint.getName(),
-                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
+                    log.debug(
+                            "Flow '{}' ends at Point '{}' with lx={}, lz={}",
+                            flow.getName(),
+                            endPoint.getName(),
+                            endPoint.getPlacedLx(),
+                            endPoint.getPlacedLz());
                 } else {
                     // Fall back to Biome
-                    HexVector2 endCoord = findFeatureCoordinate(road.getEndPointId(),
-                        placementResult, prepared);
+                    HexVector2 endCoord = findFeatureCoordinate(road.getEndPointId(), placementResult, prepared);
                     if (endCoord == null) {
                         log.warn("Could not find end point: {}", road.getEndPointId());
                         return false;
@@ -270,13 +272,15 @@ public class FlowComposer {
                 if (endPoint != null) {
                     flow.setEndPoint(endPoint.getPlacedCoordinate());
                     flow.setEndPointFeature(endPoint);
-                    log.debug("Flow '{}' ends at Point '{}' with lx={}, lz={}",
-                        flow.getName(), endPoint.getName(),
-                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
+                    log.debug(
+                            "Flow '{}' ends at Point '{}' with lx={}, lz={}",
+                            flow.getName(),
+                            endPoint.getName(),
+                            endPoint.getPlacedLx(),
+                            endPoint.getPlacedLz());
                 } else {
                     // Fall back to Biome
-                    HexVector2 endCoord = findFeatureCoordinate(wall.getEndPointId(),
-                        placementResult, prepared);
+                    HexVector2 endCoord = findFeatureCoordinate(wall.getEndPointId(), placementResult, prepared);
                     if (endCoord == null) {
                         log.warn("Could not find end point: {}", wall.getEndPointId());
                         return false;
@@ -292,13 +296,15 @@ public class FlowComposer {
                 if (endPoint != null) {
                     flow.setEndPoint(endPoint.getPlacedCoordinate());
                     flow.setEndPointFeature(endPoint);
-                    log.debug("Flow '{}' merges at Point '{}' with lx={}, lz={}",
-                        flow.getName(), endPoint.getName(),
-                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
+                    log.debug(
+                            "Flow '{}' merges at Point '{}' with lx={}, lz={}",
+                            flow.getName(),
+                            endPoint.getName(),
+                            endPoint.getPlacedLx(),
+                            endPoint.getPlacedLz());
                 } else {
                     // Fall back to Biome
-                    HexVector2 endCoord = findFeatureCoordinate(river.getEndPointId(),
-                        placementResult, prepared);
+                    HexVector2 endCoord = findFeatureCoordinate(river.getEndPointId(), placementResult, prepared);
                     if (endCoord == null) {
                         log.warn("Could not find end point: {}", river.getEndPointId());
                         return false;
@@ -329,8 +335,12 @@ public class FlowComposer {
                 HexVector2 waypointCoord = findFeatureCoordinate(waypointId, placementResult, prepared);
                 if (waypointCoord != null) {
                     waypointCoords.add(waypointCoord);
-                    log.debug("Flow '{}' waypoint '{}' resolved to ({},{})",
-                        flow.getName(), waypointId, waypointCoord.getQ(), waypointCoord.getR());
+                    log.debug(
+                            "Flow '{}' waypoint '{}' resolved to ({},{})",
+                            flow.getName(),
+                            waypointId,
+                            waypointCoord.getQ(),
+                            waypointCoord.getR());
                 } else {
                     log.warn("Flow '{}': waypoint '{}' not found, skipping", flow.getName(), waypointId);
                 }
@@ -387,9 +397,8 @@ public class FlowComposer {
     /**
      * Finds a coordinate for a feature by its ID or name
      */
-    private HexVector2 findFeatureCoordinate(String featureId,
-                                             BiomePlacementResult placementResult,
-                                             HexComposition prepared) {
+    private HexVector2 findFeatureCoordinate(
+            String featureId, BiomePlacementResult placementResult, HexComposition prepared) {
         // First, try to find a Point (Points have priority)
         Point point = findPoint(featureId, prepared);
         if (point != null) {
@@ -435,8 +444,12 @@ public class FlowComposer {
 
         // Check for closed loop
         if (flow.isClosedLoop()) {
-            log.debug("Planning closed loop route for flow '{}' around point {},{} with radius {}",
-                flow.getName(), start.getQ(), start.getR(), flow.getEffectiveSizeFrom());
+            log.debug(
+                    "Planning closed loop route for flow '{}' around point {},{} with radius {}",
+                    flow.getName(),
+                    start.getQ(),
+                    start.getR(),
+                    flow.getEffectiveSizeFrom());
             return planClosedLoopRoute(flow, start);
         }
 
@@ -461,12 +474,18 @@ public class FlowComposer {
         for (HexVector2 target : targets) {
             List<HexVector2> segment = findPath(flow, current, target, gridMap, routeRandom);
             if (segment == null || segment.isEmpty()) {
-                log.warn("Flow '{}': no path from ({},{}) to ({},{})",
-                    flow.getName(), current.getQ(), current.getR(), target.getQ(), target.getR());
+                log.warn(
+                        "Flow '{}': no path from ({},{}) to ({},{})",
+                        flow.getName(),
+                        current.getQ(),
+                        current.getR(),
+                        target.getQ(),
+                        target.getR());
                 break;
             }
             // Avoid duplicate coordinate at segment boundary
-            if (!route.isEmpty() && !segment.isEmpty()
+            if (!route.isEmpty()
+                    && !segment.isEmpty()
                     && route.get(route.size() - 1).getQ() == segment.get(0).getQ()
                     && route.get(route.size() - 1).getR() == segment.get(0).getR()) {
                 segment = segment.subList(1, segment.size());
@@ -534,12 +553,7 @@ public class FlowComposer {
 
         // Walk directions for a ring: after starting at WEST, walk these edges
         EDGE[] walkDirections = {
-            EDGE.NORTH_EAST,
-            EDGE.EAST,
-            EDGE.SOUTH_EAST,
-            EDGE.SOUTH_WEST,
-            EDGE.WEST,
-            EDGE.NORTH_WEST
+            EDGE.NORTH_EAST, EDGE.EAST, EDGE.SOUTH_EAST, EDGE.SOUTH_WEST, EDGE.WEST, EDGE.NORTH_WEST
         };
 
         // Start at position 'radius' steps WEST from center
@@ -564,8 +578,8 @@ public class FlowComposer {
      * Uses polymorphic flow.selectNextStep() for type-specific routing.
      * Rivers prefer downhill with fallback; roads use greedy closest-to-goal.
      */
-    private List<HexVector2> findPath(Flow flow, HexVector2 start, HexVector2 goal,
-                                      Map<String, Biome> gridMap, Random random) {
+    private List<HexVector2> findPath(
+            Flow flow, HexVector2 start, HexVector2 goal, Map<String, Biome> gridMap, Random random) {
         List<HexVector2> path = new ArrayList<>();
         path.add(start);
 
@@ -577,8 +591,8 @@ public class FlowComposer {
         // Get deviation tendencies
         DeviationTendency tendLeft = flow.getTendLeft();
         DeviationTendency tendRight = flow.getTendRight();
-        boolean hasDeviation = (tendLeft != null && tendLeft != DeviationTendency.NONE) ||
-                               (tendRight != null && tendRight != DeviationTendency.NONE);
+        boolean hasDeviation = (tendLeft != null && tendLeft != DeviationTendency.NONE)
+                || (tendRight != null && tendRight != DeviationTendency.NONE);
 
         ToIntFunction<HexVector2> terrainLevelAt = coord -> getTerrainLevel(coord, gridMap);
         Predicate<HexVector2> isLowPriorityBiome = coord -> isLowPriorityBiome(coord, gridMap);
@@ -589,8 +603,8 @@ public class FlowComposer {
             List<HexVector2> neighbors = getHexNeighbors(current);
 
             // If goal is a direct neighbor, go straight to it (skip routing/deviation)
-            boolean goalIsNeighbor = neighbors.stream()
-                    .anyMatch(n -> n.getQ() == goal.getQ() && n.getR() == goal.getR());
+            boolean goalIsNeighbor =
+                    neighbors.stream().anyMatch(n -> n.getQ() == goal.getQ() && n.getR() == goal.getR());
             if (goalIsNeighbor) {
                 path.add(goal);
                 break;
@@ -600,15 +614,26 @@ public class FlowComposer {
             neighbors.removeIf(n -> visited.contains(TypeUtil.toStringHexCoord(n)));
 
             if (neighbors.isEmpty()) {
-                log.warn("Flow '{}' stuck at ({},{}) — all neighbors visited",
-                    flow.getName(), current.getQ(), current.getR());
+                log.warn(
+                        "Flow '{}' stuck at ({},{}) — all neighbors visited",
+                        flow.getName(),
+                        current.getQ(),
+                        current.getR());
                 break;
             }
 
             HexVector2 next;
             if (hasDeviation) {
-                next = getNextStepWithDeviation(current, goal, tendLeft, tendRight,
-                    flow, neighbors, terrainLevelAt, isLowPriorityBiome, random);
+                next = getNextStepWithDeviation(
+                        current,
+                        goal,
+                        tendLeft,
+                        tendRight,
+                        flow,
+                        neighbors,
+                        terrainLevelAt,
+                        isLowPriorityBiome,
+                        random);
             } else {
                 next = flow.selectNextStep(current, goal, neighbors, terrainLevelAt, isLowPriorityBiome);
             }
@@ -636,14 +661,16 @@ public class FlowComposer {
      * Uses polymorphic flow.selectNextStep() for type-specific neighbor selection.
      * Randomly deviates left or right based on tendLeft/tendRight probabilities.
      */
-    private HexVector2 getNextStepWithDeviation(HexVector2 current, HexVector2 goal,
-                                                DeviationTendency tendLeft,
-                                                DeviationTendency tendRight,
-                                                Flow flow,
-                                                List<HexVector2> neighbors,
-                                                ToIntFunction<HexVector2> terrainLevelAt,
-                                                Predicate<HexVector2> isLowPriorityBiome,
-                                                Random random) {
+    private HexVector2 getNextStepWithDeviation(
+            HexVector2 current,
+            HexVector2 goal,
+            DeviationTendency tendLeft,
+            DeviationTendency tendRight,
+            Flow flow,
+            List<HexVector2> neighbors,
+            ToIntFunction<HexVector2> terrainLevelAt,
+            Predicate<HexVector2> isLowPriorityBiome,
+            Random random) {
         // Calculate best direction towards goal via polymorphic dispatch
         HexVector2 bestStep = flow.selectNextStep(current, goal, neighbors, terrainLevelAt, isLowPriorityBiome);
         if (bestStep == null) return null;
@@ -676,8 +703,8 @@ public class FlowComposer {
         HexVector2 deviatedStep = findDeviatedNeighbor(current, bestStep, neighbors, deviateLeft);
 
         // Validate deviated step is in the allowed neighbors list (which has 'previous' filtered out)
-        boolean isValidNeighbor = neighbors.stream()
-                .anyMatch(n -> n.getQ() == deviatedStep.getQ() && n.getR() == deviatedStep.getR());
+        boolean isValidNeighbor =
+                neighbors.stream().anyMatch(n -> n.getQ() == deviatedStep.getQ() && n.getR() == deviatedStep.getR());
         if (!isValidNeighbor) {
             return bestStep;
         }
@@ -702,16 +729,11 @@ public class FlowComposer {
      * Finds a neighbor that deviates left or right from the best step.
      * Uses odd-r offset coordinates via HexMathUtil.
      */
-    private HexVector2 findDeviatedNeighbor(HexVector2 current, HexVector2 bestStep,
-                                            List<HexVector2> neighbors, boolean deviateLeft) {
+    private HexVector2 findDeviatedNeighbor(
+            HexVector2 current, HexVector2 bestStep, List<HexVector2> neighbors, boolean deviateLeft) {
         // EDGE ordering for clockwise rotation
         EDGE[] clockwiseOrder = {
-            EDGE.NORTH_EAST,
-            EDGE.EAST,
-            EDGE.SOUTH_EAST,
-            EDGE.SOUTH_WEST,
-            EDGE.WEST,
-            EDGE.NORTH_WEST
+            EDGE.NORTH_EAST, EDGE.EAST, EDGE.SOUTH_EAST, EDGE.SOUTH_WEST, EDGE.WEST, EDGE.NORTH_WEST
         };
 
         // Find which EDGE direction corresponds to bestStep
@@ -778,8 +800,8 @@ public class FlowComposer {
         if (biome == null) return true;
         if (biome.getType() == null) return false;
         return biome.getType() == BiomeType.OCEAN
-            || biome.getType() == BiomeType.COAST
-            || biome.getType() == BiomeType.ISLAND;
+                || biome.getType() == BiomeType.COAST
+                || biome.getType() == BiomeType.ISLAND;
     }
 
     private int getTerrainLevel(HexVector2 coord, Map<String, Biome> gridMap) {
@@ -795,22 +817,25 @@ public class FlowComposer {
             try {
                 return Integer.parseInt(biome.getParameters().get("g_asl"));
             } catch (NumberFormatException e) {
-                log.warn("Invalid landLevel for biome at {},{}: {}",
-                    coord.getQ(), coord.getR(), biome.getParameters().get("g_asl"));
+                log.warn(
+                        "Invalid landLevel for biome at {},{}: {}",
+                        coord.getQ(),
+                        coord.getR(),
+                        biome.getParameters().get("g_asl"));
             }
         }
 
         // Default landLevel based on biome type
         if (biome.getType() != null) {
             return switch (biome.getType()) {
-                case MOUNTAINS -> 120;  // Default mountain level
+                case MOUNTAINS -> 120; // Default mountain level
                 case PLAINS, FOREST -> 80;
                 case DESERT -> 75;
                 case SWAMP -> 60;
                 case COAST -> 55;
                 case ISLAND -> 70;
                 case OCEAN -> 45;
-                default -> 70;  // Default fallback
+                default -> 70; // Default fallback
             };
         }
 
@@ -822,9 +847,8 @@ public class FlowComposer {
      * Rivers use a two-pass level calculation via flow.calculateRouteLevels()
      * to ensure continuity (endLevel[N] = startLevel[N+1]) and monotonically decreasing levels.
      */
-    private int createFlowSegments(Flow flow, List<HexVector2> route,
-                                   Map<String, Biome> gridMap,
-                                   HexComposition prepared) {
+    private int createFlowSegments(
+            Flow flow, List<HexVector2> route, Map<String, Biome> gridMap, HexComposition prepared) {
         int segmentCount = 0;
         Integer previousToLevel = null; // Track TO level from previous segment (becomes FROM of next segment)
 
@@ -887,14 +911,18 @@ public class FlowComposer {
                     if (startPoint.getPointComposed() != null) {
                         if (startPoint.getPointComposed().getHexLocalPosition() != null) {
                             fromPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
-                                startPoint.getPointComposed().getHexLocalPosition());
-                            log.debug("First segment uses Point '{}' HexLocalPosition: {}",
-                                startPoint.getName(), fromPosition);
+                                    startPoint.getPointComposed().getHexLocalPosition());
+                            log.debug(
+                                    "First segment uses Point '{}' HexLocalPosition: {}",
+                                    startPoint.getName(),
+                                    fromPosition);
                         } else if (startPoint.getPointComposed().getHexLocalEdgeVector() != null) {
                             fromPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
-                                startPoint.getPointComposed().getHexLocalEdgeVector());
-                            log.debug("First segment uses Point '{}' HexLocalEdgeVector: {}",
-                                startPoint.getName(), fromPosition);
+                                    startPoint.getPointComposed().getHexLocalEdgeVector());
+                            log.debug(
+                                    "First segment uses Point '{}' HexLocalEdgeVector: {}",
+                                    startPoint.getName(),
+                                    fromPosition);
                         }
                     }
 
@@ -903,8 +931,11 @@ public class FlowComposer {
                         fromLx = startPoint.getPlacedLx();
                         fromLz = startPoint.getPlacedLz();
                         if (fromPosition == null) {
-                            log.debug("First segment uses Point '{}' deprecated lx/lz: {}, {}",
-                                startPoint.getName(), fromLx, fromLz);
+                            log.debug(
+                                    "First segment uses Point '{}' deprecated lx/lz: {}, {}",
+                                    startPoint.getName(),
+                                    fromLx,
+                                    fromLz);
                         }
                     }
 
@@ -934,14 +965,18 @@ public class FlowComposer {
                     if (endPoint.getPointComposed() != null) {
                         if (endPoint.getPointComposed().getHexLocalPosition() != null) {
                             toPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
-                                endPoint.getPointComposed().getHexLocalPosition());
-                            log.debug("Last segment uses Point '{}' HexLocalPosition: {}",
-                                endPoint.getName(), toPosition);
+                                    endPoint.getPointComposed().getHexLocalPosition());
+                            log.debug(
+                                    "Last segment uses Point '{}' HexLocalPosition: {}",
+                                    endPoint.getName(),
+                                    toPosition);
                         } else if (endPoint.getPointComposed().getHexLocalEdgeVector() != null) {
                             toPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
-                                endPoint.getPointComposed().getHexLocalEdgeVector());
-                            log.debug("Last segment uses Point '{}' HexLocalEdgeVector: {}",
-                                endPoint.getName(), toPosition);
+                                    endPoint.getPointComposed().getHexLocalEdgeVector());
+                            log.debug(
+                                    "Last segment uses Point '{}' HexLocalEdgeVector: {}",
+                                    endPoint.getName(),
+                                    toPosition);
                         }
                     }
 
@@ -950,8 +985,11 @@ public class FlowComposer {
                         toLx = endPoint.getPlacedLx();
                         toLz = endPoint.getPlacedLz();
                         if (toPosition == null) {
-                            log.debug("Last segment uses Point '{}' deprecated lx/lz: {}, {}",
-                                endPoint.getName(), toLx, toLz);
+                            log.debug(
+                                    "Last segment uses Point '{}' deprecated lx/lz: {}, {}",
+                                    endPoint.getName(),
+                                    toLx,
+                                    toLz);
                         }
                     }
 
@@ -978,8 +1016,8 @@ public class FlowComposer {
             }
 
             // Create flow segment with SIDE, position strings, lx/lz coordinates, and FROM/TO levels
-            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromPosition, toPosition,
-                fromLx, fromLz, toLx, toLz, fromLevel, toLevel);
+            FlowSegment segment = createFlowSegment(
+                    flow, fromSide, toSide, fromPosition, toPosition, fromLx, fromLz, toLx, toLz, fromLevel, toLevel);
 
             // Add segment directly to central registry (no longer to flow.hexGrids!)
             // This merges the segment into existing grid (created by Biome) or creates new orphan grid
@@ -999,10 +1037,13 @@ public class FlowComposer {
      * Calculates the level for a flow segment at the given grid.
      * Uses flow.calculateSegmentLevel() with biome data.
      */
-    private Integer calculateSegmentLevel(Flow flow, HexVector2 gridCoord,
-                                          List<HexVector2> route, int routeIndex,
-                                          Integer previousLevel,
-                                          Map<String, Biome> gridMap) {
+    private Integer calculateSegmentLevel(
+            Flow flow,
+            HexVector2 gridCoord,
+            List<HexVector2> route,
+            int routeIndex,
+            Integer previousLevel,
+            Map<String, Biome> gridMap) {
         // Get biome at current grid
         Biome gridABiome = gridMap.get(coordKey(gridCoord));
 
@@ -1023,8 +1064,8 @@ public class FlowComposer {
         Integer fixedLevel = getFlowFixedLevel(flow);
 
         // Calculate level using flow's method
-        return flow.calculateSegmentLevel(gridALandLevel, gridALandOffset,
-            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+        return flow.calculateSegmentLevel(
+                gridALandLevel, gridALandOffset, gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
     }
 
     /**
@@ -1040,8 +1081,10 @@ public class FlowComposer {
             try {
                 return Integer.parseInt(biome.getParameters().get("g_asl"));
             } catch (NumberFormatException e) {
-                log.warn("Invalid g_asl value in biome {}: {}", biome.getName(),
-                    biome.getParameters().get("g_asl"));
+                log.warn(
+                        "Invalid g_asl value in biome {}: {}",
+                        biome.getName(),
+                        biome.getParameters().get("g_asl"));
             }
         }
 
@@ -1061,8 +1104,10 @@ public class FlowComposer {
             try {
                 return Integer.parseInt(biome.getParameters().get("g_offset"));
             } catch (NumberFormatException e) {
-                log.warn("Invalid g_offset value in biome {}: {}", biome.getName(),
-                    biome.getParameters().get("g_offset"));
+                log.warn(
+                        "Invalid g_offset value in biome {}: {}",
+                        biome.getName(),
+                        biome.getParameters().get("g_offset"));
             }
         }
 
@@ -1096,14 +1141,15 @@ public class FlowComposer {
             return null;
         }
 
-        String edgeAbbrev = switch (edge) {
-            case NORTH_EAST -> "NE";
-            case EAST -> "E";
-            case SOUTH_EAST -> "SE";
-            case SOUTH_WEST -> "SW";
-            case WEST -> "W";
-            case NORTH_WEST -> "NW";
-        };
+        String edgeAbbrev =
+                switch (edge) {
+                    case NORTH_EAST -> "NE";
+                    case EAST -> "E";
+                    case SOUTH_EAST -> "SE";
+                    case SOUTH_WEST -> "SW";
+                    case WEST -> "W";
+                    case NORTH_WEST -> "NW";
+                };
 
         return String.format("<%s %d/4>", edgeAbbrev, numerator);
     }
@@ -1111,36 +1157,46 @@ public class FlowComposer {
     /**
      * Creates a FlowSegment from PreparedFlow
      */
-    private FlowSegment createFlowSegment(Flow flow, EDGE fromSide, EDGE toSide,
-                                          String fromPosition, String toPosition,
-                                          Integer fromLx, Integer fromLz,
-                                          Integer toLx, Integer toLz,
-                                          Integer fromLevel, Integer toLevel) {
+    private FlowSegment createFlowSegment(
+            Flow flow,
+            EDGE fromSide,
+            EDGE toSide,
+            String fromPosition,
+            String toPosition,
+            Integer fromLx,
+            Integer fromLz,
+            Integer toLx,
+            Integer toLz,
+            Integer fromLevel,
+            Integer toLevel) {
         FlowSegment.FlowSegmentBuilder builder = FlowSegment.builder()
-            .flowType(flow.getType())
-            .fromSide(fromSide)
-            .toSide(toSide)
-            .fromPosition(fromPosition)
-            .toPosition(toPosition)
-            .fromLx(fromLx)
-            .fromLz(fromLz)
-            .toLx(toLx)
-            .toLz(toLz)
-            .width(flow.getCalculatedWidthBlocks())
-            .flowFeatureId(flow.getFeatureId())
-            .fromLevel(fromLevel)
-            .toLevel(toLevel);
+                .flowType(flow.getType())
+                .fromSide(fromSide)
+                .toSide(toSide)
+                .fromPosition(fromPosition)
+                .toPosition(toPosition)
+                .fromLx(fromLx)
+                .fromLz(fromLz)
+                .toLx(toLx)
+                .toLz(toLz)
+                .width(flow.getCalculatedWidthBlocks())
+                .flowFeatureId(flow.getFeatureId())
+                .fromLevel(fromLevel)
+                .toLevel(toLevel);
 
         // Type-specific attributes
         if (flow instanceof Road road) {
             builder.type(road.getRoadType() != null ? road.getRoadType().getValue() : null);
-            builder.level(fromLevel != null ? fromLevel : road.getLevel()); // Deprecated field for backward compatibility
+            builder.level(
+                    fromLevel != null ? fromLevel : road.getLevel()); // Deprecated field for backward compatibility
         } else if (flow instanceof River river) {
             builder.depth(river.getDepth());
-            builder.level(fromLevel != null ? fromLevel : river.getLevel()); // Deprecated field for backward compatibility
+            builder.level(
+                    fromLevel != null ? fromLevel : river.getLevel()); // Deprecated field for backward compatibility
         } else if (flow instanceof Wall wall) {
             builder.height(wall.getHeight());
-            builder.level(fromLevel != null ? fromLevel : wall.getLevel()); // Deprecated field for backward compatibility
+            builder.level(
+                    fromLevel != null ? fromLevel : wall.getLevel()); // Deprecated field for backward compatibility
             builder.material(wall.getMaterial());
         }
 
@@ -1151,7 +1207,8 @@ public class FlowComposer {
      * Finds a FeatureHexGrid in central registry at the given coordinate.
      * Returns null if no FeatureHexGrid exists at that coordinate.
      */
-    private FeatureHexGrid findFeatureHexGridInBiome(HexVector2 coord, Map<String, Biome> gridMap, HexComposition composition) {
+    private FeatureHexGrid findFeatureHexGridInBiome(
+            HexVector2 coord, Map<String, Biome> gridMap, HexComposition composition) {
         // Find the biome at this coordinate
         Biome biome = gridMap.get(coordKey(coord));
 
@@ -1211,7 +1268,6 @@ public class FlowComposer {
         return flows;
     }
 
-
     /**
      * Phase 1: Converts FlowSegments to RoadConfigParts and adds them to Area grids.
      * This is called after flow segments have been created and added to FeatureHexGrids.
@@ -1225,8 +1281,8 @@ public class FlowComposer {
      * @param composition The composition with all features to find Area grids
      * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToRoadConfigParts(Flow flow, HexComposition composition,
-                                                       BiomePlacementResult placementResult) {
+    private void convertFlowSegmentsToRoadConfigParts(
+            Flow flow, HexComposition composition, BiomePlacementResult placementResult) {
         if (!(flow instanceof Road)) {
             return; // Only roads use RoadConfigParts
         }
@@ -1240,7 +1296,8 @@ public class FlowComposer {
 
         int convertedGrids = 0;
 
-        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+        for (FeatureHexGrid centralGrid :
+                composition.getFeatureHexGridRegistry().values()) {
             if (centralGrid == null) {
                 continue;
             }
@@ -1253,8 +1310,8 @@ public class FlowComposer {
 
             // Filter segments that belong to this flow
             List<FlowSegment> flowRoadSegments = roadSegments.stream()
-                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
-                .toList();
+                    .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                    .toList();
 
             if (flowRoadSegments.isEmpty()) {
                 continue;
@@ -1265,7 +1322,8 @@ public class FlowComposer {
             // Build groupId once per flow (all segments of the same flow share the same groupId)
             // Prefix is the roadType (street/trail) instead of generic "road"
             String roadPrefix = (flow instanceof Road road && road.getRoadType() != null)
-                ? road.getRoadType().getValue() : "road";
+                    ? road.getRoadType().getValue()
+                    : "road";
             String roadGroupId = buildGroupId(roadPrefix, flow.getName(), flow.getFeatureId());
 
             // Convert each FlowSegment to RoadConfigPart
@@ -1278,43 +1336,42 @@ public class FlowComposer {
                 if (segment.hasFromPosition()) {
                     // Use HexLocal position string (Point endpoint or grid-to-grid transition)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionStringPartWithLevels(
-                        segment.getFromPosition(),
-                        segment.getWidth(),
-                        fromLevel,
-                        toLevel,
-                        segment.getType()
-                    );
+                            segment.getFromPosition(), segment.getWidth(), fromLevel, toLevel, segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added position-string route part (from) '{}' with levels {}/{}",
-                        segment.getFromPosition(), fromLevel, toLevel);
+                    log.debug(
+                            "Added position-string route part (from) '{}' with levels {}/{}",
+                            segment.getFromPosition(),
+                            fromLevel,
+                            toLevel);
                 } else if (segment.hasFromCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint, deprecated)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionPartWithLevels(
-                        segment.getFromLx(),
-                        segment.getFromLz(),
-                        segment.getWidth(),
-                        fromLevel,
-                        toLevel,
-                        segment.getType()
-                    );
+                            segment.getFromLx(),
+                            segment.getFromLz(),
+                            segment.getWidth(),
+                            fromLevel,
+                            toLevel,
+                            segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added position-based route part (from) at lx={}, lz={} with levels {}/{}",
-                        segment.getFromLx(), segment.getFromLz(), fromLevel, toLevel);
+                    log.debug(
+                            "Added position-based route part (from) at lx={}, lz={} with levels {}/{}",
+                            segment.getFromLx(),
+                            segment.getFromLz(),
+                            fromLevel,
+                            toLevel);
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (Biome endpoint, legacy fallback)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePartWithLevels(
-                        segment.getFromSide(),
-                        segment.getWidth(),
-                        fromLevel,
-                        toLevel,
-                        segment.getType()
-                    );
+                            segment.getFromSide(), segment.getWidth(), fromLevel, toLevel, segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added SIDE-based route part (from) at {} with levels {}/{}",
-                        segment.getFromSide(), fromLevel, toLevel);
+                    log.debug(
+                            "Added SIDE-based route part (from) at {} with levels {}/{}",
+                            segment.getFromSide(),
+                            fromLevel,
+                            toLevel);
                 }
 
                 // Create ROUTE parts for exit point (priority: position > lx/lz > side)
@@ -1323,49 +1380,47 @@ public class FlowComposer {
                 if (segment.hasToPosition()) {
                     // Use HexLocal position string (Point endpoint or grid-to-grid transition)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionStringPartWithLevels(
-                        segment.getToPosition(),
-                        segment.getWidth(),
-                        toLevel,
-                        fromLevel,
-                        segment.getType()
-                    );
+                            segment.getToPosition(), segment.getWidth(), toLevel, fromLevel, segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added position-string route part (to) '{}' with levels {}/{}",
-                        segment.getToPosition(), toLevel, fromLevel);
+                    log.debug(
+                            "Added position-string route part (to) '{}' with levels {}/{}",
+                            segment.getToPosition(),
+                            toLevel,
+                            fromLevel);
                 } else if (segment.hasToCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint, deprecated)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionPartWithLevels(
-                        segment.getToLx(),
-                        segment.getToLz(),
-                        segment.getWidth(),
-                        toLevel,
-                        fromLevel,
-                        segment.getType()
-                    );
+                            segment.getToLx(),
+                            segment.getToLz(),
+                            segment.getWidth(),
+                            toLevel,
+                            fromLevel,
+                            segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
-                        segment.getToLx(), segment.getToLz(), toLevel, fromLevel);
+                    log.debug(
+                            "Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
+                            segment.getToLx(),
+                            segment.getToLz(),
+                            toLevel,
+                            fromLevel);
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
                     // Use SIDE (Biome endpoint, legacy fallback)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePartWithLevels(
-                        segment.getToSide(),
-                        segment.getWidth(),
-                        toLevel,
-                        fromLevel,
-                        segment.getType()
-                    );
+                            segment.getToSide(), segment.getWidth(), toLevel, fromLevel, segment.getType());
                     part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
-                    log.debug("Added SIDE-based route part (to) at {} with levels {}/{}",
-                        segment.getToSide(), toLevel, fromLevel);
+                    log.debug(
+                            "Added SIDE-based route part (to) at {} with levels {}/{}",
+                            segment.getToSide(),
+                            toLevel,
+                            fromLevel);
                 }
             }
         }
 
-        log.info("Converted road segments to config parts for {} grids (flow: {})",
-            convertedGrids, flow.getName());
+        log.info("Converted road segments to config parts for {} grids (flow: {})", convertedGrids, flow.getName());
     }
 
     /**
@@ -1375,8 +1430,8 @@ public class FlowComposer {
      * @param composition The composition with all features to find Area grids
      * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToRiverConfigParts(Flow flow, HexComposition composition,
-                                                        BiomePlacementResult placementResult) {
+    private void convertFlowSegmentsToRiverConfigParts(
+            Flow flow, HexComposition composition, BiomePlacementResult placementResult) {
         if (!(flow instanceof River)) {
             return;
         }
@@ -1391,7 +1446,8 @@ public class FlowComposer {
 
         int convertedGrids = 0;
 
-        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+        for (FeatureHexGrid centralGrid :
+                composition.getFeatureHexGridRegistry().values()) {
             if (centralGrid == null) {
                 continue;
             }
@@ -1404,8 +1460,8 @@ public class FlowComposer {
 
             // Filter segments that belong to this flow
             List<FlowSegment> flowRiverSegments = riverSegments.stream()
-                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
-                .toList();
+                    .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                    .toList();
 
             if (flowRiverSegments.isEmpty()) {
                 continue;
@@ -1429,24 +1485,16 @@ public class FlowComposer {
                 if (segment.hasFromPosition()) {
                     // Use HexLocal position string (grid-to-grid transition or Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createFromPositionStringPart(
-                        segment.getFromPosition(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        fromLevel,
-                        groupId
-                    );
+                            segment.getFromPosition(), segment.getWidth(), segment.getDepth(), fromLevel, groupId);
                     centralGrid.addRiverConfigPart(part);
-                    log.debug("Added position-string-based river FROM part: {} with level={}",
-                        segment.getFromPosition(), fromLevel);
+                    log.debug(
+                            "Added position-string-based river FROM part: {} with level={}",
+                            segment.getFromPosition(),
+                            fromLevel);
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createFromPart(
-                        segment.getFromSide(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        fromLevel,
-                        groupId
-                    );
+                            segment.getFromSide(), segment.getWidth(), segment.getDepth(), fromLevel, groupId);
                     centralGrid.addRiverConfigPart(part);
                     log.debug("Added SIDE-based river FROM part: {} with level={}", segment.getFromSide(), fromLevel);
                 }
@@ -1455,32 +1503,23 @@ public class FlowComposer {
                 if (segment.hasToPosition()) {
                     // Use HexLocal position string (grid-to-grid transition or Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createToPositionStringPart(
-                        segment.getToPosition(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        toLevel,
-                        groupId
-                    );
+                            segment.getToPosition(), segment.getWidth(), segment.getDepth(), toLevel, groupId);
                     centralGrid.addRiverConfigPart(part);
-                    log.debug("Added position-string-based river TO part: {} with level={}",
-                        segment.getToPosition(), toLevel);
+                    log.debug(
+                            "Added position-string-based river TO part: {} with level={}",
+                            segment.getToPosition(),
+                            toLevel);
                 } else if (segment.getToSide() != null) {
                     // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createToPart(
-                        segment.getToSide(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        toLevel,
-                        groupId
-                    );
+                            segment.getToSide(), segment.getWidth(), segment.getDepth(), toLevel, groupId);
                     centralGrid.addRiverConfigPart(part);
                     log.debug("Added SIDE-based river TO part: {} with level={}", segment.getToSide(), toLevel);
                 }
             }
         }
 
-        log.info("Converted river segments to config parts for {} grids (flow: {})",
-            convertedGrids, flow.getName());
+        log.info("Converted river segments to config parts for {} grids (flow: {})", convertedGrids, flow.getName());
     }
 
     /**
@@ -1490,8 +1529,8 @@ public class FlowComposer {
      * @param composition The composition with all features to find Area grids
      * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToWallConfigParts(Flow flow, HexComposition composition,
-                                                       BiomePlacementResult placementResult) {
+    private void convertFlowSegmentsToWallConfigParts(
+            Flow flow, HexComposition composition, BiomePlacementResult placementResult) {
         if (!(flow instanceof Wall)) {
             return;
         }
@@ -1506,7 +1545,8 @@ public class FlowComposer {
 
         int convertedGrids = 0;
 
-        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+        for (FeatureHexGrid centralGrid :
+                composition.getFeatureHexGridRegistry().values()) {
             if (centralGrid == null) {
                 continue;
             }
@@ -1519,8 +1559,8 @@ public class FlowComposer {
 
             // Filter segments that belong to this flow
             List<FlowSegment> flowWallSegments = wallSegments.stream()
-                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
-                .toList();
+                    .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                    .toList();
 
             if (flowWallSegments.isEmpty()) {
                 continue;
@@ -1534,38 +1574,37 @@ public class FlowComposer {
                 if (segment.getFromPosition() != null) {
                     // Use HexLocal position string (Point endpoint)
                     WallConfigPart part = WallConfigPart.createPositionPart(
-                        segment.getFromPosition(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getFromPosition(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
-                    log.debug("Added position-based wall part (from) at position={}",
-                        segment.getFromPosition());
+                    log.debug("Added position-based wall part (from) at position={}", segment.getFromPosition());
                 } else if (segment.hasFromCoordinates()) {
                     // Fallback: Use deprecated lx/lz coordinates
                     WallConfigPart part = WallConfigPart.createPositionPartDeprecated(
-                        segment.getFromLx(),
-                        segment.getFromLz(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getFromLx(),
+                            segment.getFromLz(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
-                    log.warn("Using deprecated lx/lz for wall (from) at grid ({},{}): lx={}, lz={}",
-                        centralGrid.getCoordinate().getQ(), centralGrid.getCoordinate().getR(),
-                        segment.getFromLx(), segment.getFromLz());
+                    log.warn(
+                            "Using deprecated lx/lz for wall (from) at grid ({},{}): lx={}, lz={}",
+                            centralGrid.getCoordinate().getQ(),
+                            centralGrid.getCoordinate().getR(),
+                            segment.getFromLx(),
+                            segment.getFromLz());
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
-                        segment.getFromSide(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getFromSide(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
                 }
 
@@ -1573,45 +1612,43 @@ public class FlowComposer {
                 if (segment.getToPosition() != null) {
                     // Use HexLocal position string (Point endpoint)
                     WallConfigPart part = WallConfigPart.createPositionPart(
-                        segment.getToPosition(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getToPosition(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
-                    log.debug("Added position-based wall part (to) at position={}",
-                        segment.getToPosition());
+                    log.debug("Added position-based wall part (to) at position={}", segment.getToPosition());
                 } else if (segment.hasToCoordinates()) {
                     // Fallback: Use deprecated lx/lz coordinates
                     WallConfigPart part = WallConfigPart.createPositionPartDeprecated(
-                        segment.getToLx(),
-                        segment.getToLz(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getToLx(),
+                            segment.getToLz(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
-                    log.warn("Using deprecated lx/lz for wall (to) at grid ({},{}): lx={}, lz={}",
-                        centralGrid.getCoordinate().getQ(), centralGrid.getCoordinate().getR(),
-                        segment.getToLx(), segment.getToLz());
+                    log.warn(
+                            "Using deprecated lx/lz for wall (to) at grid ({},{}): lx={}, lz={}",
+                            centralGrid.getCoordinate().getQ(),
+                            centralGrid.getCoordinate().getR(),
+                            segment.getToLx(),
+                            segment.getToLz());
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
-                        segment.getToSide(),
-                        segment.getHeight(),
-                        segment.getWidth(),
-                        segment.getLevel(),
-                        segment.getMaterial()
-                    );
+                            segment.getToSide(),
+                            segment.getHeight(),
+                            segment.getWidth(),
+                            segment.getLevel(),
+                            segment.getMaterial());
                     centralGrid.addWallConfigPart(part);
                 }
             }
         }
 
-        log.info("Converted wall segments to config parts for {} grids (flow: {})",
-            convertedGrids, flow.getName());
+        log.info("Converted wall segments to config parts for {} grids (flow: {})", convertedGrids, flow.getName());
     }
 
     /**
@@ -1676,16 +1713,16 @@ public class FlowComposer {
      * @param areaGridMap Map to add grids to
      * @param composition The composition with central FeatureHexGrid registry
      */
-    private void collectAreaGridsFromPlacedBiomes(BiomePlacementResult placementResult,
-                                                   Map<String, FeatureHexGrid> areaGridMap,
-                                                   HexComposition composition) {
+    private void collectAreaGridsFromPlacedBiomes(
+            BiomePlacementResult placementResult, Map<String, FeatureHexGrid> areaGridMap, HexComposition composition) {
         if (placementResult == null || placementResult.getPlacedBiomes() == null) {
             log.warn("placementResult or PlacedBiomes is null!");
             return;
         }
 
         // Collect from central FeatureHexGrid registry instead of biome.getHexGrids()
-        if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+        if (composition.getFeatureHexGridRegistry() == null
+                || composition.getFeatureHexGridRegistry().isEmpty()) {
             log.warn("Central FeatureHexGrid registry is empty!");
             return;
         }
@@ -1711,8 +1748,10 @@ public class FlowComposer {
             }
         }
 
-        log.debug("Collected {} FeatureHexGrids from central registry for {} PlacedBiomes",
-            collectedCount, placementResult.getPlacedBiomes().size());
+        log.debug(
+                "Collected {} FeatureHexGrids from central registry for {} PlacedBiomes",
+                collectedCount,
+                placementResult.getPlacedBiomes().size());
     }
 
     /**
@@ -1731,8 +1770,7 @@ public class FlowComposer {
      * @param placementResult Result from BiomeComposer
      * @return Number of grids configured with sidewall
      */
-    private int composeSideWall(SideWall sideWall, HexComposition prepared,
-                                BiomePlacementResult placementResult) {
+    private int composeSideWall(SideWall sideWall, HexComposition prepared, BiomePlacementResult placementResult) {
         log.debug("Composing SideWall '{}' for target '{}'", sideWall.getName(), sideWall.getTargetBiomeId());
 
         if (sideWall.getTargetBiomeId() == null) {
@@ -1743,8 +1781,10 @@ public class FlowComposer {
         // Find target biome
         Biome targetBiome = findBiomeByFeatureId(sideWall.getTargetBiomeId(), prepared, placementResult);
         if (targetBiome == null) {
-            log.warn("Could not find target biome '{}' for SideWall '{}'",
-                sideWall.getTargetBiomeId(), sideWall.getName());
+            log.warn(
+                    "Could not find target biome '{}' for SideWall '{}'",
+                    sideWall.getTargetBiomeId(),
+                    sideWall.getName());
             return 0;
         }
 
@@ -1800,7 +1840,8 @@ public class FlowComposer {
      * Finds edge grids of a biome (grids that have at least one side not connected to another biome grid).
      * Uses PlacementResult coordinates and central FeatureHexGrid registry.
      */
-    private List<FeatureHexGrid> findBiomeEdgeGrids(Biome biome, BiomePlacementResult placementResult, HexComposition composition) {
+    private List<FeatureHexGrid> findBiomeEdgeGrids(
+            Biome biome, BiomePlacementResult placementResult, HexComposition composition) {
         List<FeatureHexGrid> edgeGrids = new ArrayList<>();
 
         // Find PlacedBiome for this biome
@@ -1828,8 +1869,8 @@ public class FlowComposer {
         for (HexVector2 coord : placedBiome.getCoordinates()) {
             String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
             FeatureHexGrid grid = composition.getFeatureHexGridRegistry() != null
-                ? composition.getFeatureHexGridRegistry().get(coordKey)
-                : null;
+                    ? composition.getFeatureHexGridRegistry().get(coordKey)
+                    : null;
 
             if (grid == null) {
                 continue;
@@ -1854,9 +1895,8 @@ public class FlowComposer {
     /**
      * Gets which sides of a grid are exposed (facing outside the biome).
      */
-    private List<EDGE> getExposedSides(FeatureHexGrid grid, Biome biome,
-                                       BiomePlacementResult placementResult,
-                                       HexComposition composition) {
+    private List<EDGE> getExposedSides(
+            FeatureHexGrid grid, Biome biome, BiomePlacementResult placementResult, HexComposition composition) {
         List<EDGE> exposedSides = new ArrayList<>();
 
         // Find PlacedBiome for this biome
@@ -1931,8 +1971,8 @@ public class FlowComposer {
     /**
      * Finds a biome by featureId.
      */
-    private Biome findBiomeByFeatureId(String featureId, HexComposition prepared,
-                                       BiomePlacementResult placementResult) {
+    private Biome findBiomeByFeatureId(
+            String featureId, HexComposition prepared, BiomePlacementResult placementResult) {
         // First try placed biomes
         for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
             Biome biome = placedBiome.getBiome();
@@ -1971,8 +2011,8 @@ public class FlowComposer {
     private String buildGroupId(String prefix, String name, String featureId) {
         String normalizedName = normalizeName(name != null ? name : "unknown");
         String uuidPart = featureId != null && featureId.length() >= 8
-            ? featureId.substring(0, 8)
-            : UUID.randomUUID().toString().substring(0, 8);
+                ? featureId.substring(0, 8)
+                : UUID.randomUUID().toString().substring(0, 8);
         return prefix + "_" + normalizedName + "_" + uuidPart;
     }
 

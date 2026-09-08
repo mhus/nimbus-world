@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.life.behavior;
 
 import de.mhus.nimbus.generated.types.EntityPathway;
-import org.springframework.stereotype.Service;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.springframework.stereotype.Service;
 
 /**
  * Queue for pathways received from remote servers via Redis.
@@ -20,7 +19,8 @@ public class RemotePathwayQueue {
     }
 
     public void offer(String worldId, String entityId, EntityPathway pathway) {
-        queues.computeIfAbsent(key(worldId, entityId), k -> new ConcurrentLinkedQueue<>()).offer(pathway);
+        queues.computeIfAbsent(key(worldId, entityId), k -> new ConcurrentLinkedQueue<>())
+                .offer(pathway);
     }
 
     public EntityPathway poll(String worldId, String entityId) {

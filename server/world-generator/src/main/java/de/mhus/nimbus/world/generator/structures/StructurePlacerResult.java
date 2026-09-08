@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.generator.structures;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
 
 /**
  * Result of a StructurePlacer execution.

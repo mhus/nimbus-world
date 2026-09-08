@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.shared.layer.WEditCache;
@@ -8,11 +7,11 @@ import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Fill Gaps Horizontal Block Manipulator - fills horizontal gaps in terrain.
@@ -71,10 +70,10 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Fills horizontal gaps in terrain within a defined area. " +
-                "Checks each column (X,Z) for missing blocks and fills them intelligently. " +
-                "Parameters: position {x,y,z}, width, depth, level (optional, default: world.groundLevel), blockType (optional, tries neighbors). " +
-                "Example: {\"fill-gaps-horizontal\": {\"transform\": \"position\", \"width\": 100, \"depth\": 100}}";
+        return "Fills horizontal gaps in terrain within a defined area. "
+                + "Checks each column (X,Z) for missing blocks and fills them intelligently. "
+                + "Parameters: position {x,y,z}, width, depth, level (optional, default: world.groundLevel), blockType (optional, tries neighbors). "
+                + "Example: {\"fill-gaps-horizontal\": {\"transform\": \"position\", \"width\": 100, \"depth\": 100}}";
     }
 
     @Override
@@ -149,9 +148,8 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
         // Initialize ModelSelector
         if (context.getModelSelector() == null) {
             String layerName = context.getLayerName();
-            String autoSelectName = layerName != null && !layerName.isBlank()
-                    ? layerDataId + ":" + layerName
-                    : layerDataId;
+            String autoSelectName =
+                    layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
             context.setModelSelector(ModelSelector.builder()
                     .defaultColor("#00ff00")
@@ -165,8 +163,7 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
         int filledCount = 0;
         int scannedCount = 0;
 
-        log.info("Scanning for gaps: area=({},{}) to ({},{}), level={}",
-                x, z, x + width - 1, z + depth - 1, level);
+        log.info("Scanning for gaps: area=({},{}) to ({},{}), level={}", x, z, x + width - 1, z + depth - 1, level);
 
         for (int dx = 0; dx < width; dx++) {
             for (int dz = 0; dz < depth; dz++) {
@@ -175,14 +172,9 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
                 scannedCount++;
 
                 // Check if block exists at this position
-                boolean blockExists = editCacheService.findByCoordinates(
-                        worldId,
-                        layerDataId,
-                        modelName,
-                        currentX,
-                        level,
-                        currentZ
-                ).isPresent();
+                boolean blockExists = editCacheService
+                        .findByCoordinates(worldId, layerDataId, modelName, currentX, level, currentZ)
+                        .isPresent();
 
                 if (!blockExists) {
                     // Found a gap - determine block type to use
@@ -190,10 +182,8 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
 
                     if (blockTypeToUse == null || blockTypeToUse.isBlank()) {
                         // Try to match neighboring blocks
-                        blockTypeToUse = findNeighborBlockType(
-                                worldId, layerDataId, modelName,
-                                currentX, level, currentZ
-                        );
+                        blockTypeToUse =
+                                findNeighborBlockType(worldId, layerDataId, modelName, currentX, level, currentZ);
 
                         if (blockTypeToUse == null) {
                             // No neighbor found, use world default
@@ -204,19 +194,23 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
                     // Parse block definition
                     BlockDef blockDef = BlockDef.of(blockTypeToUse).orElse(null);
                     if (blockDef == null) {
-                        log.warn("Invalid blockType '{}' at ({},{},{}), skipping", blockTypeToUse, currentX, level, currentZ);
+                        log.warn(
+                                "Invalid blockType '{}' at ({},{},{}), skipping",
+                                blockTypeToUse,
+                                currentX,
+                                level,
+                                currentZ);
                         continue;
                     }
 
                     // Create and place block
                     Block block = Block.builder()
-                            .position(
-                                    de.mhus.nimbus.generated.types.Vector3Int.builder()
-                                            .x(currentX)
-                                            .y(level)
-                                            .z(currentZ)
-                                            .build()
-                            ).build();
+                            .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                                    .x(currentX)
+                                    .y(level)
+                                    .z(currentZ)
+                                    .build())
+                            .build();
 
                     blockDef.fillBlock(block);
                     editCacheService.doSetAndSendBlock(world, layerDataId, modelName, block, groupId);
@@ -237,7 +231,8 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
             }
         }
 
-        String message = String.format("Filled %d gaps in terrain (scanned %d positions, level %d) in area (%d,%d) to (%d,%d)",
+        String message = String.format(
+                "Filled %d gaps in terrain (scanned %d positions, level %d) in area (%d,%d) to (%d,%d)",
                 filledCount, scannedCount, level, x, z, x + width - 1, z + depth - 1);
 
         log.info(message);
@@ -251,14 +246,13 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
      *
      * @return blockType of neighbor, or null if no neighbor found
      */
-    private String findNeighborBlockType(String worldId, String layerDataId, String modelName,
-                                          int x, int y, int z) {
+    private String findNeighborBlockType(String worldId, String layerDataId, String modelName, int x, int y, int z) {
         // Check cardinal directions
         int[][] directions = {
-                {0, 0, -1},  // North
-                {0, 0, 1},   // South
-                {1, 0, 0},   // East
-                {-1, 0, 0}   // West
+            {0, 0, -1}, // North
+            {0, 0, 1}, // South
+            {1, 0, 0}, // East
+            {-1, 0, 0} // West
         };
 
         for (int[] dir : directions) {
@@ -266,9 +260,8 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
             int ny = y + dir[1];
             int nz = z + dir[2];
 
-            Optional<WEditCache> neighborOpt = editCacheService.findByCoordinates(
-                    worldId, layerDataId, modelName, nx, ny, nz
-            );
+            Optional<WEditCache> neighborOpt =
+                    editCacheService.findByCoordinates(worldId, layerDataId, modelName, nx, ny, nz);
 
             if (neighborOpt.isPresent()) {
                 WEditCache neighbor = neighborOpt.get();

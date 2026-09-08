@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helper class for blending edges between neighboring hex grids.
@@ -23,8 +22,8 @@ public class HexGridEdgeBlender {
     private final double shakeStrength;
     private final int blurRadius;
 
-    public HexGridEdgeBlender(WFlat flat, int width, BuilderContext context, double randomness,
-                              double shakeStrength, int blurRadius) {
+    public HexGridEdgeBlender(
+            WFlat flat, int width, BuilderContext context, double randomness, double shakeStrength, int blurRadius) {
         this.flat = flat;
         this.context = context;
         this.width = width;
@@ -41,10 +40,13 @@ public class HexGridEdgeBlender {
 
         // Blend each side
         for (var side : sideFlats.entrySet()) {
-            var neighborFlat = context.getFlatService().findByWorldAndFlatId(context.getWorld().getWorldId(), side.getValue());
+            var neighborFlat = context.getFlatService()
+                    .findByWorldAndFlatId(context.getWorld().getWorldId(), side.getValue());
             if (neighborFlat == null) {
                 log.debug("Neighbor flat not found: {} for side {}, trying chunk data", side.getValue(), side.getKey());
-                var worldId = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+                var worldId = de.mhus.nimbus.shared.types.WorldId.of(
+                                context.getWorld().getWorldId())
+                        .orElse(null);
                 if (worldId != null && context.getChunkService() != null) {
                     neighborFlat = HexFlatUtil.createChunkBackedFlat(
                             flat, side.getKey(), context.getChunkService(), worldId, context.getWorld());
@@ -66,8 +68,8 @@ public class HexGridEdgeBlender {
     private void blendSide(WHexGrid.EDGE direction, WFlat neighborFlat) {
         log.trace("Blending side: {}", direction);
 
-        EdgeBlender edgeBlender = new EdgeBlender(flat, context, direction, neighborFlat, width, randomness,
-                shakeStrength, blurRadius);
+        EdgeBlender edgeBlender =
+                new EdgeBlender(flat, context, direction, neighborFlat, width, randomness, shakeStrength, blurRadius);
         edgeBlender.blend();
     }
 
@@ -90,9 +92,15 @@ public class HexGridEdgeBlender {
         // Track which pixels were actually blended for post-processing
         private final boolean[][] blendedPixels;
 
-        public EdgeBlender(WFlat flat, BuilderContext context, WHexGrid.EDGE direction,
-                           WFlat neighborFlat, int width, double randomness,
-                           double shakeStrength, int blurRadius) {
+        public EdgeBlender(
+                WFlat flat,
+                BuilderContext context,
+                WHexGrid.EDGE direction,
+                WFlat neighborFlat,
+                int width,
+                double randomness,
+                double shakeStrength,
+                int blurRadius) {
             this.flat = flat;
             this.context = context;
             this.direction = direction;
@@ -121,13 +129,21 @@ public class HexGridEdgeBlender {
          * 5. For each point on outer line, interpolate inward to inner line
          */
         public void blend() {
-            log.debug("Blending side {} with neighbor flat {}, width={}",
-                    direction, neighborFlat.getFlatId(), width);
-            log.debug("Current flat: flatId={}, mount=({},{}), size=({},{})",
-                    flat.getFlatId(), flat.getMountX(), flat.getMountZ(), flat.getSizeX(), flat.getSizeZ());
-            log.debug("Neighbor flat: flatId={}, mount=({},{}), size=({},{})",
-                    neighborFlat.getFlatId(), neighborFlat.getMountX(), neighborFlat.getMountZ(),
-                    neighborFlat.getSizeX(), neighborFlat.getSizeZ());
+            log.debug("Blending side {} with neighbor flat {}, width={}", direction, neighborFlat.getFlatId(), width);
+            log.debug(
+                    "Current flat: flatId={}, mount=({},{}), size=({},{})",
+                    flat.getFlatId(),
+                    flat.getMountX(),
+                    flat.getMountZ(),
+                    flat.getSizeX(),
+                    flat.getSizeZ());
+            log.debug(
+                    "Neighbor flat: flatId={}, mount=({},{}), size=({},{})",
+                    neighborFlat.getFlatId(),
+                    neighborFlat.getMountX(),
+                    neighborFlat.getMountZ(),
+                    neighborFlat.getSizeX(),
+                    neighborFlat.getSizeZ());
 
             // Calculate the two corners of this hex side
             int[] corner1 = getCorner1ForSide(direction);
@@ -216,8 +232,8 @@ public class HexGridEdgeBlender {
         private double[] calculateOrganicNoise(double x, double z, double t, WHexGrid.EDGE side) {
             // Base frequency for wave patterns
             double freq1 = 0.15; // Large waves
-            double freq2 = 0.4;  // Medium waves
-            double freq3 = 0.8;  // Small details
+            double freq2 = 0.4; // Medium waves
+            double freq3 = 0.8; // Small details
 
             // Combine multiple sine waves for organic feel
             double wave1 = Math.sin(t * Math.PI * 2 * freq1 + noiseSeed * 0.001);
@@ -260,7 +276,7 @@ public class HexGridEdgeBlender {
             double offsetX = combinedNoise * scale * perpX;
             double offsetZ = combinedNoise * scale * perpZ;
 
-            return new double[]{offsetX, offsetZ};
+            return new double[] {offsetX, offsetZ};
         }
 
         /**
@@ -273,8 +289,8 @@ public class HexGridEdgeBlender {
          * @param innerCorner1 First corner of inner line
          * @param innerCorner2 Second corner of inner line
          */
-        private void applyShakeEffect(double[] outerCorner1, double[] outerCorner2,
-                                      double[] innerCorner1, double[] innerCorner2) {
+        private void applyShakeEffect(
+                double[] outerCorner1, double[] outerCorner2, double[] innerCorner1, double[] innerCorner2) {
             // Build list of blended pixels and their neighbors that can be affected
             java.util.List<int[]> candidatePixels = new java.util.ArrayList<>();
 
@@ -287,9 +303,8 @@ public class HexGridEdgeBlender {
                             for (int dz = -1; dz <= 1; dz++) {
                                 int nx = x + dx;
                                 int nz = z + dz;
-                                if (nx >= 0 && nx < flat.getSizeX() &&
-                                    nz >= 0 && nz < flat.getSizeZ()) {
-                                    candidatePixels.add(new int[]{nx, nz});
+                                if (nx >= 0 && nx < flat.getSizeX() && nz >= 0 && nz < flat.getSizeZ()) {
+                                    candidatePixels.add(new int[] {nx, nz});
                                 }
                             }
                         }
@@ -302,11 +317,7 @@ public class HexGridEdgeBlender {
             }
 
             // 8-directional neighbor offsets
-            int[][] neighborOffsets = {
-                {-1, -1}, {0, -1}, {1, -1},
-                {-1,  0},          {1,  0},
-                {-1,  1}, {0,  1}, {1,  1}
-            };
+            int[][] neighborOffsets = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
 
             // For each candidate pixel, randomly decide if it should swap with a neighbor
             for (int[] pixel : candidatePixels) {
@@ -324,8 +335,7 @@ public class HexGridEdgeBlender {
                 int nz = z + offset[1];
 
                 // Check if neighbor is in bounds
-                if (nx >= 0 && nx < flat.getSizeX() &&
-                    nz >= 0 && nz < flat.getSizeZ()) {
+                if (nx >= 0 && nx < flat.getSizeX() && nz >= 0 && nz < flat.getSizeZ()) {
                     // Swap this pixel with its neighbor
                     int height1 = flat.getLevel(x, z);
                     int height2 = flat.getLevel(nx, nz);
@@ -345,8 +355,8 @@ public class HexGridEdgeBlender {
          * @param innerCorner1 First corner of inner line
          * @param innerCorner2 Second corner of inner line
          */
-        private void applyBlurEffect(double[] outerCorner1, double[] outerCorner2,
-                                     double[] innerCorner1, double[] innerCorner2) {
+        private void applyBlurEffect(
+                double[] outerCorner1, double[] outerCorner2, double[] innerCorner1, double[] innerCorner2) {
             // Build list of pixels to blur (blended pixels + margin)
             java.util.Set<String> pixelsToBlur = new java.util.HashSet<>();
 
@@ -361,8 +371,7 @@ public class HexGridEdgeBlender {
                             for (int dz = -margin; dz <= margin; dz++) {
                                 int nx = x + dx;
                                 int nz = z + dz;
-                                if (nx >= 0 && nx < flat.getSizeX() &&
-                                    nz >= 0 && nz < flat.getSizeZ()) {
+                                if (nx >= 0 && nx < flat.getSizeX() && nz >= 0 && nz < flat.getSizeZ()) {
                                     pixelsToBlur.add(nx + "," + nz);
                                 }
                             }
@@ -393,8 +402,7 @@ public class HexGridEdgeBlender {
                         int nx = x + dx;
                         int nz = z + dz;
 
-                        if (nx >= 0 && nx < flat.getSizeX() &&
-                            nz >= 0 && nz < flat.getSizeZ()) {
+                        if (nx >= 0 && nx < flat.getSizeX() && nz >= 0 && nz < flat.getSizeZ()) {
                             sum += flat.getLevel(nx, nz);
                             count++;
                         }
@@ -426,18 +434,31 @@ public class HexGridEdgeBlender {
 
             double angle;
             switch (side) {
-                case NORTH_EAST: angle = Math.toRadians(90);  break; // N
-                case EAST:       angle = Math.toRadians(30);  break; // NE
-                case SOUTH_EAST: angle = Math.toRadians(330); break; // SE
-                case SOUTH_WEST: angle = Math.toRadians(210); break; // SW
-                case WEST:       angle = Math.toRadians(150); break; // NW
-                case NORTH_WEST: angle = Math.toRadians(90);  break; // N
-                default: return new int[]{0, 0};
+                case NORTH_EAST:
+                    angle = Math.toRadians(90);
+                    break; // N
+                case EAST:
+                    angle = Math.toRadians(30);
+                    break; // NE
+                case SOUTH_EAST:
+                    angle = Math.toRadians(330);
+                    break; // SE
+                case SOUTH_WEST:
+                    angle = Math.toRadians(210);
+                    break; // SW
+                case WEST:
+                    angle = Math.toRadians(150);
+                    break; // NW
+                case NORTH_WEST:
+                    angle = Math.toRadians(90);
+                    break; // N
+                default:
+                    return new int[] {0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));
             int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-            return new int[]{x, z};
+            return new int[] {x, z};
         }
 
         /**
@@ -450,25 +471,38 @@ public class HexGridEdgeBlender {
 
             double angle;
             switch (side) {
-                case NORTH_EAST: angle = Math.toRadians(30);  break; // NE
-                case EAST:       angle = Math.toRadians(330); break; // SE
-                case SOUTH_EAST: angle = Math.toRadians(270); break; // S
-                case SOUTH_WEST: angle = Math.toRadians(270); break; // S
-                case WEST:       angle = Math.toRadians(210); break; // SW
-                case NORTH_WEST: angle = Math.toRadians(150); break; // NW
-                default: return new int[]{0, 0};
+                case NORTH_EAST:
+                    angle = Math.toRadians(30);
+                    break; // NE
+                case EAST:
+                    angle = Math.toRadians(330);
+                    break; // SE
+                case SOUTH_EAST:
+                    angle = Math.toRadians(270);
+                    break; // S
+                case SOUTH_WEST:
+                    angle = Math.toRadians(270);
+                    break; // S
+                case WEST:
+                    angle = Math.toRadians(210);
+                    break; // SW
+                case NORTH_WEST:
+                    angle = Math.toRadians(150);
+                    break; // NW
+                default:
+                    return new int[] {0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));
             int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-            return new int[]{x, z};
+            return new int[] {x, z};
         }
 
         /**
          * Get center position of the hex in local flat coordinates.
          */
         private double[] getCenterPosition() {
-            return new double[]{flat.getSizeX() / 2.0, flat.getSizeZ() / 2.0};
+            return new double[] {flat.getSizeX() / 2.0, flat.getSizeZ() / 2.0};
         }
 
         /**
@@ -507,7 +541,7 @@ public class HexGridEdgeBlender {
                 perpDz = -perpDz;
             }
 
-            return new double[]{perpDx, perpDz};
+            return new double[] {perpDx, perpDz};
         }
 
         /**
@@ -537,10 +571,16 @@ public class HexGridEdgeBlender {
                     validSamples++;
 
                     if (!loggedFirst && validSamples == 1) {
-                        log.debug("First sample at edge({},{}) + outward({},{}) * {} = sample({},{}) -> height={}",
-                                edgeX, edgeZ,
-                                String.format("%.2f", outwardDir[0]), String.format("%.2f", outwardDir[1]),
-                                dist, sampleX, sampleZ, height);
+                        log.debug(
+                                "First sample at edge({},{}) + outward({},{}) * {} = sample({},{}) -> height={}",
+                                edgeX,
+                                edgeZ,
+                                String.format("%.2f", outwardDir[0]),
+                                String.format("%.2f", outwardDir[1]),
+                                dist,
+                                sampleX,
+                                sampleZ,
+                                height);
                         loggedFirst = true;
                     }
                 }
@@ -615,19 +655,33 @@ public class HexGridEdgeBlender {
             // Debug first few calls to see transformation
             if (random.nextInt(100) == 0) {
                 // Check bounds in neighbor flat
-                boolean inBounds = (neighborX >= 0 && neighborX < neighborFlat.getSizeX() &&
-                                   neighborZ >= 0 && neighborZ < neighborFlat.getSizeZ());
+                boolean inBounds = (neighborX >= 0
+                        && neighborX < neighborFlat.getSizeX()
+                        && neighborZ >= 0
+                        && neighborZ < neighborFlat.getSizeZ());
                 int material = inBounds ? neighborFlat.getColumn(neighborX, neighborZ) : -1;
                 int level = inBounds ? neighborFlat.getLevel(neighborX, neighborZ) : -1;
 
-                log.debug("Coord transform: local=({},{}) -> world=({},{}) -> neighbor=({},{}) [neighborSize={},{}, bounds ok={}, material={}, level={}]",
-                        localX, localZ, worldX, worldZ, neighborX, neighborZ,
-                        neighborFlat.getSizeX(), neighborFlat.getSizeZ(), inBounds, material, level);
+                log.debug(
+                        "Coord transform: local=({},{}) -> world=({},{}) -> neighbor=({},{}) [neighborSize={},{}, bounds ok={}, material={}, level={}]",
+                        localX,
+                        localZ,
+                        worldX,
+                        worldZ,
+                        neighborX,
+                        neighborZ,
+                        neighborFlat.getSizeX(),
+                        neighborFlat.getSizeZ(),
+                        inBounds,
+                        material,
+                        level);
             }
 
             // Check bounds in neighbor flat
-            if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
-                neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
+            if (neighborX < 0
+                    || neighborX >= neighborFlat.getSizeX()
+                    || neighborZ < 0
+                    || neighborZ >= neighborFlat.getSizeZ()) {
                 return -1;
             }
 
@@ -645,15 +699,15 @@ public class HexGridEdgeBlender {
          * Returns new position at distance (currentDist + extension) from center.
          * The radius parameter is not used (was a bug) - we use the actual distance instead.
          */
-        private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
-                                              double radius, double extension) {
+        private double[] extendPointAlongRay(
+                double centerX, double centerZ, double pointX, double pointZ, double radius, double extension) {
             // Direction from center to point
             double dx = pointX - centerX;
             double dz = pointZ - centerZ;
             double currentDist = Math.sqrt(dx * dx + dz * dz);
 
             if (currentDist == 0) {
-                return new double[]{pointX, pointZ};
+                return new double[] {pointX, pointZ};
             }
 
             // Normalize direction
@@ -667,7 +721,7 @@ public class HexGridEdgeBlender {
             double newX = centerX + dirX * newDist;
             double newZ = centerZ + dirZ * newDist;
 
-            return new double[]{newX, newZ};
+            return new double[] {newX, newZ};
         }
 
         /**
@@ -746,7 +800,7 @@ public class HexGridEdgeBlender {
                 // Fade zone: In the last 40% of the blend (t > 0.6), gradually reduce blend strength
                 // This creates a softer edge at the inner boundary
                 if (t > 0.6) {
-                    double fadeT = (t - 0.6) / 0.4;  // 0.0 at t=0.6, 1.0 at t=1.0
+                    double fadeT = (t - 0.6) / 0.4; // 0.0 at t=0.6, 1.0 at t=1.0
                     double fadeFactor = 1.0 - fadeT; // 1.0 at t=0.6, 0.0 at t=1.0
                     blendFactor *= fadeFactor;
                 }

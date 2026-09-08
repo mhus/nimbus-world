@@ -104,5 +104,4 @@ public interface SchemaMigrator extends Comparable<SchemaMigrator> {
         // collapsed when stored in a TreeSet.
         return this.getToVersion().compareTo(other.getToVersion());
     }
-
 }

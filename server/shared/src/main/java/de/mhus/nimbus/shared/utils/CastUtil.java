@@ -1,15 +1,13 @@
 package de.mhus.nimbus.shared.utils;
 
+import java.util.Map;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.Map;
 
 public class CastUtil {
 
     // Jackson 3: ObjectMapper is immutable and auto-registers built-in modules (incl. java.time).
     private static final ObjectMapper mapper = new ObjectMapper();
-
 
     public static int toint(Object value, int defaultValue) {
         try {
@@ -41,7 +39,7 @@ public class CastUtil {
         }
     }
 
-    public static Map<Integer, String> mapIntegerOfString(Object ... keyValues) {
+    public static Map<Integer, String> mapIntegerOfString(Object... keyValues) {
         Map<Integer, String> map = new java.util.HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             Integer key = (Integer) keyValues[i];
@@ -51,7 +49,7 @@ public class CastUtil {
         return map;
     }
 
-    public static Map<String, Object> mapStringOfObject(Object ... keyValues) {
+    public static Map<String, Object> mapStringOfObject(Object... keyValues) {
         Map<String, Object> map = new java.util.HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             var key = String.valueOf(keyValues[i]);
@@ -61,7 +59,7 @@ public class CastUtil {
         return map;
     }
 
-    public static Map<String, String> mapStringOfString(Object ... keyValues) {
+    public static Map<String, String> mapStringOfString(Object... keyValues) {
         Map<String, String> map = new java.util.HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             var key = String.valueOf(keyValues[i]);
@@ -81,7 +79,8 @@ public class CastUtil {
 
     public static Map<String, Object> stringToMap(String json) {
         try {
-            return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
+            return mapper.readValue(
+                    json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
         } catch (Exception e) {
             throw new RuntimeException("Failed to deserialize JSON to Map<String, String>", e);
         }

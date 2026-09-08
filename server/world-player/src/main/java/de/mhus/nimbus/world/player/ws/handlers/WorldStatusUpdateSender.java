@@ -1,14 +1,14 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for sending world status updates to clients.
@@ -40,10 +40,7 @@ public class WorldStatusUpdateSender {
             ObjectNode data = objectMapper.createObjectNode();
             data.put("s", newStatus);
 
-            NetworkMessage message = NetworkMessage.builder()
-                    .t("w.su")
-                    .d(data)
-                    .build();
+            NetworkMessage message = NetworkMessage.builder().t("w.su").d(data).build();
 
             String json = objectMapper.writeValueAsString(message);
             TextMessage textMessage = new TextMessage(json);
@@ -56,8 +53,8 @@ public class WorldStatusUpdateSender {
                 }
             }
 
-            log.info("Broadcast world status update to {} sessions: world={}, status={}",
-                    sentCount, worldId, newStatus);
+            log.info(
+                    "Broadcast world status update to {} sessions: world={}, status={}", sentCount, worldId, newStatus);
 
         } catch (Exception e) {
             log.error("Failed to broadcast world status update: worldId={}", worldId, e);

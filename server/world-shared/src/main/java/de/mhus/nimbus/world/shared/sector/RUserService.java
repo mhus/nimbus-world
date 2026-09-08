@@ -1,15 +1,15 @@
 package de.mhus.nimbus.world.shared.sector;
 
+import de.mhus.nimbus.generated.configs.Settings;
+import de.mhus.nimbus.shared.types.PlayerUser;
+import de.mhus.nimbus.shared.user.RegionRoles;
+import de.mhus.nimbus.shared.user.SectorRoles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import de.mhus.nimbus.generated.configs.Settings;
-import de.mhus.nimbus.shared.types.PlayerUser;
-import de.mhus.nimbus.shared.user.SectorRoles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -17,8 +17,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-
-import de.mhus.nimbus.shared.user.RegionRoles;
 
 @Service
 @RequiredArgsConstructor
@@ -48,8 +46,13 @@ public class RUserService {
         return repository.save(user);
     }
 
-    public Optional<RUser> getByUsername(String username) { return repository.findByName(username); }
-    public List<RUser> listAll() { return repository.findAll(); }
+    public Optional<RUser> getByUsername(String username) {
+        return repository.findByName(username);
+    }
+
+    public List<RUser> listAll() {
+        return repository.findAll();
+    }
 
     public RUser save(RUser user) {
         // Try to load existing user from DB
@@ -75,8 +78,9 @@ public class RUserService {
     }
 
     public void disableUser(String username) {
-        RUser existing = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser existing = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         existing.disable();
         existing.touchUpdate();
         repository.save(existing);
@@ -84,16 +88,18 @@ public class RUserService {
 
     // Globale Server-Rollen
     public RUser addSectorRoles(String username, SectorRoles role) {
-        RUser existing = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser existing = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         existing.touchUpdate();
         if (existing.addSectorRole(role)) existing = repository.save(existing);
         return existing;
     }
 
     public RUser removeSectorRole(String username, SectorRoles role) {
-        RUser existing = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser existing = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         existing.touchUpdate();
         if (existing.removeSectorRole(role)) existing = repository.save(existing);
         return existing;
@@ -101,14 +107,16 @@ public class RUserService {
 
     // Legacy API methods (moved from deprecated RUser methods)
     public Set<SectorRoles> getRoles(String username) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getSectorRoles();
     }
 
     public boolean addRole(String username, SectorRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.addSectorRole(role);
         if (changed) {
             user.touchUpdate();
@@ -118,8 +126,9 @@ public class RUserService {
     }
 
     public boolean removeRole(String username, SectorRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.removeSectorRole(role);
         if (changed) {
             user.touchUpdate();
@@ -129,20 +138,23 @@ public class RUserService {
     }
 
     public boolean hasRole(String username, SectorRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.hasSectorRole(role);
     }
 
     public String getRolesRaw(String username) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getSectorRolesRaw();
     }
 
     public void setRolesRaw(String username, String raw) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setSectorRolesRaw(raw);
         user.touchUpdate();
         repository.save(user);
@@ -150,28 +162,32 @@ public class RUserService {
 
     // Region-specific role management
     public Map<String, RegionRoles> getRegionRoles(String username) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getRegionRoles();
     }
 
     public void setRegionRoles(String username, Map<String, RegionRoles> roles) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setRegionRoles(roles);
         user.touchUpdate();
         repository.save(user);
     }
 
     public RegionRoles getRegionRole(String username, String regionId) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getRegionRole(regionId);
     }
 
     public boolean setRegionRole(String username, String regionId, RegionRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.setRegionRole(regionId, role);
         if (changed) {
             user.touchUpdate();
@@ -181,14 +197,16 @@ public class RUserService {
     }
 
     public boolean hasRegionRole(String username, String regionId, RegionRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.hasRegionRole(regionId, role);
     }
 
     public boolean removeRegionRole(String username, String regionId) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.removeRegionRole(regionId);
         if (changed) {
             user.touchUpdate();
@@ -198,8 +216,9 @@ public class RUserService {
     }
 
     public List<String> getRegionIdsWithRole(String username, RegionRoles role) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getRegionIdsWithRole(role);
     }
 
@@ -207,41 +226,44 @@ public class RUserService {
         String fieldPath = "regionRoles." + regionId;
         Query query = new Query(Criteria.where(fieldPath).is(role.name()));
         query.fields().include("_id");
-        return mongoTemplate.find(query, RUser.class).stream()
-            .map(RUser::getId)
-            .collect(Collectors.toList());
+        return mongoTemplate.find(query, RUser.class).stream().map(RUser::getId).collect(Collectors.toList());
     }
 
     // User Settings management
     public Map<String, Settings> getUserSettings(String username) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getUserSettings();
     }
 
     public Settings getSettingsForClientType(String username, String clientType) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.getSettingsForClientType(clientType);
     }
 
     public void setSettingsForClientType(String username, String clientType, Settings settings) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setSettingsForClientType(clientType, settings);
         user.touchUpdate();
         repository.save(user);
     }
 
     public boolean hasSettingsForClientType(String username, String clientType) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         return user.hasSettingsForClientType(clientType);
     }
 
     public void setUserSettings(String username, Map<String, Settings> settings) {
-        RUser user = repository.findByName(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = repository
+                .findByName(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setUserSettings(settings);
         user.touchUpdate();
         repository.save(user);
@@ -252,9 +274,7 @@ public class RUserService {
      */
     public boolean updatePublicTitle(String username, String title) {
         Query query = new Query(Criteria.where("name").is(username));
-        Update update = new Update()
-                .set("publicData.title", title)
-                .set("modifiedAt", java.time.Instant.now());
+        Update update = new Update().set("publicData.title", title).set("modifiedAt", java.time.Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RUser.class);
         return result.getModifiedCount() > 0;
     }
@@ -264,9 +284,8 @@ public class RUserService {
      */
     public boolean updatePortraitPath(String username, String portraitPath) {
         Query query = new Query(Criteria.where("name").is(username));
-        Update update = new Update()
-                .set("publicData.portraitPath", portraitPath)
-                .set("modifiedAt", java.time.Instant.now());
+        Update update =
+                new Update().set("publicData.portraitPath", portraitPath).set("modifiedAt", java.time.Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RUser.class);
         return result.getModifiedCount() > 0;
     }
@@ -288,9 +307,7 @@ public class RUserService {
      */
     public boolean updatePublicGender(String username, String gender) {
         Query query = new Query(Criteria.where("name").is(username));
-        Update update = new Update()
-                .set("publicData.gender", gender)
-                .set("modifiedAt", java.time.Instant.now());
+        Update update = new Update().set("publicData.gender", gender).set("modifiedAt", java.time.Instant.now());
         var result = mongoTemplate.updateFirst(query, update, RUser.class);
         return result.getModifiedCount() > 0;
     }
@@ -308,15 +325,12 @@ public class RUserService {
 
         Query query;
         if (amount < 0) {
-            query = new Query(Criteria.where("id").is(userId)
-                    .and("gold").gte(-amount));
+            query = new Query(Criteria.where("id").is(userId).and("gold").gte(-amount));
         } else {
             query = new Query(Criteria.where("id").is(userId));
         }
 
-        Update update = new Update()
-                .inc("gold", amount)
-                .set("modifiedAt", java.time.Instant.now());
+        Update update = new Update().inc("gold", amount).set("modifiedAt", java.time.Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RUser.class);
 

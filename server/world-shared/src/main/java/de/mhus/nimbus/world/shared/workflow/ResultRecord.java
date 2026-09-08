@@ -1,12 +1,10 @@
 package de.mhus.nimbus.world.shared.workflow;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
-import de.mhus.nimbus.world.shared.job.JobExecutor;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor

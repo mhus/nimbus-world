@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Generic proxy chat agent that delegates to a target agent via an internal sub-chat.
@@ -72,13 +71,14 @@ public abstract class ProxyChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+    public List<WChatMessage> chat(
+            WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
         return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId,
-                                               String message, String sessionId, WChatContext context) {
+    public List<WChatMessage> chatWithSession(
+            WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
         // Get or create internal chat
         String internalChatId = getOrCreateInternalChat(worldId, chatId, playerId);
 
@@ -112,14 +112,22 @@ public abstract class ProxyChatAgent implements WChatAgent {
         // Route to target agent
         chatService.enqueueOrRoute(getTargetAgentName(), sessionMsg);
 
-        log.debug("Proxy {} forwarded message to {} via internal chat {}: parentChatId={}",
-                getName(), getTargetAgentName(), internalChatId, chatId);
+        log.debug(
+                "Proxy {} forwarded message to {} via internal chat {}: parentChatId={}",
+                getName(),
+                getTargetAgentName(),
+                internalChatId,
+                chatId);
 
         // Wait for reply via Redis BLPOP
         List<WChatMessage> replies = chatService.waitForReply(worldId, internalChatId, lastMessageId, REPLY_TIMEOUT);
 
         if (replies.isEmpty()) {
-            log.warn("Proxy {} got no reply from {} within timeout: parentChatId={}", getName(), getTargetAgentName(), chatId);
+            log.warn(
+                    "Proxy {} got no reply from {} within timeout: parentChatId={}",
+                    getName(),
+                    getTargetAgentName(),
+                    chatId);
             WChatMessage timeoutMsg = WChatMessage.builder()
                     .messageId(java.util.UUID.randomUUID().toString())
                     .senderId(getName() + "-agent")
@@ -149,14 +157,17 @@ public abstract class ProxyChatAgent implements WChatAgent {
 
             // Create new internal chat
             WChat internalChat = chatService.createInternalChat(
-                    worldId, parentChatId,
+                    worldId,
+                    parentChatId,
                     getName() + " → " + getTargetAgentName(),
                     getTargetAgentName(),
                     ownerId,
-                    "Internal proxy chat from " + getName()
-            );
-            log.info("Created internal chat: chatId={} for parent={}, targetAgent={}",
-                    internalChat.getChatId(), parentChatId, getTargetAgentName());
+                    "Internal proxy chat from " + getName());
+            log.info(
+                    "Created internal chat: chatId={} for parent={}, targetAgent={}",
+                    internalChat.getChatId(),
+                    parentChatId,
+                    getTargetAgentName());
             return internalChat.getChatId();
         });
     }

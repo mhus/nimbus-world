@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Revive action: uses a revive item on a dead player.
@@ -26,12 +25,29 @@ public class ReviveAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         return false;
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         return false;
     }
 
@@ -41,7 +57,13 @@ public class ReviveAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         if (targetEntityId == null) return false;
         return performRevive(session, targetEntityId, shortcutKey);
     }
@@ -69,8 +91,7 @@ public class ReviveAction implements GameplayAction {
         // Publish REVIVE via Redis to the target player
         gameplay.getVitalDeltaPublisher().publishRevive(worldId, targetEntityId, session.getEntityId());
 
-        gameplay.getClientService().sendSystemNotification(session, "Revive",
-                "Reviving " + targetEntityId);
+        gameplay.getClientService().sendSystemNotification(session, "Revive", "Reviving " + targetEntityId);
 
         log.info("Player {} used revive item {} on {}", session.getEntityId(), itemId, targetEntityId);
         return true;

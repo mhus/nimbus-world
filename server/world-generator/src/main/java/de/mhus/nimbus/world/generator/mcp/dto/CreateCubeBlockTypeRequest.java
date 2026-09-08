@@ -9,5 +9,4 @@ public record CreateCubeBlockTypeRequest(
         Map<Integer, Object> textures,
         String type,
         Boolean solid,
-        Double autoJump
-) {}
+        Double autoJump) {}

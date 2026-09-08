@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 
 /**
  * Interface for handling specific message types.

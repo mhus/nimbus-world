@@ -3,15 +3,14 @@ package de.mhus.nimbus.world.generator.reality;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Shared AI plumbing for the reality generator stages. Extracted so the identical chat-model
@@ -24,8 +23,7 @@ public final class RealityAiSupport {
     /** Immutable classpath templates -> a process-wide cache is safe and avoids re-reads. */
     private static final Map<String, String> TEMPLATE_CACHE = new ConcurrentHashMap<>();
 
-    private RealityAiSupport() {
-    }
+    private RealityAiSupport() {}
 
     /**
      * Resolve a chat model with the standard reality fallback chain: an explicit

@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
+import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
+
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
@@ -14,10 +13,6 @@ import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,10 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-
-import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Job executor that fills missing flora/fauna parameters on FeatureHexGrids
@@ -86,8 +84,8 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
             }
 
             // 2. Derive region worldId for flora/fauna lookups
-            WorldId wid = WorldId.of(worldId)
-                    .orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
             String regionWorldId = wid.toRegionCollection().getId();
 
             // 3. Load flora definitions and group by biome prefix
@@ -166,7 +164,8 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
 
                     for (int i = 1; i <= 5; i++) {
                         String paramName = "gf_category_" + i;
-                         if (params.get(paramName) == null || params.get(paramName).isBlank()) {
+                        if (params.get(paramName) == null
+                                || params.get(paramName).isBlank()) {
                             params.put(paramName, CATEGORIES[random.nextInt(CATEGORIES.length)]);
                             categoryFilled++;
                         }
@@ -174,8 +173,12 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
                 }
             }
 
-            log.info("Fill results: flora={}, fauna={}, density={}, category={}",
-                    floraFilled, faunaFilled, densityFilled, categoryFilled);
+            log.info(
+                    "Fill results: flora={}, fauna={}, density={}, category={}",
+                    floraFilled,
+                    faunaFilled,
+                    densityFilled,
+                    categoryFilled);
 
             // 6. Save enriched composition as new document
             String newDocumentId = saveComposition(worldId, document.getName(), composition);
@@ -187,8 +190,7 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
                     "floraFilled", floraFilled,
                     "faunaFilled", faunaFilled,
                     "densityFilled", densityFilled,
-                    "categoryFilled", categoryFilled
-            ));
+                    "categoryFilled", categoryFilled));
 
         } catch (JobExecutionException e) {
             throw e;
@@ -222,10 +224,11 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
 
     private WDocument loadDocument(String worldId, String documentId) {
         try {
-            WorldId wid = WorldId.of(worldId)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
-            return documentService.findByDocumentId(wid, COMPOSED_COLLECTION, documentId)
+            return documentService
+                    .findByDocumentId(wid, COMPOSED_COLLECTION, documentId)
                     .orElse(null);
         } catch (Exception e) {
             log.error("Failed to load document: worldId={}, documentId={}", worldId, documentId, e);
@@ -244,13 +247,16 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
             HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
 
             // Convert featureHexGrids list to registry map
-            if (composition.getFeatureHexGrids() != null && !composition.getFeatureHexGrids().isEmpty()) {
+            if (composition.getFeatureHexGrids() != null
+                    && !composition.getFeatureHexGrids().isEmpty()) {
                 Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
                 for (FeatureHexGrid grid : composition.getFeatureHexGrids()) {
                     String key = TypeUtil.toStringHexCoord(grid.getCoordinate());
                     registry.put(key, grid);
                 }
-                log.info("Converted {} FeatureHexGrids from list to registry", composition.getFeatureHexGrids().size());
+                log.info(
+                        "Converted {} FeatureHexGrids from list to registry",
+                        composition.getFeatureHexGrids().size());
             }
 
             return composition;
@@ -260,25 +266,31 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
         }
     }
 
-    private String saveComposition(String worldId, String sourceDocumentName, HexComposition composition) throws Exception {
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+    private String saveComposition(String worldId, String sourceDocumentName, HexComposition composition)
+            throws Exception {
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
         String newDocumentId = UUID.randomUUID().toString();
 
         // Convert registry map to list for JSON serialization
-        if (composition.getFeatureHexGridRegistry() != null && !composition.getFeatureHexGridRegistry().isEmpty()) {
-            composition.setFeatureHexGrids(new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
+        if (composition.getFeatureHexGridRegistry() != null
+                && !composition.getFeatureHexGridRegistry().isEmpty()) {
+            composition.setFeatureHexGrids(
+                    new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
         }
 
-        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(composition);
+        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(composition);
 
         Map<String, String> metadata = new HashMap<>();
         metadata.put("enrichedAt", Instant.now().toString());
         metadata.put("sourceDocumentName", sourceDocumentName);
-        metadata.put("totalGrids", String.valueOf(
-                composition.getFeatureHexGrids() != null ? composition.getFeatureHexGrids().size() : 0));
+        metadata.put(
+                "totalGrids",
+                String.valueOf(
+                        composition.getFeatureHexGrids() != null
+                                ? composition.getFeatureHexGrids().size()
+                                : 0));
 
         WDocument saved = documentService.save(wid, COMPOSED_COLLECTION, newDocumentId, doc -> {
             doc.setName(sourceDocumentName);

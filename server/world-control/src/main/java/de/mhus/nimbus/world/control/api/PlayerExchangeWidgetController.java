@@ -5,31 +5,30 @@ import de.mhus.nimbus.generated.types.ItemRef;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.session.SessionCommandService;
 import de.mhus.nimbus.world.shared.session.SessionCommandTarget;
+import de.mhus.nimbus.world.shared.util.ForbiddenWordFilter;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
-import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
-import de.mhus.nimbus.world.shared.util.ForbiddenWordFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Duration;
-import java.util.*;
 
 /**
  * REST Controller for the player exchange widget.
@@ -60,6 +59,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     // --- DTOs ---
 
     public record SelectedItem(String itemId, int amount) {}
+
     public record UpdateRequest(List<SelectedItem> selectedItems, int silverOffer, int goldOffer, String message) {}
 
     /**
@@ -67,9 +67,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
      */
     @GetMapping
     @Operation(summary = "Get exchange widget data")
-    public ResponseEntity<?> getExchangeData(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> getExchangeData(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -135,7 +133,9 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         // Partner offer
         result.put("partnerSilverOffer", toInt(partnerLease.getLeaseData().get("silverOffer")));
         result.put("partnerGoldOffer", toInt(partnerLease.getLeaseData().get("goldOffer")));
-        result.put("partnerSelectedItems", toSelectedItemList(partnerLease.getLeaseData().get("selectedItems")));
+        result.put(
+                "partnerSelectedItems",
+                toSelectedItemList(partnerLease.getLeaseData().get("selectedItems")));
         result.put("partnerMessage", toString(partnerLease.getLeaseData().get("message")));
         result.put("partnerAccepted", toBool(partnerLease.getLeaseData().get("accepted")));
 
@@ -149,9 +149,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     @PostMapping("/update")
     @Operation(summary = "Update exchange offer")
     public ResponseEntity<?> updateOffer(
-            HttpServletRequest request,
-            @RequestParam String progressId,
-            @RequestBody UpdateRequest body) {
+            HttpServletRequest request, @RequestParam String progressId, @RequestBody UpdateRequest body) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -173,13 +171,19 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         if (msg.length() > 140) return bad("Message must be 140 characters or less");
 
         // Update my offer
-        leaseService.setLeaseDataValues(myLease.getLeaseId(), Map.of(
-                "selectedItems", body.selectedItems() != null ? body.selectedItems() : List.of(),
-                "silverOffer", body.silverOffer(),
-                "goldOffer", body.goldOffer(),
-                "message", msg,
-                "accepted", false
-        ));
+        leaseService.setLeaseDataValues(
+                myLease.getLeaseId(),
+                Map.of(
+                        "selectedItems",
+                        body.selectedItems() != null ? body.selectedItems() : List.of(),
+                        "silverOffer",
+                        body.silverOffer(),
+                        "goldOffer",
+                        body.goldOffer(),
+                        "message",
+                        msg,
+                        "accepted",
+                        false));
 
         // Reset partner's accepted
         if (partnerLeaseId != null) {
@@ -188,13 +192,14 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
 
         // Notify partner
         sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, partnerEntityId,
-                1, characterId, "Exchange offer updated"
-        );
+                SessionCommandTarget.PLAYER, partnerEntityId, 1, characterId, "Exchange offer updated");
 
-        log.info("Player {} updated exchange: {} items selected, silver={}, gold={}",
-                playerName, body.selectedItems() != null ? body.selectedItems().size() : 0,
-                body.silverOffer(), body.goldOffer());
+        log.info(
+                "Player {} updated exchange: {} items selected, silver={}, gold={}",
+                playerName,
+                body.selectedItems() != null ? body.selectedItems().size() : 0,
+                body.silverOffer(),
+                body.goldOffer());
         return ResponseEntity.ok(Map.of("updated", true));
     }
 
@@ -245,9 +250,11 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
 
         if (!partnerAccepted) {
             sessionCommandService.sendNotification(
-                    SessionCommandTarget.PLAYER, partnerEntityId,
-                    1, characterId, "Exchange accepted — waiting for you"
-            );
+                    SessionCommandTarget.PLAYER,
+                    partnerEntityId,
+                    1,
+                    characterId,
+                    "Exchange accepted — waiting for you");
             return ResponseEntity.ok(Map.of("accepted", true, "completed", false));
         }
 
@@ -280,13 +287,9 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
             leaseService.release(partnerLeaseId);
 
             sessionCommandService.sendNotification(
-                    SessionCommandTarget.PLAYER, partnerEntityId,
-                    1, characterId, "Exchange complete!"
-            );
+                    SessionCommandTarget.PLAYER, partnerEntityId, 1, characterId, "Exchange complete!");
             sessionCommandService.sendNotification(
-                    SessionCommandTarget.PLAYER, playerName,
-                    0, "", "Exchange complete!"
-            );
+                    SessionCommandTarget.PLAYER, playerName, 0, "", "Exchange complete!");
 
             log.info("Exchange completed between {} and {}", playerName, partnerEntityId);
             return ResponseEntity.ok(Map.of("accepted", true, "completed", true));
@@ -300,9 +303,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
      */
     @PostMapping("/cancel")
     @Operation(summary = "Cancel exchange")
-    public ResponseEntity<?> cancelExchange(
-            HttpServletRequest request,
-            @RequestParam String progressId) {
+    public ResponseEntity<?> cancelExchange(HttpServletRequest request, @RequestParam String progressId) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -322,9 +323,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         if (partnerLeaseId != null) leaseService.release(partnerLeaseId);
 
         sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, partnerEntityId,
-                1, characterId, "Exchange cancelled"
-        );
+                SessionCommandTarget.PLAYER, partnerEntityId, 1, characterId, "Exchange cancelled");
 
         log.info("Player {} cancelled exchange with {}", playerName, partnerEntityId);
         return ResponseEntity.ok(Map.of("cancelled", true));
@@ -402,7 +401,8 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         }
         if (goldOfferB > 0) {
             if (userB.isEmpty() || !userService.changeGold(userB.get().getId(), -goldOfferB)) {
-                if (goldOfferA > 0 && userA.isPresent()) userService.changeGold(userA.get().getId(), goldOfferA);
+                if (goldOfferA > 0 && userA.isPresent())
+                    userService.changeGold(userA.get().getId(), goldOfferA);
                 if (silverOfferA > 0) characterService.changeSilver(charA.get().getId(), silverOfferA);
                 if (silverOfferB > 0) characterService.changeSilver(charB.get().getId(), silverOfferB);
                 return bad("Partner has insufficient gold");
@@ -436,11 +436,19 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         // --- Phase 3: Distribute currency ---
         if (silverOfferA > 0) characterService.changeSilver(charB.get().getId(), silverOfferA);
         if (silverOfferB > 0) characterService.changeSilver(charA.get().getId(), silverOfferB);
-        if (goldOfferA > 0 && userB.isPresent()) userService.changeGold(userB.get().getId(), goldOfferA);
-        if (goldOfferB > 0 && userA.isPresent()) userService.changeGold(userA.get().getId(), goldOfferB);
+        if (goldOfferA > 0 && userB.isPresent())
+            userService.changeGold(userB.get().getId(), goldOfferA);
+        if (goldOfferB > 0 && userA.isPresent())
+            userService.changeGold(userA.get().getId(), goldOfferB);
 
-        log.info("Transfer executed: A wants {} items from B, B wants {} items from A, silver A:{}/B:{}, gold A:{}/B:{}",
-                wantedByA.size(), wantedByB.size(), silverOfferA, silverOfferB, goldOfferA, goldOfferB);
+        log.info(
+                "Transfer executed: A wants {} items from B, B wants {} items from A, silver A:{}/B:{}, gold A:{}/B:{}",
+                wantedByA.size(),
+                wantedByB.size(),
+                silverOfferA,
+                silverOfferB,
+                goldOfferA,
+                goldOfferB);
         return null;
     }
 
@@ -507,7 +515,11 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     private int toInt(Object value) {
         if (value == null) return 0;
         if (value instanceof Number n) return n.intValue();
-        try { return Integer.parseInt(value.toString()); } catch (Exception e) { return 0; }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private boolean toBool(Object value) {
@@ -539,7 +551,8 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
                 if (item instanceof SelectedItem si) {
                     result.add(si);
                 } else if (item instanceof Map<?, ?> map) {
-                    String itemId = map.get("itemId") != null ? map.get("itemId").toString() : null;
+                    String itemId =
+                            map.get("itemId") != null ? map.get("itemId").toString() : null;
                     int amount = map.get("amount") instanceof Number n ? n.intValue() : 1;
                     if (itemId != null && amount > 0) {
                         result.add(new SelectedItem(itemId, amount));

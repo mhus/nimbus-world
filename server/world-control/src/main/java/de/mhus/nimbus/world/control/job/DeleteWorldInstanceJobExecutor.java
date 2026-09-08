@@ -5,12 +5,11 @@ import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Job executor for deleting a world instance.
@@ -60,7 +59,8 @@ public class DeleteWorldInstanceJobExecutor implements JobExecutor {
             if (!force) {
                 var instanceOpt = instanceService.findByInstanceId(instanceWorldId);
                 if (instanceOpt.isPresent() && !instanceOpt.get().hasNoActivePlayers()) {
-                    log.info("Instance {} still has active players, skipping deletion (use force=true to override)",
+                    log.info(
+                            "Instance {} still has active players, skipping deletion (use force=true to override)",
                             instanceWorldId);
                     return JobResult.success("Instance still has active players, deletion skipped: " + instanceWorldId);
                 }

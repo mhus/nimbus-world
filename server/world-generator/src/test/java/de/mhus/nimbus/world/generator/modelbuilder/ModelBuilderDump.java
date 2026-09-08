@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.generator.modelbuilder;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
-
 import java.util.*;
 
 /**
@@ -34,9 +33,7 @@ public final class ModelBuilderDump {
                 Block b = lb.getBlock();
                 var pos = b.getPosition();
                 entries.add(new BlockEntry(
-                        pos.getX(), pos.getY(), pos.getZ(),
-                        b.getBlockTypeId(), b.getLevel(), lb.getGroup()
-                ));
+                        pos.getX(), pos.getY(), pos.getZ(), b.getBlockTypeId(), b.getLevel(), lb.getGroup()));
             }
         }
 
@@ -55,8 +52,7 @@ public final class ModelBuilderDump {
         // Index: y -> (x,z) -> entry
         Map<Integer, Map<String, BlockEntry>> byY = new HashMap<>();
         for (BlockEntry e : entries) {
-            byY.computeIfAbsent(e.y, k -> new HashMap<>())
-                    .put(e.x + "," + e.z, e);
+            byY.computeIfAbsent(e.y, k -> new HashMap<>()).put(e.x + "," + e.z, e);
         }
 
         // Calculate cell width
@@ -67,7 +63,8 @@ public final class ModelBuilderDump {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("Blocks: %d, Y-range: [%d..%d], X: [%d..%d], Z: [%d..%d]%n",
+        sb.append(String.format(
+                "Blocks: %d, Y-range: [%d..%d], X: [%d..%d], Z: [%d..%d]%n",
                 entries.size(), minY, maxY, minX, maxX, minZ, maxZ));
 
         // Render bottom-to-top (Y ascending)

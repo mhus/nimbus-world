@@ -7,5 +7,4 @@ package de.mhus.nimbus.world.shared.world;
  *
  * @param epoch the new epoch value of the affected world instance
  */
-public record EpochSwitchMessage(int epoch) {
-}
+public record EpochSwitchMessage(int epoch) {}

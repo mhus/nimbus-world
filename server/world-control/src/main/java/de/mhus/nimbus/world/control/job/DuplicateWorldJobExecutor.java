@@ -4,12 +4,11 @@ import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Job executor for duplicating a world from source to target.
@@ -59,13 +58,16 @@ public class DuplicateWorldJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Source and target world IDs must be different");
             }
 
-            log.info("Starting world duplication: sourceWorldId={} targetWorldId={}",
-                    sourceWorldId, targetWorldId);
+            log.info("Starting world duplication: sourceWorldId={} targetWorldId={}", sourceWorldId, targetWorldId);
 
             // Execute all duplication services in order
             StringBuilder resultMessage = new StringBuilder();
-            resultMessage.append("Duplicated world from ").append(sourceWorldId)
-                    .append(" to ").append(targetWorldId).append(":\n");
+            resultMessage
+                    .append("Duplicated world from ")
+                    .append(sourceWorldId)
+                    .append(" to ")
+                    .append(targetWorldId)
+                    .append(":\n");
 
             for (DuplicateToWorld service : duplicateServices) {
                 log.info("Executing duplication service: {}", service.name());
@@ -75,11 +77,14 @@ public class DuplicateWorldJobExecutor implements JobExecutor {
                     resultMessage.append("- ").append(service.name()).append(": OK\n");
 
                 } catch (Exception e) {
-                    String errorMsg = String.format("Failed to duplicate %s: %s",
-                            service.name(), e.getMessage());
+                    String errorMsg = String.format("Failed to duplicate %s: %s", service.name(), e.getMessage());
                     log.error(errorMsg, e);
-                    resultMessage.append("- ").append(service.name()).append(": FAILED - ")
-                            .append(e.getMessage()).append("\n");
+                    resultMessage
+                            .append("- ")
+                            .append(service.name())
+                            .append(": FAILED - ")
+                            .append(e.getMessage())
+                            .append("\n");
 
                     // Continue with other services even if one fails
                     // This allows partial duplication and better error reporting

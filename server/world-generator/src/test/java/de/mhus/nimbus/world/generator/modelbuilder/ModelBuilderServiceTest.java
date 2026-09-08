@@ -1,21 +1,19 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import tools.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import tools.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 class ModelBuilderServiceTest {
 
@@ -26,20 +24,19 @@ class ModelBuilderServiceTest {
     @BeforeEach
     void setUp() {
         // Real part builders
-        List<ModelPartBuilder> builders = List.of(
-                new RootModelPartBuilder(),
-                new LogModelPartBuilder(),
-                new LeafModelPartBuilder()
-        );
-        service = new ModelBuilderService(builders, JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build(), null);
+        List<ModelPartBuilder> builders =
+                List.of(new RootModelPartBuilder(), new LogModelPartBuilder(), new LeafModelPartBuilder());
+        service = new ModelBuilderService(
+                builders,
+                JsonMapper.builder()
+                        .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                        .build(),
+                null);
 
         // Real WWorld with chunkSize 16
         WorldInfo worldInfo = new WorldInfo();
         worldInfo.setChunkSize(16);
-        world = WWorld.builder()
-                .worldId("test-world")
-                .publicData(worldInfo)
-                .build();
+        world = WWorld.builder().worldId("test-world").publicData(worldInfo).build();
 
         layer = WLayer.builder()
                 .worldId("test-world")
@@ -51,16 +48,12 @@ class ModelBuilderServiceTest {
     @Test
     void buildModel_singleRootStep_writesBlocksToChunkData() throws ModelBuilderException {
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("root")
-                                .type("root")
-                                .parameters(Map.of("blockType", "n:g", "depth", 3))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("root").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("root")
+                        .type("root")
+                        .parameters(Map.of("blockType", "n:g", "depth", 3))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("root").build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
@@ -82,25 +75,21 @@ class ModelBuilderServiceTest {
         assertThat(yPositions).containsExactly(8, 9, 10);
 
         // Verify blockTypeId
-        chunkData.getBlocks().forEach(lb ->
-                assertThat(lb.getBlock().getBlockTypeId()).isEqualTo("n:g")
-        );
+        chunkData
+                .getBlocks()
+                .forEach(lb -> assertThat(lb.getBlock().getBlockTypeId()).isEqualTo("n:g"));
     }
 
     @Test
     void buildModel_blocksInDifferentChunks_separatedCorrectly() throws ModelBuilderException {
         // log builder: paints vertical column from cursor upward
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("trunk")
-                                .type("log")
-                                .parameters(Map.of("blockType", "n:w", "heightFrom", 2, "heightTo", 2))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("trunk").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("trunk")
+                        .type("log")
+                        .parameters(Map.of("blockType", "n:w", "heightFrom", 2, "heightTo", 2))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("trunk").build()))
                 .build();
 
         // Start at chunk boundary: x=15 is chunk 0, x=16 would be chunk 1
@@ -115,16 +104,12 @@ class ModelBuilderServiceTest {
     @Test
     void buildModel_parameterSubstitution_works() throws ModelBuilderException {
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("root")
-                                .type("root")
-                                .parameters(Map.of("blockType", "$1", "depth", 1))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("root").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("root")
+                        .type("root")
+                        .parameters(Map.of("blockType", "$1", "depth", 1))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("root").build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(5).z(0).build();
@@ -138,19 +123,15 @@ class ModelBuilderServiceTest {
     @Test
     void buildModel_stepParameterOverridesDefinition() throws ModelBuilderException {
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("root")
-                                .type("root")
-                                .parameters(Map.of("blockType", "n:g", "depth", 5))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder()
-                                .step("root")
-                                .parameters(Map.of("depth", 2))
-                                .build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("root")
+                        .type("root")
+                        .parameters(Map.of("blockType", "n:g", "depth", 5))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder()
+                        .step("root")
+                        .parameters(Map.of("depth", 2))
+                        .build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(10).z(0).build();
@@ -161,9 +142,7 @@ class ModelBuilderServiceTest {
 
     @Test
     void buildModel_noSteps_throws() {
-        ModelBuilderModel model = ModelBuilderModel.builder()
-                .steps(List.of())
-                .build();
+        ModelBuilderModel model = ModelBuilderModel.builder().steps(List.of()).build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
 
@@ -175,16 +154,12 @@ class ModelBuilderServiceTest {
     @Test
     void buildModel_invalidBlockType_throws() {
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("root")
-                                .type("root")
-                                .parameters(Map.of("blockType", "!!!invalid!!!"))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("root").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("root")
+                        .type("root")
+                        .parameters(Map.of("blockType", "!!!invalid!!!"))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("root").build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
@@ -199,7 +174,9 @@ class ModelBuilderServiceTest {
         // Use a custom step that sets level on context
         ModelPartBuilder levelSetter = new ModelPartBuilder() {
             @Override
-            public String name() { return "level-test"; }
+            public String name() {
+                return "level-test";
+            }
 
             @Override
             public void buildPart(ModelBuilderContext context, ResolvedStep step) throws ModelBuilderException {
@@ -209,19 +186,20 @@ class ModelBuilderServiceTest {
             }
         };
 
-        ModelBuilderService svc = new ModelBuilderService(List.of(levelSetter), JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build(), null);
+        ModelBuilderService svc = new ModelBuilderService(
+                List.of(levelSetter),
+                JsonMapper.builder()
+                        .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                        .build(),
+                null);
 
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("block")
-                                .type("level-test")
-                                .parameters(Map.of("blockType", "n:g", "level", 3))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("block").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("block")
+                        .type("level-test")
+                        .parameters(Map.of("blockType", "n:g", "level", 3))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("block").build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
@@ -235,16 +213,12 @@ class ModelBuilderServiceTest {
     @Test
     void buildModel_negativeCoordinates_correctChunkKey() throws ModelBuilderException {
         ModelBuilderModel model = ModelBuilderModel.builder()
-                .definitions(List.of(
-                        ModelBuilderModel.StepDefinition.builder()
-                                .name("root")
-                                .type("root")
-                                .parameters(Map.of("blockType", "n:g", "depth", 1))
-                                .build()
-                ))
-                .steps(List.of(
-                        ModelBuilderModel.Step.builder().step("root").build()
-                ))
+                .definitions(List.of(ModelBuilderModel.StepDefinition.builder()
+                        .name("root")
+                        .type("root")
+                        .parameters(Map.of("blockType", "n:g", "depth", 1))
+                        .build()))
+                .steps(List.of(ModelBuilderModel.Step.builder().step("root").build()))
                 .build();
 
         // x=-5, z=-5 -> chunk -1:-1 (Math.floorDiv)
@@ -272,12 +246,10 @@ class ModelBuilderServiceTest {
                                 .name("crown")
                                 .type("leaf")
                                 .parameters(Map.of("blockType", "n:l", "size", 2, "density", 1.0))
-                                .build()
-                ))
+                                .build()))
                 .steps(List.of(
                         ModelBuilderModel.Step.builder().step("trunk").build(),
-                        ModelBuilderModel.Step.builder().step("crown").build()
-                ))
+                        ModelBuilderModel.Step.builder().step("crown").build()))
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(8).y(0).z(8).build();
@@ -293,7 +265,8 @@ class ModelBuilderServiceTest {
     @Test
     void buildFromDescriptor_blockStack_paintsVertically() throws ModelBuilderException {
         Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
-        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos, null, null);
+        ModelBuilderContext ctx =
+                service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos, null, null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(2);
         assertThat(ctx.getChunkDataMap()).isNotEmpty();
@@ -303,7 +276,9 @@ class ModelBuilderServiceTest {
         assertThat(chunkData.getBlocks()).hasSize(2);
 
         var blocks = chunkData.getBlocks().stream()
-                .sorted((a, b) -> Integer.compare(a.getBlock().getPosition().getY(), b.getBlock().getPosition().getY()))
+                .sorted((a, b) -> Integer.compare(
+                        a.getBlock().getPosition().getY(),
+                        b.getBlock().getPosition().getY()))
                 .toList();
         assertThat(blocks.get(0).getBlock().getPosition().getY()).isEqualTo(10);
         assertThat(blocks.get(0).getBlock().getBlockTypeId()).isEqualTo("n:g");

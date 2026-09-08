@@ -10,17 +10,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for player chat operations.
@@ -47,39 +46,18 @@ public class WChatController extends BaseEditorController {
             boolean archived,
             String ownerId,
             String hint,
-            String status
-    ) {}
+            String status) {}
 
     public record MessageResponse(
-            String messageId,
-            String senderId,
-            String message,
-            String type,
-            boolean command,
-            Instant createdAt
-    ) {}
+            String messageId, String senderId, String message, String type, boolean command, Instant createdAt) {}
 
-    public record CreateChatRequest(
-            String name,
-            String type,
-            String agentName,
-            String hint
-    ) {}
+    public record CreateChatRequest(String name, String type, String agentName, String hint) {}
 
-    public record SendMessageRequest(
-            String message
-    ) {}
+    public record SendMessageRequest(String message) {}
 
-    public record ExecuteCommandRequest(
-            String command,
-            Map<String, Object> params
-    ) {}
+    public record ExecuteCommandRequest(String command, Map<String, Object> params) {}
 
-    public record AgentResponse(
-            String name,
-            String title,
-            String scope
-    ) {}
+    public record AgentResponse(String name, String title, String scope) {}
 
     /**
      * Get all chats for the authenticated player.
@@ -88,15 +66,21 @@ public class WChatController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get all chats for the authenticated player")
     public ResponseEntity<?> getChatsForPlayer(
-            @Parameter(description = "Filter by archived status") @RequestParam(required = false, defaultValue = "false") boolean archived,
+            @Parameter(description = "Filter by archived status")
+                    @RequestParam(required = false, defaultValue = "false")
+                    boolean archived,
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("GET chats for player: worldId={}, userId={}, characterId={}, archived={}",
-            worldId, userId, characterId, archived);
+        log.debug(
+                "GET chats for player: worldId={}, userId={}, characterId={}, archived={}",
+                worldId,
+                userId,
+                characterId,
+                archived);
 
         if (Strings.isBlank(worldId)) {
             return bad("worldId required - not authenticated");
@@ -110,9 +94,8 @@ public class WChatController extends BaseEditorController {
             WorldId wId = WorldId.unchecked(worldId);
             List<WChat> chats = chatService.getChatsForOwner(wId, null, playerId, archived);
 
-            List<ChatResponse> responses = chats.stream()
-                    .map(this::toChatResponse)
-                    .collect(Collectors.toList());
+            List<ChatResponse> responses =
+                    chats.stream().map(this::toChatResponse).collect(Collectors.toList());
 
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
@@ -138,7 +121,12 @@ public class WChatController extends BaseEditorController {
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
         String playerId = resolvePlayerId(userId, characterId);
 
-        log.debug("GET messages: worldId={}, chatId={}, afterMessageId={} limit={}", worldId, chatId, afterMessageId, limit);
+        log.debug(
+                "GET messages: worldId={}, chatId={}, afterMessageId={} limit={}",
+                worldId,
+                chatId,
+                afterMessageId,
+                limit);
 
         if (Strings.isBlank(worldId)) {
             return bad("worldId required - not authenticated");
@@ -155,16 +143,12 @@ public class WChatController extends BaseEditorController {
             if (loadOwnedChat(wId, chatId, playerId) == null) {
                 return notFound("Chat not found");
             }
-            List<WChatMessage> messages =
-                    Strings.isBlank(afterMessageId)
-                        ?
-                    chatService.getChatMessages(wId, chatId, limit)
-                        :
-                    chatService.getChatMessagesAfterMessageId(wId, chatId, afterMessageId, limit);
+            List<WChatMessage> messages = Strings.isBlank(afterMessageId)
+                    ? chatService.getChatMessages(wId, chatId, limit)
+                    : chatService.getChatMessagesAfterMessageId(wId, chatId, afterMessageId, limit);
 
-            List<MessageResponse> responses = messages.stream()
-                    .map(this::toMessageResponse)
-                    .collect(Collectors.toList());
+            List<MessageResponse> responses =
+                    messages.stream().map(this::toMessageResponse).collect(Collectors.toList());
 
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
@@ -179,9 +163,7 @@ public class WChatController extends BaseEditorController {
      */
     @PostMapping
     @Operation(summary = "Create a new chat")
-    public ResponseEntity<?> createChat(
-            @RequestBody CreateChatRequest request,
-            HttpServletRequest httpRequest) {
+    public ResponseEntity<?> createChat(@RequestBody CreateChatRequest request, HttpServletRequest httpRequest) {
 
         String worldId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -268,8 +250,7 @@ public class WChatController extends BaseEditorController {
 
             // Save player message and enqueue for async agent processing
             WChatMessage playerMessage = chatService.enqueuePlayerMessage(
-                    wId, chatId, agentName, playerId, playerMessageId,
-                    request.message(), sessionId);
+                    wId, chatId, agentName, playerId, playerMessageId, request.message(), sessionId);
 
             // Return immediately with the player message (agent response comes via polling)
             return ResponseEntity.ok(toMessageResponse(playerMessage));
@@ -297,8 +278,12 @@ public class WChatController extends BaseEditorController {
 
         String playerId = resolvePlayerId(userId, characterId);
 
-        log.debug("POST execute command: worldId={}, chatId={}, playerId={}, command={}",
-                worldId, chatId, playerId, request.command());
+        log.debug(
+                "POST execute command: worldId={}, chatId={}, playerId={}, command={}",
+                worldId,
+                chatId,
+                playerId,
+                request.command());
 
         if (Strings.isBlank(worldId)) {
             return bad("worldId required - not authenticated");
@@ -326,24 +311,20 @@ public class WChatController extends BaseEditorController {
             String agentName = chat.getType();
 
             // Merge sessionId into params
-            Map<String, Object> params = request.params() != null
-                    ? new java.util.HashMap<>(request.params())
-                    : new java.util.HashMap<>();
+            Map<String, Object> params =
+                    request.params() != null ? new java.util.HashMap<>(request.params()) : new java.util.HashMap<>();
             if (sessionId != null && !sessionId.isBlank()) {
                 params.put("sessionId", sessionId);
                 log.debug("Added sessionId to params: {}", sessionId);
             }
 
             // Enqueue command for async processing
-            chatService.enqueuePlayerCommand(
-                    wId, chatId, agentName, playerId,
-                    request.command(), params, sessionId);
+            chatService.enqueuePlayerCommand(wId, chatId, agentName, playerId, request.command(), params, sessionId);
 
             // Return immediately (command results come via polling)
             return ResponseEntity.ok(Map.of("message", "Command enqueued"));
         } catch (Exception e) {
-            log.error("Error executing command: worldId={}, chatId={}, playerId={}",
-                    worldId, chatId, playerId, e);
+            log.error("Error executing command: worldId={}, chatId={}, playerId={}", worldId, chatId, playerId, e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to execute command: " + e.getMessage()));
         }
     }
@@ -355,7 +336,9 @@ public class WChatController extends BaseEditorController {
     @GetMapping("/agents")
     @Operation(summary = "Get available chat agents")
     public ResponseEntity<?> getAvailableAgents(
-            @Parameter(description = "Filter by scope (ALL, PLAYER, EDITOR)") @RequestParam(required = false, defaultValue = "ALL") String scope,
+            @Parameter(description = "Filter by scope (ALL, PLAYER, EDITOR)")
+                    @RequestParam(required = false, defaultValue = "ALL")
+                    String scope,
             HttpServletRequest request) {
         log.debug("GET available agents, scope={}", scope);
 
@@ -364,7 +347,8 @@ public class WChatController extends BaseEditorController {
             List<WChatAgent> agents = chatService.getAvailableAgents(agentScope);
 
             List<AgentResponse> responses = agents.stream()
-                    .map(agent -> new AgentResponse(agent.getName(), agent.getTitle(), agent.getScope().name()))
+                    .map(agent -> new AgentResponse(
+                            agent.getName(), agent.getTitle(), agent.getScope().name()))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(responses);
@@ -383,8 +367,7 @@ public class WChatController extends BaseEditorController {
     @PutMapping("/{chatId}/archive")
     @Operation(summary = "Archive a chat")
     public ResponseEntity<?> archiveChat(
-            @Parameter(description = "Chat ID") @PathVariable String chatId,
-            HttpServletRequest request) {
+            @Parameter(description = "Chat ID") @PathVariable String chatId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -428,8 +411,7 @@ public class WChatController extends BaseEditorController {
     @PutMapping("/{chatId}/unarchive")
     @Operation(summary = "Unarchive a chat")
     public ResponseEntity<?> unarchiveChat(
-            @Parameter(description = "Chat ID") @PathVariable String chatId,
-            HttpServletRequest request) {
+            @Parameter(description = "Chat ID") @PathVariable String chatId, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
@@ -474,9 +456,7 @@ public class WChatController extends BaseEditorController {
      */
     private String resolvePlayerId(String userId, String characterId) {
         if (userId != null && characterId != null) {
-            return PlayerId.of(userId, characterId)
-                    .map(PlayerId::getId)
-                    .orElse(null);
+            return PlayerId.of(userId, characterId).map(PlayerId::getId).orElse(null);
         }
         return null;
     }
@@ -491,8 +471,11 @@ public class WChatController extends BaseEditorController {
         WChat chat = chatService.findByWorldIdAndChatId(worldId, chatId).orElse(null);
         if (chat == null || !playerId.equals(chat.getOwnerId())) {
             if (chat != null) {
-                log.warn("Denied cross-player chat access: chatId={} owner={} caller={}",
-                        chatId, chat.getOwnerId(), playerId);
+                log.warn(
+                        "Denied cross-player chat access: chatId={} owner={} caller={}",
+                        chatId,
+                        chat.getOwnerId(),
+                        playerId);
             }
             return null;
         }
@@ -510,16 +493,14 @@ public class WChatController extends BaseEditorController {
                 chat.isArchived(),
                 chat.getOwnerId(),
                 chat.getHint(),
-                status
-        );
+                status);
     }
 
     private String resolveChatStatus(WChat chat) {
         if (chat.isArchived()) {
             return "ARCHIVED";
         }
-        String sessionStatus = chatExecutorService.getSessionStatus(
-                chat.getWorldId(), chat.getChatId());
+        String sessionStatus = chatExecutorService.getSessionStatus(chat.getWorldId(), chat.getChatId());
         if (sessionStatus != null) {
             return "ACTIVE_" + sessionStatus; // ACTIVE_IDLE or ACTIVE_BUSY
         }
@@ -533,7 +514,6 @@ public class WChatController extends BaseEditorController {
                 message.getMessage(),
                 message.getType(),
                 message.isCommand(),
-                message.getCreatedAt()
-        );
+                message.getCreatedAt());
     }
 }

@@ -68,8 +68,10 @@ public class FlatExportJobExecutor implements JobExecutor {
                 }
 
                 // Find layer by layerDataId
-                WLayer layer = layerService.findByWorldIdAndLayerDataId(worldId, flatLayerDataId)
-                        .orElseThrow(() -> new JobExecutionException("Layer not found for layerDataId: " + flatLayerDataId));
+                WLayer layer = layerService
+                        .findByWorldIdAndLayerDataId(worldId, flatLayerDataId)
+                        .orElseThrow(
+                                () -> new JobExecutionException("Layer not found for layerDataId: " + flatLayerDataId));
                 layerName = layer.getName();
 
                 log.info("Using flat's original layer: layerDataId={}, layerName={}", flatLayerDataId, layerName);
@@ -79,8 +81,13 @@ public class FlatExportJobExecutor implements JobExecutor {
             boolean deleteAfterExport = getOptionalBooleanParameter(job, "deleteAfterExport", false);
             boolean smoothCorners = getOptionalBooleanParameter(job, "smoothCorners", true);
 
-            log.debug("Exporting flat: flatId={}, worldId={}, layerName={}, deleteAfterExport={}, smoothCorners={}",
-                    flatId, worldId, layerName, deleteAfterExport, smoothCorners);
+            log.debug(
+                    "Exporting flat: flatId={}, worldId={}, layerName={}, deleteAfterExport={}, smoothCorners={}",
+                    flatId,
+                    worldId,
+                    layerName,
+                    deleteAfterExport,
+                    smoothCorners);
 
             // Execute export (use database ID)
             int exportedColumns = flatExportService.exportToLayer(flat.getId(), worldId, layerName, smoothCorners);
@@ -95,11 +102,14 @@ public class FlatExportJobExecutor implements JobExecutor {
             // Build successful result
             String resultData = String.format(
                     "Successfully exported flat: flatId=%s, worldId=%s, layerName=%s, exportedColumns=%d, deleted=%s, smoothCorners=%s",
-                    flatId, worldId, layerName, exportedColumns, deleteAfterExport, smoothCorners
-            );
+                    flatId, worldId, layerName, exportedColumns, deleteAfterExport, smoothCorners);
 
-            log.debug("Flat export completed successfully: flatId={}, exportedColumns={}, deleted={}, smoothCorners={}",
-                    flatId, exportedColumns, deleteAfterExport, smoothCorners);
+            log.debug(
+                    "Flat export completed successfully: flatId={}, exportedColumns={}, deleted={}, smoothCorners={}",
+                    flatId,
+                    exportedColumns,
+                    deleteAfterExport,
+                    smoothCorners);
             return JobResult.success(resultData);
 
         } catch (JobExecutionException e) {
@@ -124,16 +134,17 @@ public class FlatExportJobExecutor implements JobExecutor {
 
         if (layerDataId != null && !layerDataId.isBlank()) {
             // Use compound lookup with worldId, layerDataId, and flatId
-            return flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
-                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                            ", layerDataId=" + layerDataId + ", flatId=" + flatId));
+            return flatService
+                    .findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
+                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId + ", layerDataId="
+                            + layerDataId + ", flatId=" + flatId));
         } else {
             // Search for flat with matching flatId in this world
             return flatService.findByWorldId(worldId).stream()
                     .filter(f -> flatId.equals(f.getFlatId()))
                     .findFirst()
-                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                            ", flatId=" + flatId));
+                    .orElseThrow(() ->
+                            new JobExecutionException("Flat not found: worldId=" + worldId + ", flatId=" + flatId));
         }
     }
 
@@ -168,8 +179,6 @@ public class FlatExportJobExecutor implements JobExecutor {
             return defaultValue;
         }
         // Parse boolean (true, false, 1, 0, yes, no)
-        return "true".equalsIgnoreCase(value)
-            || "1".equals(value)
-            || "yes".equalsIgnoreCase(value);
+        return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
     }
 }

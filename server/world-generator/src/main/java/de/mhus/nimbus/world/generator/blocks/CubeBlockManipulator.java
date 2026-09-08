@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Cube Block Manipulator - creates a filled rectangular cuboid.
@@ -61,9 +61,9 @@ public class CubeBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a filled rectangular cuboid (solid block). " +
-                "Parameters: position {x,y,z}, width, height, depth, blockType (optional), painter (optional). " +
-                "Example: {\"cube\": {\"transform\": \"position\", \"width\": 5, \"height\": 3, \"depth\": 5}}";
+        return "Creates a filled rectangular cuboid (solid block). "
+                + "Parameters: position {x,y,z}, width, height, depth, blockType (optional), painter (optional). "
+                + "Example: {\"cube\": {\"transform\": \"position\", \"width\": 5, \"height\": 3, \"depth\": 5}}";
     }
 
     @Override
@@ -121,8 +121,15 @@ public class CubeBlockManipulator implements BlockManipulator {
         }
 
         // Generate cube
-        log.info("Generating cube: pos=({},{},{}), size={}x{}x{}, blockType={}",
-                x, y, z, width, height, depth, blockType);
+        log.info(
+                "Generating cube: pos=({},{},{}), size={}x{}x{}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                height,
+                depth,
+                blockType);
 
         painter.cube(x, y, z, width, height, depth);
 
@@ -130,8 +137,8 @@ public class CubeBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated cube: %d blocks (%dx%dx%d) at (%d,%d,%d)",
-                blockCount, width, height, depth, x, y, z);
+        String message = String.format(
+                "Generated cube: %d blocks (%dx%dx%d) at (%d,%d,%d)", blockCount, width, height, depth, x, y, z);
 
         log.info(message);
 

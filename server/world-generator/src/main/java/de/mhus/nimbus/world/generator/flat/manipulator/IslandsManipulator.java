@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Islands manipulator.
@@ -54,8 +53,7 @@ public class IslandsManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting islands manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -94,8 +92,18 @@ public class IslandsManipulator implements FlatManipulator {
         int baseLevel = underwater ? oceanLevel - mainHeight : oceanLevel;
         int targetHeight = underwater ? oceanLevel - 5 : oceanLevel + mainHeight;
 
-        log.debug("Island generation: center=({},{}), size=({},{}), oceanLevel={}, mainHeight={} (relative), baseLevel={}, targetHeight={}, mainSize={}, underwater={}",
-                centerX, centerZ, sizeX, sizeZ, oceanLevel, mainHeight, baseLevel, targetHeight, mainSize, underwater);
+        log.debug(
+                "Island generation: center=({},{}), size=({},{}), oceanLevel={}, mainHeight={} (relative), baseLevel={}, targetHeight={}, mainSize={}, underwater={}",
+                centerX,
+                centerZ,
+                sizeX,
+                sizeZ,
+                oceanLevel,
+                mainHeight,
+                baseLevel,
+                targetHeight,
+                mainSize,
+                underwater);
 
         // Draw main island
         drawIsland(painter, flat, centerX, centerZ, mainSize, baseLevel, targetHeight);
@@ -116,9 +124,7 @@ public class IslandsManipulator implements FlatManipulator {
             // Random radius and height for each small island
             int smallRadius = smallMinRadius + random.nextInt(smallMaxRadius - smallMinRadius + 1);
             int smallHeight = (mainHeight / 3) + random.nextInt(mainHeight / 2);
-            int smallTargetHeight = underwater ?
-                                  oceanLevel - smallHeight :
-                                  oceanLevel + smallHeight;
+            int smallTargetHeight = underwater ? oceanLevel - smallHeight : oceanLevel + smallHeight;
 
             drawIsland(painter, flat, smallX, smallZ, smallRadius, baseLevel, smallTargetHeight);
         }
@@ -145,8 +151,12 @@ public class IslandsManipulator implements FlatManipulator {
             }
         }
 
-        log.debug("Islands manipulation completed: mainSize={}, mainHeight={}, smallIslands={}, underwater={}",
-                mainSize, mainHeight, smallCount, underwater);
+        log.debug(
+                "Islands manipulation completed: mainSize={}, mainHeight={}, smallIslands={}, underwater={}",
+                mainSize,
+                mainHeight,
+                smallCount,
+                underwater);
     }
 
     /**
@@ -160,11 +170,15 @@ public class IslandsManipulator implements FlatManipulator {
      * @param baseLevel Base height level
      * @param peakHeight Peak height
      */
-    private void drawIsland(FlatPainter painter, WFlat flat,
-                           int centerX, int centerZ, int radius,
-                           int baseLevel, int peakHeight) {
-        log.debug("Drawing island: center=({},{}), radius={}, baseLevel={}, peakHeight={}",
-                centerX, centerZ, radius, baseLevel, peakHeight);
+    private void drawIsland(
+            FlatPainter painter, WFlat flat, int centerX, int centerZ, int radius, int baseLevel, int peakHeight) {
+        log.debug(
+                "Drawing island: center=({},{}), radius={}, baseLevel={}, peakHeight={}",
+                centerX,
+                centerZ,
+                radius,
+                baseLevel,
+                peakHeight);
 
         // Exponential falloff from center to edges
         // Formula: height = baseLevel + (peakHeight - baseLevel) * exp(-2.0 * distance / radius)
@@ -191,8 +205,14 @@ public class IslandsManipulator implements FlatManipulator {
             }
         }
 
-        log.debug("Island drawn: center=({},{}), radius={}, baseLevel={}, peakHeight={}, pixelsDrawn={}",
-                centerX, centerZ, radius, baseLevel, peakHeight, pixelsDrawn);
+        log.debug(
+                "Island drawn: center=({},{}), radius={}, baseLevel={}, peakHeight={}, pixelsDrawn={}",
+                centerX,
+                centerZ,
+                radius,
+                baseLevel,
+                peakHeight,
+                pixelsDrawn);
     }
 
     // Parameter parsing helper methods
@@ -204,8 +224,7 @@ public class IslandsManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -217,8 +236,7 @@ public class IslandsManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

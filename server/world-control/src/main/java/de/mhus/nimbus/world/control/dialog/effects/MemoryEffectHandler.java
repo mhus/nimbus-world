@@ -4,14 +4,13 @@ import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
 import de.mhus.nimbus.world.shared.world.WProgressService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 public class MemoryEffectHandler {
 
@@ -23,13 +22,16 @@ public class MemoryEffectHandler {
         private final WProgressService progressService;
 
         @Override
-        public String getEffectType() { return "setMemory"; }
+        public String getEffectType() {
+            return "setMemory";
+        }
 
         @Override
         public void execute(Effect effect, DialogContext ctx) {
             var memory = ctx.getPlayerMemoryProgress();
             if (memory == null) {
-                String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
+                String entityId =
+                        ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
                 Map<String, Object> data = new HashMap<>();
                 data.put(effect.key(), effect.value());
                 var saved = progressService.save(ctx.getWorldId(), ctx.getPlayerId(), "npc-memory", entityId, data);
@@ -51,7 +53,9 @@ public class MemoryEffectHandler {
         private final WProgressService progressService;
 
         @Override
-        public String getEffectType() { return "addMemory"; }
+        public String getEffectType() {
+            return "addMemory";
+        }
 
         @Override
         public void execute(Effect effect, DialogContext ctx) {
@@ -60,7 +64,8 @@ public class MemoryEffectHandler {
 
             var memory = ctx.getPlayerMemoryProgress();
             if (memory == null) {
-                String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
+                String entityId =
+                        ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
                 Map<String, Object> data = new HashMap<>();
                 data.put("remembers", remembers);
                 var saved = progressService.save(ctx.getWorldId(), ctx.getPlayerId(), "npc-memory", entityId, data);

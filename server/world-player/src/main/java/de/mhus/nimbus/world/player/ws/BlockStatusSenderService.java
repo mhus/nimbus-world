@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.player.ws;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.messages.BlockProgressStatusData;
-import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.Map;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for sending block progress status updates to clients.
@@ -39,7 +38,8 @@ public class BlockStatusSenderService {
      * @param status   New status value (e.g. "open", "closed")
      */
     public void setAndBroadcast(String worldId, String chunkKey, int cx, int cz, String blockKey, String status) {
-        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call needed
+        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call
+        // needed
         progressService.setBlockStatus(worldId, chunkKey, blockKey, status);
     }
 
@@ -67,7 +67,8 @@ public class BlockStatusSenderService {
      * @param blockKey Block identifier (blockId string)
      */
     public void removeAndBroadcast(String worldId, String chunkKey, int cx, int cz, String blockKey) {
-        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call needed
+        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call
+        // needed
         progressService.removeBlockStatus(worldId, chunkKey, blockKey);
     }
 
@@ -82,11 +83,8 @@ public class BlockStatusSenderService {
     public void broadcastStatusUpdate(String worldId, int cx, int cz, Map<String, String> statusMap) {
         if (statusMap == null || statusMap.isEmpty()) return;
 
-        BlockProgressStatusData data = BlockProgressStatusData.builder()
-                .cx(cx)
-                .cz(cz)
-                .s(statusMap)
-                .build();
+        BlockProgressStatusData data =
+                BlockProgressStatusData.builder().cx(cx).cz(cz).s(statusMap).build();
 
         sendToChunkSessions(worldId, cx, cz, data);
     }
@@ -105,7 +103,11 @@ public class BlockStatusSenderService {
         BlockProgressStatusData data = BlockProgressStatusData.builder()
                 .cx(cx)
                 .cz(cz)
-                .s(new java.util.HashMap<>() {{ put(blockKey, null); }})
+                .s(new java.util.HashMap<>() {
+                    {
+                        put(blockKey, null);
+                    }
+                })
                 .build();
 
         sendToChunkSessions(worldId, cx, cz, data);
@@ -123,21 +125,25 @@ public class BlockStatusSenderService {
 
             int sentCount = 0;
             for (PlayerSession session : sessionManager.getAllSessions().values()) {
-                if (session.isAuthenticated() &&
-                    worldId.equals(session.getWorldId().getId()) &&
-                    session.isChunkRegistered(cx, cz)) {
+                if (session.isAuthenticated()
+                        && worldId.equals(session.getWorldId().getId())
+                        && session.isChunkRegistered(cx, cz)) {
 
                     session.sendMessage(textMessage);
                     sentCount++;
                 }
             }
 
-            log.debug("Broadcast block status update to {} sessions: worldId={}, chunk=({},{}), entries={}",
-                    sentCount, worldId, cx, cz, data.getS().size());
+            log.debug(
+                    "Broadcast block status update to {} sessions: worldId={}, chunk=({},{}), entries={}",
+                    sentCount,
+                    worldId,
+                    cx,
+                    cz,
+                    data.getS().size());
 
         } catch (Exception e) {
-            log.error("Failed to broadcast block status update: worldId={}, chunk=({},{})",
-                    worldId, cx, cz, e);
+            log.error("Failed to broadcast block status update: worldId={}, chunk=({},{})", worldId, cx, cz, e);
         }
     }
 }

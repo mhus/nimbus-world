@@ -3,6 +3,11 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -12,12 +17,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * Service for managing WEntity instances in the world.
@@ -110,17 +109,19 @@ public class WEntityService {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        WEntity entity = repository.findByWorldIdAndName(lookupWorld.getId(), entityId).orElseGet(() -> {
-            WEntity neu = WEntity.builder()
-                    .worldId(lookupWorld.getId())
-                    .name(entityId)
-                    .modelId(modelId)
-                    .enabled(true)
-                    .build();
-            neu.touchCreate();
-            log.debug("Creating new WEntity: world={}, entityId={}", lookupWorld, entityId);
-            return neu;
-        });
+        WEntity entity = repository
+                .findByWorldIdAndName(lookupWorld.getId(), entityId)
+                .orElseGet(() -> {
+                    WEntity neu = WEntity.builder()
+                            .worldId(lookupWorld.getId())
+                            .name(entityId)
+                            .modelId(modelId)
+                            .enabled(true)
+                            .build();
+                    neu.touchCreate();
+                    log.debug("Creating new WEntity: world={}, entityId={}", lookupWorld, entityId);
+                    return neu;
+                });
 
         entity.setPublicData(publicData);
         entity.setModelId(modelId);
@@ -180,11 +181,14 @@ public class WEntityService {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndName(lookupWorld.getId(), entityId).map(entity -> {
-            repository.delete(entity);
-            log.debug("Deleted WEntity: world={}, entityId={}", lookupWorld, entityId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndName(lookupWorld.getId(), entityId)
+                .map(entity -> {
+                    repository.delete(entity);
+                    log.debug("Deleted WEntity: world={}, entityId={}", lookupWorld, entityId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Transactional
@@ -211,8 +215,7 @@ public class WEntityService {
             throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        List<WEntity> entities = repository.findByWorldIdAndNameStartingWith(
-                lookupWorld.getId(), prefix);
+        List<WEntity> entities = repository.findByWorldIdAndNameStartingWith(lookupWorld.getId(), prefix);
         if (!entities.isEmpty()) {
             repository.deleteAll(entities);
             log.debug("Deleted {} WEntities with prefix '{}' in world {}", entities.size(), prefix, worldId);
@@ -235,12 +238,16 @@ public class WEntityService {
             throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        List<WEntity> entities = repository.findByWorldIdAndSourceAndAffectedChunksIn(
-                lookupWorld.getId(), source, chunkKeys);
+        List<WEntity> entities =
+                repository.findByWorldIdAndSourceAndAffectedChunksIn(lookupWorld.getId(), source, chunkKeys);
         if (!entities.isEmpty()) {
             repository.deleteAll(entities);
-            log.debug("Deleted {} WEntities with source '{}' in {} chunks in world {}",
-                    entities.size(), source, chunkKeys.size(), worldId);
+            log.debug(
+                    "Deleted {} WEntities with source '{}' in {} chunks in world {}",
+                    entities.size(),
+                    source,
+                    chunkKeys.size(),
+                    worldId);
         }
         return entities.size();
     }
@@ -331,7 +338,8 @@ public class WEntityService {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        return repository.findByWorldIdAndEnabledAndAffectedChunksInAndEpochesContaining(lookupWorld.getId(), true, chunkKeys, epoch);
+        return repository.findByWorldIdAndEnabledAndAffectedChunksInAndEpochesContaining(
+                lookupWorld.getId(), true, chunkKeys, epoch);
     }
 
     /**
@@ -380,7 +388,8 @@ public class WEntityService {
     }
 
     private int getChunkSize(String worldId) {
-        return worldService.getByWorldId(worldId)
+        return worldService
+                .getByWorldId(worldId)
                 .filter(w -> w.getPublicData() != null)
                 .map(w -> w.getPublicData().getChunkSize())
                 .orElse(0);
@@ -392,9 +401,10 @@ public class WEntityService {
                 .filter(entity -> {
                     String entityId = entity.getName();
                     Entity publicData = entity.getPublicData();
-                    return (entityId != null && entityId.toLowerCase().contains(lowerQuery)) ||
-                            (publicData != null && publicData.getName() != null &&
-                                    publicData.getName().toLowerCase().contains(lowerQuery));
+                    return (entityId != null && entityId.toLowerCase().contains(lowerQuery))
+                            || (publicData != null
+                                    && publicData.getName() != null
+                                    && publicData.getName().toLowerCase().contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -469,8 +479,7 @@ public class WEntityService {
             entityCount++;
         }
 
-        log.info("Duplicated {} entity instances from world {} to {}",
-                entityCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} entity instances from world {} to {}", entityCount, sourceWorldId, targetWorldId);
         return entityCount;
     }
 
@@ -506,13 +515,10 @@ public class WEntityService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WEntity.class, "entity", worldId,
-                doc -> {
-                    String entityId = doc.getString("entityId");
-                    return entityId != null ? doc.getString("worldId") + "|" + entityId : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WEntity.class, "entity", worldId, doc -> {
+            String entityId = doc.getString("entityId");
+            return entityId != null ? doc.getString("worldId") + "|" + entityId : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -537,7 +543,8 @@ public class WEntityService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndEntityId(String worldId, String entityId) {
         String collectionName = mongoTemplate.getCollectionName(WEntity.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("entityId").is(entityId));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("entityId").is(entityId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -549,8 +556,10 @@ public class WEntityService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WEntity.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("entityId").is(doc.getString("entityId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("entityId")
+                .is(doc.getString("entityId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -558,5 +567,4 @@ public class WEntityService {
         }
         return mongoTemplate.save(doc, collectionName);
     }
-
 }

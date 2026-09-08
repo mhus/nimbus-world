@@ -7,12 +7,11 @@ import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Rough block painter provider - adds random offset and rotation variance to blocks.
@@ -104,8 +103,12 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
 
         final Random random = new Random();
 
-        log.debug("Creating rough painter: rotX={}, rotY={}, offsetMin={}, offsetMax={}",
-                finalRotationVarianceX, finalRotationVarianceY, finalOffsetVarianceMin, finalOffsetVarianceMax);
+        log.debug(
+                "Creating rough painter: rotX={}, rotY={}, offsetMin={}, offsetMax={}",
+                finalRotationVarianceX,
+                finalRotationVarianceY,
+                finalOffsetVarianceMin,
+                finalOffsetVarianceMax);
 
         // Create painter with rough logic
         return new EditCachePainter.BlockPainter() {
@@ -113,13 +116,12 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
             public void paint(EditCachePainter painter, int x, int y, int z) {
                 // Create block
                 Block block = Block.builder()
-                        .position(
-                                de.mhus.nimbus.generated.types.Vector3Int.builder()
-                                        .x(x)
-                                        .y(y)
-                                        .z(z)
-                                        .build()
-                        ).build();
+                        .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                                .x(x)
+                                .y(y)
+                                .z(z)
+                                .build())
+                        .build();
 
                 // Fill block with BlockDef (sets blockTypeId)
                 BlockDef blockDef = painter.getBlockDef();
@@ -127,8 +129,8 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
 
                 // Check if block type is CUBE shape (for offset application)
                 String worldIdStr = painter.getWorld().getWorldId();
-                de.mhus.nimbus.shared.types.WorldId worldId = de.mhus.nimbus.shared.types.WorldId.of(worldIdStr)
-                        .orElse(null);
+                de.mhus.nimbus.shared.types.WorldId worldId =
+                        de.mhus.nimbus.shared.types.WorldId.of(worldIdStr).orElse(null);
                 boolean isCubeShape = (worldId != null) && isCubeBlock(worldId, block.getBlockTypeId());
 
                 // Apply rotation variance if configured
@@ -136,10 +138,7 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
                     double rotX = randomVariance(random, finalRotationVarianceX);
                     double rotY = randomVariance(random, finalRotationVarianceY);
 
-                    RotationXY rotation = RotationXY.builder()
-                            .x(rotX)
-                            .y(rotY)
-                            .build();
+                    RotationXY rotation = RotationXY.builder().x(rotX).y(rotY).build();
                     block.setRotation(rotation);
                 }
 
@@ -157,13 +156,13 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
                 }
 
                 // Save block
-                painter.getEditService().doSetAndSendBlock(
-                        painter.getWorld(),
-                        painter.getLayerDataId(),
-                        painter.getModelName(),
-                        block,
-                        painter.getGroupId()
-                );
+                painter.getEditService()
+                        .doSetAndSendBlock(
+                                painter.getWorld(),
+                                painter.getLayerDataId(),
+                                painter.getModelName(),
+                                block,
+                                painter.getGroupId());
 
                 // Add block to ModelSelector if context is available
                 if (painter.getContext() != null && painter.getContext().getModelSelector() != null) {
@@ -209,10 +208,7 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
         BlockType blockType = blockTypeCache.get(cacheKey);
         if (blockType == null) {
             // Load from service
-            Optional<WBlockType> wBlockTypeOpt = blockTypeService.findByBlockId(
-                    worldId,
-                    blockTypeId
-            );
+            Optional<WBlockType> wBlockTypeOpt = blockTypeService.findByBlockId(worldId, blockTypeId);
 
             if (wBlockTypeOpt.isEmpty()) {
                 log.debug("BlockType not found: {}", blockTypeId);

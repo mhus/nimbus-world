@@ -1,34 +1,33 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.area.AreaSize;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositionPreparer;
-import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
+import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.point.PositionPoint;
 import de.mhus.nimbus.world.generator.composer.point.SnapConfig;
 import de.mhus.nimbus.world.generator.composer.point.SnapMode;
-import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for closed loop Walls (ring around a point)
@@ -62,20 +61,21 @@ public class ClosedLoopWallTest {
 
         // Compose points
         PointComposer pointComposer = new PointComposer();
-        PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, biomePlacementResult, testWorld);
+        PointComposer.PointCompositionResult pointResult =
+                pointComposer.composePoints(composition, biomePlacementResult, testWorld);
         assertTrue(pointResult.isSuccess(), "Point composition should succeed");
         assertEquals(1, pointResult.getComposedPoints(), "Should compose the point");
         log.info("Placed {} points", pointResult.getComposedPoints());
 
         // Compose flows (walls)
         FlowComposer flowComposer = new FlowComposer();
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, biomePlacementResult);
+        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, biomePlacementResult);
         assertTrue(flowResult.isSuccess(), "Flow composition should succeed");
         assertEquals(1, flowResult.getComposedFlows(), "Should compose the wall");
-        log.info("Composed {} flows with {} total segments",
-            flowResult.getComposedFlows(), flowResult.getTotalSegments());
+        log.info(
+                "Composed {} flows with {} total segments",
+                flowResult.getComposedFlows(),
+                flowResult.getTotalSegments());
 
         // Verify wall is closed loop
         Wall wall = findWall(composition, "city-wall");
@@ -84,17 +84,20 @@ public class ClosedLoopWallTest {
         assertNotNull(wall.getRoute(), "Wall should have route");
 
         // AreaSize.SMALL has from=1, so expect 6 * 1 = 6 segments
-        int expectedMinSegments = 6 * 1;  // 6 * radius for hex ring
-        assertTrue(wall.getRoute().size() >= expectedMinSegments,
-            "Wall should have at least " + expectedMinSegments + " segments, got " + wall.getRoute().size());
+        int expectedMinSegments = 6 * 1; // 6 * radius for hex ring
+        assertTrue(
+                wall.getRoute().size() >= expectedMinSegments,
+                "Wall should have at least " + expectedMinSegments + " segments, got "
+                        + wall.getRoute().size());
 
         log.info("Wall has {} segments forming a closed loop", wall.getRoute().size());
 
         // Collect grids from Central Registry that contain segments from this wall
         List<FeatureHexGrid> wallGrids = composition.getFeatureHexGridRegistry().values().stream()
-            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
-                .anyMatch(seg -> wall.getFeatureId().equals(seg.getFlowFeatureId())))
-            .collect(Collectors.toList());
+                .filter(grid -> grid.getFlowSegments() != null
+                        && grid.getFlowSegments().stream()
+                                .anyMatch(seg -> wall.getFeatureId().equals(seg.getFlowFeatureId())))
+                .collect(Collectors.toList());
 
         // Verify segments form a closed loop
         // First segment should connect from last to first
@@ -143,25 +146,18 @@ public class ClosedLoopWallTest {
         city.setName("city-center");
         city.setFeatureId("city-center");
         city.setStatus(FeatureStatus.NEW);
-        city.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("plains")
-            .build());
+        city.setSnap(SnapConfig.builder().mode(SnapMode.INSIDE).target("plains").build());
         features.add(city);
 
         // Wall with radius 3
-        Wall wall = Wall.builder()
-            .material("stone")
-            .height(10)
-            .level(100)
-            .build();
+        Wall wall = Wall.builder().material("stone").height(10).level(100).build();
         wall.setName("outer-wall");
         wall.setFeatureId("outer-wall");
         wall.setStatus(FeatureStatus.NEW);
         wall.setType(FlowType.WALL);
         wall.setStartPointId("city-center");
         wall.setEndPointId("city-center");
-        wall.setSizeFrom(3);  // Radius 3
+        wall.setSizeFrom(3); // Radius 3
         wall.setSizeTo(3);
         wall.setWidthBlocks(2);
         wall.initialize();
@@ -186,15 +182,16 @@ public class ClosedLoopWallTest {
         pointComposer.composePoints(composition, biomePlacementResult, testWorld);
 
         FlowComposer flowComposer = new FlowComposer();
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, biomePlacementResult);
+        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, biomePlacementResult);
 
         assertTrue(flowResult.isSuccess());
 
         // Radius 3 should give 6 * 3 = 18 segments
         int expectedSegments = 6 * 3;
-        assertEquals(expectedSegments, wall.getRoute().size(),
-            "Wall with radius 3 should have " + expectedSegments + " segments");
+        assertEquals(
+                expectedSegments,
+                wall.getRoute().size(),
+                "Wall with radius 3 should have " + expectedSegments + " segments");
 
         log.info("Wall with radius 3 has {} segments", wall.getRoute().size());
         log.info("=== Radius Test Completed ===");
@@ -223,25 +220,18 @@ public class ClosedLoopWallTest {
         city.setName("city-center");
         city.setFeatureId("city-center");
         city.setStatus(FeatureStatus.NEW);
-        city.setSnap(SnapConfig.builder()
-            .mode(SnapMode.INSIDE)
-            .target("plains")
-            .build());
+        city.setSnap(SnapConfig.builder().mode(SnapMode.INSIDE).target("plains").build());
         features.add(city);
 
         // Wall around the city (closed loop)
-        Wall wall = Wall.builder()
-            .material("stone")
-            .height(10)
-            .level(100)
-            .build();
+        Wall wall = Wall.builder().material("stone").height(10).level(100).build();
         wall.setName("city-wall");
         wall.setFeatureId("city-wall");
         wall.setStatus(FeatureStatus.NEW);
         wall.setType(FlowType.WALL);
         wall.setStartPointId("city-center");
-        wall.setEndPointId("city-center");  // Same as start = closed loop
-        wall.setSize(AreaSize.SMALL);  // Radius 2
+        wall.setEndPointId("city-center"); // Same as start = closed loop
+        wall.setSize(AreaSize.SMALL); // Radius 2
         wall.setShapeHint("RING");
         wall.setWidthBlocks(2);
         wall.initialize();

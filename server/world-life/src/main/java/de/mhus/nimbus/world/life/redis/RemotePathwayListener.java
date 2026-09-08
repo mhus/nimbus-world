@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.life.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -9,13 +8,12 @@ import de.mhus.nimbus.world.life.service.SimulatorService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Listens for pathways from remote servers via Redis.
@@ -45,8 +43,8 @@ public class RemotePathwayListener {
 
     private synchronized void subscribeToWorld(WorldId worldId) {
         if (subscribedWorlds.contains(worldId)) return;
-        redisMessaging.subscribe(worldId.getId(), "remote.pathway",
-                (topic, message) -> handleRemotePathway(worldId, message));
+        redisMessaging.subscribe(
+                worldId.getId(), "remote.pathway", (topic, message) -> handleRemotePathway(worldId, message));
         subscribedWorlds.add(worldId);
         log.info("Subscribed to remote pathways for world: {}", worldId);
     }
@@ -80,8 +78,10 @@ public class RemotePathwayListener {
             // Check if entity is loaded on this pod
             var state = simulatorService.findSimulationState(worldId, pathway.getEntityId());
             if (state == null) {
-                log.trace("Remote pathway for entity {} not loaded on this pod in world {}",
-                        pathway.getEntityId(), worldId);
+                log.trace(
+                        "Remote pathway for entity {} not loaded on this pod in world {}",
+                        pathway.getEntityId(),
+                        worldId);
                 return;
             }
 

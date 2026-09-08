@@ -1,14 +1,14 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Client communication service for world-player.
@@ -32,17 +32,17 @@ public class ClientService {
     public void sendCommand(PlayerSession session, String commandName, JsonNode commandData) {
         try {
             // Build network message
-            NetworkMessage message = NetworkMessage.builder()
-                    .t("scmd")
-                    .d(commandData)
-                    .build();
+            NetworkMessage message =
+                    NetworkMessage.builder().t("scmd").d(commandData).build();
 
             // Send message
             String json = objectMapper.writeValueAsString(message);
             session.sendMessage(new TextMessage(json));
 
-            log.trace("Sent server command to player: cmd={}, sessionId={}",
-                    commandName, session.getWebSocketSession().getId());
+            log.trace(
+                    "Sent server command to player: cmd={}, sessionId={}",
+                    commandName,
+                    session.getWebSocketSession().getId());
 
         } catch (Exception e) {
             log.error("Failed to send server command to player: cmd={}", commandName, e);
@@ -96,7 +96,8 @@ public class ClientService {
      * @param icon Optional icon path (can be null)
      */
     public void sendNotification(PlayerSession session, int source, String title, String text, String icon) {
-        var argsArray = objectMapper.createArrayNode()
+        var argsArray = objectMapper
+                .createArrayNode()
                 .add(String.valueOf(source))
                 .add(title)
                 .add(text);
@@ -111,8 +112,12 @@ public class ClientService {
         commandData.put("oneway", true); // No response expected
 
         sendCommand(session, "notification", commandData);
-        log.info("Sent notification to player: source={}, title={}, text={}, sessionId={}",
-                source, title, text, session.getWebSocketSession().getId());
+        log.info(
+                "Sent notification to player: source={}, title={}, text={}, sessionId={}",
+                source,
+                title,
+                text,
+                session.getWebSocketSession().getId());
     }
 
     /**

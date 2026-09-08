@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * District represents a section of a village with a specific layout and slot configuration.

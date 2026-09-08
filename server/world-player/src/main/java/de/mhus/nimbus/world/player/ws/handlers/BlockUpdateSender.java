@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.SessionManager;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.List;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 /**
  * Service for sending block updates to clients.
@@ -46,20 +45,22 @@ public class BlockUpdateSender {
             ArrayNode blocksArray = objectMapper.createArrayNode();
             blocks.forEach(blocksArray::add);
 
-            NetworkMessage message = NetworkMessage.builder()
-                    .t("b.u")
-                    .d(blocksArray)
-                    .build();
+            NetworkMessage message =
+                    NetworkMessage.builder().t("b.u").d(blocksArray).build();
 
             String json = objectMapper.writeValueAsString(message);
             session.sendMessage(new TextMessage(json));
 
-            log.debug("Sent {} block updates to session: {}",
-                    blocks.size(), session.getWebSocketSession().getId());
+            log.debug(
+                    "Sent {} block updates to session: {}",
+                    blocks.size(),
+                    session.getWebSocketSession().getId());
 
         } catch (Exception e) {
-            log.error("Failed to send block updates to session: {}",
-                    session.getWebSocketSession().getId(), e);
+            log.error(
+                    "Failed to send block updates to session: {}",
+                    session.getWebSocketSession().getId(),
+                    e);
         }
     }
 
@@ -79,17 +80,22 @@ public class BlockUpdateSender {
         int sentCount = 0;
         for (PlayerSession session : sessionManager.getAllSessions().values()) {
             // Check if session is in the same world and has chunk registered
-            if (worldId.equals(session.getWorldId()) &&
-                session.isAuthenticated() &&
-                session.isChunkRegistered(cx, cz)) {
+            if (worldId.equals(session.getWorldId())
+                    && session.isAuthenticated()
+                    && session.isChunkRegistered(cx, cz)) {
 
                 sendToSession(session, blocks);
                 sentCount++;
             }
         }
 
-        log.debug("Broadcast {} block updates to {} sessions in world {} chunk ({}, {})",
-                blocks.size(), sentCount, worldId, cx, cz);
+        log.debug(
+                "Broadcast {} block updates to {} sessions in world {} chunk ({}, {})",
+                blocks.size(),
+                sentCount,
+                worldId,
+                cx,
+                cz);
     }
 
     /**
@@ -111,7 +117,6 @@ public class BlockUpdateSender {
             }
         }
 
-        log.debug("Broadcast {} block updates to {} sessions in world {}",
-                blocks.size(), sentCount, worldId);
+        log.debug("Broadcast {} block updates to {} sessions in world {}", blocks.size(), sentCount, worldId);
     }
 }

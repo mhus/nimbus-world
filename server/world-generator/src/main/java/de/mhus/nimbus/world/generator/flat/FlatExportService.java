@@ -22,11 +22,6 @@ import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for exporting WFlat to WLayer GROUND type.
@@ -53,11 +52,7 @@ public class FlatExportService {
     private final WChunkService chunkService;
 
     // Check all 8 neighbors
-    static final int[][] SIBLING_OFFSETS = {
-            {-1, -1}, {0, -1}, {1, -1},
-            {-1, 0},           {1, 0},
-            {-1, 1},  {0, 1},  {1, 1}
-    };
+    static final int[][] SIBLING_OFFSETS = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
 
     // Block type ids that represent water and must not be used as the surface block of a NOT_SET column.
     private static final Set<String> WATER_BLOCK_TYPE_IDS = Set.of("n:o", "n:w", "5000", "w:5000");
@@ -80,20 +75,27 @@ public class FlatExportService {
      * @throws IllegalArgumentException if flat, world, or layer not found, or layer is not GROUND type
      */
     public int exportToLayer(String flatId, String worldId, String layerName, boolean smoothCorners) {
-        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
-                flatId, worldId, layerName, smoothCorners);
+        log.info(
+                "Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
+                flatId,
+                worldId,
+                layerName,
+                smoothCorners);
 
         // Load flat
-        WFlat flat = flatService.findById(flatId)
+        WFlat flat = flatService
+                .findById(flatId)
                 .orElseThrow(() -> new IllegalArgumentException("Flat not found: " + flatId));
 
         WorldId worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         // Load layer
-        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+        WLayer layer = layerService
+                .findByWorldIdAndName(worldId, layerName)
                 .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
 
         // Validate layer type
@@ -126,8 +128,12 @@ public class FlatExportService {
             for (int localZ = 0; localZ < flat.getSizeZ(); localZ++) {
 
                 if (pointCount-- % 10000 == 0) {
-                    log.info("Export progress: flatId={}, exported={} columns, skipped={} columns, remaining={} columns",
-                            flatId, exportedColumns, skippedColumns, pointCount);
+                    log.info(
+                            "Export progress: flatId={}, exported={} columns, skipped={} columns, remaining={} columns",
+                            flatId,
+                            exportedColumns,
+                            skippedColumns,
+                            pointCount);
                 }
                 // Calculate world coordinates
                 int worldX = flat.getMountX() + localX;
@@ -153,20 +159,28 @@ public class FlatExportService {
                                 .build();
                     }
                 });
-                Optional<ChunkData> chunkDataOpt = blockChunks.computeIfAbsent(chunkKey,
-                        key -> chunkService.loadChunkData(worldIdObj, key, false) );
-                ChunkData chunkData = chunkDataOpt.orElseGet(() ->
-                        ChunkData.builder()
-                                .blocks(new ArrayList<>())
-                                .build()
-                );
+                Optional<ChunkData> chunkDataOpt = blockChunks.computeIfAbsent(
+                        chunkKey, key -> chunkService.loadChunkData(worldIdObj, key, false));
+                ChunkData chunkData = chunkDataOpt.orElseGet(
+                        () -> ChunkData.builder().blocks(new ArrayList<>()).build());
 
                 // Check if column is set or has material 255 (treated like NOT_SET)
                 int columnMaterial = flat.getColumn(localX, localZ);
                 if (columnMaterial == WFlat.MATERIAL_NOT_SET || columnMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
                     if (isOneAroundSet(flat, localX, localZ)) {
                         // NOT_SET or Material 255: Keep existing blocks, but fill down if neighbors are lower
-                        handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId, blockChunks, worldIdObj);
+                        handleNotSetColumn(
+                                chunkData,
+                                layerChunkData,
+                                worldX,
+                                worldZ,
+                                flat,
+                                localX,
+                                localZ,
+                                world,
+                                worldId,
+                                blockChunks,
+                                worldIdObj);
                         skippedColumns++;
                         continue;
                     } else {
@@ -194,17 +208,42 @@ public class FlatExportService {
                 deleteColumnBlocks(layerChunkData, worldX, worldZ);
 
                 // Find lowest sibling level to avoid holes
-                int lowestSiblingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world, blockChunks, worldIdObj);
+                int lowestSiblingLevel =
+                        findLowestSiblingLevel(flat, localX, localZ, chunkData, world, blockChunks, worldIdObj);
 
                 if (lowestSiblingLevel != WFlat.LEVEL_NOT_SET) {
                     // Fill column from level down to lowestSiblingLevel
-                    fillColumn(layerChunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
-                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache);
+                    fillColumn(
+                            layerChunkData,
+                            worldX,
+                            worldZ,
+                            level,
+                            lowestSiblingLevel,
+                            columnDef,
+                            flat,
+                            smoothCorners,
+                            blockTypeCache,
+                            wid,
+                            localX,
+                            localZ,
+                            extraBlocksCache);
                     exportedColumns++;
                 } else {
                     skippedColumns++;
-                    fillColumn(layerChunkData, worldX, worldZ, level, world.getGroundLevel(), columnDef, flat,
-                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache);
+                    fillColumn(
+                            layerChunkData,
+                            worldX,
+                            worldZ,
+                            level,
+                            world.getGroundLevel(),
+                            columnDef,
+                            flat,
+                            smoothCorners,
+                            blockTypeCache,
+                            wid,
+                            localX,
+                            localZ,
+                            extraBlocksCache);
                 }
             }
         }
@@ -223,8 +262,12 @@ public class FlatExportService {
             log.info("Marked {} chunks as dirty for regeneration", chunkKeys.size());
         }
 
-        log.info("Export complete: flatId={}, exported={} columns, skipped={} columns, modified={} chunks",
-                flatId, exportedColumns, skippedColumns, modifiedChunks.size());
+        log.info(
+                "Export complete: flatId={}, exported={} columns, skipped={} columns, modified={} chunks",
+                flatId,
+                exportedColumns,
+                skippedColumns,
+                modifiedChunks.size());
 
         return exportedColumns;
     }
@@ -234,8 +277,9 @@ public class FlatExportService {
             for (int j = -1; j <= 1; j++) {
                 if (i == 0 && j == 0) continue; // skip self
                 int columnMaterial = flat.getColumnRobust(localX + i, localZ + j);
-                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
-                    return true;
+                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND
+                        && columnMaterial != WFlat.MATERIAL_NOT_SET
+                        && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) return true;
             }
         }
         return false;
@@ -247,9 +291,18 @@ public class FlatExportService {
      * Only considers GROUND type blocks for filling.
      * Material 255 is treated the same as NOT_SET (material 0).
      */
-    private void handleNotSetColumn(ChunkData chunkData, LayerChunkData layerChunkData, int worldX, int worldZ,
-                                    WFlat flat, int localX, int localZ, WWorld world, String worldId,
-                                    Map<String, Optional<ChunkData>> blockChunks, WorldId worldIdObj) {
+    private void handleNotSetColumn(
+            ChunkData chunkData,
+            LayerChunkData layerChunkData,
+            int worldX,
+            int worldZ,
+            WFlat flat,
+            int localX,
+            int localZ,
+            WWorld world,
+            String worldId,
+            Map<String, Optional<ChunkData>> blockChunks,
+            WorldId worldIdObj) {
         // Determine existing level: prefer flat level (from edge blending/filling) over stale chunk data
         String topBlockDefString = null;
         int existingLevel = -1;
@@ -259,7 +312,8 @@ public class FlatExportService {
         if (flatLevel > 0) {
             existingLevel = flatLevel;
             topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
-                    ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+                    ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()
+                    : "n:b";
         }
 
         // Fallback: check chunk data for existing GROUND blocks
@@ -272,18 +326,23 @@ public class FlatExportService {
                     existingLevel = world.getGroundLevel();
                 }
                 topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
-                        ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+                        ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()
+                        : "n:b";
             } else {
                 // Get the block type from the highest existing GROUND block
                 topBlockDefString = getBlockDefAtPosition(chunkData, worldX, worldZ, existingLevel);
                 if (Strings.isBlank(topBlockDefString)) {
                     topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
-                            ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+                            ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()
+                            : "n:b";
                 }
             }
         }
         if (Strings.isBlank(topBlockDefString)) {
-            log.debug("Could not determine top block definition for NOT_SET column at ({},{}), using default", worldX, worldZ);
+            log.debug(
+                    "Could not determine top block definition for NOT_SET column at ({},{}), using default",
+                    worldX,
+                    worldZ);
             topBlockDefString = "n:b";
         }
 
@@ -296,16 +355,18 @@ public class FlatExportService {
         BlockDef topBlockDef = topBlockDefOpt.get();
         if (isWaterBlockTypeId(topBlockDef.getBlockTypeId())) {
             log.debug("Top block is water for NOT_SET column at ({},{}), using bedrock instead", worldX, worldZ);
-            topBlockDef = BlockDef.of(flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()).orElseThrow();
+            topBlockDef = BlockDef.of(
+                            flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef())
+                    .orElseThrow();
         }
 
         Set<Integer> blockLevels = getBlocksAtLevel(layerChunkData, worldX, worldZ);
 
         // Find lowest sibling level (from neighbors)
-        int lowestSiblingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world, blockChunks, worldIdObj);
+        int lowestSiblingLevel =
+                findLowestSiblingLevel(flat, localX, localZ, chunkData, world, blockChunks, worldIdObj);
         if (lowestSiblingLevel == WFlat.LEVEL_NOT_SET) {
-            if (blockLevels.isEmpty())
-                return; // do not fill down if no siblings
+            if (blockLevels.isEmpty()) return; // do not fill down if no siblings
             lowestSiblingLevel = blockLevels.stream().min(Integer::compareTo).orElse(WFlat.LEVEL_NOT_SET);
         }
         // If neighbors are lower, fill down to avoid gaps
@@ -319,15 +380,9 @@ public class FlatExportService {
                     continue; // ignore existing blocks, do not overwrite
                 }
 
-                BlockMetadata metadata = BlockMetadata.builder()
-                        .title("ns")
-                        .build();
+                BlockMetadata metadata = BlockMetadata.builder().title("ns").build();
                 Block block = Block.builder()
-                        .position(Vector3Int.builder()
-                                .x(worldX)
-                                .y(y)
-                                .z(worldZ)
-                                .build())
+                        .position(Vector3Int.builder().x(worldX).y(y).z(worldZ).build())
                         .metadata(metadata)
                         .build();
 
@@ -337,15 +392,18 @@ public class FlatExportService {
                 String groupId = null;
 
                 // Add to chunk
-                LayerBlock layerBlock = LayerBlock.builder()
-                        .block(block)
-                        .group(groupId)
-                        .build();
+                LayerBlock layerBlock =
+                        LayerBlock.builder().block(block).group(groupId).build();
                 layerChunkData.getBlocks().add(layerBlock);
             }
 
-            log.trace("Filled NOT_SET column at ({},{}) from {} down to {} with block type {}",
-                     worldX, worldZ, existingLevel - 1, lowestSiblingLevel, topBlockDefString);
+            log.trace(
+                    "Filled NOT_SET column at ({},{}) from {} down to {} with block type {}",
+                    worldX,
+                    worldZ,
+                    existingLevel - 1,
+                    lowestSiblingLevel,
+                    topBlockDefString);
         }
     }
 
@@ -380,7 +438,10 @@ public class FlatExportService {
         }
 
         if (block.getRotation() != null) {
-            sb.append("@r:").append(block.getRotation().getX()).append(",").append(block.getRotation().getY());
+            sb.append("@r:")
+                    .append(block.getRotation().getX())
+                    .append(",")
+                    .append(block.getRotation().getY());
         }
 
         if (block.getLevel() != null) {
@@ -424,7 +485,7 @@ public class FlatExportService {
             }
             Vector3Int pos = block.getPosition();
             // Remove if same X,Z and Y < keepLevel
-            if ( pos.getX() == worldX && pos.getZ() == worldZ) {
+            if (pos.getX() == worldX && pos.getZ() == worldZ) {
                 result.add(pos.getY());
             }
         });
@@ -451,9 +512,14 @@ public class FlatExportService {
      *
      * @return Lowest sibling level, or 0 if no neighbors found
      */
-    private int findLowestSiblingLevel(WFlat flat, int localX, int localZ,
-                                       ChunkData chunkData, WWorld world,
-                                       Map<String, Optional<ChunkData>> blockChunks, WorldId worldIdObj) {
+    private int findLowestSiblingLevel(
+            WFlat flat,
+            int localX,
+            int localZ,
+            ChunkData chunkData,
+            WWorld world,
+            Map<String, Optional<ChunkData>> blockChunks,
+            WorldId worldIdObj) {
         int lowestLevel = Integer.MAX_VALUE;
         boolean foundSibling = false;
 
@@ -462,13 +528,12 @@ public class FlatExportService {
             int neighborZ = localZ + offset[1];
 
             // Check if neighbor is within flat bounds
-            if (neighborX >= 0 && neighborX < flat.getSizeX() &&
-                neighborZ >= 0 && neighborZ < flat.getSizeZ()) {
+            if (neighborX >= 0 && neighborX < flat.getSizeX() && neighborZ >= 0 && neighborZ < flat.getSizeZ()) {
 
                 int columnMaterial = flat.getColumnRobust(neighborX, neighborZ);
-                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND &&
-                    columnMaterial != WFlat.MATERIAL_NOT_SET &&
-                    columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND
+                        && columnMaterial != WFlat.MATERIAL_NOT_SET
+                        && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
                     // Column is SET - use flat level (reliable)
                     if (flat.getLevelRobust(neighborX, neighborZ) > WFlat.LEVEL_NOT_SET) {
                         int neighborLevel = flat.getLevel(neighborX, neighborZ);
@@ -489,7 +554,8 @@ public class FlatExportService {
                         // Flat has no level - fall back to chunk data
                         int worldNX = flat.getMountX() + neighborX;
                         int worldNZ = flat.getMountZ() + neighborZ;
-                        int existingLevel = findHighestBlockAtPositionCrossChunk(worldNX, worldNZ, world, blockChunks, worldIdObj);
+                        int existingLevel =
+                                findHighestBlockAtPositionCrossChunk(worldNX, worldNZ, world, blockChunks, worldIdObj);
                         if (existingLevel != -1 && existingLevel < lowestLevel) {
                             lowestLevel = existingLevel;
                             foundSibling = true;
@@ -500,7 +566,8 @@ public class FlatExportService {
                 // Check in existing chunk data (outside flat bounds, cross-chunk)
                 int worldX = flat.getMountX() + neighborX;
                 int worldZ = flat.getMountZ() + neighborZ;
-                int existingLevel = findHighestBlockAtPositionCrossChunk(worldX, worldZ, world, blockChunks, worldIdObj);
+                int existingLevel =
+                        findHighestBlockAtPositionCrossChunk(worldX, worldZ, world, blockChunks, worldIdObj);
                 if (existingLevel != -1 && existingLevel < lowestLevel) {
                     lowestLevel = existingLevel;
                     foundSibling = true;
@@ -517,14 +584,14 @@ public class FlatExportService {
      *
      * @return Highest Y coordinate, or -1 if no block found
      */
-    private int findHighestBlockAtPositionCrossChunk(int worldX, int worldZ, WWorld world,
-                                                      Map<String, Optional<ChunkData>> blockChunks, WorldId worldIdObj) {
+    private int findHighestBlockAtPositionCrossChunk(
+            int worldX, int worldZ, WWorld world, Map<String, Optional<ChunkData>> blockChunks, WorldId worldIdObj) {
         int chunkX = world.getChunkX(worldX);
         int chunkZ = world.getChunkZ(worldZ);
         String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
-        Optional<ChunkData> chunkDataOpt = blockChunks.computeIfAbsent(chunkKey,
-                key -> chunkService.loadChunkData(worldIdObj, key, false));
+        Optional<ChunkData> chunkDataOpt =
+                blockChunks.computeIfAbsent(chunkKey, key -> chunkService.loadChunkData(worldIdObj, key, false));
 
         if (chunkDataOpt.isEmpty()) {
             return -1;
@@ -586,18 +653,22 @@ public class FlatExportService {
      * Uses column definition to determine block types.
      * Applies corner smoothing and face visibility optimization if enabled.
      */
-    private void fillColumn(LayerChunkData chunkData, int worldX, int worldZ,
-                            int level, int lowestSiblingLevel,
-                            WFlat.MaterialDefinition columnDef, WFlat flat,
-                            boolean smoothCorners,
-                            Map<String, WBlockType> blockTypeCache,
-                            WorldId wid, int localX, int localZ,
-                            Map<String, String[]> extraBlocksCache) {
+    private void fillColumn(
+            LayerChunkData chunkData,
+            int worldX,
+            int worldZ,
+            int level,
+            int lowestSiblingLevel,
+            WFlat.MaterialDefinition columnDef,
+            WFlat flat,
+            boolean smoothCorners,
+            Map<String, WBlockType> blockTypeCache,
+            WorldId wid,
+            int localX,
+            int localZ,
+            Map<String, String[]> extraBlocksCache) {
         // Get extra blocks for this column
-        String[] extraBlocks = flat.getExtraBlocksForColumn(
-                worldX - flat.getMountX(),
-                worldZ - flat.getMountZ()
-        );
+        String[] extraBlocks = flat.getExtraBlocksForColumn(worldX - flat.getMountX(), worldZ - flat.getMountZ());
 
         // Fill from level down to lowestSiblingLevel (or level if lower than all siblings)
         // do not start at level, start at 255 - there could be extra blocks above
@@ -612,20 +683,36 @@ public class FlatExportService {
                 continue;
             }
 
-            if ("core:water".equals(blockDefString) || "w:5000".equals(blockDefString) || "n:o".equals(blockDefString)) {
+            if ("core:water".equals(blockDefString)
+                    || "w:5000".equals(blockDefString)
+                    || "n:o".equals(blockDefString)) {
                 if (y != flat.getSeaLevel()) {
-                    if ( y < flat.getSeaLevel()) {
-                        log.warn("Skip ocean block below sea level at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                    if (y < flat.getSeaLevel()) {
+                        log.warn(
+                                "Skip ocean block below sea level at ({},{},{}) with definition: {}",
+                                worldX,
+                                y,
+                                worldZ,
+                                blockDefString);
                         continue;
                     }
-                    log.warn("Switch ocean to water block at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                    log.warn(
+                            "Switch ocean to water block at ({},{},{}) with definition: {}",
+                            worldX,
+                            y,
+                            worldZ,
+                            blockDefString);
                     blockDefString = "n:w";
                 } else {
                     blockDefString = "n:o";
                 }
-            } else
-            if ("n:w".equals(blockDefString) && y < flat.getSeaLevel()) {
-                log.warn("Skip water block below sea level at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+            } else if ("n:w".equals(blockDefString) && y < flat.getSeaLevel()) {
+                log.warn(
+                        "Skip water block below sea level at ({},{},{}) with definition: {}",
+                        worldX,
+                        y,
+                        worldZ,
+                        blockDefString);
                 continue;
             } else {
                 hasGround = true;
@@ -633,11 +720,7 @@ public class FlatExportService {
 
             // Create block with position
             Block block = Block.builder()
-                    .position(Vector3Int.builder()
-                            .x(worldX)
-                            .y(y)
-                            .z(worldZ)
-                            .build())
+                    .position(Vector3Int.builder().x(worldX).y(y).z(worldZ).build())
                     .build();
 
             // Parse and apply block definition
@@ -650,7 +733,18 @@ public class FlatExportService {
 
             // Apply block optimizations (corner smoothing and/or face visibility) if enabled
             if ((smoothCorners) && y <= level) {
-                applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners, columnDef, extraBlocksCache);
+                applyBlockOptimizations(
+                        block,
+                        flat,
+                        localX,
+                        localZ,
+                        level,
+                        y,
+                        blockTypeCache,
+                        wid,
+                        smoothCorners,
+                        columnDef,
+                        extraBlocksCache);
             }
 
             // Determine groupId based on position and block type
@@ -668,31 +762,30 @@ public class FlatExportService {
             // Otherwise: groupId remains null
 
             // Wrap in LayerBlock and add to chunk
-            LayerBlock layerBlock = LayerBlock.builder()
-                    .block(block)
-                    .group(groupId)
-                    .build();
+            LayerBlock layerBlock =
+                    LayerBlock.builder().block(block).group(groupId).build();
 
             chunkData.getBlocks().add(layerBlock);
         }
-//        if (!hasGround) { // paranoid check !!!
-//            log.warn("No GROUND blocks found for column at ({},{}) with level {} and lowestSiblingLevel {}, create default block",
-//                    worldX, worldZ, level, lowestSiblingLevel);
-//            // Create block with position
-//            Block block = Block.builder()
-//                    .position(Vector3Int.builder()
-//                            .x(worldX)
-//                            .y(flat.getSeaLevel()-10)
-//                            .z(worldZ)
-//                            .build())
-//                    .blockTypeId("n:s")
-//                    .build();
-//            // Wrap in LayerBlock and add to chunk
-//            LayerBlock layerBlock = LayerBlock.builder()
-//                    .block(block)
-//                    .build();
-//            chunkData.getBlocks().add(layerBlock);
-//        }
+        //        if (!hasGround) { // paranoid check !!!
+        //            log.warn("No GROUND blocks found for column at ({},{}) with level {} and lowestSiblingLevel {},
+        // create default block",
+        //                    worldX, worldZ, level, lowestSiblingLevel);
+        //            // Create block with position
+        //            Block block = Block.builder()
+        //                    .position(Vector3Int.builder()
+        //                            .x(worldX)
+        //                            .y(flat.getSeaLevel()-10)
+        //                            .z(worldZ)
+        //                            .build())
+        //                    .blockTypeId("n:s")
+        //                    .build();
+        //            // Wrap in LayerBlock and add to chunk
+        //            LayerBlock layerBlock = LayerBlock.builder()
+        //                    .block(block)
+        //                    .build();
+        //            chunkData.getBlocks().add(layerBlock);
+        //        }
     }
 
     /**
@@ -701,46 +794,55 @@ public class FlatExportService {
      * - Corner smoothing: Adjusts Y offsets of 4 top corners based on neighbor heights
      * - Face visibility: Sets faceVisibility to hide non-visible block faces
      */
-    private void applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
-                                        int level, int y,
-                                        Map<String, WBlockType> blockTypeCache, WorldId wid,
-                                        boolean smoothCorners, WFlat.MaterialDefinition materialDef,
-                                        Map<String, String[]> extraBlocksCache) {
+    private void applyBlockOptimizations(
+            Block block,
+            WFlat flat,
+            int localX,
+            int localZ,
+            int level,
+            int y,
+            Map<String, WBlockType> blockTypeCache,
+            WorldId wid,
+            boolean smoothCorners,
+            WFlat.MaterialDefinition materialDef,
+            Map<String, String[]> extraBlocksCache) {
         if (block == null || block.getBlockTypeId() == null || wid == null) {
-            return;  // No optimization, export block
+            return; // No optimization, export block
         }
 
         // Get or cache block type
         String blockTypeId = block.getBlockTypeId();
-        WBlockType blockType = blockTypeCache.computeIfAbsent(blockTypeId, id ->
-                blockTypeService.findByBlockId(wid, id).orElse(null)
-        );
+        WBlockType blockType = blockTypeCache.computeIfAbsent(
+                blockTypeId, id -> blockTypeService.findByBlockId(wid, id).orElse(null));
 
         if (blockType == null || blockType.getPublicData() == null) {
-            return;  // Not optimizable, export block
+            return; // Not optimizable, export block
         }
 
         var publicData = blockType.getPublicData();
 
         // Check if GROUND type
         if (publicData.getType() != BlockTypeType.GROUND) {
-            return;  // Not GROUND, export block
+            return; // Not GROUND, export block
         }
 
         // Check if modifier (status) is 0 or null
         String status = block.getStatus();
         if (!BlockUtil.isStatusDefault(status)) {
-            return;  // Modified block, skip corner smoothing
+            return; // Modified block, skip corner smoothing
         }
 
         // Check if shape is CUBE (shape 1)
         // Shape is stored in modifiers map, get default modifier
         if (publicData.getModifiers() == null) {
-            return;  // No modifiers, export block
+            return; // No modifiers, export block
         }
         var modifier0 = publicData.getModifiers().get(BlockUtil.DEFAULT_STATUS);
-        if (modifier0 == null || modifier0.getVisibility() == null || modifier0.getVisibility().getShape() == null || modifier0.getVisibility().getShape() != 1) {
-            return;  // Not CUBE, export block
+        if (modifier0 == null
+                || modifier0.getVisibility() == null
+                || modifier0.getVisibility().getShape() == null
+                || modifier0.getVisibility().getShape() != 1) {
+            return; // Not CUBE, export block
         }
 
         // Get current level
@@ -775,31 +877,39 @@ public class FlatExportService {
 
             // Calculate corner Y offsets from neighbor height differences
             // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
-            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
+            float swOffset = calculateCornerOffset(
+                    flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
 
             // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
-            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
+            float seOffset = calculateCornerOffset(
+                    flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
 
             // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
-            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
+            float nwOffset = calculateCornerOffset(
+                    flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
 
             // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
-            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
+            float neOffset = calculateCornerOffset(
+                    flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
 
             // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
-            offsets.set(13, swOffset);  // top front left  Y (SW)
-            offsets.set(16, seOffset);  // top front right Y (SE)
-            offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
-            offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
+            offsets.set(13, swOffset); // top front left  Y (SW)
+            offsets.set(16, seOffset); // top front right Y (SE)
+            offsets.set(19, neOffset); // top back left   Y (NW position ← NE offset)
+            offsets.set(22, nwOffset); // top back right  Y (NE position ← NW offset)
 
             // Set offsets on block
             block.setOffsets(offsets);
 
-            log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
-                    localX, localZ, swOffset, seOffset, nwOffset, neOffset);
+            log.trace(
+                    "Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
+                    localX,
+                    localZ,
+                    swOffset,
+                    seOffset,
+                    nwOffset,
+                    neOffset);
         }
-
-
     }
 
     /**
@@ -833,10 +943,19 @@ public class FlatExportService {
      * @param extraBlocksCache Pre-built cache of extraBlocks by column
      * @return Y offset value
      */
-    private float calculateCornerOffset(WFlat flat, int localX, int localZ, int myLevel,
-                                       int dx1, int dz1, int dx2, int dz2, int dx3, int dz3,
-                                       WFlat.MaterialDefinition materialDef,
-                                       Map<String, String[]> extraBlocksCache) {
+    private float calculateCornerOffset(
+            WFlat flat,
+            int localX,
+            int localZ,
+            int myLevel,
+            int dx1,
+            int dz1,
+            int dx2,
+            int dz2,
+            int dx3,
+            int dz3,
+            WFlat.MaterialDefinition materialDef,
+            Map<String, String[]> extraBlocksCache) {
         // Get offset definitions (use defaults if null)
         WFlat.OffsetDefinition higherOffsets = materialDef != null ? materialDef.getHigherOffsets() : null;
         WFlat.OffsetDefinition lowerOffsets = materialDef != null ? materialDef.getLowerOffsets() : null;
@@ -857,16 +976,24 @@ public class FlatExportService {
         int neighbor2Material = flat.getColumnRobust(localX + dx2, localZ + dz2);
         int neighbor3Material = flat.getColumnRobust(localX + dx3, localZ + dz3);
 
-        boolean oneNotSetMaterial = neighbor1Material == WFlat.MATERIAL_NOT_SET || neighbor2Material == WFlat.MATERIAL_NOT_SET || neighbor3Material == WFlat.MATERIAL_NOT_SET
-                || neighbor1Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor2Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor3Material == WFlat.MATERIAL_NOT_SET_MUTABLE
-                || neighbor1Material == WFlat.MATERIAL_OUT_OF_BOUND || neighbor2Material == WFlat.MATERIAL_OUT_OF_BOUND || neighbor3Material == WFlat.MATERIAL_OUT_OF_BOUND;
+        boolean oneNotSetMaterial = neighbor1Material == WFlat.MATERIAL_NOT_SET
+                || neighbor2Material == WFlat.MATERIAL_NOT_SET
+                || neighbor3Material == WFlat.MATERIAL_NOT_SET
+                || neighbor1Material == WFlat.MATERIAL_NOT_SET_MUTABLE
+                || neighbor2Material == WFlat.MATERIAL_NOT_SET_MUTABLE
+                || neighbor3Material == WFlat.MATERIAL_NOT_SET_MUTABLE
+                || neighbor1Material == WFlat.MATERIAL_OUT_OF_BOUND
+                || neighbor2Material == WFlat.MATERIAL_OUT_OF_BOUND
+                || neighbor3Material == WFlat.MATERIAL_OUT_OF_BOUND;
 
         if (oneNotSetMaterial) {
             // If any neighbor material is NOT_SET or OUT_OF_BOUND, we cannot determine offsets reliably, return 0.0
             return 0.0f;
         }
 
-        boolean oneNotSet = neighbor1Level == WFlat.LEVEL_NOT_SET || neighbor2Level == WFlat.LEVEL_NOT_SET || neighbor3Level == WFlat.LEVEL_NOT_SET;
+        boolean oneNotSet = neighbor1Level == WFlat.LEVEL_NOT_SET
+                || neighbor2Level == WFlat.LEVEL_NOT_SET
+                || neighbor3Level == WFlat.LEVEL_NOT_SET;
         if (oneNotSet) {
             // If any neighbor is NOT_SET, we cannot determine offsets reliably, return 0.0
             return 0.0f;
@@ -979,13 +1106,16 @@ public class FlatExportService {
      * @param extraBlocksCache Pre-built cache of extraBlocks by column
      * @return Effective highest level within relevant range (myLevel-1 to myLevel+1)
      */
-    private int getEffectiveNeighborLevel(WFlat flat, int x, int z, int myLevel, Map<String, String[]> extraBlocksCache) {
+    private int getEffectiveNeighborLevel(
+            WFlat flat, int x, int z, int myLevel, Map<String, String[]> extraBlocksCache) {
         if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
             return myLevel;
         }
 
         var material = flat.getColumnRobust(x, z);
-        if (material == WFlat.MATERIAL_NOT_SET || material == WFlat.MATERIAL_NOT_SET_MUTABLE || material == WFlat.MATERIAL_OUT_OF_BOUND) {
+        if (material == WFlat.MATERIAL_NOT_SET
+                || material == WFlat.MATERIAL_NOT_SET_MUTABLE
+                || material == WFlat.MATERIAL_OUT_OF_BOUND) {
             return myLevel;
         }
 
@@ -1062,5 +1192,4 @@ public class FlatExportService {
         log.debug("Built extraBlocks cache with {} columns", cache.size());
         return cache;
     }
-
 }

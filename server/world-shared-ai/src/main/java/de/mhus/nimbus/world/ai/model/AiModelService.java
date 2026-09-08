@@ -4,13 +4,12 @@ import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.world.ai.image.AiImageModel;
 import de.mhus.nimbus.world.ai.image.AiImageOptions;
 import de.mhus.nimbus.world.ai.image.LangchainImageModel;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for managing AI models and their providers.
@@ -30,28 +29,29 @@ public class AiModelService {
     private final Map<String, LangchainModel> providerCache = new ConcurrentHashMap<>();
     private final Map<String, LangchainImageModel> imageProviderCache = new ConcurrentHashMap<>();
 
-    public AiModelService(List<LangchainModel> modelProviders,
-                          List<LangchainImageModel> imageModelProviders,
-                          SSettingsService settingsService) {
+    public AiModelService(
+            List<LangchainModel> modelProviders,
+            List<LangchainImageModel> imageModelProviders,
+            SSettingsService settingsService) {
         this.modelProviders = modelProviders;
         this.imageModelProviders = imageModelProviders;
         this.settingsService = settingsService;
 
-        log.info("Initializing AiModelService with {} chat providers and {} image providers",
-                modelProviders.size(), imageModelProviders.size());
+        log.info(
+                "Initializing AiModelService with {} chat providers and {} image providers",
+                modelProviders.size(),
+                imageModelProviders.size());
 
         // Initialize chat provider cache
         for (LangchainModel provider : modelProviders) {
             providerCache.put(provider.getName(), provider);
-            log.info("Registered AI chat provider: {} (available: {})",
-                    provider.getName(), provider.isAvailable());
+            log.info("Registered AI chat provider: {} (available: {})", provider.getName(), provider.isAvailable());
         }
 
         // Initialize image provider cache
         for (LangchainImageModel provider : imageModelProviders) {
             imageProviderCache.put(provider.getName(), provider);
-            log.info("Registered AI image provider: {} (available: {})",
-                    provider.getName(), provider.isAvailable());
+            log.info("Registered AI image provider: {} (available: {})", provider.getName(), provider.isAvailable());
         }
     }
 
@@ -301,8 +301,7 @@ public class AiModelService {
         Map<String, String> mappings = new ConcurrentHashMap<>();
 
         // Load all settings with prefix "ai.model.mapping."
-        List<de.mhus.nimbus.shared.persistence.SSettings> settings =
-                settingsService.getSettingsByType("string");
+        List<de.mhus.nimbus.shared.persistence.SSettings> settings = settingsService.getSettingsByType("string");
 
         for (var setting : settings) {
             if (setting.getKey().startsWith(MAPPING_PREFIX)) {
@@ -326,8 +325,7 @@ public class AiModelService {
         Map<String, String> mappings = new ConcurrentHashMap<>();
 
         // Load all settings with prefix "ai.image.mapping."
-        List<de.mhus.nimbus.shared.persistence.SSettings> settings =
-                settingsService.getSettingsByType("string");
+        List<de.mhus.nimbus.shared.persistence.SSettings> settings = settingsService.getSettingsByType("string");
 
         for (var setting : settings) {
             if (setting.getKey().startsWith(IMAGE_MAPPING_PREFIX)) {

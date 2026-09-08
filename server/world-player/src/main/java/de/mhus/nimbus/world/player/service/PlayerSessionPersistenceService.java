@@ -7,14 +7,13 @@ import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Service for persisting player session state (position, rotation) to MongoDB.
@@ -37,7 +36,7 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
     private final Map<String, AtomicInteger> tickCounters = new ConcurrentHashMap<>();
 
     @Value("${world.player.session-save-interval-ticks:60}")
-    private int saveIntervalTicks;  // Default: 60 ticks = 60s
+    private int saveIntervalTicks; // Default: 60 ticks = 60s
 
     @Value("${world.player.session-save-enabled:true}")
     private boolean saveEnabled;
@@ -61,8 +60,11 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
      */
     public void startTickThread(PlayerSession session) {
         if (!saveEnabled || session == null || !session.isAuthenticated()) {
-            log.debug("Not starting tick thread: saveEnabled={}, session={}, authenticated={}",
-                    saveEnabled, session != null, session != null && session.isAuthenticated());
+            log.debug(
+                    "Not starting tick thread: saveEnabled={}, session={}, authenticated={}",
+                    saveEnabled,
+                    session != null,
+                    session != null && session.isAuthenticated());
             return;
         }
 
@@ -83,7 +85,7 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
             log.debug("Tick thread started for session: {}", sessionId);
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(1000);  // Tick every ~1 second
+                    Thread.sleep(1000); // Tick every ~1 second
 
                     // Check if session still valid
                     if (!session.isAuthenticated() || session.getLastPosition() == null) {
@@ -97,13 +99,14 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
 
                     // Save every N ticks (skip if player is dead — session will be deleted on close)
                     if (count >= saveIntervalTicks) {
-                        boolean isDead = session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData advData
+                        boolean isDead = session.getGameplayData()
+                                        instanceof de.mhus.nimbus.world.player.gameplay.AdventureData advData
                                 && advData.getDeathTimestamp() > 0;
                         if (!isDead) {
                             saveSessionSafely(session, "periodic");
                         }
                         refreshRedisPosition(session);
-                        counter.set(0);  // Reset counter
+                        counter.set(0); // Reset counter
                     }
                 }
             } catch (InterruptedException e) {
@@ -194,11 +197,13 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
 
             wSessionService.updatePosition(
                     session.getSessionId(),
-                    position.getX(), position.getY(), position.getZ(),
-                    session.getCurrentChunkX(), session.getCurrentChunkZ(),
+                    position.getX(),
+                    position.getY(),
+                    position.getZ(),
+                    session.getCurrentChunkX(),
+                    session.getCurrentChunkZ(),
                     rotation != null ? rotation.getY() : null,
-                    rotation != null ? rotation.getP() : null
-            );
+                    rotation != null ? rotation.getP() : null);
             log.debug("Refreshed Redis position for session: {}", session.getSessionId());
         } catch (Exception e) {
             log.warn("Failed to refresh Redis position for session {}: {}", session.getSessionId(), e.getMessage());
@@ -221,8 +226,7 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
             Map<String, Object> gameplayData = session.serializeGameplay();
 
             sessionService.updateSession(worldId, playerId, position, rotation, gameplayData);
-            log.info("Saved player session ({}): worldId={}, playerId={}",
-                    trigger, worldId, playerId);
+            log.info("Saved player session ({}): worldId={}, playerId={}", trigger, worldId, playerId);
         } catch (Exception e) {
             log.error("Failed to save player session ({}): {}", trigger, e.getMessage(), e);
         }

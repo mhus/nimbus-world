@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.shared.generator;
-import lombok.RequiredArgsConstructor;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Helper class for creating material (block type) images from WFlat data.
@@ -31,8 +31,7 @@ public class FlatMaterialImageCreator {
         byte[] columns = flat.getColumns();
 
         // Create image
-        BufferedImage image = new BufferedImage(
-                width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
         // Draw block map
         for (int z = 0; z < height; z++) {
@@ -70,10 +69,10 @@ public class FlatMaterialImageCreator {
 
         // Predefined colors for common block types
         int[] colors = {
-                0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0x00FFFF, 0xFF00FF, 0xFFA500, 0x800080,
-                0xA52A2A, 0xFFC0CB, 0xFFD700, 0xC0C0C0, 0x808080, 0x800000, 0x808000, 0x008000,
-                0x008080, 0x000080, 0xFF6347, 0x4682B4, 0xD2691E, 0xCD5C5C, 0xF08080, 0xFA8072,
-                0xE9967A, 0xFFA07A, 0xDC143C, 0xFF1493, 0xFF69B4, 0xFFB6C1, 0xFFC0CB, 0xDB7093
+            0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0x00FFFF, 0xFF00FF, 0xFFA500, 0x800080,
+            0xA52A2A, 0xFFC0CB, 0xFFD700, 0xC0C0C0, 0x808080, 0x800000, 0x808000, 0x008000,
+            0x008080, 0x000080, 0xFF6347, 0x4682B4, 0xD2691E, 0xCD5C5C, 0xF08080, 0xFA8072,
+            0xE9967A, 0xFFA07A, 0xDC143C, 0xFF1493, 0xFF69B4, 0xFFB6C1, 0xFFC0CB, 0xDB7093
         };
 
         if (id <= colors.length) {
@@ -97,19 +96,43 @@ public class FlatMaterialImageCreator {
         float m = l - c / 2;
 
         float r, g, b;
-        int hi = (int)(h * 6);
+        int hi = (int) (h * 6);
         switch (hi) {
-            case 0: r = c; g = x; b = 0; break;
-            case 1: r = x; g = c; b = 0; break;
-            case 2: r = 0; g = c; b = x; break;
-            case 3: r = 0; g = x; b = c; break;
-            case 4: r = x; g = 0; b = c; break;
-            default: r = c; g = 0; b = x; break;
+            case 0:
+                r = c;
+                g = x;
+                b = 0;
+                break;
+            case 1:
+                r = x;
+                g = c;
+                b = 0;
+                break;
+            case 2:
+                r = 0;
+                g = c;
+                b = x;
+                break;
+            case 3:
+                r = 0;
+                g = x;
+                b = c;
+                break;
+            case 4:
+                r = x;
+                g = 0;
+                b = c;
+                break;
+            default:
+                r = c;
+                g = 0;
+                b = x;
+                break;
         }
 
-        int ri = (int)((r + m) * 255);
-        int gi = (int)((g + m) * 255);
-        int bi = (int)((b + m) * 255);
+        int ri = (int) ((r + m) * 255);
+        int gi = (int) ((g + m) * 255);
+        int bi = (int) ((b + m) * 255);
 
         return (ri << 16) | (gi << 8) | bi;
     }

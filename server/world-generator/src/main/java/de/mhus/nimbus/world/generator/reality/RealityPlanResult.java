@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of parsing a Reality Instruction Document into a {@link RealityPlan}.
@@ -47,9 +46,6 @@ public class RealityPlanResult {
     public static RealityPlanResult failure(String error, String json) {
         List<String> errors = new ArrayList<>();
         errors.add(error);
-        return RealityPlanResult.builder()
-                .json(json)
-                .errors(errors)
-                .build();
+        return RealityPlanResult.builder().json(json).errors(errors).build();
     }
 }

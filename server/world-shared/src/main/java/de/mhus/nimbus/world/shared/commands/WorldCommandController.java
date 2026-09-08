@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.shared.commands;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import tools.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * REST controller for inter-server command execution.
@@ -41,8 +40,7 @@ public class WorldCommandController {
             String userId,
             String title,
             String originServer,
-            Map<String, Object> metadata
-    ) {}
+            Map<String, Object> metadata) {}
 
     /**
      * Execute command via REST.
@@ -54,26 +52,26 @@ public class WorldCommandController {
     @PostMapping("/command/{commandName}")
     @Operation(summary = "Execute command", description = "Execute a command on this world server")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Command executed"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "500", description = "Execution error")
+        @ApiResponse(responseCode = "200", description = "Command executed"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "500", description = "Execution error")
     })
     public ResponseEntity<Map<String, Object>> executeCommand(
-            @PathVariable String commandName,
-            @RequestBody CommandRequest request) {
+            @PathVariable String commandName, @RequestBody CommandRequest request) {
 
-        log.debug("REST command received: cmd={}, worldId={}, sessionId={}",
-                commandName, request.worldId(), request.sessionId());
+        log.debug(
+                "REST command received: cmd={}, worldId={}, sessionId={}",
+                commandName,
+                request.worldId(),
+                request.sessionId());
 
         // Validate request
         if (commandName == null || commandName.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("rc", -3, "message", "Command name required"));
+            return ResponseEntity.badRequest().body(Map.of("rc", -3, "message", "Command name required"));
         }
 
         if (request.worldId() == null || request.worldId().isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("rc", -3, "message", "World ID required"));
+            return ResponseEntity.badRequest().body(Map.of("rc", -3, "message", "World ID required"));
         }
 
         // Build context

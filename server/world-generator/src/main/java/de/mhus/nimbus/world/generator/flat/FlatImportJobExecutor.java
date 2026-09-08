@@ -58,7 +58,8 @@ public class FlatImportJobExecutor implements JobExecutor {
             int mountZ = getRequiredIntParameter(job, "mountZ");
 
             // Extract optional parameters
-            String flatId = getOptionalParameter(job, "flatId", java.util.UUID.randomUUID().toString());
+            String flatId = getOptionalParameter(
+                    job, "flatId", java.util.UUID.randomUUID().toString());
             String title = getOptionalParameter(job, "title", null);
             String description = getOptionalParameter(job, "description", null);
             String paletteName = getOptionalParameter(job, "paletteName", null);
@@ -71,22 +72,32 @@ public class FlatImportJobExecutor implements JobExecutor {
                 throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
             }
 
-            log.info("Importing flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}, palette={}",
-                    worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description, paletteName);
+            log.info(
+                    "Importing flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}, palette={}",
+                    worldId,
+                    layerName,
+                    flatId,
+                    sizeX,
+                    sizeZ,
+                    mountX,
+                    mountZ,
+                    title,
+                    description,
+                    paletteName);
 
             // Execute import
             WFlat flat = flatCreateService.importFromLayer(
-                    worldId, layerName, flatId,
-                    sizeX, sizeZ, mountX, mountZ,
-                    title, description
-            );
+                    worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
 
             // Apply material palette if specified
             if (paletteName != null && !paletteName.isBlank()) {
                 log.info("Applying material palette: flatId={}, paletteName={}", flat.getId(), paletteName);
                 try {
                     flatMaterialService.setPalette(flat.getId(), paletteName);
-                    log.info("Material palette applied successfully: flatId={}, paletteName={}", flat.getId(), paletteName);
+                    log.info(
+                            "Material palette applied successfully: flatId={}, paletteName={}",
+                            flat.getId(),
+                            paletteName);
                 } catch (IllegalArgumentException e) {
                     log.warn("Failed to apply material palette: {}", e.getMessage());
                     // Continue - don't fail the job if palette application fails
@@ -96,9 +107,15 @@ public class FlatImportJobExecutor implements JobExecutor {
             // Build successful result
             String resultData = String.format(
                     "Successfully imported flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), palette=%s",
-                    flat.getId(), flatId, worldId, layerName, sizeX, sizeZ, mountX, mountZ,
-                    paletteName != null ? paletteName : "none"
-            );
+                    flat.getId(),
+                    flatId,
+                    worldId,
+                    layerName,
+                    sizeX,
+                    sizeZ,
+                    mountX,
+                    mountZ,
+                    paletteName != null ? paletteName : "none");
 
             log.info("Flat import completed successfully: flatId={}, id={}", flatId, flat.getId());
             return JobResult.success(resultData);

@@ -1,15 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WDocument;
-import de.mhus.nimbus.world.shared.world.WDocumentService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -18,6 +8,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WDocument;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Offline tests for the RealityWorkflow orchestration (seed → elaborate → mechanical → refine → D). */
 class RealityWorkflowTest {
@@ -35,8 +34,17 @@ class RealityWorkflowTest {
     private final WDocumentService documentService = mock(WDocumentService.class);
 
     private final RealityWorkflow workflow = new RealityWorkflow(
-            seedGenerator, loreElaborator, parser, expander, refiner, itemGenerator,
-            loreMaterializer, ruleMaterializer, creatureMaterializer, docsMaterializer, documentService);
+            seedGenerator,
+            loreElaborator,
+            parser,
+            expander,
+            refiner,
+            itemGenerator,
+            loreMaterializer,
+            ruleMaterializer,
+            creatureMaterializer,
+            docsMaterializer,
+            documentService);
 
     private final WorldId region = WorldId.of("earth616:westview").orElseThrow();
 
@@ -78,9 +86,14 @@ class RealityWorkflowTest {
         when(seedGenerator.generate(anyString(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
         when(loreElaborator.elaborate(any(), any())).thenReturn(RealityPlanResult.success(p, null));
         when(expander.expand(any(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
-        when(refiner.refine(any(), any())).thenReturn(RefineResult.builder()
-                .plan(p).converged(!report.hasErrors()).iterations(1)
-                .finalReport(report).finalVerdict(acceptable()).build());
+        when(refiner.refine(any(), any()))
+                .thenReturn(RefineResult.builder()
+                        .plan(p)
+                        .converged(!report.hasErrors())
+                        .iterations(1)
+                        .finalReport(report)
+                        .finalVerdict(acceptable())
+                        .build());
     }
 
     /**
@@ -96,12 +109,19 @@ class RealityWorkflowTest {
     }
 
     private void stubMaterializers() {
-        when(itemGenerator.generateItems(any(), any())).thenReturn(RealityItemResult.builder()
-                .createdItemIds(new ArrayList<>(List.of("rock"))).iconsGenerated(1).build());
-        when(loreMaterializer.materialize(any(), any())).thenReturn(MaterializeResult.builder().created(2).build());
-        when(ruleMaterializer.materialize(any(), any())).thenReturn(MaterializeResult.builder().created(3).build());
-        when(creatureMaterializer.materialize(any(), any())).thenReturn(MaterializeResult.builder().created(1).build());
-        when(docsMaterializer.materialize(any(), any())).thenReturn(MaterializeResult.builder().created(2).build());
+        when(itemGenerator.generateItems(any(), any()))
+                .thenReturn(RealityItemResult.builder()
+                        .createdItemIds(new ArrayList<>(List.of("rock")))
+                        .iconsGenerated(1)
+                        .build());
+        when(loreMaterializer.materialize(any(), any()))
+                .thenReturn(MaterializeResult.builder().created(2).build());
+        when(ruleMaterializer.materialize(any(), any()))
+                .thenReturn(MaterializeResult.builder().created(3).build());
+        when(creatureMaterializer.materialize(any(), any()))
+                .thenReturn(MaterializeResult.builder().created(1).build());
+        when(docsMaterializer.materialize(any(), any()))
+                .thenReturn(MaterializeResult.builder().created(2).build());
     }
 
     @Test
@@ -142,7 +162,9 @@ class RealityWorkflowTest {
         stubMaterializers();
         // Icons failed for two items: entities were written, but the run is not a success.
         RealityItemResult withErrors = RealityItemResult.builder()
-                .createdItemIds(new ArrayList<>(List.of("rock"))).iconsGenerated(0).build();
+                .createdItemIds(new ArrayList<>(List.of("rock")))
+                .iconsGenerated(0)
+                .build();
         withErrors.addError("Icon 'rock': quota exceeded");
         withErrors.addError("Icon 'stick': quota exceeded");
         when(itemGenerator.generateItems(any(), any())).thenReturn(withErrors);
@@ -152,8 +174,7 @@ class RealityWorkflowTest {
         assertThat(result.isMaterialized()).isTrue();
         assertThat(result.isPartial()).isTrue();
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrors()).containsExactly(
-                "Icon 'rock': quota exceeded", "Icon 'stick': quota exceeded");
+        assertThat(result.getErrors()).containsExactly("Icon 'rock': quota exceeded", "Icon 'stick': quota exceeded");
     }
 
     @Test
@@ -164,11 +185,16 @@ class RealityWorkflowTest {
         when(loreElaborator.elaborate(any(), any())).thenReturn(RealityPlanResult.success(p, null));
         when(expander.expand(any(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
         // Judge failed on infrastructure -> inconclusive; that must not read as "balance is fine".
-        when(refiner.refine(any(), any())).thenReturn(RefineResult.builder()
-                .plan(p).converged(true).iterations(1).balanceChecked(false)
-                .judgeErrors(new ArrayList<>(List.of("AI chat error: timeout")))
-                .finalReport(validReport()).finalVerdict(JudgeVerdict.failure("AI chat error: timeout"))
-                .build());
+        when(refiner.refine(any(), any()))
+                .thenReturn(RefineResult.builder()
+                        .plan(p)
+                        .converged(true)
+                        .iterations(1)
+                        .balanceChecked(false)
+                        .judgeErrors(new ArrayList<>(List.of("AI chat error: timeout")))
+                        .finalReport(validReport())
+                        .finalVerdict(JudgeVerdict.failure("AI chat error: timeout"))
+                        .build());
         when(parser.savePlan(any(), anyString())).thenReturn("plan-1");
         stubManifestSave("manifest-1");
         stubMaterializers();
@@ -187,8 +213,12 @@ class RealityWorkflowTest {
         when(loreElaborator.elaborate(any(), any())).thenReturn(RealityPlanResult.success(p, null));
         when(expander.expand(any(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
         // No report at all -> "not validated", which must block the commit just like a failed one.
-        when(refiner.refine(any(), any())).thenReturn(RefineResult.builder()
-                .plan(p).converged(false).iterations(0).build());
+        when(refiner.refine(any(), any()))
+                .thenReturn(RefineResult.builder()
+                        .plan(p)
+                        .converged(false)
+                        .iterations(0)
+                        .build());
 
         RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
 
@@ -231,8 +261,8 @@ class RealityWorkflowTest {
 
         RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
 
-        assertThat(result.isSuccess()).isTrue();        // a plan was produced
-        assertThat(result.isMaterialized()).isFalse();  // but not committed
+        assertThat(result.isSuccess()).isTrue(); // a plan was produced
+        assertThat(result.isMaterialized()).isFalse(); // but not committed
         assertThat(result.getErrors()).isNotEmpty();
         verify(parser, never()).savePlan(any(), anyString());
         verify(itemGenerator, never()).generateItems(any(), any());
@@ -245,7 +275,9 @@ class RealityWorkflowTest {
         stubDocFound();
         stubPlanningHappy(validReport());
 
-        RealityWorkflowResult result = workflow.generate(region, "doc1",
+        RealityWorkflowResult result = workflow.generate(
+                region,
+                "doc1",
                 RealityWorkflowOptions.builder().materialize(false).build());
 
         assertThat(result.isSuccess()).isTrue();
@@ -265,7 +297,10 @@ class RealityWorkflowTest {
         stubMaterializers();
         String model = "cortecs:deepseek-v4-pro";
 
-        workflow.generate(region, "doc1", RealityWorkflowOptions.builder().modelName(model).build());
+        workflow.generate(
+                region,
+                "doc1",
+                RealityWorkflowOptions.builder().modelName(model).build());
 
         verify(seedGenerator).generate(anyString(), eq(model));
         verify(loreElaborator).elaborate(any(), eq(model));

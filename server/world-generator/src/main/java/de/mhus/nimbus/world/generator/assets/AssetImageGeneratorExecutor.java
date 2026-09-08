@@ -9,25 +9,24 @@ import de.mhus.nimbus.world.ai.image.AiImageException;
 import de.mhus.nimbus.world.ai.image.AiImageModel;
 import de.mhus.nimbus.world.ai.image.AiImageOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
+import de.mhus.nimbus.world.shared.archive.WArchiveService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-import de.mhus.nimbus.world.shared.archive.WArchiveService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import jakarta.annotation.PostConstruct;
-import javax.imageio.ImageIO;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Optional;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor that generates AI images for game assets.
@@ -104,8 +103,11 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
         defaultQuality = settingsService.getString("asset.image.quality", "standard");
         defaultStyle = settingsService.getString("asset.image.style", "vivid");
 
-        log.info("Asset image generation settings initialized: timeoutSeconds={}, quality={}, style={}",
-                timeoutSeconds.get(), defaultQuality.get(), defaultStyle.get());
+        log.info(
+                "Asset image generation settings initialized: timeoutSeconds={}, quality={}, style={}",
+                timeoutSeconds.get(),
+                defaultQuality.get(),
+                defaultStyle.get());
     }
 
     @Override
@@ -142,7 +144,8 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             String quality = job.getParameters().getOrDefault("quality", defaultQuality.get());
             String style = job.getParameters().getOrDefault("style", defaultStyle.get());
             boolean resize = Boolean.parseBoolean(job.getParameters().getOrDefault("resize", "true"));
-            boolean generateDescription = Boolean.parseBoolean(job.getParameters().getOrDefault("generateDescription", "true"));
+            boolean generateDescription =
+                    Boolean.parseBoolean(job.getParameters().getOrDefault("generateDescription", "true"));
             boolean overwrite = Boolean.parseBoolean(job.getParameters().getOrDefault("overwrite", "false"));
             int cropBorder = Integer.parseInt(job.getParameters().getOrDefault("cropBorder", "0"));
             String crop = job.getParameters().get("crop"); // squareTop, squareCenter, squareBottom
@@ -168,8 +171,17 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             // Determine which model to use
             String modelToUse = (model != null && !model.isBlank()) ? model : aiModelName;
 
-            log.info("Generating image: world={}, path={}, model={}, prompt='{}', size={}x{}, quality={}, style={}, transparent={}",
-                    worldId.getId(), uniquePath, modelToUse, prompt, width, height, quality, style, transparent);
+            log.info(
+                    "Generating image: world={}, path={}, model={}, prompt='{}', size={}x{}, quality={}, style={}, transparent={}",
+                    worldId.getId(),
+                    uniquePath,
+                    modelToUse,
+                    prompt,
+                    width,
+                    height,
+                    quality,
+                    style,
+                    transparent);
 
             // Create AI image model
             AiImageOptions options = AiImageOptions.builder()
@@ -227,8 +239,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                 generateAssetDescription(savedAsset);
             }
 
-            String message = String.format("Generated image: %s (%dx%d) - '%s'",
-                    uniquePath, width, height, prompt);
+            String message = String.format("Generated image: %s (%dx%d) - '%s'", uniquePath, width, height, prompt);
             log.info(message);
             return JobResult.success(message);
 
@@ -306,7 +317,8 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      * @return Saved asset
      * @throws JobExecutionException if save fails
      */
-    private SAsset saveImage(WorldId worldId, String path, AiImage image, String originalPrompt) throws JobExecutionException {
+    private SAsset saveImage(WorldId worldId, String path, AiImage image, String originalPrompt)
+            throws JobExecutionException {
         try {
             // Get image bytes
             byte[] imageBytes = image.getBytes();
@@ -325,8 +337,12 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             int actualWidth = bufferedImage.getWidth();
             int actualHeight = bufferedImage.getHeight();
 
-            log.debug("Image dimensions: requested={}x{}, actual={}x{}",
-                    image.getWidth(), image.getHeight(), actualWidth, actualHeight);
+            log.debug(
+                    "Image dimensions: requested={}x{}, actual={}x{}",
+                    image.getWidth(),
+                    image.getHeight(),
+                    actualWidth,
+                    actualHeight);
 
             // Determine MIME type
             String mimeType = image.getMimeType();
@@ -366,8 +382,14 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                 throw new JobExecutionException("Asset service returned null");
             }
 
-            log.info("Saved image to assets: path={}, size={} bytes, dimensions={}x{}, mimeType={}, assetId={}",
-                    path, imageBytes.length, actualWidth, actualHeight, mimeType, asset.getId());
+            log.info(
+                    "Saved image to assets: path={}, size={} bytes, dimensions={}x{}, mimeType={}, assetId={}",
+                    path,
+                    imageBytes.length,
+                    actualWidth,
+                    actualHeight,
+                    mimeType,
+                    asset.getId());
 
             return asset;
 
@@ -396,8 +418,13 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             return image;
         }
 
-        log.info("Resizing image from {}x{} to {}x{} for path: {}",
-                image.getWidth(), image.getHeight(), targetWidth, targetHeight, path);
+        log.info(
+                "Resizing image from {}x{} to {}x{} for path: {}",
+                image.getWidth(),
+                image.getHeight(),
+                targetWidth,
+                targetHeight,
+                path);
 
         try {
             // Get image bytes
@@ -415,18 +442,10 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             }
 
             // Resize image
-            Image scaledImage = originalImage.getScaledInstance(
-                    targetWidth,
-                    targetHeight,
-                    Image.SCALE_SMOOTH
-            );
+            Image scaledImage = originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
 
             // Convert to BufferedImage
-            BufferedImage resizedImage = new BufferedImage(
-                    targetWidth,
-                    targetHeight,
-                    BufferedImage.TYPE_INT_ARGB
-            );
+            BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
             resizedImage.getGraphics().drawImage(scaledImage, 0, 0, null);
 
             // Encode to bytes
@@ -445,8 +464,13 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to resize image: {}x{} -> {}x{}",
-                    image.getWidth(), image.getHeight(), targetWidth, targetHeight, e);
+            log.error(
+                    "Failed to resize image: {}x{} -> {}x{}",
+                    image.getWidth(),
+                    image.getHeight(),
+                    targetWidth,
+                    targetHeight,
+                    e);
             throw new JobExecutionException("Failed to resize image: " + e.getMessage(), e);
         }
     }
@@ -463,15 +487,18 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      * @return Cropped image
      * @throws JobExecutionException if crop fails
      */
-    private AiImage cropImageBorder(AiImage image, int borderSize, String path)
-            throws JobExecutionException {
+    private AiImage cropImageBorder(AiImage image, int borderSize, String path) throws JobExecutionException {
 
         if (borderSize <= 0) {
             return image;
         }
 
-        log.info("Cropping {}px border from image ({}x{}) for path: {}",
-                borderSize, image.getWidth(), image.getHeight(), path);
+        log.info(
+                "Cropping {}px border from image ({}x{}) for path: {}",
+                borderSize,
+                image.getWidth(),
+                image.getHeight(),
+                path);
 
         try {
             // Get image bytes
@@ -502,16 +529,21 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                         borderSize, originalWidth, originalHeight, croppedWidth, croppedHeight));
             }
 
-            log.debug("Cropping from {}x{} to {}x{} (border={}px)",
-                    originalWidth, originalHeight, croppedWidth, croppedHeight, borderSize);
+            log.debug(
+                    "Cropping from {}x{} to {}x{} (border={}px)",
+                    originalWidth,
+                    originalHeight,
+                    croppedWidth,
+                    croppedHeight,
+                    borderSize);
 
             // Crop image
             BufferedImage croppedImage = originalImage.getSubimage(
-                    borderSize,           // x
-                    borderSize,           // y
-                    croppedWidth,         // width
-                    croppedHeight         // height
-            );
+                    borderSize, // x
+                    borderSize, // y
+                    croppedWidth, // width
+                    croppedHeight // height
+                    );
 
             // Encode to bytes
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -529,8 +561,8 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to crop image: {}x{} with border {}px",
-                    image.getWidth(), image.getHeight(), borderSize, e);
+            log.error(
+                    "Failed to crop image: {}x{} with border {}px", image.getWidth(), image.getHeight(), borderSize, e);
             throw new JobExecutionException("Failed to crop image: " + e.getMessage(), e);
         }
     }
@@ -548,8 +580,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      * @return Cropped square image, or original if skipped
      * @throws JobExecutionException if crop fails
      */
-    private AiImage cropSquare(AiImage image, String preset, String path)
-            throws JobExecutionException {
+    private AiImage cropSquare(AiImage image, String preset, String path) throws JobExecutionException {
 
         try {
             byte[] originalBytes = image.getBytes();
@@ -569,8 +600,12 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
 
             // Skip if image is wider than tall — already wider than a square
             if (imgWidth >= imgHeight) {
-                log.info("Skipping square crop '{}': image is wider than tall ({}x{}) for path: {}",
-                        preset, imgWidth, imgHeight, path);
+                log.info(
+                        "Skipping square crop '{}': image is wider than tall ({}x{}) for path: {}",
+                        preset,
+                        imgWidth,
+                        imgHeight,
+                        path);
                 return image;
             }
 
@@ -593,8 +628,15 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     return image;
             }
 
-            log.info("Square cropping '{}': {}x{} -> {}x{} (yOffset={}) for path: {}",
-                    preset, imgWidth, imgHeight, squareSize, squareSize, yOffset, path);
+            log.info(
+                    "Square cropping '{}': {}x{} -> {}x{} (yOffset={}) for path: {}",
+                    preset,
+                    imgWidth,
+                    imgHeight,
+                    squareSize,
+                    squareSize,
+                    yOffset,
+                    path);
 
             BufferedImage croppedImage = originalImage.getSubimage(0, yOffset, squareSize, squareSize);
 
@@ -614,8 +656,12 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
         } catch (JobExecutionException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to square crop image with preset '{}': {}x{}",
-                    preset, image.getWidth(), image.getHeight(), e);
+            log.error(
+                    "Failed to square crop image with preset '{}': {}x{}",
+                    preset,
+                    image.getWidth(),
+                    image.getHeight(),
+                    e);
             throw new JobExecutionException("Failed to square crop image: " + e.getMessage(), e);
         }
     }
@@ -663,7 +709,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                 throw new JobExecutionException("Invalid size: maximum is 2048x2048");
             }
 
-            return new int[]{width, height};
+            return new int[] {width, height};
 
         } catch (NumberFormatException e) {
             throw new JobExecutionException("Invalid size format: " + sizeStr + " (expected: WxH, e.g., 16x16)");
@@ -795,8 +841,12 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             // Generate archive path: append ".original" before extension
             String archivePath = generateArchivePath(path);
 
-            log.info("Archiving original image: {} ({} bytes, {}x{})",
-                    archivePath, imageBytes.length, image.getWidth(), image.getHeight());
+            log.info(
+                    "Archiving original image: {} ({} bytes, {}x{})",
+                    archivePath,
+                    imageBytes.length,
+                    image.getWidth(),
+                    image.getHeight());
 
             // Archive with WArchiveService
             ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
@@ -829,8 +879,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      * @return Image with transparency applied
      * @throws JobExecutionException if processing fails
      */
-    private AiImage makeColorTransparent(AiImage image, String colorName, String path)
-            throws JobExecutionException {
+    private AiImage makeColorTransparent(AiImage image, String colorName, String path) throws JobExecutionException {
 
         log.info("Making {} pixels transparent for path: {}", colorName, path);
 
@@ -853,11 +902,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             int height = originalImage.getHeight();
 
             // Create new image with alpha channel
-            BufferedImage transparentImage = new BufferedImage(
-                    width,
-                    height,
-                    BufferedImage.TYPE_INT_ARGB
-            );
+            BufferedImage transparentImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
             // Determine target color RGB values
             int targetR, targetG, targetB;
@@ -866,21 +911,31 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             switch (colorName.toLowerCase()) {
                 case "true":
                 case "black":
-                    targetR = 0; targetG = 0; targetB = 0;
+                    targetR = 0;
+                    targetG = 0;
+                    targetB = 0;
                     break;
                 case "white":
-                    targetR = 255; targetG = 255; targetB = 255;
+                    targetR = 255;
+                    targetG = 255;
+                    targetB = 255;
                     break;
                 case "blue":
-                    targetR = 0; targetG = 0; targetB = 255;
+                    targetR = 0;
+                    targetG = 0;
+                    targetB = 255;
                     threshold = 60; // Wider range for color matching
                     break;
                 case "red":
-                    targetR = 255; targetG = 0; targetB = 0;
+                    targetR = 255;
+                    targetG = 0;
+                    targetB = 0;
                     threshold = 60;
                     break;
                 case "green":
-                    targetR = 0; targetG = 255; targetB = 0;
+                    targetR = 0;
+                    targetG = 255;
+                    targetB = 0;
                     threshold = 60;
                     break;
                 default:
@@ -888,8 +943,12 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     return image;
             }
 
-            log.debug("Making pixels transparent: target RGB=({},{},{}), threshold={}",
-                    targetR, targetG, targetB, threshold);
+            log.debug(
+                    "Making pixels transparent: target RGB=({},{},{}), threshold={}",
+                    targetR,
+                    targetG,
+                    targetB,
+                    threshold);
 
             // Process each pixel
             int transparentCount = 0;
@@ -921,7 +980,9 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
 
             int totalPixels = width * height;
             float transparentPercent = (transparentCount * 100.0f) / totalPixels;
-            log.info("Made {} pixels transparent ({}% of image)", transparentCount, String.format("%.1f", transparentPercent));
+            log.info(
+                    "Made {} pixels transparent ({}% of image)",
+                    transparentCount, String.format("%.1f", transparentPercent));
 
             // Encode to bytes as PNG (PNG supports transparency)
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

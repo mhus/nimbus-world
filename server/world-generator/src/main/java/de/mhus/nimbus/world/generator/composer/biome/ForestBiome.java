@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import java.util.HashMap;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * Forest biome with trees and gently rolling terrain.
@@ -61,10 +60,10 @@ public class ForestBiome extends Biome {
      * Forest density presets with tree coverage and terrain parameters.
      */
     public enum ForestDensity {
-        SPARSE(0.4, 20, 3, 0.5, 0.1),      // Open forest with clearings
-        LIGHT(0.6, 20, 5, 0.6, 0.2),       // Light forest
-        DENSE(0.8, 20, 5, 0.6, 0.3),       // Dense forest [Default]
-        OLD_GROWTH(0.9, 25, 7, 0.7, 0.4);  // Ancient forest with varied terrain
+        SPARSE(0.4, 20, 3, 0.5, 0.1), // Open forest with clearings
+        LIGHT(0.6, 20, 5, 0.6, 0.2), // Light forest
+        DENSE(0.8, 20, 5, 0.6, 0.3), // Dense forest [Default]
+        OLD_GROWTH(0.9, 25, 7, 0.7, 0.4); // Ancient forest with varied terrain
 
         private final double floraDensity;
         private final int aboveSeaLevel;
@@ -133,8 +132,15 @@ public class ForestBiome extends Biome {
         }
         groundType.applyToParameters(getParameters());
 
-        log.debug("Applied ForestBiome defaults for '{}': density={}, floraDensity={}, landLevel={}, landOffset={}, dirtRatio={}, groundType={}",
-            getName(), density, density.getFloraDensity(), density.getAboveSeaLevel(), density.getLandOffset(), density.getDirtRatio(), groundType);
+        log.debug(
+                "Applied ForestBiome defaults for '{}': density={}, floraDensity={}, landLevel={}, landOffset={}, dirtRatio={}, groundType={}",
+                getName(),
+                density,
+                density.getFloraDensity(),
+                density.getAboveSeaLevel(),
+                density.getLandOffset(),
+                density.getDirtRatio(),
+                groundType);
     }
 
     /**

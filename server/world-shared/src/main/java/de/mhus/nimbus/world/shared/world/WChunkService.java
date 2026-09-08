@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.shared.world;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
@@ -12,21 +11,9 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.util.FastNoiseLite;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,6 +24,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service für Verwaltung von Welt-Chunks (inline oder extern gespeicherter Datenblock).
@@ -129,12 +127,17 @@ public class WChunkService implements StorageProvider {
         var lookupWorld = worldId.toBaseWorldId();
 
         // Try epoch-specific chunk first
-        Optional<WChunk> chunkOpt = repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch);
+        Optional<WChunk> chunkOpt =
+                repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch);
 
         if (chunkOpt.isPresent()) {
             WChunk entity = chunkOpt.get();
             if (entity.getStorageId() == null) {
-                log.warn("Chunk ohne StorageId gefunden chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch);
+                log.warn(
+                        "Chunk ohne StorageId gefunden chunkKey={} world={} epoch={}",
+                        chunkKey,
+                        worldId.getId(),
+                        epoch);
                 return Optional.empty();
             }
 
@@ -149,11 +152,20 @@ public class WChunkService implements StorageProvider {
                 ChunkData chunkData = objectMapper.readValue(stream, ChunkData.class);
                 return Optional.ofNullable(chunkData);
             } catch (Exception e) {
-                log.warn("ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch, e);
+                log.warn(
+                        "ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={} epoch={}",
+                        chunkKey,
+                        worldId.getId(),
+                        epoch,
+                        e);
                 return Optional.empty();
             }
         } else if (create) {
-            log.debug("Chunk not found in DB for epoch, generating default: chunkKey={} world={} epoch={}", chunkKey, lookupWorld.getId(), epoch);
+            log.debug(
+                    "Chunk not found in DB for epoch, generating default: chunkKey={} world={} epoch={}",
+                    chunkKey,
+                    lookupWorld.getId(),
+                    epoch);
             var data = generateDefaultChunk(lookupWorld.getId(), chunkKey);
             return Optional.ofNullable(data);
         } else {
@@ -171,7 +183,9 @@ public class WChunkService implements StorageProvider {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        WChunk chunk = repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch).orElse(null);
+        WChunk chunk = repository
+                .findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch)
+                .orElse(null);
 
         if (chunk == null || chunk.getStorageId() == null) {
             return new ByteArrayInputStream(new byte[0]);
@@ -186,7 +200,12 @@ public class WChunkService implements StorageProvider {
             try {
                 return new GZIPInputStream(stream);
             } catch (Exception e) {
-                log.error("Fehler beim Dekomprimieren von Chunk chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch, e);
+                log.error(
+                        "Fehler beim Dekomprimieren von Chunk chunkKey={} world={} epoch={}",
+                        chunkKey,
+                        worldId.getId(),
+                        epoch,
+                        e);
                 return new ByteArrayInputStream(new byte[0]);
             }
         }
@@ -292,7 +311,8 @@ public class WChunkService implements StorageProvider {
                 return Optional.ofNullable(chunkData);
 
             } catch (Exception e) {
-                log.warn("ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={}", chunkKey, worldId.getId(), e);
+                log.warn(
+                        "ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={}", chunkKey, worldId.getId(), e);
                 return Optional.empty();
             }
         } else if (create) {
@@ -358,14 +378,15 @@ public class WChunkService implements StorageProvider {
 
             // Calculate total block count for pre-allocation (estimated)
             int totalPositions = chunkSize * chunkSize;
-            int waterBlocksPerPosition = (waterLevel != null && waterLevel > groundLevel) ? (waterLevel - groundLevel) : 0;
+            int waterBlocksPerPosition =
+                    (waterLevel != null && waterLevel > groundLevel) ? (waterLevel - groundLevel) : 0;
             int estimatedBlockCount = totalPositions + (waterBlocksPerPosition * totalPositions);
 
             // Create chunk data
             ChunkData chunkData = new ChunkData();
             chunkData.setCx(cx);
             chunkData.setCz(cz);
-            chunkData.setSize((byte)chunkSize);
+            chunkData.setSize((byte) chunkSize);
 
             // Pre-allocate collections with estimated capacity
             List<Block> blocks = new ArrayList<>(estimatedBlockCount);
@@ -389,11 +410,13 @@ public class WChunkService implements StorageProvider {
 
                     // Use StringBuilder for height key to avoid string concatenation overhead
                     String heightKey = new StringBuilder(12)
-                            .append(worldX).append(',').append(worldZ)
+                            .append(worldX)
+                            .append(',')
+                            .append(worldZ)
                             .toString();
 
                     // Height data: [groundLevel, waterLevel (-1=none)]
-                    int[] columnHeightData = new int[]{noiseHeight, waterLevel != null ? waterLevel : -1};
+                    int[] columnHeightData = new int[] {noiseHeight, waterLevel != null ? waterLevel : -1};
                     heightData.put(heightKey, columnHeightData);
 
                     // Create water blocks at waterLevel - only one flat layer
@@ -408,8 +431,14 @@ public class WChunkService implements StorageProvider {
             chunkData.setHeightData(heightData);
             chunkData.setDeny(true);
 
-            log.debug("Generated default chunk with noise: cx={}, cz={}, blocks={}, baseGroundLevel={}, amplitude={}, waterLevel={}",
-                    cx, cz, blocks.size(), groundLevel, TERRAIN_AMPLITUDE, waterLevel);
+            log.debug(
+                    "Generated default chunk with noise: cx={}, cz={}, blocks={}, baseGroundLevel={}, amplitude={}, waterLevel={}",
+                    cx,
+                    cz,
+                    blocks.size(),
+                    groundLevel,
+                    TERRAIN_AMPLITUDE,
+                    waterLevel);
 
             return chunkData;
 
@@ -476,8 +505,11 @@ public class WChunkService implements StorageProvider {
             repository.delete(c);
         }
         chunkInfoRepository.deleteByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
-        log.debug("Chunk gelöscht (alle {} Epoch-Varianten) chunkKey={} world={}",
-                variants.size(), chunkKey, lookupWorld.getId());
+        log.debug(
+                "Chunk gelöscht (alle {} Epoch-Varianten) chunkKey={} world={}",
+                variants.size(),
+                chunkKey,
+                lookupWorld.getId());
         return true;
     }
 
@@ -504,7 +536,9 @@ public class WChunkService implements StorageProvider {
         }
         String wid = worldId.toBaseWorldId().getId();
 
-        WChunk chunk = repository.findByWorldIdAndChunkAndEpochesContaining(wid, chunkKey, epoch).orElse(null);
+        WChunk chunk = repository
+                .findByWorldIdAndChunkAndEpochesContaining(wid, chunkKey, epoch)
+                .orElse(null);
         if (chunk == null) {
             return false; // already absent for this epoch
         }
@@ -516,16 +550,19 @@ public class WChunkService implements StorageProvider {
         if (lastEpoch) {
             // Remove the whole document, but only if it still holds exactly [epoch]
             // (guards against a concurrent $addToSet after our read).
-            Query guarded = new Query(Criteria.where("id").is(chunk.getId())
-                    .and("epoches").is(List.of(epoch)));
+            Query guarded = new Query(
+                    Criteria.where("id").is(chunk.getId()).and("epoches").is(List.of(epoch)));
             long removed = mongoTemplate.remove(guarded, WChunk.class).getDeletedCount();
             if (removed == 1) {
                 if (chunk.getStorageId() != null) {
                     safeDeleteExternal(storageService, chunk.getStorageId());
                 }
                 pullChunkInfoEpoch(wid, chunkKey, epoch);
-                log.debug("Chunk in Epoche {} gelöscht (letzte Epoche → Dokument + Storage entfernt) chunkKey={} world={}",
-                        epoch, chunkKey, wid);
+                log.debug(
+                        "Chunk in Epoche {} gelöscht (letzte Epoche → Dokument + Storage entfernt) chunkKey={} world={}",
+                        epoch,
+                        chunkKey,
+                        wid);
                 return true;
             }
             // Concurrent add repopulated epoches → fall through to a plain pull.
@@ -533,12 +570,9 @@ public class WChunkService implements StorageProvider {
 
         // Other epochs remain: atomically pull just this epoch; storage stays (shared).
         mongoTemplate.updateFirst(
-                new Query(Criteria.where("id").is(chunk.getId())),
-                new Update().pull("epoches", epoch),
-                WChunk.class);
+                new Query(Criteria.where("id").is(chunk.getId())), new Update().pull("epoches", epoch), WChunk.class);
         pullChunkInfoEpoch(wid, chunkKey, epoch);
-        log.debug("Chunk-Epoche {} entfernt (weitere Epochen bleiben) chunkKey={} world={}",
-                epoch, chunkKey, wid);
+        log.debug("Chunk-Epoche {} entfernt (weitere Epochen bleiben) chunkKey={} world={}", epoch, chunkKey, wid);
         return true;
     }
 
@@ -548,7 +582,8 @@ public class WChunkService implements StorageProvider {
      */
     private void pullChunkInfoEpoch(String worldId, String chunkKey, int epoch) {
         WChunkInfo info = chunkInfoRepository
-                .findByWorldIdAndChunkAndEpochesContaining(worldId, chunkKey, epoch).orElse(null);
+                .findByWorldIdAndChunkAndEpochesContaining(worldId, chunkKey, epoch)
+                .orElse(null);
         if (info == null) {
             return;
         }
@@ -556,8 +591,8 @@ public class WChunkService implements StorageProvider {
                 && info.getEpoches().size() == 1
                 && info.getEpoches().contains(epoch);
         if (lastEpoch) {
-            Query guarded = new Query(Criteria.where("id").is(info.getId())
-                    .and("epoches").is(List.of(epoch)));
+            Query guarded = new Query(
+                    Criteria.where("id").is(info.getId()).and("epoches").is(List.of(epoch)));
             if (mongoTemplate.remove(guarded, WChunkInfo.class).getDeletedCount() == 1) {
                 return;
             }
@@ -636,7 +671,7 @@ public class WChunkService implements StorageProvider {
         byte[] dataBytes;
         if (compressionEnabled) {
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                 GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
+                    GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
                 gzip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 gzip.finish();
                 dataBytes = buffer.toByteArray();
@@ -665,7 +700,11 @@ public class WChunkService implements StorageProvider {
     }
 
     private void safeDeleteExternal(StorageService storage, String storageId) {
-        try { storage.delete(storageId); } catch (Exception e) { log.warn("Externer Chunk-Speicher konnte nicht gelöscht werden id={}", storageId, e); }
+        try {
+            storage.delete(storageId);
+        } catch (Exception e) {
+            log.warn("Externer Chunk-Speicher konnte nicht gelöscht werden id={}", storageId, e);
+        }
     }
 
     /**
@@ -685,8 +724,12 @@ public class WChunkService implements StorageProvider {
         // Load items for this chunk from registry
         var items = itemRegistryService.getItemsInChunk(worldId, chunkData.getCx(), chunkData.getCz());
         if (!items.isEmpty()) {
-            log.info("Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
-                    items.size(), worldId.getId(), chunkData.getCx(), chunkData.getCz());
+            log.info(
+                    "Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
+                    items.size(),
+                    worldId.getId(),
+                    chunkData.getCx(),
+                    chunkData.getCz());
         }
 
         return ChunkDataTransferObject.builder()
@@ -723,8 +766,12 @@ public class WChunkService implements StorageProvider {
         // Load items for this chunk from registry
         var items = itemRegistryService.getItemsInChunk(worldId, cx, cz);
         if (!items.isEmpty()) {
-            log.info("Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
-                    items.size(), worldId.getId(), cx, cz);
+            log.info(
+                    "Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
+                    items.size(),
+                    worldId.getId(),
+                    cx,
+                    cz);
         }
 
         // If chunk is compressed in storage, use storage data directly
@@ -740,15 +787,17 @@ public class WChunkService implements StorageProvider {
                 // Read all bytes from stream (already compressed ChunkData)
                 byte[] compressedData = compressedStream.readAllBytes();
 
-                log.debug("Using compressed storage data directly: chunkKey={} size={} bytes",
-                        chunkKey, compressedData.length);
+                log.debug(
+                        "Using compressed storage data directly: chunkKey={} size={} bytes",
+                        chunkKey,
+                        compressedData.length);
 
                 // Return with compressed ChunkData as-is
                 return ChunkDataTransferObject.builder()
                         .cx(cx)
                         .cz(cz)
-                        .i(items.isEmpty() ? null : items)  // items not compressed
-                        .c(compressedData)  // compressed ChunkData from storage (as-is)
+                        .i(items.isEmpty() ? null : items) // items not compressed
+                        .c(compressedData) // compressed ChunkData from storage (as-is)
                         .build();
 
             } catch (Exception e) {
@@ -769,8 +818,8 @@ public class WChunkService implements StorageProvider {
         return ChunkDataTransferObject.builder()
                 .cx(chunkData.getCx())
                 .cz(chunkData.getCz())
-                .b(chunkData.getBlocks())        // blocks → b
-                .i(items.isEmpty() ? null : items)  // items from registry → i
+                .b(chunkData.getBlocks()) // blocks → b
+                .i(items.isEmpty() ? null : items) // items from registry → i
                 .h(chunkData.getHeightData())
                 .deny(chunkData.getDeny())
                 .backdrop(convertBackdrop(chunkData.getBackdrop()))
@@ -804,7 +853,8 @@ public class WChunkService implements StorageProvider {
      * @param localZ Local z coordinate within chunk (0 to chunkSize-1)
      * @return HeightDataDto if found, null otherwise
      */
-    public de.mhus.nimbus.world.shared.dto.HeightDataDto getHeightDataForColumn(ChunkData chunkData, int localX, int localZ) {
+    public de.mhus.nimbus.world.shared.dto.HeightDataDto getHeightDataForColumn(
+            ChunkData chunkData, int localX, int localZ) {
         if (chunkData == null || chunkData.getHeightData() == null) {
             return null;
         }
@@ -826,9 +876,7 @@ public class WChunkService implements StorageProvider {
         int waterLevel = columnData[1];
         Integer maxHeight = columnData.length > 2 ? columnData[2] : null;
 
-        return new de.mhus.nimbus.world.shared.dto.HeightDataDto(
-                groundLevel, waterLevel, maxHeight
-        );
+        return new de.mhus.nimbus.world.shared.dto.HeightDataDto(groundLevel, waterLevel, maxHeight);
     }
 
     /**
@@ -919,16 +967,14 @@ public class WChunkService implements StorageProvider {
         }
 
         WWorld world = worldOpt.get();
-        String chunkKey = world.getChunkKey(x,z);
+        String chunkKey = world.getChunkKey(x, z);
 
-        log.trace("Looking up server info for block: worldId={}, pos=({},{},{}), chunk={}",
-                worldId, x, y, z, chunkKey);
+        log.trace("Looking up server info for block: worldId={}, pos=({},{},{}), chunk={}", worldId, x, y, z, chunkKey);
 
         // Load chunk
         Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey);
         if (chunkOpt.isEmpty()) {
-            log.trace("Chunk not found for server info lookup: worldId={}, chunkKey={}",
-                    worldId, chunkKey);
+            log.trace("Chunk not found for server info lookup: worldId={}, chunkKey={}", worldId, chunkKey);
             return null;
         }
 
@@ -995,7 +1041,8 @@ public class WChunkService implements StorageProvider {
      */
     public void setServerInfo(WorldId worldId, int x, int y, int z, Map<String, String> serverInfo) {
         WorldId lookupWorldId = worldId.toBaseWorldId();
-        WWorld world = worldService.getByWorldId(lookupWorldId.getId())
+        WWorld world = worldService
+                .getByWorldId(lookupWorldId.getId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         String chunkKey = world.getChunkKey(x, z);
@@ -1024,7 +1071,8 @@ public class WChunkService implements StorageProvider {
      */
     public void removeServerInfo(WorldId worldId, int x, int y, int z) {
         WorldId lookupWorldId = worldId.toBaseWorldId();
-        WWorld world = worldService.getByWorldId(lookupWorldId.getId())
+        WWorld world = worldService
+                .getByWorldId(lookupWorldId.getId())
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         String chunkKey = world.getChunkKey(x, z);
@@ -1056,12 +1104,7 @@ public class WChunkService implements StorageProvider {
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.toBaseWorldId();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
-        return mongoTemplate.findDistinct(
-                query,
-                "storageId",
-                WChunk.class,
-                String.class
-        );
+        return mongoTemplate.findDistinct(query, "storageId", WChunk.class, String.class);
     }
 
     /**
@@ -1143,8 +1186,12 @@ public class WChunkService implements StorageProvider {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} chunks (including {} storage items) from world {} to {}",
-                duplicatedCount, storageCount, sourceWorldId, targetWorldId);
+        log.info(
+                "Duplicated {} chunks (including {} storage items) from world {} to {}",
+                duplicatedCount,
+                storageCount,
+                sourceWorldId,
+                targetWorldId);
         return duplicatedCount;
     }
 
@@ -1189,10 +1236,15 @@ public class WChunkService implements StorageProvider {
      * WChunkInfo for this chunk is deleted to avoid stale data. The chunk generation
      * process is NOT interrupted.
      */
-    public void saveChunkInfo(String worldId, String chunkKey, List<Integer> epoches,
-                              Map<String, String> blockGroups, Map<String, String> blockLayers) {
+    public void saveChunkInfo(
+            String worldId,
+            String chunkKey,
+            List<Integer> epoches,
+            Map<String, String> blockGroups,
+            Map<String, String> blockLayers) {
         try {
-            WChunkInfo info = chunkInfoRepository.findByWorldIdAndChunk(worldId, chunkKey)
+            WChunkInfo info = chunkInfoRepository
+                    .findByWorldIdAndChunk(worldId, chunkKey)
                     .orElseGet(() -> {
                         WChunkInfo neu = WChunkInfo.builder()
                                 .worldId(worldId)
@@ -1239,5 +1291,4 @@ public class WChunkService implements StorageProvider {
     public EpochProcessResult deleteEpoch(String worldId, int epoch) {
         return EpochArrayHelper.delete(mongoTemplate, WChunk.class, "chunk", worldId, epoch);
     }
-
 }

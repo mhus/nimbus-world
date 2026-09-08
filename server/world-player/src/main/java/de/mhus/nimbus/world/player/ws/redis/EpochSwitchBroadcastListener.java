@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService.ChunkCoord;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis listener for epoch switch events.
@@ -44,7 +43,9 @@ public class EpochSwitchBroadcastListener {
      * Thread-safe - can be called from multiple threads.
      */
     public void subscribeToWorld(String worldId) {
-        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId)
+                .toBaseWorldId()
+                .getId();
 
         if (subscribedWorlds.contains(baseWorldId)) {
             return;
@@ -93,8 +94,11 @@ public class EpochSwitchBroadcastListener {
                 resendRegisteredChunks(session);
             }
 
-            log.info("Epoch switch completed: world={}, epoch={}, sessions updated={}",
-                    baseWorldId, newEpoch, updatedSessions);
+            log.info(
+                    "Epoch switch completed: world={}, epoch={}, sessions updated={}",
+                    baseWorldId,
+                    newEpoch,
+                    updatedSessions);
 
         } catch (Exception e) {
             log.error("Failed to handle epoch switch from Redis: {}", message, e);
@@ -134,8 +138,10 @@ public class EpochSwitchBroadcastListener {
 
         if (!chunks.isEmpty()) {
             chunkSenderService.sendChunksAsync(session, chunks);
-            log.debug("Scheduled resend of {} chunks for session {} after epoch switch",
-                    chunks.size(), session.getSessionId());
+            log.debug(
+                    "Scheduled resend of {} chunks for session {} after epoch switch",
+                    chunks.size(),
+                    session.getSessionId());
         }
     }
 }

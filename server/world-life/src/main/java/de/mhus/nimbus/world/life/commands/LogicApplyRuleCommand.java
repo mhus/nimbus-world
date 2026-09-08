@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.life.commands;
 
+import de.mhus.nimbus.world.life.logic.LogicMachineService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleService;
-import de.mhus.nimbus.world.life.logic.LogicMachineService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Execute a logic rule by name.
@@ -61,8 +60,7 @@ public class LogicApplyRuleCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Execute a logic rule by name\n" +
-                "Usage: /logic-apply <ruleName>\n" +
-                "Checks condition, executes effects, triggers cascade.";
+        return "Execute a logic rule by name\n" + "Usage: /logic-apply <ruleName>\n"
+                + "Checks condition, executes effects, triggers cascade.";
     }
 }

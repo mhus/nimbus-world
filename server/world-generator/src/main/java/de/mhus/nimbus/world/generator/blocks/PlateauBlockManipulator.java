@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Plateau block manipulator - creates a flat rectangular platform.
@@ -56,8 +56,8 @@ public class PlateauBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a flat rectangular platform. Parameters: position {x,y,z}, width, depth, blockType (optional). " +
-                "Example: {\"plateau\": {\"transform\": \"position,forward\", \"width\": 10, \"depth\": 5}}";
+        return "Creates a flat rectangular platform. Parameters: position {x,y,z}, width, depth, blockType (optional). "
+                + "Example: {\"plateau\": {\"transform\": \"position,forward\", \"width\": 10, \"depth\": 5}}";
     }
 
     @Override
@@ -108,8 +108,14 @@ public class PlateauBlockManipulator implements BlockManipulator {
         }
 
         // Generate plateau using rectangleY (filled rectangle in XZ plane)
-        log.info("Generating plateau: pos=({},{},{}), width={}, depth={}, blockType={}",
-                x, y, z, width, depth, blockType);
+        log.info(
+                "Generating plateau: pos=({},{},{}), width={}, depth={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                depth,
+                blockType);
 
         painter.rectangleY(x, y, z, width, depth);
 
@@ -117,8 +123,8 @@ public class PlateauBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated plateau: %d blocks (%dx%d) at (%d,%d,%d)",
-                blockCount, width, depth, x, y, z);
+        String message =
+                String.format("Generated plateau: %d blocks (%dx%d) at (%d,%d,%d)", blockCount, width, depth, x, y, z);
 
         log.info(message);
 

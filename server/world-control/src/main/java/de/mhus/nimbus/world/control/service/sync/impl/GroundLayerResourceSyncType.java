@@ -1,24 +1,23 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.layer.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for ground layers.
@@ -44,7 +43,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path groundDir = dataPath.resolve("ground");
         Files.createDirectories(groundDir);
 
@@ -77,7 +77,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                 exportSchemaInfo(worldId.getId(), layerDataId, schemaFile);
 
                 // Export terrain chunks (raw JSON through the owner service)
-                List<WLayerTerrain> terrains = layerService.findTerrainsByWorldIdAndLayerDataId(worldId.getId(), layerDataId);
+                List<WLayerTerrain> terrains =
+                        layerService.findTerrainsByWorldIdAndLayerDataId(worldId.getId(), layerDataId);
                 for (WLayerTerrain terrain : terrains) {
                     try {
                         String[] parts = terrain.getChunkKey().split(":");
@@ -143,7 +144,9 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path groundDir = dataPath.resolve("ground");
         if (!Files.exists(groundDir)) {
             log.info("No ground directory found");
@@ -187,7 +190,9 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedLayerDoc.getString("worldId");
                     String targetName = migratedLayerDoc.getString("title");
 
-                    Document existingLayer = layerService.findLayerDocumentByWorldIdAndName(targetWorldId, targetName).orElse(null);
+                    Document existingLayer = layerService
+                            .findLayerDocumentByWorldIdAndName(targetWorldId, targetName)
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existingLayer != null) {
@@ -210,8 +215,7 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
 
                     // Import chunks recursively
                     try (Stream<Path> paths = Files.walk(layerDir)) {
-                        List<Path> chunkFiles = paths
-                                .filter(p -> p.toString().endsWith(".json"))
+                        List<Path> chunkFiles = paths.filter(p -> p.toString().endsWith(".json"))
                                 .toList();
 
                         for (Path chunkFile : chunkFiles) {
@@ -233,17 +237,14 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                                 chunkKeys.add(chunkKey);
 
                                 // Migrate if needed
-                                String migratedChunkJson = migrationService.migrateToLatest(chunkJson, "de.mhus.nimbus.world.shared.layer.LayerChunkData");
+                                String migratedChunkJson = migrationService.migrateToLatest(
+                                        chunkJson, "de.mhus.nimbus.world.shared.layer.LayerChunkData");
 
                                 // Parse to LayerChunkData
-                                LayerChunkData chunkData = objectMapper.readValue(migratedChunkJson, LayerChunkData.class);
+                                LayerChunkData chunkData =
+                                        objectMapper.readValue(migratedChunkJson, LayerChunkData.class);
 
-                                layerService.saveTerrainChunk(
-                                        worldId.getId(),
-                                        layerDataId,
-                                        chunkKey,
-                                        chunkData
-                                );
+                                layerService.saveTerrainChunk(worldId.getId(), layerDataId, chunkKey, chunkData);
 
                                 imported++;
 
@@ -276,7 +277,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                 } else if (filesystemChunks.containsKey(layer.getName())) {
                     // Remove chunks
                     Set<String> fsChunks = filesystemChunks.get(layer.getName());
-                    List<WLayerTerrain> dbChunks = layerService.findTerrainsByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
+                    List<WLayerTerrain> dbChunks = layerService.findTerrainsByWorldIdAndLayerDataId(
+                            layer.getWorldId(), layer.getLayerDataId());
 
                     for (WLayerTerrain chunk : dbChunks) {
                         if (!fsChunks.contains(chunk.getChunkKey())) {
@@ -404,4 +406,3 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
         Files.delete(path);
     }
 }
-

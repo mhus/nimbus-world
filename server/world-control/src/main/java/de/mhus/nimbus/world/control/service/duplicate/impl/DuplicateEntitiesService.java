@@ -34,7 +34,11 @@ public class DuplicateEntitiesService implements DuplicateToWorld {
         // Duplicate entity instances
         int entityCount = entityService.duplicateToWorld(sourceWorldId, targetWorldId);
 
-        log.info("Duplicated {} entity models and {} entity instances from world {} to {}",
-                modelCount, entityCount, sourceWorldId, targetWorldId);
+        log.info(
+                "Duplicated {} entity models and {} entity instances from world {} to {}",
+                modelCount,
+                entityCount,
+                sourceWorldId,
+                targetWorldId);
     }
 }

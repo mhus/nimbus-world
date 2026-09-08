@@ -1,18 +1,17 @@
 package de.mhus.nimbus.shared.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import de.mhus.nimbus.shared.persistence.SchemaMigrator;
 import de.mhus.nimbus.shared.types.SchemaVersion;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for SchemaMigrationService.
@@ -33,11 +32,7 @@ class SchemaMigrationServiceTest {
         migrator_1_to_2 = new TestMigrator("TestEntity", "1.0.0", "2.0.0", "v2");
         migrator_2_to_3 = new TestMigrator("TestEntity", "2.0.0", "3.0.0", "v3");
 
-        List<SchemaMigrator> migrators = Arrays.asList(
-                migrator_0_to_1,
-                migrator_1_to_2,
-                migrator_2_to_3
-        );
+        List<SchemaMigrator> migrators = Arrays.asList(migrator_0_to_1, migrator_1_to_2, migrator_2_to_3);
 
         migrationService = new SchemaMigrationService(migrators);
     }
@@ -48,7 +43,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When
-        String result = migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0"));
+        String result = migrationService.migrate(
+                entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0"));
 
         // Then
         assertThat(result).contains("\"migrated\":\"v1\"");
@@ -61,7 +57,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When
-        String result = migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("0"));
+        String result = migrationService.migrate(
+                entityJson, "TestEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("0"));
 
         // Then
         assertThat(result).contains("\"migrated\":\"v1\"");
@@ -76,7 +73,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\",\"_schema\":\"2.0.0\"}";
 
         // When
-        String result = migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("2.0.0"), SchemaVersion.create("2.0.0"));
+        String result = migrationService.migrate(
+                entityJson, "TestEntity", SchemaVersion.create("2.0.0"), SchemaVersion.create("2.0.0"));
 
         // Then
         assertThat(result).isEqualTo(entityJson);
@@ -89,7 +87,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\",\"_schema\":\"1.0.0\"}";
 
         // When
-        String result = migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("2.0.0"), SchemaVersion.create("1.0.0"));
+        String result = migrationService.migrate(
+                entityJson, "TestEntity", SchemaVersion.create("2.0.0"), SchemaVersion.create("1.0.0"));
 
         // Then
         assertThat(result).contains("\"migrated2\":\"v2\"");
@@ -103,7 +102,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When/Then
-        assertThatThrownBy(() -> migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("99.0.0"), SchemaVersion.create("0")))
+        assertThatThrownBy(() -> migrationService.migrate(
+                        entityJson, "TestEntity", SchemaVersion.create("99.0.0"), SchemaVersion.create("0")))
                 .isInstanceOf(SchemaMigrationService.MigrationException.class)
                 .hasMessageContaining("No migration path found");
     }
@@ -114,7 +114,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When/Then
-        assertThatThrownBy(() -> migrationService.migrate(entityJson, "UnknownEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0")))
+        assertThatThrownBy(() -> migrationService.migrate(
+                        entityJson, "UnknownEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0")))
                 .isInstanceOf(SchemaMigrationService.MigrationException.class)
                 .hasMessageContaining("No migration path found");
     }
@@ -125,7 +126,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When
-        String result = migrationService.migrate(entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0"));
+        String result = migrationService.migrate(
+                entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0"));
 
         // Then
         assertThat(result).contains("\"migrated\":\"v1\"");
@@ -135,16 +137,26 @@ class SchemaMigrationServiceTest {
     @Test
     void shouldCheckMigrationPathExists() {
         // When/Then
-        assertThat(migrationService.hasMigrationPath("TestEntity", SchemaVersion.create("0"), SchemaVersion.create("3.0.0"))).isTrue();
-        assertThat(migrationService.hasMigrationPath("TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("2.0.0"))).isTrue();
-        assertThat(migrationService.hasMigrationPath("TestEntity", SchemaVersion.create("0"), SchemaVersion.create("99.0.0"))).isFalse();
-        assertThat(migrationService.hasMigrationPath("UnknownEntity", SchemaVersion.create("0"), SchemaVersion.create("1.0.0"))).isFalse();
+        assertThat(migrationService.hasMigrationPath(
+                        "TestEntity", SchemaVersion.create("0"), SchemaVersion.create("3.0.0")))
+                .isTrue();
+        assertThat(migrationService.hasMigrationPath(
+                        "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("2.0.0")))
+                .isTrue();
+        assertThat(migrationService.hasMigrationPath(
+                        "TestEntity", SchemaVersion.create("0"), SchemaVersion.create("99.0.0")))
+                .isFalse();
+        assertThat(migrationService.hasMigrationPath(
+                        "UnknownEntity", SchemaVersion.create("0"), SchemaVersion.create("1.0.0")))
+                .isFalse();
     }
 
     @Test
     void shouldReturnSameVersionWhenCheckingMigrationPath() {
         // When/Then
-        assertThat(migrationService.hasMigrationPath("TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("1.0.0"))).isTrue();
+        assertThat(migrationService.hasMigrationPath(
+                        "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("1.0.0")))
+                .isTrue();
     }
 
     @Test
@@ -187,14 +199,15 @@ class SchemaMigrationServiceTest {
         List<SchemaMigrator> unorderedMigrators = Arrays.asList(
                 orderMigrator3, // 2.0.0 -> 3.0.0
                 orderMigrator1, // 0 -> 1.0.0
-                orderMigrator2  // 1.0.0 -> 2.0.0
-        );
+                orderMigrator2 // 1.0.0 -> 2.0.0
+                );
 
         SchemaMigrationService orderService = new SchemaMigrationService(unorderedMigrators);
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When - Migration von Version 0 auf 3.0.0
-        String result = orderService.migrate(entityJson, "OrderEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("0"));
+        String result = orderService.migrate(
+                entityJson, "OrderEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("0"));
 
         // Then - Die Schritte müssen in der korrekten Reihenfolge angewendet worden sein
         assertThat(result).contains("\"order\":\"step1,step2,step3\"");
@@ -235,7 +248,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\",\"_schema\":\"1.0.0\"}";
 
         // When - Migration von Version 1.0.0 auf 3.0.0
-        String result = partialService.migrate(entityJson, "PartialEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("1.0.0"));
+        String result = partialService.migrate(
+                entityJson, "PartialEntity", SchemaVersion.create("3.0.0"), SchemaVersion.create("1.0.0"));
 
         // Then - Nur Schritt 2 und 3 sollten angewendet werden, in dieser Reihenfolge
         assertThat(result).contains("\"migration_step\":\"2,3\"");
@@ -257,7 +271,8 @@ class SchemaMigrationServiceTest {
         String entityJson = "{\"id\":\"123\",\"name\":\"test\"}";
 
         // When/Then
-        assertThatThrownBy(() -> service.migrate(entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0")))
+        assertThatThrownBy(() -> service.migrate(
+                        entityJson, "TestEntity", SchemaVersion.create("1.0.0"), SchemaVersion.create("0")))
                 .isInstanceOf(SchemaMigrationService.MigrationException.class)
                 .hasMessageContaining("Migration failed");
     }
@@ -306,12 +321,13 @@ class SchemaMigrationServiceTest {
             }
 
             // Use different field names for different versions to test chaining
-            String fieldName = switch (toVersion.toString()) {
-                case "1.0.0" -> "migrated";
-                case "2.0.0" -> "migrated2";
-                case "3.0.0" -> "migrated3";
-                default -> "migrated_" + toVersion;
-            };
+            String fieldName =
+                    switch (toVersion.toString()) {
+                        case "1.0.0" -> "migrated";
+                        case "2.0.0" -> "migrated2";
+                        case "3.0.0" -> "migrated3";
+                        default -> "migrated_" + toVersion;
+                    };
 
             return trimmed + "\"" + fieldName + "\":\"" + markerValue + "\"}";
         }
@@ -332,9 +348,9 @@ class SchemaMigrationServiceTest {
         public boolean equals(Object obj) {
             if (this == obj) return true;
             if (!(obj instanceof TestMigrator other)) return false;
-            return entityType.equals(other.entityType) &&
-                   fromVersion.equals(other.fromVersion) &&
-                   toVersion.equals(other.toVersion);
+            return entityType.equals(other.entityType)
+                    && fromVersion.equals(other.fromVersion)
+                    && toVersion.equals(other.toVersion);
         }
 
         @Override

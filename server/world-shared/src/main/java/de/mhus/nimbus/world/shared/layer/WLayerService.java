@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.layer;
 
-import tools.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.EpochArrayHelper;
 import de.mhus.nimbus.world.shared.world.EpochProcessResult;
@@ -13,6 +12,14 @@ import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -23,15 +30,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for layer management (CRUD operations).
@@ -84,8 +83,14 @@ public class WLayerService implements StorageProvider {
      * @return Created layer
      */
     @Transactional
-    public WLayer createLayer(String worldId, String name, LayerType layerType,
-                              int order, boolean allChunks, List<String> affectedChunks, boolean baseGround) {
+    public WLayer createLayer(
+            String worldId,
+            String name,
+            LayerType layerType,
+            int order,
+            boolean allChunks,
+            List<String> affectedChunks,
+            boolean baseGround) {
         // Validate
         if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId is required");
@@ -215,7 +220,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findLayer(String worldId, String layerName) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndName(parsedWorldId.toBaseWorldId().getId(), layerName);
+        return layerRepository.findByWorldIdAndName(
+                parsedWorldId.toBaseWorldId().getId(), layerName);
     }
 
     /**
@@ -224,7 +230,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndName(String worldId, String layerName) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndName(parsedWorldId.toBaseWorldId().getId(), layerName);
+        return layerRepository.findByWorldIdAndName(
+                parsedWorldId.toBaseWorldId().getId(), layerName);
     }
 
     /**
@@ -234,7 +241,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndLayerDataId(String worldId, String layerDataId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndLayerDataId(parsedWorldId.toBaseWorldId().getId(), layerDataId);
+        return layerRepository.findByWorldIdAndLayerDataId(
+                parsedWorldId.toBaseWorldId().getId(), layerDataId);
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -247,7 +255,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findLayersByWorld(String worldId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
+        return layerRepository.findByWorldIdOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId());
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -260,7 +269,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldId(String worldId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
+        return layerRepository.findByWorldIdOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId());
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -273,7 +283,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldIdAndQuery(String worldId, String query) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
+        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId());
 
         // Apply search filter if provided
         if (query != null && !query.isBlank()) {
@@ -289,8 +300,8 @@ public class WLayerService implements StorageProvider {
                 .filter(layer -> {
                     String name = layer.getName();
                     String id = layer.getId();
-                    return (name != null && name.toLowerCase().contains(lowerQuery)) ||
-                            (id != null && id.toLowerCase().contains(lowerQuery));
+                    return (name != null && name.toLowerCase().contains(lowerQuery))
+                            || (id != null && id.toLowerCase().contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }
@@ -303,7 +314,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldId(String worldId, int epoch) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), epoch);
+        return layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId(), epoch);
     }
 
     /**
@@ -312,7 +324,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldIdAndQuery(String worldId, String query, int epoch) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        List<WLayer> all = layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), epoch);
+        List<WLayer> all = layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId(), epoch);
 
         if (query != null && !query.isBlank()) {
             all = filterByQuery(all, query);
@@ -330,8 +343,7 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot query layers for player instance worldId");
         }
-        return layerRepository.findLayersAffectingChunkAndEpoch(worldId, chunkKey, epoch)
-                .stream()
+        return layerRepository.findLayersAffectingChunkAndEpoch(worldId, chunkKey, epoch).stream()
                 .sorted(Comparator.comparingInt(WLayer::getOrder))
                 .collect(Collectors.toList());
     }
@@ -342,7 +354,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findEnabledByWorldId(String worldId, int epoch) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndEnabledAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), true, epoch);
+        return layerRepository.findByWorldIdAndEnabledAndEpochesContainingOrderByOrderAsc(
+                parsedWorldId.toBaseWorldId().getId(), true, epoch);
     }
 
     /**
@@ -400,8 +413,7 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
-        return layerRepository.findLayersAffectingChunk(worldId, chunkKey)
-                .stream()
+        return layerRepository.findLayersAffectingChunk(worldId, chunkKey).stream()
                 .sorted(Comparator.comparingInt(WLayer::getOrder))
                 .collect(Collectors.toList());
     }
@@ -413,8 +425,8 @@ public class WLayerService implements StorageProvider {
      * Uses upsert to avoid DuplicateKeyException race conditions on the
      * unique index (layerDataId, chunkKey).
      */
-    private WLayerTerrain saveTerrainChunkCore(String worldId, String layerDataId,
-                                                String chunkKey, LayerChunkData data) {
+    private WLayerTerrain saveTerrainChunkCore(
+            String worldId, String layerDataId, String chunkKey, LayerChunkData data) {
         if (data == null) {
             throw new IllegalArgumentException("LayerChunkData is required");
         }
@@ -434,8 +446,8 @@ public class WLayerService implements StorageProvider {
         }
 
         // Find existing entity to get storageId for update (optional, not critical)
-        Optional<WLayerTerrain> existingOpt = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
+        Optional<WLayerTerrain> existingOpt =
+                terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
         String existingStorageId = existingOpt.map(WLayerTerrain::getStorageId).orElse(null);
 
         // Compression if enabled
@@ -443,13 +455,17 @@ public class WLayerService implements StorageProvider {
         boolean compressed;
         if (compressionEnabled) {
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                 GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
+                    GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
                 gzip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 gzip.finish();
                 dataBytes = buffer.toByteArray();
                 compressed = true;
-                log.debug("Layer terrain chunk compressed: layerDataId={} chunkKey={} original={} compressed={} ratio={}",
-                        layerDataId, chunkKey, json.length(), dataBytes.length,
+                log.debug(
+                        "Layer terrain chunk compressed: layerDataId={} chunkKey={} original={} compressed={} ratio={}",
+                        layerDataId,
+                        chunkKey,
+                        json.length(),
+                        dataBytes.length,
                         String.format("%.1f%%", 100.0 * dataBytes.length / json.length()));
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to compress layer terrain chunk", e);
@@ -466,19 +482,29 @@ public class WLayerService implements StorageProvider {
             if (existingStorageId != null) {
                 storageInfo = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, existingStorageId, stream);
             } else {
-                storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId, "layer/terrain/" + layerDataId + "/" + chunkKey, stream);
+                storageInfo = storageService.store(
+                        STORAGE_SCHEMA,
+                        STORAGE_SCHEMA_VERSION,
+                        worldId,
+                        "layer/terrain/" + layerDataId + "/" + chunkKey,
+                        stream);
             }
             storageId = storageInfo.id();
-            log.debug("Terrain chunk stored: layerDataId={} chunkKey={} storageId={} size={} compressed={}",
-                    layerDataId, chunkKey, storageId, storageInfo.size(), compressed);
+            log.debug(
+                    "Terrain chunk stored: layerDataId={} chunkKey={} storageId={} size={} compressed={}",
+                    layerDataId,
+                    chunkKey,
+                    storageId,
+                    storageInfo.size(),
+                    compressed);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to store terrain chunk", e);
         }
 
         // Atomic upsert based on unique index (layerDataId + chunkKey)
         var now = java.time.Instant.now();
-        var query = new Query(Criteria.where("layerDataId").is(layerDataId)
-                .and("chunkKey").is(chunkKey));
+        var query = new Query(
+                Criteria.where("layerDataId").is(layerDataId).and("chunkKey").is(chunkKey));
         var update = new org.springframework.data.mongodb.core.query.Update()
                 .set("worldId", worldId)
                 .set("storageId", storageId)
@@ -489,7 +515,8 @@ public class WLayerService implements StorageProvider {
         mongoTemplate.upsert(query, update, WLayerTerrain.class);
 
         // Return the saved entity
-        return terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey)
+        return terrainRepository
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey)
                 .orElseThrow(() -> new IllegalStateException(
                         "Terrain chunk not found after upsert: layerDataId=" + layerDataId + " chunkKey=" + chunkKey));
     }
@@ -504,8 +531,7 @@ public class WLayerService implements StorageProvider {
      * @return Saved terrain entity
      */
     @Transactional
-    public WLayerTerrain saveTerrainChunk(String worldId, String layerDataId,
-                                          String chunkKey, LayerChunkData data) {
+    public WLayerTerrain saveTerrainChunk(String worldId, String layerDataId, String chunkKey, LayerChunkData data) {
         WLayerTerrain saved = saveTerrainChunkCore(worldId, layerDataId, chunkKey, data);
         dirtyChunkService.markChunkDirty(worldId, chunkKey, "terrain_layer_updated");
         return saved;
@@ -522,8 +548,8 @@ public class WLayerService implements StorageProvider {
      * @return Saved terrain entity
      */
     @Transactional
-    public WLayerTerrain saveTerrainChunkSilent(String worldId, String layerDataId,
-                                                 String chunkKey, LayerChunkData data) {
+    public WLayerTerrain saveTerrainChunkSilent(
+            String worldId, String layerDataId, String chunkKey, LayerChunkData data) {
         return saveTerrainChunkCore(worldId, layerDataId, chunkKey, data);
     }
 
@@ -536,8 +562,8 @@ public class WLayerService implements StorageProvider {
      */
     @Transactional(readOnly = true)
     public Optional<LayerChunkData> loadTerrainChunk(String worldId, String layerDataId, String chunkKey) {
-        Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
+        Optional<WLayerTerrain> terrainOpt =
+                terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
 
         if (terrainOpt.isEmpty()) {
             return Optional.empty();
@@ -582,8 +608,8 @@ public class WLayerService implements StorageProvider {
      * Core logic for deleting terrain chunk (without dirty marking).
      */
     private boolean deleteTerrainChunkCore(String worldId, String layerDataId, String chunkKey) {
-        Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
+        Optional<WLayerTerrain> terrainOpt =
+                terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
 
         if (terrainOpt.isEmpty()) {
             return false;
@@ -668,8 +694,7 @@ public class WLayerService implements StorageProvider {
      */
     @Transactional(readOnly = true)
     public List<String> findTerrainChunkKeys(String worldId, String layerDataId) {
-        return terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId)
-                .stream()
+        return terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId).stream()
                 .map(WLayerTerrain::getChunkKey)
                 .toList();
     }
@@ -766,13 +791,19 @@ public class WLayerService implements StorageProvider {
             }
         }
 
-        log.info("Recreated MODEL-based layer: layerDataId={} name={} chunks={} deleted={} models={}",
-                layerDataId, layer.getName(), chunksProcessed, deletedChunks.size(), models.size());
+        log.info(
+                "Recreated MODEL-based layer: layerDataId={} name={} chunks={} deleted={} models={}",
+                layerDataId,
+                layer.getName(),
+                chunksProcessed,
+                deletedChunks.size(),
+                models.size());
 
         // Step 6: Mark chunks as dirty if requested
         if (markChunksDirty) {
             allAffectedChunks.addAll(deletedChunks); // Also mark deleted chunks as dirty
-            dirtyChunkService.markChunksDirty(layer.getWorldId(), new ArrayList<>(allAffectedChunks), "model_layer_recreated");
+            dirtyChunkService.markChunksDirty(
+                    layer.getWorldId(), new ArrayList<>(allAffectedChunks), "model_layer_recreated");
         }
 
         return chunksProcessed;
@@ -794,7 +825,8 @@ public class WLayerService implements StorageProvider {
      * @return Number of chunks successfully regenerated
      */
     @Transactional
-    public int recreateTerrainForModels(String worldId, String layerDataId, Set<String> affectedModelIds, boolean markChunksDirty) {
+    public int recreateTerrainForModels(
+            String worldId, String layerDataId, Set<String> affectedModelIds, boolean markChunksDirty) {
         if (affectedModelIds == null || affectedModelIds.isEmpty()) {
             log.debug("No models to regenerate terrain for: layerDataId={}", layerDataId);
             return 0;
@@ -811,13 +843,17 @@ public class WLayerService implements StorageProvider {
 
         // Verify it's a MODEL layer
         if (layer.getLayerType() != LayerType.MODEL) {
-            log.warn("Cannot regenerate terrain for non-MODEL layer: layerDataId={} type={}",
-                    layerDataId, layer.getLayerType());
+            log.warn(
+                    "Cannot regenerate terrain for non-MODEL layer: layerDataId={} type={}",
+                    layerDataId,
+                    layer.getLayerType());
             return 0;
         }
 
-        log.info("Starting terrain regeneration for MODEL layer: layerDataId={} affectedModels={}",
-                layerDataId, affectedModelIds.size());
+        log.info(
+                "Starting terrain regeneration for MODEL layer: layerDataId={} affectedModels={}",
+                layerDataId,
+                affectedModelIds.size());
 
         // Load all WLayerModel for this layer (sorted by order)
         List<WLayerModel> allModels = modelRepository.findByLayerDataIdOrderByOrder(layerDataId);
@@ -842,16 +878,21 @@ public class WLayerService implements StorageProvider {
             return 0;
         }
 
-        log.info("Total affected chunks for terrain regeneration: {} (from {} models)",
-                affectedChunks.size(), affectedModelIds.size());
+        log.info(
+                "Total affected chunks for terrain regeneration: {} (from {} models)",
+                affectedChunks.size(),
+                affectedModelIds.size());
 
         // Delete existing terrain data for affected chunks
         for (String chunkKey : affectedChunks) {
             try {
                 deleteTerrainChunk(layer.getWorldId(), layerDataId, chunkKey);
             } catch (Exception e) {
-                log.warn("Failed to delete terrain chunk before regeneration: layerDataId={} chunkKey={}",
-                        layerDataId, chunkKey, e);
+                log.warn(
+                        "Failed to delete terrain chunk before regeneration: layerDataId={} chunkKey={}",
+                        layerDataId,
+                        chunkKey,
+                        e);
             }
         }
 
@@ -862,18 +903,20 @@ public class WLayerService implements StorageProvider {
                 recreateTerrainChunk(layer.getWorldId(), allModels, layerDataId, chunkKey);
                 chunksProcessed++;
             } catch (Exception e) {
-                log.error("Failed to recreate terrain chunk: layerDataId={} chunkKey={}",
-                        layerDataId, chunkKey, e);
+                log.error("Failed to recreate terrain chunk: layerDataId={} chunkKey={}", layerDataId, chunkKey, e);
             }
         }
 
-        log.info("Regenerated terrain for MODEL layer: layerDataId={} chunks={}/{}",
-                layerDataId, chunksProcessed, affectedChunks.size());
+        log.info(
+                "Regenerated terrain for MODEL layer: layerDataId={} chunks={}/{}",
+                layerDataId,
+                chunksProcessed,
+                affectedChunks.size());
 
         // Mark chunks as dirty if requested
         if (markChunksDirty && chunksProcessed > 0) {
-            dirtyChunkService.markChunksDirty(layer.getWorldId(),
-                    new ArrayList<>(affectedChunks), "model_terrain_regenerated");
+            dirtyChunkService.markChunksDirty(
+                    layer.getWorldId(), new ArrayList<>(affectedChunks), "model_terrain_regenerated");
         }
 
         return chunksProcessed;
@@ -894,9 +937,9 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
-        var world = worldService.getByWorldId(worldId).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + worldId)
-        );
+        var world = worldService
+                .getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
 
         int cx = Integer.parseInt(parts[0]);
@@ -934,10 +977,10 @@ public class WLayerService implements StorageProvider {
                 int worldZ = mountZ + (int) relativeBlock.getPosition().getZ();
 
                 // Check if within chunk bounds
-                if (worldX >= chunkMinX && worldX <= chunkMaxX &&
-                        worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
+                if (worldX >= chunkMinX && worldX <= chunkMaxX && worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
 
-                    de.mhus.nimbus.generated.types.Vector3Int worldPos = new de.mhus.nimbus.generated.types.Vector3Int();
+                    de.mhus.nimbus.generated.types.Vector3Int worldPos =
+                            new de.mhus.nimbus.generated.types.Vector3Int();
                     worldPos.setX(worldX);
                     worldPos.setY(worldY);
                     worldPos.setZ(worldZ);
@@ -997,8 +1040,11 @@ public class WLayerService implements StorageProvider {
         }
 
         if (models.size() > 1) {
-            log.warn("Multiple models found for reference (using first): worldId={} name={} count={}",
-                    worldId, modelName, models.size());
+            log.warn(
+                    "Multiple models found for reference (using first): worldId={} name={} count={}",
+                    worldId,
+                    modelName,
+                    models.size());
         }
 
         return Optional.of(models.get(0));
@@ -1016,10 +1062,10 @@ public class WLayerService implements StorageProvider {
     private int[] rotatePosition(int x, int z, int rotation) {
         int normalizedRotation = rotation % 4;
         return switch (normalizedRotation) {
-            case 1 -> new int[]{-z, x};  // 90 degrees clockwise
-            case 2 -> new int[]{-x, -z}; // 180 degrees
-            case 3 -> new int[]{z, -x};  // 270 degrees clockwise (90 counter-clockwise)
-            default -> new int[]{x, z};  // 0 degrees (no rotation)
+            case 1 -> new int[] {-z, x}; // 90 degrees clockwise
+            case 2 -> new int[] {-x, -z}; // 180 degrees
+            case 3 -> new int[] {z, -x}; // 270 degrees clockwise (90 counter-clockwise)
+            default -> new int[] {x, z}; // 0 degrees (no rotation)
         };
     }
 
@@ -1037,9 +1083,14 @@ public class WLayerService implements StorageProvider {
      * @param accumulatedRotation Accumulated rotation from parent references (0-3)
      * @return List of LayerBlocks with resolved positions
      */
-    private List<LayerBlock> resolveModelWithReferences(WLayerModel model, int depth, int maxDepth,
-                                                        int mountXOffset, int mountYOffset, int mountZOffset,
-                                                        int accumulatedRotation) {
+    private List<LayerBlock> resolveModelWithReferences(
+            WLayerModel model,
+            int depth,
+            int maxDepth,
+            int mountXOffset,
+            int mountYOffset,
+            int mountZOffset,
+            int accumulatedRotation) {
         if (depth > maxDepth) {
             log.warn("Maximum reference depth exceeded: modelId={} depth={}", model.getId(), depth);
             return new ArrayList<>();
@@ -1053,8 +1104,13 @@ public class WLayerService implements StorageProvider {
             Optional<WLayerModel> refModelOpt = resolveReferenceModel(model.getReferenceModelId());
             if (refModelOpt.isPresent()) {
                 WLayerModel refModel = refModelOpt.get();
-                log.debug("Following reference: modelId={} -> refId={} refName={} depth={} rotation={}",
-                        model.getId(), refModel.getId(), refModel.getName(), depth, currentRotation);
+                log.debug(
+                        "Following reference: modelId={} -> refId={} refName={} depth={} rotation={}",
+                        model.getId(),
+                        refModel.getId(),
+                        refModel.getName(),
+                        depth,
+                        currentRotation);
 
                 // At depth 0, don't accumulate the model's own mount here because
                 // transferModelToTerrainChunk() will apply it later. Only accumulate
@@ -1074,8 +1130,7 @@ public class WLayerService implements StorageProvider {
                         mountXOffset + rotatedMount[0],
                         mountYOffset + effectiveMountY,
                         mountZOffset + rotatedMount[1],
-                        currentRotation
-                );
+                        currentRotation);
                 result.addAll(refBlocks);
             }
         }
@@ -1088,7 +1143,8 @@ public class WLayerService implements StorageProvider {
                 }
 
                 // Get original position
-                de.mhus.nimbus.generated.types.Vector3Int originalPos = block.getBlock().getPosition();
+                de.mhus.nimbus.generated.types.Vector3Int originalPos =
+                        block.getBlock().getPosition();
                 int x = (int) originalPos.getX();
                 int y = (int) originalPos.getY();
                 int z = (int) originalPos.getZ();
@@ -1139,7 +1195,8 @@ public class WLayerService implements StorageProvider {
         WLayerModel model = modelOpt.get();
 
         // Get the layer by layerDataId
-        Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(model.getWorldId(), model.getLayerDataId());
+        Optional<WLayer> layerOpt =
+                layerRepository.findByWorldIdAndLayerDataId(model.getWorldId(), model.getLayerDataId());
         if (layerOpt.isEmpty()) {
             log.warn("Layer not found for model transfer: layerDataId={}", model.getLayerDataId());
             return -1;
@@ -1188,8 +1245,11 @@ public class WLayerService implements StorageProvider {
             }
         }
 
-        log.info("Transferred model to terrain: modelId={} name={} chunks={}",
-                modelId, model.getName(), chunksProcessed);
+        log.info(
+                "Transferred model to terrain: modelId={} name={} chunks={}",
+                modelId,
+                model.getName(),
+                chunksProcessed);
 
         // Mark chunks as dirty if requested
         if (markChunksDirty && chunksProcessed > 0) {
@@ -1209,9 +1269,9 @@ public class WLayerService implements StorageProvider {
             return chunks;
         }
 
-        var world = worldService.getByWorldId(model.getWorldId()).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + model.getWorldId())
-        );
+        var world = worldService
+                .getByWorldId(model.getWorldId())
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + model.getWorldId()));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
         int mountX = model.getMountX();
         int mountZ = model.getMountZ();
@@ -1252,8 +1312,11 @@ public class WLayerService implements StorageProvider {
             layer.setAffectedChunks(new ArrayList<>(updatedChunks));
             layer.touchUpdate();
             layerRepository.save(layer);
-            log.debug("Updated layer affected chunks: layer={} oldCount={} newCount={}",
-                    layer.getName(), existingChunks.size(), updatedChunks.size());
+            log.debug(
+                    "Updated layer affected chunks: layer={} oldCount={} newCount={}",
+                    layer.getName(),
+                    existingChunks.size(),
+                    updatedChunks.size());
         }
     }
 
@@ -1268,9 +1331,9 @@ public class WLayerService implements StorageProvider {
             return;
         }
 
-        var world = worldService.getByWorldId(model.getWorldId()).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + model.getWorldId())
-        );
+        var world = worldService
+                .getByWorldId(model.getWorldId())
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + model.getWorldId()));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
 
         int cx = Integer.parseInt(parts[0]);
@@ -1317,8 +1380,7 @@ public class WLayerService implements StorageProvider {
             int worldZ = mountZ + (int) relativeBlock.getPosition().getZ();
 
             // Check if within chunk bounds
-            if (worldX >= chunkMinX && worldX <= chunkMaxX &&
-                    worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
+            if (worldX >= chunkMinX && worldX <= chunkMaxX && worldZ >= chunkMinZ && worldZ <= chunkMaxZ) {
 
                 de.mhus.nimbus.generated.types.Vector3Int worldPos = new de.mhus.nimbus.generated.types.Vector3Int();
                 worldPos.setX(worldX);
@@ -1356,11 +1418,11 @@ public class WLayerService implements StorageProvider {
      * Clone block with new position.
      */
     private de.mhus.nimbus.generated.types.Block cloneBlockWithPosition(
-            de.mhus.nimbus.generated.types.Block source,
-            de.mhus.nimbus.generated.types.Vector3Int newPosition) {
+            de.mhus.nimbus.generated.types.Block source, de.mhus.nimbus.generated.types.Vector3Int newPosition) {
         try {
             String json = objectMapper.writeValueAsString(source);
-            de.mhus.nimbus.generated.types.Block cloned = objectMapper.readValue(json, de.mhus.nimbus.generated.types.Block.class);
+            de.mhus.nimbus.generated.types.Block cloned =
+                    objectMapper.readValue(json, de.mhus.nimbus.generated.types.Block.class);
             cloned.setPosition(newPosition);
             return cloned;
         } catch (Exception e) {
@@ -1391,9 +1453,14 @@ public class WLayerService implements StorageProvider {
      * @throws IllegalArgumentException if layer not found, not GROUND type, or invalid JSON
      */
     @Transactional
-    public int importModelToTerrain(String worldId, String layerDataId,
-                                    String jsonData, int mountX, int mountY, int mountZ,
-                                    boolean markChunksDirty) {
+    public int importModelToTerrain(
+            String worldId,
+            String layerDataId,
+            String jsonData,
+            int mountX,
+            int mountY,
+            int mountZ,
+            boolean markChunksDirty) {
         // 1. Validate layer exists and is GROUND type
         Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
         if (layerOpt.isEmpty()) {
@@ -1470,9 +1537,17 @@ public class WLayerService implements StorageProvider {
      * @return Created model entity
      */
     @Transactional
-    public WLayerModel createModel(String worldId, String layerDataId, String name, String title,
-                                    int mountX, int mountY, int mountZ, int rotation,
-                                    int order, List<LayerBlock> content) {
+    public WLayerModel createModel(
+            String worldId,
+            String layerDataId,
+            String name,
+            String title,
+            int mountX,
+            int mountY,
+            int mountZ,
+            int rotation,
+            int order,
+            List<LayerBlock> content) {
         if (content == null) {
             throw new IllegalArgumentException("Content is required");
         }
@@ -1502,7 +1577,12 @@ public class WLayerService implements StorageProvider {
         newModel.touchCreate();
 
         WLayerModel saved = recalculateAndSave(newModel);
-        log.info("Created model: id={} layerDataId={} name={} blocks={}", saved.getId(), layerDataId, name, content.size());
+        log.info(
+                "Created model: id={} layerDataId={} name={} blocks={}",
+                saved.getId(),
+                layerDataId,
+                name,
+                content.size());
 
         return saved;
     }
@@ -1600,8 +1680,12 @@ public class WLayerService implements StorageProvider {
         model.touchUpdate();
         WLayerModel saved = recalculateAndSave(model);
 
-        log.info("Auto-adjusted center for model: modelId={} newMount=({},{},{})",
-                modelId, saved.getMountX(), saved.getMountY(), saved.getMountZ());
+        log.info(
+                "Auto-adjusted center for model: modelId={} newMount=({},{},{})",
+                modelId,
+                saved.getMountX(),
+                saved.getMountY(),
+                saved.getMountZ());
 
         return Optional.of(saved);
     }
@@ -1653,8 +1737,12 @@ public class WLayerService implements StorageProvider {
         model.touchUpdate();
         WLayerModel saved = recalculateAndSave(model);
 
-        log.info("Manual adjusted center for model: modelId={} newMount=({},{},{})",
-                modelId, saved.getMountX(), saved.getMountY(), saved.getMountZ());
+        log.info(
+                "Manual adjusted center for model: modelId={} newMount=({},{},{})",
+                modelId,
+                saved.getMountX(),
+                saved.getMountY(),
+                saved.getMountZ());
 
         return Optional.of(saved);
     }
@@ -1702,8 +1790,7 @@ public class WLayerService implements StorageProvider {
         model.touchUpdate();
         WLayerModel saved = recalculateAndSave(model);
 
-        log.info("Transform moved model: modelId={} offset=({},{},{})",
-                modelId, offsetX, offsetY, offsetZ);
+        log.info("Transform moved model: modelId={} offset=({},{},{})", modelId, offsetX, offsetY, offsetZ);
 
         return Optional.of(saved);
     }
@@ -1764,8 +1851,12 @@ public class WLayerService implements StorageProvider {
         copy.touchCreate();
         WLayerModel saved = recalculateAndSave(copy);
 
-        log.info("Copied model: sourceId={} targetLayerId={} newId={} newName={}",
-                sourceModelId, targetLayerId, saved.getId(), saved.getName());
+        log.info(
+                "Copied model: sourceId={} targetLayerId={} newId={} newName={}",
+                sourceModelId,
+                targetLayerId,
+                saved.getId(),
+                saved.getName());
 
         return Optional.of(saved);
     }
@@ -1787,15 +1878,14 @@ public class WLayerService implements StorageProvider {
         }
 
         // Find or create entity (old behavior - only one model per layerDataId)
-        WLayerModel entity = modelRepository.findFirstByLayerDataId(layerDataId)
-                .orElseGet(() -> {
-                    WLayerModel newEntity = WLayerModel.builder()
-                            .worldId(worldId)
-                            .layerDataId(layerDataId)
-                            .build();
-                    newEntity.touchCreate();
-                    return newEntity;
-                });
+        WLayerModel entity = modelRepository.findFirstByLayerDataId(layerDataId).orElseGet(() -> {
+            WLayerModel newEntity = WLayerModel.builder()
+                    .worldId(worldId)
+                    .layerDataId(layerDataId)
+                    .build();
+            newEntity.touchCreate();
+            return newEntity;
+        });
 
         entity.setContent(content);
         entity.touchUpdate();
@@ -1850,9 +1940,11 @@ public class WLayerService implements StorageProvider {
      */
     @Transactional
     public WLayerModel saveModel(WLayerModel model) {
-        if (model.getId() == null && !Strings.isBlank(model.getName())
+        if (model.getId() == null
+                && !Strings.isBlank(model.getName())
                 && modelRepository.existsByLayerDataIdAndName(model.getLayerDataId(), model.getName())) {
-            throw new IllegalArgumentException("Model with name '" + model.getName() + "' already exists in this layer");
+            throw new IllegalArgumentException(
+                    "Model with name '" + model.getName() + "' already exists in this layer");
         }
         return recalculateAndSave(model);
     }
@@ -1872,7 +1964,8 @@ public class WLayerService implements StorageProvider {
 
             for (LayerBlock block : content) {
                 if (block.getBlock() != null && block.getBlock().getPosition() != null) {
-                    de.mhus.nimbus.generated.types.Vector3Int pos = block.getBlock().getPosition();
+                    de.mhus.nimbus.generated.types.Vector3Int pos =
+                            block.getBlock().getPosition();
                     minX = Math.min(minX, pos.getX());
                     maxX = Math.max(maxX, pos.getX());
                     minY = Math.min(minY, pos.getY());
@@ -1955,7 +2048,8 @@ public class WLayerService implements StorageProvider {
      */
     @Transactional(readOnly = true)
     public Optional<WLayerModel> findModelSummaryByLayerDataIdAndName(String layerDataId, String name) {
-        Query query = new Query(Criteria.where("layerDataId").is(layerDataId).and("name").is(name));
+        Query query = new Query(
+                Criteria.where("layerDataId").is(layerDataId).and("name").is(name));
         query.fields().exclude("content");
         return Optional.ofNullable(mongoTemplate.findOne(query, WLayerModel.class));
     }
@@ -2020,9 +2114,9 @@ public class WLayerService implements StorageProvider {
     public record BlockOrigin(
             WLayer layer,
             WLayerTerrain terrain,
-            WLayerModel model,      // Optional - only for MODEL layers
-            LayerBlock layerBlock   // The actual block data from the layer
-    ) {}
+            WLayerModel model, // Optional - only for MODEL layers
+            LayerBlock layerBlock // The actual block data from the layer
+            ) {}
 
     /**
      * Find the origin of a block at a specific position.
@@ -2049,16 +2143,29 @@ public class WLayerService implements StorageProvider {
             var infoOpt = chunkService.getChunkInfo(wid, chunkKey);
             if (infoOpt.isPresent()) {
                 var info = infoOpt.get();
-                String layerEntry = info.getBlockLayers() != null ? info.getBlockLayers().get(coord) : null;
+                String layerEntry =
+                        info.getBlockLayers() != null ? info.getBlockLayers().get(coord) : null;
                 if (layerEntry != null) {
-                    BlockOrigin origin = resolveBlockOriginFromInfo(worldId, chunkKey, x, y, z, layerEntry,
-                            info.getBlockGroups() != null ? info.getBlockGroups().get(coord) : null);
+                    BlockOrigin origin = resolveBlockOriginFromInfo(
+                            worldId,
+                            chunkKey,
+                            x,
+                            y,
+                            z,
+                            layerEntry,
+                            info.getBlockGroups() != null
+                                    ? info.getBlockGroups().get(coord)
+                                    : null);
                     if (origin != null) {
                         return origin;
                     }
                     // layerEntry exists but resolve failed — fall through to deep search
-                    log.debug("Fast lookup failed for block at ({},{},{}) layerEntry={}, falling back to deep search",
-                            x, y, z, layerEntry);
+                    log.debug(
+                            "Fast lookup failed for block at ({},{},{}) layerEntry={}, falling back to deep search",
+                            x,
+                            y,
+                            z,
+                            layerEntry);
                 }
                 // coord not in blockLayers — block not found
                 if (info.getBlockLayers() != null && !info.getBlockLayers().isEmpty()) {
@@ -2075,9 +2182,8 @@ public class WLayerService implements StorageProvider {
      * Resolve a BlockOrigin from WChunkInfo layer entry.
      * Layer entry is either "layerName" (terrain) or "layerName:modelName" (model).
      */
-    private BlockOrigin resolveBlockOriginFromInfo(String worldId, String chunkKey,
-                                                    int x, int y, int z,
-                                                    String layerEntry, String group) {
+    private BlockOrigin resolveBlockOriginFromInfo(
+            String worldId, String chunkKey, int x, int y, int z, String layerEntry, String group) {
         String layerName;
         String modelName = null;
 
@@ -2119,7 +2225,9 @@ public class WLayerService implements StorageProvider {
         // For MODEL layers: load the specific model
         WLayerModel sourceModel = null;
         if (modelName != null) {
-            sourceModel = modelRepository.findByLayerDataIdAndName(layer.getLayerDataId(), modelName).orElse(null);
+            sourceModel = modelRepository
+                    .findByLayerDataIdAndName(layer.getLayerDataId(), modelName)
+                    .orElse(null);
             if (sourceModel != null && foundBlock == null) {
                 foundBlock = findLayerBlockInModel(sourceModel, x, y, z);
             }
@@ -2153,9 +2261,9 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
-        var world = worldService.getByWorldId(worldId).orElseThrow(
-                () -> new IllegalArgumentException("World not found: " + worldId)
-        );
+        var world = worldService
+                .getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         var chunkSize = (byte) world.getPublicData().getChunkSize();
         int cx = Math.floorDiv(x, chunkSize);
         int cz = Math.floorDiv(z, chunkSize);
@@ -2173,8 +2281,8 @@ public class WLayerService implements StorageProvider {
             }
 
             // Load terrain chunk
-            Optional<WLayerTerrain> terrainOpt = terrainRepository
-                    .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey);
+            Optional<WLayerTerrain> terrainOpt =
+                    terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey);
 
             if (terrainOpt.isEmpty()) {
                 // For MODEL layers without terrain: Search directly in models
@@ -2185,8 +2293,12 @@ public class WLayerService implements StorageProvider {
                         // Find the LayerBlock with this position
                         LayerBlock foundBlock = findLayerBlockInModel(sourceModel, x, y, z);
                         if (foundBlock != null) {
-                            log.debug("Block found in model but not in terrain: layerDataId={} pos=({},{},{})",
-                                    layer.getLayerDataId(), x, y, z);
+                            log.debug(
+                                    "Block found in model but not in terrain: layerDataId={} pos=({},{},{})",
+                                    layer.getLayerDataId(),
+                                    x,
+                                    y,
+                                    z);
                             // Return with null terrain to indicate model-only source
                             return new BlockOrigin(layer, null, sourceModel, foundBlock);
                         }
@@ -2212,7 +2324,8 @@ public class WLayerService implements StorageProvider {
                         continue;
                     }
 
-                    de.mhus.nimbus.generated.types.Vector3Int pos = layerBlock.getBlock().getPosition();
+                    de.mhus.nimbus.generated.types.Vector3Int pos =
+                            layerBlock.getBlock().getPosition();
                     if (pos.getX() == x && pos.getY() == y && pos.getZ() == z) {
                         // Found block at this position
 
@@ -2288,14 +2401,11 @@ public class WLayerService implements StorageProvider {
                 continue;
             }
 
-            de.mhus.nimbus.generated.types.Vector3Int relativePos = layerBlock.getBlock().getPosition();
+            de.mhus.nimbus.generated.types.Vector3Int relativePos =
+                    layerBlock.getBlock().getPosition();
 
             // Apply rotation to relative position
-            int[] rotatedPos = applyRotation(
-                    relativePos.getX(),
-                    relativePos.getZ(),
-                    model.getRotation()
-            );
+            int[] rotatedPos = applyRotation(relativePos.getX(), relativePos.getZ(), model.getRotation());
 
             // Calculate world position with rotation
             int blockWorldX = model.getMountX() + rotatedPos[0];
@@ -2325,11 +2435,11 @@ public class WLayerService implements StorageProvider {
         if (rot < 0) rot += 4;
 
         return switch (rot) {
-            case 0 -> new int[]{x, z};          // No rotation
-            case 1 -> new int[]{-z, x};         // 90° clockwise
-            case 2 -> new int[]{-x, -z};        // 180°
-            case 3 -> new int[]{z, -x};         // 270° clockwise (= 90° counter-clockwise)
-            default -> new int[]{x, z};
+            case 0 -> new int[] {x, z}; // No rotation
+            case 1 -> new int[] {-z, x}; // 90° clockwise
+            case 2 -> new int[] {-x, -z}; // 180°
+            case 3 -> new int[] {z, -x}; // 270° clockwise (= 90° counter-clockwise)
+            default -> new int[] {x, z};
         };
     }
 
@@ -2347,7 +2457,8 @@ public class WLayerService implements StorageProvider {
      * @return Set of chunk keys that were affected
      */
     public Set<String> clearTerrainInHexGrid(String worldId, WLayer layer, WHexGrid hexGrid) {
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
 
         int chunkSize = world.getPublicData().getChunkSize();
@@ -2385,16 +2496,20 @@ public class WLayerService implements StorageProvider {
                 clearedChunkKeys.add(chunkKey);
             } else {
                 // Partial overlap or hex crosses through chunk → filter blocks
-                boolean changed = clearPartialChunkInHex(worldId, layer.getLayerDataId(), chunkKey,
-                        hexCenterX, hexCenterZ, gridSize);
+                boolean changed = clearPartialChunkInHex(
+                        worldId, layer.getLayerDataId(), chunkKey, hexCenterX, hexCenterZ, gridSize);
                 if (changed) {
                     clearedChunkKeys.add(chunkKey);
                 }
             }
         }
 
-        log.debug("Cleared terrain in hex grid: worldId={} layer={} hexPos={} clearedChunks={}",
-                worldId, layer.getName(), hexGrid.getPosition(), clearedChunkKeys.size());
+        log.debug(
+                "Cleared terrain in hex grid: worldId={} layer={} hexPos={} clearedChunks={}",
+                worldId,
+                layer.getName(),
+                hexGrid.getPosition(),
+                clearedChunkKeys.size());
         return clearedChunkKeys;
     }
 
@@ -2403,8 +2518,8 @@ public class WLayerService implements StorageProvider {
      *
      * @return true if the chunk was modified
      */
-    private boolean clearPartialChunkInHex(String worldId, String layerDataId, String chunkKey,
-                                            int hexCenterX, int hexCenterZ, int gridSize) {
+    private boolean clearPartialChunkInHex(
+            String worldId, String layerDataId, String chunkKey, int hexCenterX, int hexCenterZ, int gridSize) {
         Optional<LayerChunkData> chunkDataOpt = loadTerrainChunk(worldId, layerDataId, chunkKey);
         if (chunkDataOpt.isEmpty()) return false;
 
@@ -2418,8 +2533,7 @@ public class WLayerService implements StorageProvider {
                 .filter(block -> {
                     if (block.getBlock() == null || block.getBlock().getPosition() == null) return true;
                     var pos = block.getBlock().getPosition();
-                    return !HexMathUtil.isPointInHex(pos.getX(), pos.getZ(),
-                            hexCenterX, hexCenterZ, gridSize);
+                    return !HexMathUtil.isPointInHex(pos.getX(), pos.getZ(), hexCenterX, hexCenterZ, gridSize);
                 })
                 .collect(Collectors.toList());
 
@@ -2432,9 +2546,7 @@ public class WLayerService implements StorageProvider {
             deleteTerrainChunkCore(worldId, layerDataId, chunkKey);
         } else {
             // Save filtered chunk
-            LayerChunkData filtered = LayerChunkData.builder()
-                    .blocks(remaining)
-                    .build();
+            LayerChunkData filtered = LayerChunkData.builder().blocks(remaining).build();
             saveTerrainChunkCore(worldId, layerDataId, chunkKey, filtered);
         }
         return true;
@@ -2447,7 +2559,8 @@ public class WLayerService implements StorageProvider {
      * @param hexGrid The hex grid whose chunks should be marked dirty
      */
     public void markHexGridDirty(String worldId, WHexGrid hexGrid) {
-        WWorld world = worldService.getByWorldId(worldId)
+        WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         Set<String> chunkKeys = hexGrid.getAffectedChunkKeys(world);
         if (!chunkKeys.isEmpty()) {
@@ -2463,8 +2576,10 @@ public class WLayerService implements StorageProvider {
     private void markAffectedChunksDirty(WLayer layer, String reason) {
         if (layer.isAllChunks()) {
             // All chunks affected - warn about performance
-            log.warn("Layer affects all chunks, consider full world regeneration: layer={} world={}",
-                    layer.getName(), layer.getWorldId());
+            log.warn(
+                    "Layer affects all chunks, consider full world regeneration: layer={} world={}",
+                    layer.getName(),
+                    layer.getWorldId());
             // TODO: Implement strategy for marking all chunks dirty
             // Option 1: Mark all existing WChunks dirty
             // Option 2: Set flag in WWorld for full regeneration
@@ -2519,12 +2634,7 @@ public class WLayerService implements StorageProvider {
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.toBaseWorldId();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
-        return mongoTemplate.findDistinct(
-                query,
-                "storageId",
-                WLayerTerrain.class,
-                String.class
-        );
+        return mongoTemplate.findDistinct(query, "storageId", WLayerTerrain.class, String.class);
     }
 
     /**
@@ -2537,12 +2647,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<String> findChunkKeysByLayerDataId(String layerDataId) {
         Query query = new Query(Criteria.where("layerDataId").is(layerDataId));
-        return mongoTemplate.findDistinct(
-                query,
-                "chunkKey",
-                WLayerTerrain.class,
-                String.class
-        );
+        return mongoTemplate.findDistinct(query, "chunkKey", WLayerTerrain.class, String.class);
     }
 
     /**
@@ -2600,8 +2705,11 @@ public class WLayerService implements StorageProvider {
                             storageService.delete(terrain.getStorageId());
                             storageCount++;
                         } catch (Exception e) {
-                            log.warn("Failed to delete storage {} for terrain chunk {}: {}",
-                                    terrain.getStorageId(), terrain.getChunkKey(), e.getMessage());
+                            log.warn(
+                                    "Failed to delete storage {} for terrain chunk {}: {}",
+                                    terrain.getStorageId(),
+                                    terrain.getChunkKey(),
+                                    e.getMessage());
                         }
                     }
                 }
@@ -2615,8 +2723,13 @@ public class WLayerService implements StorageProvider {
             layerCount++;
         }
 
-        log.info("Deleted {} layers ({} models, {} terrain chunks, {} storage items) for world {}",
-                layerCount, modelCount, terrainCount, storageCount, worldId);
+        log.info(
+                "Deleted {} layers ({} models, {} terrain chunks, {} storage items) for world {}",
+                layerCount,
+                modelCount,
+                terrainCount,
+                storageCount,
+                worldId);
         return layerCount;
     }
 
@@ -2697,7 +2810,8 @@ public class WLayerService implements StorageProvider {
 
             } else if (sourceLayer.getLayerType() == LayerType.GROUND) {
                 // Duplicate WLayerTerrain entities
-                List<WLayerTerrain> sourceTerrains = terrainRepository.findByWorldIdAndLayerDataId(sourceWorldId, oldLayerDataId);
+                List<WLayerTerrain> sourceTerrains =
+                        terrainRepository.findByWorldIdAndLayerDataId(sourceWorldId, oldLayerDataId);
                 log.debug("Duplicating {} terrain chunks for layer {}", sourceTerrains.size(), sourceLayer.getName());
 
                 for (WLayerTerrain sourceTerrain : sourceTerrains) {
@@ -2751,8 +2865,14 @@ public class WLayerService implements StorageProvider {
         // Update layerDataId references in duplicated models/terrains
         updateDuplicatedLayerDataIdReferences(targetWorldId, layerDataIdMapping);
 
-        log.info("Duplicated {} layers ({} models, {} terrains, {} storage items) from world {} to {}",
-                layerCount, modelCount, terrainCount, storageCount, sourceWorldId, targetWorldId);
+        log.info(
+                "Duplicated {} layers ({} models, {} terrains, {} storage items) from world {} to {}",
+                layerCount,
+                modelCount,
+                terrainCount,
+                storageCount,
+                sourceWorldId,
+                targetWorldId);
         return layerCount;
     }
 
@@ -2826,7 +2946,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<Document> exportLayerDocuments(String worldId, LayerType type) {
         String collectionName = mongoTemplate.getCollectionName(WLayer.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("layerType").is(type.name()));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("layerType").is(type.name()));
         return mongoTemplate.find(query, Document.class, collectionName);
     }
 
@@ -2836,7 +2957,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<Document> findLayerDocumentByWorldIdAndName(String worldId, String title) {
         String collectionName = mongoTemplate.getCollectionName(WLayer.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("title").is(title));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("title").is(title));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -2848,8 +2970,10 @@ public class WLayerService implements StorageProvider {
     @Transactional
     public Document upsertLayerDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WLayer.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("title").is(doc.getString("title")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("title")
+                .is(doc.getString("title")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -2878,7 +3002,7 @@ public class WLayerService implements StorageProvider {
             byte[] data = stream.readAllBytes();
             if (terrain.isCompressed()) {
                 try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(data);
-                     GZIPInputStream gzis = new GZIPInputStream(bis)) {
+                        GZIPInputStream gzis = new GZIPInputStream(bis)) {
                     return new String(gzis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                 }
             }
@@ -2939,11 +3063,15 @@ public class WLayerService implements StorageProvider {
      * model identity).
      */
     @Transactional(readOnly = true)
-    public Optional<Document> findModelDocumentByWorldIdAndLayerDataIdAndName(String worldId, String layerDataId, String name) {
+    public Optional<Document> findModelDocumentByWorldIdAndLayerDataIdAndName(
+            String worldId, String layerDataId, String name) {
         String collectionName = mongoTemplate.getCollectionName(WLayerModel.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("layerDataId").is(layerDataId)
-                .and("title").is(name));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("layerDataId")
+                .is(layerDataId)
+                .and("title")
+                .is(name));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -2955,9 +3083,12 @@ public class WLayerService implements StorageProvider {
     @Transactional
     public Document upsertModelDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WLayerModel.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("layerDataId").is(doc.getString("layerDataId"))
-                .and("title").is(doc.getString("title")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("layerDataId")
+                .is(doc.getString("layerDataId"))
+                .and("title")
+                .is(doc.getString("title")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

@@ -2,22 +2,21 @@ package de.mhus.nimbus.world.player.session;
 
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
-import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
+import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import de.mhus.nimbus.world.shared.gameplay.GameplayData;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.socket.WebSocketMessage;
-import org.springframework.web.socket.WebSocketSession;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.socket.WebSocketMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 /**
  * Stateful player session for WebSocket connection.
@@ -52,7 +51,6 @@ public class PlayerSession {
     private Gameplay gameplay;
     private GameplayData gameplayData;
 
-
     public boolean isAuthenticated() {
         return status == SessionStatus.AUTHENTICATED;
     }
@@ -82,6 +80,7 @@ public class PlayerSession {
      * Entity position tracking for pathway generation.
      */
     private Vector3 lastPosition;
+
     private Rotation lastRotation;
     private Vector3 lastVelocity;
     private ENTITY_POSES lastPose;
@@ -131,7 +130,6 @@ public class PlayerSession {
             }
         }
     }
-
 
     /**
      * Check if session is still alive based on ping timeout.
@@ -197,11 +195,11 @@ public class PlayerSession {
      */
     public void updatePosition(Vector3 position, Rotation rotation, Vector3 velocity, ENTITY_POSES pose) {
         // Detect ANY change (position, rotation, velocity, pose)
-        boolean changed = this.lastPosition == null ||
-                         (position != null && !positionsEqual(this.lastPosition, position)) ||
-                         (rotation != null && !rotationsEqual(this.lastRotation, rotation)) ||
-                         (velocity != null && !velocitiesEqual(this.lastVelocity, velocity)) ||
-                         (pose != null && !pose.equals(this.lastPose));
+        boolean changed = this.lastPosition == null
+                || (position != null && !positionsEqual(this.lastPosition, position))
+                || (rotation != null && !rotationsEqual(this.lastRotation, rotation))
+                || (velocity != null && !velocitiesEqual(this.lastVelocity, velocity))
+                || (pose != null && !pose.equals(this.lastPose));
 
         this.positionChanged = changed;
         this.lastPosition = position;
@@ -260,9 +258,9 @@ public class PlayerSession {
     private boolean positionsEqual(Vector3 a, Vector3 b) {
         if (a == null || b == null) return false;
         double threshold = 0.001; // 1mm tolerance
-        return Math.abs(a.getX() - b.getX()) < threshold &&
-               Math.abs(a.getY() - b.getY()) < threshold &&
-               Math.abs(a.getZ() - b.getZ()) < threshold;
+        return Math.abs(a.getX() - b.getX()) < threshold
+                && Math.abs(a.getY() - b.getY()) < threshold
+                && Math.abs(a.getZ() - b.getZ()) < threshold;
     }
 
     /**
@@ -275,8 +273,7 @@ public class PlayerSession {
     private boolean rotationsEqual(Rotation a, Rotation b) {
         if (a == null || b == null) return false;
         double threshold = 0.01; // ~0.6 degree tolerance
-        return Math.abs(a.getY() - b.getY()) < threshold &&
-               Math.abs(a.getP() - b.getP()) < threshold;
+        return Math.abs(a.getY() - b.getY()) < threshold && Math.abs(a.getP() - b.getP()) < threshold;
     }
 
     /**
@@ -289,9 +286,9 @@ public class PlayerSession {
     private boolean velocitiesEqual(Vector3 a, Vector3 b) {
         if (a == null || b == null) return false;
         double threshold = 0.001; // 1mm/s tolerance
-        return Math.abs(a.getX() - b.getX()) < threshold &&
-               Math.abs(a.getY() - b.getY()) < threshold &&
-               Math.abs(a.getZ() - b.getZ()) < threshold;
+        return Math.abs(a.getX() - b.getX()) < threshold
+                && Math.abs(a.getY() - b.getY()) < threshold
+                && Math.abs(a.getZ() - b.getZ()) < threshold;
     }
 
     public Map<String, Object> serializeGameplay() {
@@ -302,9 +299,9 @@ public class PlayerSession {
     }
 
     public enum SessionStatus {
-        CONNECTED,      // Connection established, not yet authenticated
-        AUTHENTICATED,  // Successfully authenticated
-        DEPRECATED,     // Connection lost or closing
-        CLOSED          // Connection closed
+        CONNECTED, // Connection established, not yet authenticated
+        AUTHENTICATED, // Successfully authenticated
+        DEPRECATED, // Connection lost or closing
+        CLOSED // Connection closed
     }
 }

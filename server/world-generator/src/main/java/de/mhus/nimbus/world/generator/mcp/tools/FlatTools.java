@@ -4,14 +4,13 @@ import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -20,16 +19,16 @@ public class FlatTools implements McpToolBean {
 
     private final WFlatService flatService;
 
-    @Tool(name = "list_flats", description = "List all flats for a world. Returns flatId, mountX, mountZ, sizeX, sizeZ, hexGrid info.")
-    public Map<String, Object> listFlats(
-            @ToolParam(description = "World ID") String worldId) {
+    @Tool(
+            name = "list_flats",
+            description = "List all flats for a world. Returns flatId, mountX, mountZ, sizeX, sizeZ, hexGrid info.")
+    public Map<String, Object> listFlats(@ToolParam(description = "World ID") String worldId) {
         log.debug("MCP: List flats: worldId={}", worldId);
 
         List<WFlat> flats = flatService.findByWorldId(worldId);
 
-        List<Map<String, Object>> flatDtos = flats.stream()
-                .map(this::toFlatSummaryDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> flatDtos =
+                flats.stream().map(this::toFlatSummaryDto).collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("flats", flatDtos);
@@ -37,7 +36,9 @@ public class FlatTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "get_flat", description = "Get flat metadata including mountX, mountZ, sizeX, sizeZ, materials and hex grid info")
+    @Tool(
+            name = "get_flat",
+            description = "Get flat metadata including mountX, mountZ, sizeX, sizeZ, materials and hex grid info")
     public Map<String, Object> getFlat(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Flat ID (e.g. genesis_0_0_0 = genesis_{epoch}_{q}_{r})") String flatId) {
@@ -51,7 +52,10 @@ public class FlatTools implements McpToolBean {
         return toFlatDetailDto(flat);
     }
 
-    @Tool(name = "get_flat_data", description = "Get flat column data at a world position (x,z). Returns level, column material, extraBlocks, and neighbor info. Converts world coordinates to local flat coordinates.")
+    @Tool(
+            name = "get_flat_data",
+            description =
+                    "Get flat column data at a world position (x,z). Returns level, column material, extraBlocks, and neighbor info. Converts world coordinates to local flat coordinates.")
     public Map<String, Object> getFlatData(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Flat ID (e.g. genesis_0_0_0 = genesis_{epoch}_{q}_{r})") String flatId,
@@ -102,7 +106,8 @@ public class FlatTools implements McpToolBean {
             matDto.put("nextBlockDef", materialDef.getNextBlockDef());
             matDto.put("hasOcean", materialDef.isHasOcean());
             matDto.put("isBlockMapDelta", materialDef.isBlockMapDelta());
-            if (materialDef.getBlockAtLevels() != null && !materialDef.getBlockAtLevels().isEmpty()) {
+            if (materialDef.getBlockAtLevels() != null
+                    && !materialDef.getBlockAtLevels().isEmpty()) {
                 matDto.put("blockAtLevels", materialDef.getBlockAtLevels());
             }
             result.put("materialDefinition", matDto);
@@ -120,8 +125,8 @@ public class FlatTools implements McpToolBean {
         }
 
         List<Map<String, Object>> neighbors = new ArrayList<>();
-        int[][] offsets = {{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{1,-1},{-1,1},{1,1}};
-        String[] names = {"West","East","North","South","NW","NE","SW","SE"};
+        int[][] offsets = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
+        String[] names = {"West", "East", "North", "South", "NW", "NE", "SW", "SE"};
         for (int i = 0; i < offsets.length; i++) {
             int nx = localX + offsets[i][0];
             int nz = localZ + offsets[i][1];
@@ -161,7 +166,9 @@ public class FlatTools implements McpToolBean {
         dto.put("sizeZ", flat.getSizeZ());
         dto.put("seaLevel", flat.getSeaLevel());
         if (flat.getHexGrid() != null) {
-            dto.put("hexGrid", Map.of("q", flat.getHexGrid().getQ(), "r", flat.getHexGrid().getR()));
+            dto.put(
+                    "hexGrid",
+                    Map.of("q", flat.getHexGrid().getQ(), "r", flat.getHexGrid().getR()));
         }
         dto.put("createdAt", flat.getCreatedAt());
         dto.put("updatedAt", flat.getUpdatedAt());

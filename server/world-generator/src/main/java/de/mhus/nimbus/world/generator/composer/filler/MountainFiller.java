@@ -2,17 +2,16 @@ package de.mhus.nimbus.world.generator.composer.filler;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills gaps around mountain biomes with lower elevation grids.
@@ -39,9 +38,7 @@ public class MountainFiller {
      * @param placementResult Placement result from BiomeComposer
      * @return Number of slope biomes added
      */
-    public int fill(HexComposition composition,
-                    Set<String> existingCoords,
-                    BiomePlacementResult placementResult) {
+    public int fill(HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
 
         log.debug("Starting MountainFiller");
 
@@ -49,8 +46,8 @@ public class MountainFiller {
 
         // Find all mountain biomes
         List<PlacedBiome> mountainBiomes = placementResult.getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome() instanceof MountainBiome)
-            .collect(Collectors.toList());
+                .filter(pb -> pb.getBiome() instanceof MountainBiome)
+                .collect(Collectors.toList());
 
         log.debug("Found {} mountain biomes to process", mountainBiomes.size());
 
@@ -71,8 +68,7 @@ public class MountainFiller {
                 continue;
             }
 
-            log.debug("Processing mountain '{}' ({} → {})",
-                mountainBiome.getName(), currentHeight, lowerHeight);
+            log.debug("Processing mountain '{}' ({} → {})", mountainBiome.getName(), currentHeight, lowerHeight);
 
             // Collect all neighbor coordinates that need slope grids
             List<HexVector2> slopeCoords = new ArrayList<>();
@@ -89,7 +85,8 @@ public class MountainFiller {
                     }
 
                     // Skip if we already added this neighbor
-                    if (slopeCoords.stream().anyMatch(c -> TypeUtil.toStringHexCoord(c).equals(neighborKey))) {
+                    if (slopeCoords.stream()
+                            .anyMatch(c -> TypeUtil.toStringHexCoord(c).equals(neighborKey))) {
                         continue;
                     }
 
@@ -130,8 +127,11 @@ public class MountainFiller {
 
                 biomesAdded++;
 
-                log.debug("Created slope PlacedBiome '{}' with {} coords ({})",
-                    slopeBiome.getName(), slopeCoords.size(), lowerHeight);
+                log.debug(
+                        "Created slope PlacedBiome '{}' with {} coords ({})",
+                        slopeBiome.getName(),
+                        slopeCoords.size(),
+                        lowerHeight);
             }
         }
 
@@ -162,5 +162,4 @@ public class MountainFiller {
         }
         return neighbors;
     }
-
 }

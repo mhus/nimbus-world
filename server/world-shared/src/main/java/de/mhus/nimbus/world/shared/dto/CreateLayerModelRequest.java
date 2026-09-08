@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.shared.dto;
 
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
-
 import java.util.Map;
 
 /**
@@ -11,45 +10,30 @@ import java.util.Map;
  */
 @GenerateTypeScript("dto")
 public record CreateLayerModelRequest(
-        @TypeScript(optional = true)
-        String name,
+        @TypeScript(optional = true) String name,
 
-        @TypeScript(optional = true)
-        String title,
+        @TypeScript(optional = true) String title,
 
-        @TypeScript(optional = true)
-        String licenseSource,
+        @TypeScript(optional = true) String licenseSource,
 
-        @TypeScript(optional = true)
-        String licenseType,
+        @TypeScript(optional = true) String licenseType,
 
-        @TypeScript(optional = true)
-        String licenseAuthor,
+        @TypeScript(optional = true) String licenseAuthor,
 
         String layerDataId,
 
-        @TypeScript(optional = true)
-        Integer mountX,
+        @TypeScript(optional = true) Integer mountX,
 
-        @TypeScript(optional = true)
-        Integer mountY,
+        @TypeScript(optional = true) Integer mountY,
 
-        @TypeScript(optional = true)
-        Integer mountZ,
+        @TypeScript(optional = true) Integer mountZ,
 
-        @TypeScript(optional = true)
-        Integer rotation,
+        @TypeScript(optional = true) Integer rotation,
 
-        @TypeScript(optional = true)
-        String referenceModelId,
+        @TypeScript(optional = true) String referenceModelId,
 
-        @TypeScript(optional = true)
-        Integer order,
+        @TypeScript(optional = true) Integer order,
 
-        @TypeScript(optional = true)
-        Map<String, String> groups,
+        @TypeScript(optional = true) Map<String, String> groups,
 
-        @TypeScript(optional = true)
-        Map<String, String> parameters
-) {
-}
+        @TypeScript(optional = true) Map<String, String> parameters) {}

@@ -4,10 +4,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.service.SimulatorService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Reload all entities for the current world from DB.
@@ -42,8 +41,8 @@ public class LifeReloadCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Reload all entities for the current world from DB\n" +
-                "Clears simulation states and re-loads from active chunks.\n" +
-                "Usage: /life-reload";
+        return "Reload all entities for the current world from DB\n"
+                + "Clears simulation states and re-loads from active chunks.\n"
+                + "Usage: /life-reload";
     }
 }

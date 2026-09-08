@@ -8,10 +8,6 @@ import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.model.image.ImageModel;
 import dev.langchain4j.model.output.Response;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,6 +17,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Base64;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * OpenAI DALL-E implementation of AiImageModel.
@@ -36,9 +35,8 @@ public class OpenAiImageModelImpl implements AiImageModel {
     private final SimpleRateLimiter rateLimiter;
 
     // Reusable client (each HttpClient holds its own selector/pool threads).
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .build();
+    private final HttpClient httpClient =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
     @Override
     public String getName() {
@@ -106,10 +104,8 @@ public class OpenAiImageModelImpl implements AiImageModel {
      * @throws AiImageException if conversion fails
      */
     private AiImage convertToAiImage(Image image, int width, int height) throws AiImageException {
-        AiImage.AiImageBuilder builder = AiImage.builder()
-                .width(width)
-                .height(height)
-                .mimeType("image/png");
+        AiImage.AiImageBuilder builder =
+                AiImage.builder().width(width).height(height).mimeType("image/png");
 
         byte[] imageBytes = null;
 
@@ -150,8 +146,12 @@ public class OpenAiImageModelImpl implements AiImageModel {
                     int actualHeight = bufferedImage.getHeight();
                     builder.width(actualWidth);
                     builder.height(actualHeight);
-                    log.debug("Actual image dimensions: {}x{} (requested: {}x{})",
-                            actualWidth, actualHeight, width, height);
+                    log.debug(
+                            "Actual image dimensions: {}x{} (requested: {}x{})",
+                            actualWidth,
+                            actualHeight,
+                            width,
+                            height);
                 }
             } catch (Exception e) {
                 log.warn("Failed to read actual image dimensions, using requested dimensions", e);

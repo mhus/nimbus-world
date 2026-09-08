@@ -15,16 +15,15 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for Layer Model CRUD operations.
@@ -50,9 +49,9 @@ public class ELayerModelController extends BaseEditorController {
     @GetMapping("/{id}")
     @Operation(summary = "Get Layer Model by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -61,9 +60,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("GET layer model: worldId={}, layerId={}, id={}", worldId, layerId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -99,9 +96,9 @@ public class ELayerModelController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Layer Models for a layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -109,9 +106,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("LIST layer models: worldId={}, layerId={}", worldId, layerId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
 
@@ -133,10 +128,7 @@ public class ELayerModelController extends BaseEditorController {
         String layerDataId = layer.getLayerDataId();
         if (layerDataId == null) {
             log.warn("Layer has no layerDataId: layerId={}", layerId);
-            return ResponseEntity.ok(Map.of(
-                    "models", List.of(),
-                    "count", 0
-            ));
+            return ResponseEntity.ok(Map.of("models", List.of(), "count", 0));
         }
 
         // Get all models for this layerDataId (sorted by order, without content)
@@ -144,16 +136,11 @@ public class ELayerModelController extends BaseEditorController {
         log.debug("Found {} models for layerDataId={}", allModels.size(), layerDataId);
 
         // Convert to DTOs
-        List<LayerModelDto> models = allModels.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<LayerModelDto> models = allModels.stream().map(this::toDto).collect(Collectors.toList());
 
         log.debug("Returning {} models for layerDataId={}", models.size(), layerDataId);
 
-        return ResponseEntity.ok(Map.of(
-                "models", models,
-                "count", models.size()
-        ));
+        return ResponseEntity.ok(Map.of("models", models, "count", models.size()));
     }
 
     /**
@@ -163,9 +150,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Layer Model")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Model created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Layer not found")
+        @ApiResponse(responseCode = "201", description = "Model created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -174,9 +161,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("CREATE layer model: worldId={}, layerId={}", worldId, layerId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
 
@@ -231,9 +216,14 @@ public class ELayerModelController extends BaseEditorController {
                 log.info("Transferred model to terrain: modelId={}, chunks={}", saved.getId(), chunksAffected);
             }
 
-            log.info("Created layer model: id={}, layerDataId={}, worldId={}, mountX={}, mountY={}, mountZ={}",
-                    saved.getId(), saved.getLayerDataId(), saved.getWorldId(),
-                    saved.getMountX(), saved.getMountY(), saved.getMountZ());
+            log.info(
+                    "Created layer model: id={}, layerDataId={}, worldId={}, mountX={}, mountY={}, mountZ={}",
+                    saved.getId(),
+                    saved.getLayerDataId(),
+                    saved.getWorldId(),
+                    saved.getMountX(),
+                    saved.getMountY(),
+                    saved.getMountZ());
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating model: {}", e.getMessage());
@@ -252,9 +242,9 @@ public class ELayerModelController extends BaseEditorController {
     @PutMapping("/{id}")
     @Operation(summary = "Update Layer Model")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -264,9 +254,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("UPDATE layer model: worldId={}, layerId={}, id={}", worldId, layerId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -373,9 +361,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping("/{id}/sync")
     @Operation(summary = "Sync Layer Model to Terrain")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model synced successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model synced successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> syncToTerrain(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -384,9 +372,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("SYNC layer model to terrain: worldId={}, layerId={}, id={}", worldId, layerId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -431,10 +417,12 @@ public class ELayerModelController extends BaseEditorController {
             log.info("Manually synced model to terrain: modelId={}, chunks={}", id, chunksAffected);
 
             return ResponseEntity.ok(Map.of(
-                    "successful", true,
-                    "chunksAffected", chunksAffected,
-                    "message", "Model synced to terrain successfully"
-            ));
+                    "successful",
+                    true,
+                    "chunksAffected",
+                    chunksAffected,
+                    "message",
+                    "Model synced to terrain successfully"));
         } catch (Exception e) {
             log.error("Failed to sync model to terrain: modelId={}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -451,9 +439,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping("/{id}/transform/auto-adjust-center")
     @Operation(summary = "Transform Layer Model - Auto Adjust Center")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model transformed successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model transformed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> transformAutoAdjustCenter(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -462,9 +450,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("TRANSFORM AUTO ADJUST CENTER layer model: worldId={}, layerId={}, id={}", worldId, layerId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -511,14 +497,20 @@ public class ELayerModelController extends BaseEditorController {
             }
 
             WLayerModel transformed = transformedOpt.get();
-            log.info("Transformed model (auto adjust center): modelId={}, newMount=({},{},{})",
-                    id, transformed.getMountX(), transformed.getMountY(), transformed.getMountZ());
+            log.info(
+                    "Transformed model (auto adjust center): modelId={}, newMount=({},{},{})",
+                    id,
+                    transformed.getMountX(),
+                    transformed.getMountY(),
+                    transformed.getMountZ());
 
             return ResponseEntity.ok(Map.of(
-                    "successful", true,
-                    "model", toDto(transformed),
-                    "message", "Model center auto-adjusted successfully"
-            ));
+                    "successful",
+                    true,
+                    "model",
+                    toDto(transformed),
+                    "message",
+                    "Model center auto-adjusted successfully"));
         } catch (Exception e) {
             log.error("Failed to transform model: modelId={}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -535,9 +527,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping("/{id}/transform/manual-adjust-center")
     @Operation(summary = "Transform Layer Model - Manual Adjust Center")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model transformed successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model transformed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> transformManualAdjustCenter(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -547,12 +539,16 @@ public class ELayerModelController extends BaseEditorController {
             @Parameter(description = "Y offset") @RequestParam int offsetY,
             @Parameter(description = "Z offset") @RequestParam int offsetZ) {
 
-        log.debug("TRANSFORM MANUAL ADJUST CENTER layer model: worldId={}, layerId={}, id={}, offset=({},{},{})",
-                worldId, layerId, id, offsetX, offsetY, offsetZ);
+        log.debug(
+                "TRANSFORM MANUAL ADJUST CENTER layer model: worldId={}, layerId={}, id={}, offset=({},{},{})",
+                worldId,
+                layerId,
+                id,
+                offsetX,
+                offsetY,
+                offsetZ);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -599,14 +595,23 @@ public class ELayerModelController extends BaseEditorController {
             }
 
             WLayerModel transformed = transformedOpt.get();
-            log.info("Transformed model (manual adjust center): modelId={}, offset=({},{},{}), newMount=({},{},{})",
-                    id, offsetX, offsetY, offsetZ, transformed.getMountX(), transformed.getMountY(), transformed.getMountZ());
+            log.info(
+                    "Transformed model (manual adjust center): modelId={}, offset=({},{},{}), newMount=({},{},{})",
+                    id,
+                    offsetX,
+                    offsetY,
+                    offsetZ,
+                    transformed.getMountX(),
+                    transformed.getMountY(),
+                    transformed.getMountZ());
 
             return ResponseEntity.ok(Map.of(
-                    "successful", true,
-                    "model", toDto(transformed),
-                    "message", "Model center manually adjusted successfully"
-            ));
+                    "successful",
+                    true,
+                    "model",
+                    toDto(transformed),
+                    "message",
+                    "Model center manually adjusted successfully"));
         } catch (Exception e) {
             log.error("Failed to transform model: modelId={}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -623,9 +628,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping("/{id}/transform/move")
     @Operation(summary = "Transform Layer Model - Move")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Model transformed and synced successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "200", description = "Model transformed and synced successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> transformMove(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -635,12 +640,16 @@ public class ELayerModelController extends BaseEditorController {
             @Parameter(description = "Y offset") @RequestParam int offsetY,
             @Parameter(description = "Z offset") @RequestParam int offsetZ) {
 
-        log.debug("TRANSFORM MOVE layer model: worldId={}, layerId={}, id={}, offset=({},{},{})",
-                worldId, layerId, id, offsetX, offsetY, offsetZ);
+        log.debug(
+                "TRANSFORM MOVE layer model: worldId={}, layerId={}, id={}, offset=({},{},{})",
+                worldId,
+                layerId,
+                id,
+                offsetX,
+                offsetY,
+                offsetZ);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -687,19 +696,21 @@ public class ELayerModelController extends BaseEditorController {
             }
 
             WLayerModel transformed = transformedOpt.get();
-            log.info("Transformed model (move): modelId={}, offset=({},{},{})",
-                    id, offsetX, offsetY, offsetZ);
+            log.info("Transformed model (move): modelId={}, offset=({},{},{})", id, offsetX, offsetY, offsetZ);
 
             // Sync to terrain
             int chunksAffected = layerService.transferModelToTerrain(id, true);
             log.info("Synced moved model to terrain: modelId={}, chunks={}", id, chunksAffected);
 
             return ResponseEntity.ok(Map.of(
-                    "successful", true,
-                    "model", toDto(transformed),
-                    "chunksAffected", chunksAffected,
-                    "message", "Model moved and synced to terrain successfully"
-            ));
+                    "successful",
+                    true,
+                    "model",
+                    toDto(transformed),
+                    "chunksAffected",
+                    chunksAffected,
+                    "message",
+                    "Model moved and synced to terrain successfully"));
         } catch (Exception e) {
             log.error("Failed to transform model: modelId={}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -715,9 +726,9 @@ public class ELayerModelController extends BaseEditorController {
     @PostMapping("/{id}/copy")
     @Operation(summary = "Copy Layer Model to another layer")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Model copied successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model or target layer not found")
+        @ApiResponse(responseCode = "201", description = "Model copied successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model or target layer not found")
     })
     public ResponseEntity<?> copyModel(
             @Parameter(description = "Source world identifier") @PathVariable String worldId,
@@ -726,12 +737,15 @@ public class ELayerModelController extends BaseEditorController {
             @Parameter(description = "Target layer identifier") @RequestParam String targetLayerId,
             @Parameter(description = "New title (optional)") @RequestParam(required = false) String newName) {
 
-        log.debug("COPY layer model: sourceWorldId={}, sourceLayerId={}, sourceId={}, targetLayerId={}, newName={}",
-                worldId, layerId, id, targetLayerId, newName);
+        log.debug(
+                "COPY layer model: sourceWorldId={}, sourceLayerId={}, sourceId={}, targetLayerId={}, newName={}",
+                worldId,
+                layerId,
+                id,
+                targetLayerId,
+                newName);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -768,15 +782,23 @@ public class ELayerModelController extends BaseEditorController {
             }
 
             WLayerModel copied = copiedOpt.get();
-            log.info("Copied model: sourceId={} targetLayerId={} newId={} newName={}",
-                    id, targetLayerId, copied.getId(), copied.getName());
+            log.info(
+                    "Copied model: sourceId={} targetLayerId={} newId={} newName={}",
+                    id,
+                    targetLayerId,
+                    copied.getId(),
+                    copied.getName());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "successful", true,
-                    "id", copied.getId(),
-                    "model", toDto(copied),
-                    "message", "Model copied successfully"
-            ));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "successful",
+                            true,
+                            "id",
+                            copied.getId(),
+                            "model",
+                            toDto(copied),
+                            "message",
+                            "Model copied successfully"));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error copying model: {}", e.getMessage());
             return bad(e.getMessage());
@@ -794,9 +816,9 @@ public class ELayerModelController extends BaseEditorController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Layer Model")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Model deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Model not found")
+        @ApiResponse(responseCode = "204", description = "Model deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -805,9 +827,7 @@ public class ELayerModelController extends BaseEditorController {
 
         log.debug("DELETE layer model: worldId={}, layerId={}, id={}", worldId, layerId, id);
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerId, "layerId");
         if (validation != null) return validation;
         validation = validateId(id, "id");
@@ -862,7 +882,6 @@ public class ELayerModelController extends BaseEditorController {
                 model.getGroups(),
                 model.getParameters(),
                 model.getCreatedAt(),
-                model.getUpdatedAt()
-        );
+                model.getUpdatedAt());
     }
 }

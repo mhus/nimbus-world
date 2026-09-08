@@ -1,22 +1,21 @@
 package de.mhus.nimbus.world.generator.flat;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import dev.langchain4j.agent.tool.Tool;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Service for flat terrain tool operations.
@@ -74,10 +73,7 @@ public class FlatToolService {
         private final String error;
 
         public static FlatToolResult success(String message) {
-            return FlatToolResult.builder()
-                    .success(true)
-                    .message(message)
-                    .build();
+            return FlatToolResult.builder().success(true).message(message).build();
         }
 
         public static FlatToolResult success(String message, String flatId) {
@@ -97,10 +93,7 @@ public class FlatToolService {
         }
 
         public static FlatToolResult error(String error) {
-            return FlatToolResult.builder()
-                    .success(false)
-                    .error(error)
-                    .build();
+            return FlatToolResult.builder().success(false).error(error).build();
         }
     }
 
@@ -117,8 +110,8 @@ public class FlatToolService {
                 .name("manipulator")
                 .type("manipulator")
                 .title("Flat Manipulator")
-                .description("Execute a manipulator on an existing flat terrain. " +
-                        "Modifies the flat in a specific region with manipulator-specific parameters.")
+                .description("Execute a manipulator on an existing flat terrain. "
+                        + "Modifies the flat in a specific region with manipulator-specific parameters.")
                 .parameters(List.of(
                         ParameterInfo.builder()
                                 .name("manipulator")
@@ -165,20 +158,18 @@ public class FlatToolService {
                                 .type("object")
                                 .required(false)
                                 .description("Manipulator-specific parameters as key-value map")
-                                .build()
-                ))
-                .exampleJson("{\n" +
-                        "  \"manipulator\": \"raise\",\n" +
-                        "  \"flatId\": \"flat-1\",\n" +
-                        "  \"x\": 0,\n" +
-                        "  \"z\": 0,\n" +
-                        "  \"sizeX\": 100,\n" +
-                        "  \"sizeZ\": 100,\n" +
-                        "  \"parameters\": {\n" +
-                        "    \"height\": \"10\",\n" +
-                        "    \"strength\": \"0.5\"\n" +
-                        "  }\n" +
-                        "}")
+                                .build()))
+                .exampleJson("{\n" + "  \"manipulator\": \"raise\",\n"
+                        + "  \"flatId\": \"flat-1\",\n"
+                        + "  \"x\": 0,\n"
+                        + "  \"z\": 0,\n"
+                        + "  \"sizeX\": 100,\n"
+                        + "  \"sizeZ\": 100,\n"
+                        + "  \"parameters\": {\n"
+                        + "    \"height\": \"10\",\n"
+                        + "    \"strength\": \"0.5\"\n"
+                        + "  }\n"
+                        + "}")
                 .build());
 
         // Create tool
@@ -186,8 +177,8 @@ public class FlatToolService {
                 .name("create")
                 .type("create")
                 .title("Flat Creator")
-                .description("Create a new flat terrain with specified dimensions. " +
-                        "Ocean level is automatically loaded from world configuration.")
+                .description("Create a new flat terrain with specified dimensions. "
+                        + "Ocean level is automatically loaded from world configuration.")
                 .parameters(List.of(
                         ParameterInfo.builder()
                                 .name("create")
@@ -251,17 +242,15 @@ public class FlatToolService {
                                 .type("string")
                                 .required(false)
                                 .description("Description of the flat")
-                                .build()
-                ))
-                .exampleJson("{\n" +
-                        "  \"create\": true,\n" +
-                        "  \"worldId\": \"world-1\",\n" +
-                        "  \"layerDataId\": \"layer-1\",\n" +
-                        "  \"flatId\": \"my-terrain\",\n" +
-                        "  \"sizeX\": 100,\n" +
-                        "  \"sizeZ\": 100,\n" +
-                        "  \"title\": \"My Flat\"\n" +
-                        "}")
+                                .build()))
+                .exampleJson("{\n" + "  \"create\": true,\n"
+                        + "  \"worldId\": \"world-1\",\n"
+                        + "  \"layerDataId\": \"layer-1\",\n"
+                        + "  \"flatId\": \"my-terrain\",\n"
+                        + "  \"sizeX\": 100,\n"
+                        + "  \"sizeZ\": 100,\n"
+                        + "  \"title\": \"My Flat\"\n"
+                        + "}")
                 .build());
 
         // Export tool
@@ -269,8 +258,7 @@ public class FlatToolService {
                 .name("export")
                 .type("export")
                 .title("Flat Exporter")
-                .description("Export a flat terrain to a GROUND layer. " +
-                        "Optionally smooth corners.")
+                .description("Export a flat terrain to a GROUND layer. " + "Optionally smooth corners.")
                 .parameters(List.of(
                         ParameterInfo.builder()
                                 .name("export")
@@ -303,15 +291,13 @@ public class FlatToolService {
                                 .required(false)
                                 .defaultValue("false")
                                 .description("Smooth corners of top GROUND blocks")
-                                .build()
-                ))
-                .exampleJson("{\n" +
-                        "  \"export\": true,\n" +
-                        "  \"flatId\": \"flat-1\",\n" +
-                        "  \"worldId\": \"world-1\",\n" +
-                        "  \"layerName\": \"ground\",\n" +
-                        "  \"smoothCorners\": true,\n" +
-                        "}")
+                                .build()))
+                .exampleJson("{\n" + "  \"export\": true,\n"
+                        + "  \"flatId\": \"flat-1\",\n"
+                        + "  \"worldId\": \"world-1\",\n"
+                        + "  \"layerName\": \"ground\",\n"
+                        + "  \"smoothCorners\": true,\n"
+                        + "}")
                 .build());
 
         return tools;
@@ -337,8 +323,7 @@ public class FlatToolService {
      */
     public Optional<String> getToolDescription(String toolName) {
         return getToolInfo(toolName)
-                .map(tool -> String.format("%s (%s): %s",
-                        tool.getTitle(), tool.getName(), tool.getDescription()));
+                .map(tool -> String.format("%s (%s): %s", tool.getTitle(), tool.getName(), tool.getDescription()));
     }
 
     /**
@@ -364,7 +349,8 @@ public class FlatToolService {
         WFlat flat = flatOpt.get();
 
         // Extract manipulator name (null-safe)
-        String manipulatorName = params.has("manipulator") ? params.get("manipulator").asText() : null;
+        String manipulatorName =
+                params.has("manipulator") ? params.get("manipulator").asText() : null;
         if (manipulatorName == null || manipulatorName.isBlank()) {
             return FlatToolResult.error("manipulator required for manipulator command");
         }
@@ -387,8 +373,15 @@ public class FlatToolService {
             });
         }
 
-        log.info("Executing manipulator '{}' on flat '{}': region=({},{},{}x{}), params={}",
-                manipulatorName, flatId, x, z, sizeX, sizeZ, parameters);
+        log.info(
+                "Executing manipulator '{}' on flat '{}': region=({},{},{}x{}), params={}",
+                manipulatorName,
+                flatId,
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                parameters);
 
         // Execute manipulator
         try {
@@ -398,7 +391,8 @@ public class FlatToolService {
             flat.touchUpdate();
             wFlatService.update(flat);
 
-            String message = String.format("Manipulator '%s' executed successfully on flat '%s' (region: %dx%d at %d,%d)",
+            String message = String.format(
+                    "Manipulator '%s' executed successfully on flat '%s' (region: %dx%d at %d,%d)",
                     manipulatorName, flatId, sizeX, sizeZ, x, z);
 
             return FlatToolResult.success(message);
@@ -421,7 +415,8 @@ public class FlatToolService {
         String worldIdParam = params.has("worldId") ? params.get("worldId").asText() : defaultWorldId;
         // layerDataId is optional for flats ("Empty for flats"); default to empty
         // so the create tool is not rejected when it is not supplied.
-        String layerDataId = params.has("layerDataId") ? params.get("layerDataId").asText() : "";
+        String layerDataId =
+                params.has("layerDataId") ? params.get("layerDataId").asText() : "";
         String flatId = params.has("flatId") ? params.get("flatId").asText() : null;
         Integer sizeX = params.has("sizeX") ? params.get("sizeX").asInt() : null;
         Integer sizeZ = params.has("sizeZ") ? params.get("sizeZ").asInt() : null;
@@ -441,19 +436,26 @@ public class FlatToolService {
         int mountX = params.has("mountX") ? params.get("mountX").asInt() : 0;
         int mountZ = params.has("mountZ") ? params.get("mountZ").asInt() : 0;
         String title = params.has("title") ? params.get("title").asText() : null;
-        String description = params.has("description") ? params.get("description").asText() : null;
+        String description =
+                params.has("description") ? params.get("description").asText() : null;
 
-        log.info("Creating flat: worldId={}, layerDataId={}, flatId={}, size={}x{}, mount=({},{})",
-                worldIdParam, layerDataId, flatId, sizeX, sizeZ, mountX, mountZ);
+        log.info(
+                "Creating flat: worldId={}, layerDataId={}, flatId={}, size={}x{}, mount=({},{})",
+                worldIdParam,
+                layerDataId,
+                flatId,
+                sizeX,
+                sizeZ,
+                mountX,
+                mountZ);
 
         // Execute create
         try {
             WFlat flat = flatCreateService.createFlat(
-                    worldIdParam, layerDataId, flatId,
-                    sizeX, sizeZ, mountX, mountZ,
-                    title, description);
+                    worldIdParam, layerDataId, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
 
-            String message = String.format("Flat '%s' created successfully: size=%dx%d, mount=(%d,%d), id=%s",
+            String message = String.format(
+                    "Flat '%s' created successfully: size=%dx%d, mount=(%d,%d), id=%s",
                     flatId, sizeX, sizeZ, mountX, mountZ, flat.getId());
 
             return FlatToolResult.success(message, flat.getId());
@@ -486,17 +488,22 @@ public class FlatToolService {
         }
 
         // Extract optional parameters
-        boolean smoothCorners = params.has("smoothCorners") && params.get("smoothCorners").asBoolean();
+        boolean smoothCorners =
+                params.has("smoothCorners") && params.get("smoothCorners").asBoolean();
 
-        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
-                flatId, worldIdParam, layerName, smoothCorners);
+        log.info(
+                "Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
+                flatId,
+                worldIdParam,
+                layerName,
+                smoothCorners);
 
         // Execute export
         try {
-            int exportedColumns = flatExportService.exportToLayer(
-                    flatId, worldIdParam, layerName, smoothCorners);
+            int exportedColumns = flatExportService.exportToLayer(flatId, worldIdParam, layerName, smoothCorners);
 
-            String message = String.format("Flat '%s' exported successfully to layer '%s': %d columns exported",
+            String message = String.format(
+                    "Flat '%s' exported successfully to layer '%s': %d columns exported",
                     flatId, layerName, exportedColumns);
 
             return FlatToolResult.success(message, exportedColumns);
@@ -529,17 +536,11 @@ public class FlatToolService {
      * @param description Flat description
      * @return Execution result
      */
-    @Tool("Create a new flat terrain. Provide flatId, worldId, sizeX, sizeZ, title, and description. Returns the created flatId.")
-    public String executeCreate(
-            String flatId,
-            String worldId,
-            int sizeX,
-            int sizeZ,
-            String title,
-            String description) {
+    @Tool(
+            "Create a new flat terrain. Provide flatId, worldId, sizeX, sizeZ, title, and description. Returns the created flatId.")
+    public String executeCreate(String flatId, String worldId, int sizeX, int sizeZ, String title, String description) {
 
-        log.info("AI Tool: executeCreate - flatId={}, worldId={}, sizeX={}, sizeZ={}",
-                flatId, worldId, sizeX, sizeZ);
+        log.info("AI Tool: executeCreate - flatId={}, worldId={}, sizeX={}, sizeZ={}", flatId, worldId, sizeX, sizeZ);
 
         // Build params
         ObjectNode params = objectMapper.createObjectNode();
@@ -557,8 +558,7 @@ public class FlatToolService {
         FlatToolResult result = executeCreate(params, worldId);
 
         if (result.isSuccess()) {
-            return String.format("SUCCESS: Flat '%s' created (%dx%d blocks)",
-                result.getFlatId(), sizeX, sizeZ);
+            return String.format("SUCCESS: Flat '%s' created (%dx%d blocks)", result.getFlatId(), sizeX, sizeZ);
         } else {
             return String.format("ERROR: %s", result.getError());
         }
@@ -572,14 +572,11 @@ public class FlatToolService {
      * @param parametersJson JSON parameters for manipulator
      * @return Execution result
      */
-    @Tool("Manipulate an existing flat terrain. Provide flatId, manipulator name (raise/lower/smooth/plateau), and parameters as JSON. Returns affected column count.")
-    public String executeManipulator(
-            String flatId,
-            String manipulatorName,
-            String parametersJson) {
+    @Tool(
+            "Manipulate an existing flat terrain. Provide flatId, manipulator name (raise/lower/smooth/plateau), and parameters as JSON. Returns affected column count.")
+    public String executeManipulator(String flatId, String manipulatorName, String parametersJson) {
 
-        log.info("AI Tool: executeManipulator - flatId={}, manipulator={}",
-                flatId, manipulatorName);
+        log.info("AI Tool: executeManipulator - flatId={}, manipulator={}", flatId, manipulatorName);
 
         // Parse parameters
         ObjectNode params;
@@ -597,8 +594,8 @@ public class FlatToolService {
         FlatToolResult result = executeManipulator(params);
 
         if (result.isSuccess()) {
-            return String.format("SUCCESS: %s (Affected columns: %d)",
-                result.getMessage(), result.getAffectedColumns());
+            return String.format(
+                    "SUCCESS: %s (Affected columns: %d)", result.getMessage(), result.getAffectedColumns());
         } else {
             return String.format("ERROR: %s", result.getError());
         }
@@ -613,15 +610,11 @@ public class FlatToolService {
      * @param smoothCorners Whether to smooth corners
      * @return Execution result
      */
-    @Tool("Export a flat terrain to a world layer to activate it. Provide flatId, worldId, layerName (usually 'GROUND'), smoothCorners (true/false). This MUST be called after create or manipulate to make changes visible.")
-    public String executeExport(
-            String flatId,
-            String worldId,
-            String layerName,
-            boolean smoothCorners) {
+    @Tool(
+            "Export a flat terrain to a world layer to activate it. Provide flatId, worldId, layerName (usually 'GROUND'), smoothCorners (true/false). This MUST be called after create or manipulate to make changes visible.")
+    public String executeExport(String flatId, String worldId, String layerName, boolean smoothCorners) {
 
-        log.info("AI Tool: executeExport - flatId={}, worldId={}, layerName={}",
-                flatId, worldId, layerName);
+        log.info("AI Tool: executeExport - flatId={}, worldId={}, layerName={}", flatId, worldId, layerName);
 
         // Build params
         ObjectNode params = objectMapper.createObjectNode();

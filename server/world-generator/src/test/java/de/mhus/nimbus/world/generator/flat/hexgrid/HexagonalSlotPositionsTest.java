@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for hexagonal slot position generation.
@@ -130,12 +129,12 @@ class HexagonalSlotPositionsTest {
 
         // Direction vectors for hex neighbors (in order: E, SE, S, SW, W, NW)
         int[][] directions = {
-            {1, 0},    // E
-            {0, 1},    // SE
-            {-1, 1},   // S
-            {-1, 0},   // SW
-            {0, -1},   // W
-            {1, -1}    // NW
+            {1, 0}, // E
+            {0, 1}, // SE
+            {-1, 1}, // S
+            {-1, 0}, // SW
+            {0, -1}, // W
+            {1, -1} // NW
         };
 
         // Walk around the ring
@@ -151,8 +150,7 @@ class HexagonalSlotPositionsTest {
     }
 
     private boolean containsPosition(List<HexVector2> positions, int q, int r) {
-        return positions.stream()
-            .anyMatch(pos -> pos.getQ() == q && pos.getR() == r);
+        return positions.stream().anyMatch(pos -> pos.getQ() == q && pos.getR() == r);
     }
 
     private void printPositions(List<HexVector2> positions) {

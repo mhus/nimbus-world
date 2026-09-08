@@ -5,7 +5,7 @@ import org.apache.logging.log4j.util.Strings;
 
 public record WorldCollection(TYPE type, WorldId worldId, String path) {
 
-//    public static final String SHARED_PUBLIC = "public";
+    //    public static final String SHARED_PUBLIC = "public";
 
     public enum TYPE {
         WORLD,
@@ -16,11 +16,12 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
 
     public static WorldCollection of(WorldId worldId, String path) {
         if (worldId.isCollection()) {
-            var type = switch(worldId.getRegionId()) {
-                case WorldId.COLLECTION_REGION -> TYPE.REGION;
-                case WorldId.COLLECTION_PUBLIC -> TYPE.PUBLIC;
-                default -> TYPE.SHARED;
-            };
+            var type =
+                    switch (worldId.getRegionId()) {
+                        case WorldId.COLLECTION_REGION -> TYPE.REGION;
+                        case WorldId.COLLECTION_PUBLIC -> TYPE.PUBLIC;
+                        default -> TYPE.SHARED;
+                    };
             int pos = path.indexOf(':');
             if (pos >= 0) {
                 var group = path.substring(0, pos).toLowerCase();
@@ -29,16 +30,19 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
                     // could switch if needed
                     if (group.equals("rp")) {
                         type = TYPE.PUBLIC;
-                        worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getWorldName()).get();
+                        worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getWorldName())
+                                .get();
                     } else if (group.equals("r")) {
-                        worldId = WorldId.of(WorldId.COLLECTION_REGION, worldId.getWorldName()).get();
+                        worldId = WorldId.of(WorldId.COLLECTION_REGION, worldId.getWorldName())
+                                .get();
                     } else {
                         type = TYPE.SHARED;
                         worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
                     }
                 } else if (group.equals("rp")) {
                     type = TYPE.PUBLIC;
-                    worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId()).get();
+                    worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId())
+                            .get();
                 } else {
                     type = TYPE.SHARED;
                     worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
@@ -48,12 +52,9 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         }
         int pos = path.indexOf(':');
         if (pos < 0) {
-            if (worldId.isSharedCollection())
-                return new WorldCollection(TYPE.SHARED, worldId, path);
-            if (worldId.isRegionCollection())
-                return new WorldCollection(TYPE.REGION, worldId, path);
-            if (worldId.isPublicRegion())
-                return new WorldCollection(TYPE.PUBLIC, worldId, path);
+            if (worldId.isSharedCollection()) return new WorldCollection(TYPE.SHARED, worldId, path);
+            if (worldId.isRegionCollection()) return new WorldCollection(TYPE.REGION, worldId, path);
+            if (worldId.isPublicRegion()) return new WorldCollection(TYPE.PUBLIC, worldId, path);
             return new WorldCollection(TYPE.REGION, worldId.toRegionCollection(), path);
         }
         var group = path.substring(0, pos).toLowerCase();
@@ -63,13 +64,25 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
             case "w":
                 return new WorldCollection(TYPE.WORLD, worldId, path);
             case "r":
-                return new WorldCollection(TYPE.REGION, WorldId.of(WorldId.COLLECTION_REGION, worldId.getRegionId()).get(), path);
+                return new WorldCollection(
+                        TYPE.REGION,
+                        WorldId.of(WorldId.COLLECTION_REGION, worldId.getRegionId())
+                                .get(),
+                        path);
             case "rp":
-                return new WorldCollection(TYPE.PUBLIC, WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId()).get(), path);
-//            case "p":
-//                return new WorldCollection(TYPE.SHARED, WorldId.of(WorldId.COLLECTION_SHARED, SHARED_PUBLIC).get(), path);
+                return new WorldCollection(
+                        TYPE.PUBLIC,
+                        WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId())
+                                .get(),
+                        path);
+            //            case "p":
+            //                return new WorldCollection(TYPE.SHARED, WorldId.of(WorldId.COLLECTION_SHARED,
+            // SHARED_PUBLIC).get(), path);
             default:
-                return new WorldCollection(TYPE.SHARED, WorldId.of(WorldId.COLLECTION_SHARED, group).get(), path);
+                return new WorldCollection(
+                        TYPE.SHARED,
+                        WorldId.of(WorldId.COLLECTION_SHARED, group).get(),
+                        path);
         }
     }
 
@@ -82,8 +95,8 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
             case PUBLIC:
                 return "rp";
             case SHARED:
-//                if (SHARED_PUBLIC.equals(worldId.getWorldName()))
-//                    return "p";
+                //                if (SHARED_PUBLIC.equals(worldId.getWorldName()))
+                //                    return "p";
                 return worldId.getWorldName();
         }
         return "w"; // should not happen
@@ -107,9 +120,8 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         }
     }
 
-    public static  String findPrefix(String worldId) {
-        if (Strings.isBlank(worldId))
-            return "w";
+    public static String findPrefix(String worldId) {
+        if (Strings.isBlank(worldId)) return "w";
         if (worldId.startsWith("@")) {
             var parts = worldId.split(":");
             if (parts.length > 1) {
@@ -142,6 +154,4 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         if (pos >= 0) return id.substring(pos + 1);
         return id;
     }
-
-
 }

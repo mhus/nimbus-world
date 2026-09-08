@@ -13,18 +13,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for EntityModel CRUD operations.
@@ -49,15 +48,11 @@ public class EEntityModelController extends BaseEditorController {
             String worldId,
             boolean enabled,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
-    public record CreateEntityModelRequest(String name, EntityModel publicData) {
-    }
+    public record CreateEntityModelRequest(String name, EntityModel publicData) {}
 
-    public record UpdateEntityModelRequest(EntityModel publicData, Boolean enabled) {
-    }
+    public record UpdateEntityModelRequest(EntityModel publicData, Boolean enabled) {}
 
     /**
      * Get single EntityModel by ID.
@@ -66,9 +61,9 @@ public class EEntityModelController extends BaseEditorController {
     @GetMapping("/{modelId}")
     @Operation(summary = "Get EntityModel by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "EntityModel found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "EntityModel not found")
+        @ApiResponse(responseCode = "200", description = "EntityModel found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "EntityModel not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -76,9 +71,7 @@ public class EEntityModelController extends BaseEditorController {
 
         log.debug("GET entitymodel: worldId={}, modelId={}", worldId, modelId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(modelId, "modelId");
         if (validation != null) return validation;
 
@@ -100,8 +93,8 @@ public class EEntityModelController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all EntityModels")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -111,9 +104,7 @@ public class EEntityModelController extends BaseEditorController {
 
         log.debug("LIST entitymodels: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -147,8 +138,7 @@ public class EEntityModelController extends BaseEditorController {
                 "entityModels", publicDataList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -158,9 +148,9 @@ public class EEntityModelController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new EntityModel")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "EntityModel created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "EntityModel already exists")
+        @ApiResponse(responseCode = "201", description = "EntityModel created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "EntityModel already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -168,9 +158,7 @@ public class EEntityModelController extends BaseEditorController {
 
         log.debug("CREATE entitymodel: worldId={}, modelId={}", worldId, request.name());
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         if (Strings.isBlank(request.name())) {
             return bad("modelId required");
         }
@@ -209,9 +197,9 @@ public class EEntityModelController extends BaseEditorController {
     @PutMapping("/{modelId}")
     @Operation(summary = "Update EntityModel")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "EntityModel updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "EntityModel not found")
+        @ApiResponse(responseCode = "200", description = "EntityModel updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "EntityModel not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -220,9 +208,7 @@ public class EEntityModelController extends BaseEditorController {
 
         log.debug("UPDATE entitymodel: worldId={}, modelId={}", worldId, modelId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(modelId, "modelId");
         if (validation != null) return validation;
 
@@ -255,9 +241,9 @@ public class EEntityModelController extends BaseEditorController {
     @DeleteMapping("/{modelId}")
     @Operation(summary = "Delete EntityModel")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "EntityModel deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "EntityModel not found")
+        @ApiResponse(responseCode = "204", description = "EntityModel deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "EntityModel not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -265,9 +251,7 @@ public class EEntityModelController extends BaseEditorController {
 
         log.debug("DELETE entitymodel: worldId={}, modelId={}", worldId, modelId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(modelId, "modelId");
         if (validation != null) return validation;
 
@@ -290,7 +274,6 @@ public class EEntityModelController extends BaseEditorController {
                 entity.getWorldId(),
                 entity.isEnabled(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

@@ -5,13 +5,12 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentMetadata;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * AI Tool Service for document management.
@@ -42,9 +41,14 @@ public class DocumentToolService {
      * @param searchTerm The term to search for in document summaries
      * @return Formatted list of matching documents with their summaries
      */
-    @Tool("Search documents by summary - finds documents where the summary contains the search term. Returns document ID, title, and summary.")
+    @Tool(
+            "Search documents by summary - finds documents where the summary contains the search term. Returns document ID, title, and summary.")
     public String searchDocumentsBySummary(String worldId, String collection, String searchTerm) {
-        log.info("AI Tool: searchDocumentsBySummary - worldId={}, collection={}, searchTerm={}", worldId, collection, searchTerm);
+        log.info(
+                "AI Tool: searchDocumentsBySummary - worldId={}, collection={}, searchTerm={}",
+                worldId,
+                collection,
+                searchTerm);
 
         if (Strings.isBlank(worldId)) {
             return "ERROR: worldId parameter is required";
@@ -59,26 +63,24 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocumentMetadata> documents = documentService.findMetadataByCollection(wid, collection);
 
             // Filter by search term in summary
             String lowerSearchTerm = searchTerm.toLowerCase();
             List<WDocumentMetadata> matching = documents.stream()
-                    .filter(doc -> doc.getSummary() != null &&
-                                   doc.getSummary().toLowerCase().contains(lowerSearchTerm))
+                    .filter(doc -> doc.getSummary() != null
+                            && doc.getSummary().toLowerCase().contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
-                return String.format("No documents found in collection '%s' with summary containing '%s'",
-                                     collection, searchTerm);
+                return String.format(
+                        "No documents found in collection '%s' with summary containing '%s'", collection, searchTerm);
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s':\n\n",
-                                        matching.size(), collection));
+            result.append(String.format("Found %d document(s) in collection '%s':\n\n", matching.size(), collection));
 
             for (WDocumentMetadata doc : matching) {
                 result.append(String.format("ID: %s\n", doc.getDocumentId()));
@@ -109,9 +111,14 @@ public class DocumentToolService {
      * @param searchTerm The term to search for in document summaries
      * @return Formatted list of matching documents with their summaries
      */
-    @Tool("Lookup documents by summary - searches in world, region, and shared collections. Finds documents where the summary contains the search term.")
+    @Tool(
+            "Lookup documents by summary - searches in world, region, and shared collections. Finds documents where the summary contains the search term.")
     public String lookupDocumentsBySummary(String worldId, String collection, String searchTerm) {
-        log.info("AI Tool: lookupDocumentsBySummary - worldId={}, collection={}, searchTerm={}", worldId, collection, searchTerm);
+        log.info(
+                "AI Tool: lookupDocumentsBySummary - worldId={}, collection={}, searchTerm={}",
+                worldId,
+                collection,
+                searchTerm);
 
         if (Strings.isBlank(worldId)) {
             return "ERROR: worldId parameter is required";
@@ -126,26 +133,27 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocumentMetadata> documents = documentService.lookupDocumentsMetadata(wid, collection);
 
             // Filter by search term in summary
             String lowerSearchTerm = searchTerm.toLowerCase();
             List<WDocumentMetadata> matching = documents.stream()
-                    .filter(doc -> doc.getSummary() != null &&
-                                   doc.getSummary().toLowerCase().contains(lowerSearchTerm))
+                    .filter(doc -> doc.getSummary() != null
+                            && doc.getSummary().toLowerCase().contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
-                return String.format("No documents found in collection '%s' (including region and shared) with summary containing '%s'",
-                                     collection, searchTerm);
+                return String.format(
+                        "No documents found in collection '%s' (including region and shared) with summary containing '%s'",
+                        collection, searchTerm);
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s' (including region and shared):\n\n",
-                                        matching.size(), collection));
+            result.append(String.format(
+                    "Found %d document(s) in collection '%s' (including region and shared):\n\n",
+                    matching.size(), collection));
 
             for (WDocumentMetadata doc : matching) {
                 result.append(String.format("World: %s\n", doc.getWorldId()));
@@ -178,9 +186,14 @@ public class DocumentToolService {
      * @param searchTerm The term to search for in document content
      * @return Formatted list of matching documents with excerpts
      */
-    @Tool("Search documents by content - finds documents where the content contains the search term. Returns document ID, title, and content excerpt.")
+    @Tool(
+            "Search documents by content - finds documents where the content contains the search term. Returns document ID, title, and content excerpt.")
     public String searchDocumentsByContent(String worldId, String collection, String searchTerm) {
-        log.info("AI Tool: searchDocumentsByContent - worldId={}, collection={}, searchTerm={}", worldId, collection, searchTerm);
+        log.info(
+                "AI Tool: searchDocumentsByContent - worldId={}, collection={}, searchTerm={}",
+                worldId,
+                collection,
+                searchTerm);
 
         if (Strings.isBlank(worldId)) {
             return "ERROR: worldId parameter is required";
@@ -195,26 +208,24 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocument> documents = documentService.findByCollection(wid, collection);
 
             // Filter by search term in content
             String lowerSearchTerm = searchTerm.toLowerCase();
             List<WDocument> matching = documents.stream()
-                    .filter(doc -> doc.getContent() != null &&
-                                   doc.getContent().toLowerCase().contains(lowerSearchTerm))
+                    .filter(doc -> doc.getContent() != null
+                            && doc.getContent().toLowerCase().contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
-                return String.format("No documents found in collection '%s' with content containing '%s'",
-                                     collection, searchTerm);
+                return String.format(
+                        "No documents found in collection '%s' with content containing '%s'", collection, searchTerm);
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s':\n\n",
-                                        matching.size(), collection));
+            result.append(String.format("Found %d document(s) in collection '%s':\n\n", matching.size(), collection));
 
             for (WDocument doc : matching) {
                 result.append(String.format("ID: %s\n", doc.getDocumentId()));
@@ -254,9 +265,14 @@ public class DocumentToolService {
      * @param searchTerm The term to search for in document content
      * @return Formatted list of matching documents with excerpts
      */
-    @Tool("Lookup documents by content - searches in world, region, and shared collections. Finds documents where the content contains the search term.")
+    @Tool(
+            "Lookup documents by content - searches in world, region, and shared collections. Finds documents where the content contains the search term.")
     public String lookupDocumentsByContent(String worldId, String collection, String searchTerm) {
-        log.info("AI Tool: lookupDocumentsByContent - worldId={}, collection={}, searchTerm={}", worldId, collection, searchTerm);
+        log.info(
+                "AI Tool: lookupDocumentsByContent - worldId={}, collection={}, searchTerm={}",
+                worldId,
+                collection,
+                searchTerm);
 
         if (Strings.isBlank(worldId)) {
             return "ERROR: worldId parameter is required";
@@ -271,26 +287,27 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocument> documents = documentService.lookupDocuments(wid, collection);
 
             // Filter by search term in content
             String lowerSearchTerm = searchTerm.toLowerCase();
             List<WDocument> matching = documents.stream()
-                    .filter(doc -> doc.getContent() != null &&
-                                   doc.getContent().toLowerCase().contains(lowerSearchTerm))
+                    .filter(doc -> doc.getContent() != null
+                            && doc.getContent().toLowerCase().contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
-                return String.format("No documents found in collection '%s' (including region and shared) with content containing '%s'",
-                                     collection, searchTerm);
+                return String.format(
+                        "No documents found in collection '%s' (including region and shared) with content containing '%s'",
+                        collection, searchTerm);
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s' (including region and shared):\n\n",
-                                        matching.size(), collection));
+            result.append(String.format(
+                    "Found %d document(s) in collection '%s' (including region and shared):\n\n",
+                    matching.size(), collection));
 
             for (WDocument doc : matching) {
                 result.append(String.format("World: %s\n", doc.getWorldId()));
@@ -348,14 +365,13 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             Optional<WDocument> docOpt = documentService.findByDocumentId(wid, collection, documentId);
 
             if (docOpt.isEmpty()) {
-                return String.format("ERROR: Document not found - collection='%s', documentId='%s'",
-                                     collection, documentId);
+                return String.format(
+                        "ERROR: Document not found - collection='%s', documentId='%s'", collection, documentId);
             }
 
             WDocument doc = docOpt.get();
@@ -364,7 +380,8 @@ public class DocumentToolService {
             result.append(String.format("Title: %s\n", doc.getTitle() != null ? doc.getTitle() : "(no title)"));
             result.append(String.format("Name: %s\n", doc.getName() != null ? doc.getName() : "(no name)"));
             result.append(String.format("Type: %s\n", doc.getType() != null ? doc.getType() : "(no type)"));
-            result.append(String.format("Language: %s\n", doc.getLanguage() != null ? doc.getLanguage() : "(no language)"));
+            result.append(
+                    String.format("Language: %s\n", doc.getLanguage() != null ? doc.getLanguage() : "(no language)"));
             result.append(String.format("Format: %s\n", doc.getFormat() != null ? doc.getFormat() : "plaintext"));
             result.append(String.format("Summary: %s\n", doc.getSummary() != null ? doc.getSummary() : "(no summary)"));
             result.append("\n--- Content ---\n\n");
@@ -392,8 +409,10 @@ public class DocumentToolService {
      * @param type Optional document type (e.g., 'lore', 'quest', 'item')
      * @return Success message with created document ID or error message
      */
-    @Tool("Create new document - creates a new document with the specified title, content, and optional metadata. Returns the created document ID.")
-    public String createDocument(String worldId, String collection, String title, String content, String summary, String type) {
+    @Tool(
+            "Create new document - creates a new document with the specified title, content, and optional metadata. Returns the created document ID.")
+    public String createDocument(
+            String worldId, String collection, String title, String content, String summary, String type) {
         log.info("AI Tool: createDocument - worldId={}, collection={}, title={}", worldId, collection, title);
 
         if (Strings.isBlank(worldId)) {
@@ -413,9 +432,8 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Generate document ID
             String documentId = java.util.UUID.randomUUID().toString();
@@ -433,8 +451,8 @@ public class DocumentToolService {
             });
 
             log.info("AI Tool: createDocument - document created successfully: {}", documentId);
-            return String.format("SUCCESS: Document created with ID '%s' in collection '%s'",
-                                 created.getDocumentId(), collection);
+            return String.format(
+                    "SUCCESS: Document created with ID '%s' in collection '%s'", created.getDocumentId(), collection);
 
         } catch (Exception e) {
             log.error("AI Tool: createDocument failed", e);
@@ -456,9 +474,16 @@ public class DocumentToolService {
      * @param type New type (null = no change)
      * @return Success message or error message
      */
-    @Tool("Update existing document - updates specified fields of an existing document. Only provide fields you want to change, others will remain unchanged.")
-    public String updateDocument(String worldId, String collection, String documentId, String title, String content,
-                                  String summary, String type) {
+    @Tool(
+            "Update existing document - updates specified fields of an existing document. Only provide fields you want to change, others will remain unchanged.")
+    public String updateDocument(
+            String worldId,
+            String collection,
+            String documentId,
+            String title,
+            String content,
+            String summary,
+            String type) {
         log.info("AI Tool: updateDocument - worldId={}, collection={}, documentId={}", worldId, collection, documentId);
 
         if (Strings.isBlank(worldId)) {
@@ -474,9 +499,8 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             Optional<WDocument> updated = documentService.update(wid, collection, documentId, doc -> {
                 if (!Strings.isBlank(title)) {
                     doc.setTitle(title);
@@ -493,13 +517,12 @@ public class DocumentToolService {
             });
 
             if (updated.isEmpty()) {
-                return String.format("ERROR: Document not found - collection='%s', documentId='%s'",
-                                     collection, documentId);
+                return String.format(
+                        "ERROR: Document not found - collection='%s', documentId='%s'", collection, documentId);
             }
 
             log.info("AI Tool: updateDocument - document updated successfully");
-            return String.format("SUCCESS: Document '%s' updated in collection '%s'",
-                                 documentId, collection);
+            return String.format("SUCCESS: Document '%s' updated in collection '%s'", documentId, collection);
 
         } catch (Exception e) {
             log.error("AI Tool: updateDocument failed", e);
@@ -516,7 +539,8 @@ public class DocumentToolService {
      * @param collection The document collection (required)
      * @return Formatted list of all documents in the collection
      */
-    @Tool("List all documents in collection - returns metadata (ID, title, summary) for all documents in the specified collection.")
+    @Tool(
+            "List all documents in collection - returns metadata (ID, title, summary) for all documents in the specified collection.")
     public String listDocuments(String worldId, String collection) {
         log.info("AI Tool: listDocuments - worldId={}, collection={}", worldId, collection);
 
@@ -529,9 +553,8 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocumentMetadata> documents = documentService.findMetadataByCollection(wid, collection);
 
             if (documents.isEmpty()) {
@@ -539,8 +562,7 @@ public class DocumentToolService {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s':\n\n",
-                                        documents.size(), collection));
+            result.append(String.format("Found %d document(s) in collection '%s':\n\n", documents.size(), collection));
 
             for (WDocumentMetadata doc : documents) {
                 result.append(String.format("ID: %s\n", doc.getDocumentId()));
@@ -572,7 +594,8 @@ public class DocumentToolService {
      * @param collection The document collection (required)
      * @return Formatted list of all documents in the collection (including region and shared)
      */
-    @Tool("Lookup all documents in collection - returns metadata for all documents in world, region, and shared collections.")
+    @Tool(
+            "Lookup all documents in collection - returns metadata for all documents in world, region, and shared collections.")
     public String lookupListDocuments(String worldId, String collection) {
         log.info("AI Tool: lookupListDocuments - worldId={}, collection={}", worldId, collection);
 
@@ -585,9 +608,8 @@ public class DocumentToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             List<WDocumentMetadata> documents = documentService.lookupDocumentsMetadata(wid, collection);
 
             if (documents.isEmpty()) {
@@ -595,8 +617,9 @@ public class DocumentToolService {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Found %d document(s) in collection '%s' (including region and shared):\n\n",
-                                        documents.size(), collection));
+            result.append(String.format(
+                    "Found %d document(s) in collection '%s' (including region and shared):\n\n",
+                    documents.size(), collection));
 
             for (WDocumentMetadata doc : documents) {
                 result.append(String.format("World: %s\n", doc.getWorldId()));

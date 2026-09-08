@@ -4,14 +4,13 @@ import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +19,10 @@ public class AnythingTools implements McpToolBean {
 
     private final WAnythingService anythingService;
 
-    @Tool(name = "list_anything", description = "List WAnything entities by worldId and collection. Returns name, title, type, and enabled status.")
+    @Tool(
+            name = "list_anything",
+            description =
+                    "List WAnything entities by worldId and collection. Returns name, title, type, and enabled status.")
     public Map<String, Object> listAnything(
             @ToolParam(description = "World ID or region collection (e.g. '@region:ymir')") String worldId,
             @ToolParam(description = "Collection name (e.g. 'flora-models')") String collection) {
@@ -31,23 +33,25 @@ public class AnythingTools implements McpToolBean {
         }
 
         List<WAnything> entities = anythingService.findByWorldIdAndCollection(worldId, collection);
-        var dtos = entities.stream().map(e -> Map.<String, Object>of(
-                "id", e.getId(),
-                "name", e.getName(),
-                "title", e.getTitle() != null ? e.getTitle() : "",
-                "type", e.getType() != null ? e.getType() : "",
-                "enabled", e.isEnabled()
-        )).toList();
+        var dtos = entities.stream()
+                .map(e -> Map.<String, Object>of(
+                        "id", e.getId(),
+                        "name", e.getName(),
+                        "title", e.getTitle() != null ? e.getTitle() : "",
+                        "type", e.getType() != null ? e.getType() : "",
+                        "enabled", e.isEnabled()))
+                .toList();
 
         return Map.of(
                 "worldId", worldId,
                 "collection", collection,
                 "count", dtos.size(),
-                "entities", dtos
-        );
+                "entities", dtos);
     }
 
-    @Tool(name = "get_anything", description = "Get a single WAnything entity by worldId, collection, and name. Returns full data.")
+    @Tool(
+            name = "get_anything",
+            description = "Get a single WAnything entity by worldId, collection, and name. Returns full data.")
     public Map<String, Object> getAnything(
             @ToolParam(description = "World ID or region collection (e.g. '@region:ymir')") String worldId,
             @ToolParam(description = "Collection name") String collection,
@@ -60,8 +64,8 @@ public class AnythingTools implements McpToolBean {
 
         Optional<WAnything> entity = anythingService.findByWorldIdAndCollectionAndName(worldId, collection, name);
         if (entity.isEmpty()) {
-            throw new McpToolException("Entity not found: worldId=" + worldId
-                    + ", collection=" + collection + ", name=" + name);
+            throw new McpToolException(
+                    "Entity not found: worldId=" + worldId + ", collection=" + collection + ", name=" + name);
         }
 
         WAnything e = entity.get();
@@ -78,7 +82,9 @@ public class AnythingTools implements McpToolBean {
         return dto;
     }
 
-    @Tool(name = "create_anything", description = "Create a new WAnything entity scoped by worldId. Data can be any JSON object.")
+    @Tool(
+            name = "create_anything",
+            description = "Create a new WAnything entity scoped by worldId. Data can be any JSON object.")
     public Map<String, Object> createAnything(
             @ToolParam(description = "World ID or region collection (e.g. '@region:ymir')") String worldId,
             @ToolParam(description = "Collection name") String collection,
@@ -97,16 +103,13 @@ public class AnythingTools implements McpToolBean {
         }
 
         try {
-            WAnything entity = anythingService.create(
-                    worldId, collection, name, title, description, type, data
-            );
+            WAnything entity = anythingService.create(worldId, collection, name, title, description, type, data);
 
             return Map.of(
                     "id", entity.getId(),
                     "worldId", entity.getWorldId() != null ? entity.getWorldId() : "",
                     "collection", entity.getCollection(),
-                    "name", entity.getName()
-            );
+                    "name", entity.getName());
         } catch (IllegalStateException e) {
             throw new McpToolException(e.getMessage());
         }
@@ -128,7 +131,6 @@ public class AnythingTools implements McpToolBean {
                 "deleted", true,
                 "worldId", worldId,
                 "collection", collection,
-                "name", name
-        );
+                "name", name);
     }
 }

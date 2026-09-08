@@ -2,16 +2,15 @@ package de.mhus.nimbus.world.shared.workflow;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Context for workflow execution.
@@ -23,7 +22,7 @@ import java.util.Optional;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowContext {
 
-    WWorkflowJournalService  journalService;
+    WWorkflowJournalService journalService;
 
     WorkflowService workflowService;
     /**
@@ -84,14 +83,11 @@ public class WorkflowContext {
     }
 
     public <T extends JournalRecord> Optional<T> getLastJournalRecord(Class<T> type) {
-        return getLastJournalRecord(type.getCanonicalName()).map(
-                entry -> (T)entry.toJournalRecord(this));
+        return getLastJournalRecord(type.getCanonicalName()).map(entry -> (T) entry.toJournalRecord(this));
     }
 
     public Optional<WWorkflowJournalRecord> getLastJournalRecord(String type) {
-        return journal.stream().filter(
-                entry -> entry.getType().equals(type)
-        ).reduce((first, second) -> second);
+        return journal.stream().filter(entry -> entry.getType().equals(type)).reduce((first, second) -> second);
     }
 
     public void reloadJournal() {
@@ -104,11 +100,7 @@ public class WorkflowContext {
      * @param status
      */
     public void updateWorkflowStatus(String status) {
-        workflowService.updateWorkflowStatus(
-                worldId,
-                workflowId,
-                status
-        );
+        workflowService.updateWorkflowStatus(worldId, workflowId, status);
     }
 
     /**
@@ -131,7 +123,8 @@ public class WorkflowContext {
      * @param titleSuffix optional suffix to append to the generated job title (e.g., "GROUND for Grid 0;0")
      * @param parameters the parameters for the job
      */
-    public void enqueueJob(String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
+    public void enqueueJob(
+            String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
         enqueueJob(new Job(getWorldId(), executor, type, location, titleSuffix, parameters));
     }
 
@@ -144,11 +137,7 @@ public class WorkflowContext {
      * @param record the journal record to add, can be used to store any information about the workflow execution, e.g. intermediate results, debug information, etc.
      */
     public void addRecord(JournalRecord record) {
-        journalService.addWorkflowJournalRecord(
-                worldId,
-                workflowId,
-                record
-        );
+        journalService.addWorkflowJournalRecord(worldId, workflowId, record);
     }
 
     /**
@@ -181,7 +170,7 @@ public class WorkflowContext {
      * Complete the workflow with a success status and a result.
      * @param result the result to store in the journal, can be used to store any information about the workflow completion, e.g. output data or summary of the workflow execution.
      */
-    public void doComplete(Map<String,Object> result) {
+    public void doComplete(Map<String, Object> result) {
         addRecord(new ResultRecord(result));
         updateWorkflowStatus(StatusRecord.COMPLETED);
     }
@@ -250,6 +239,11 @@ public class WorkflowContext {
         return getEvent().getData().get(JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE);
     }
 
-    public record Job(String worldId, String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
-    }
+    public record Job(
+            String worldId,
+            String executor,
+            String type,
+            String location,
+            String titleSuffix,
+            Map<String, String> parameters) {}
 }

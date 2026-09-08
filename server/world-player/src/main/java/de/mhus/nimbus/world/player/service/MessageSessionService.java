@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.session.SessionCommandService;
 import de.mhus.nimbus.world.shared.session.SessionCommandTarget;
 import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Receives session commands from Redis and dispatches them to matching player sessions.
@@ -49,7 +48,8 @@ public class MessageSessionService {
     @PostConstruct
     public void subscribe() {
         redisMessaging.subscribeGlobal(SessionCommandService.REDIS_CHANNEL_SESSION_CMD, this::handleSessionCommand);
-        log.info("Subscribed to global session command channel (channel: world:global:{})",
+        log.info(
+                "Subscribed to global session command channel (channel: world:global:{})",
                 SessionCommandService.REDIS_CHANNEL_SESSION_CMD);
     }
 
@@ -57,7 +57,8 @@ public class MessageSessionService {
         try {
             var node = objectMapper.readTree(message);
 
-            String targetTypeStr = node.has("targetType") ? node.get("targetType").asText() : null;
+            String targetTypeStr =
+                    node.has("targetType") ? node.get("targetType").asText() : null;
             String target = node.has("target") ? node.get("target").asText() : null;
             String cmd = node.has("cmd") ? node.get("cmd").asText() : null;
             Integer hexQ = node.has("hexQ") ? node.get("hexQ").asInt() : null;
@@ -102,20 +103,24 @@ public class MessageSessionService {
         }
     }
 
-    private boolean matchesTarget(PlayerSession session, SessionCommandTarget targetType, String target,
-                                   Integer hexQ, Integer hexR) {
+    private boolean matchesTarget(
+            PlayerSession session, SessionCommandTarget targetType, String target, Integer hexQ, Integer hexR) {
         return switch (targetType) {
             case ALL -> true;
             case TEAM -> target != null && target.equals(session.getCachedTeamId());
             case PLAYER -> target != null && target.equals(session.getEntityId());
-            case WORLD -> target != null && session.getWorldId() != null
-                    && session.getWorldId().getFullId().startsWith(target);
-            case HEX_GRID -> target != null
-                    && hexQ != null && hexR != null
-                    && session.getWorldId() != null
-                    && session.getWorldId().getFullId().equals(target)
-                    && hexQ.equals(session.getCachedHexQ())
-                    && hexR.equals(session.getCachedHexR());
+            case WORLD ->
+                target != null
+                        && session.getWorldId() != null
+                        && session.getWorldId().getFullId().startsWith(target);
+            case HEX_GRID ->
+                target != null
+                        && hexQ != null
+                        && hexR != null
+                        && session.getWorldId() != null
+                        && session.getWorldId().getFullId().equals(target)
+                        && hexQ.equals(session.getCachedHexQ())
+                        && hexR.equals(session.getCachedHexR());
         };
     }
 }

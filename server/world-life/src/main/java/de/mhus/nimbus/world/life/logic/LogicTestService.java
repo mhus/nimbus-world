@@ -4,12 +4,11 @@ import de.mhus.nimbus.world.shared.world.LogicConditionService;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Service for testing Logic Machine rules in world-life.
@@ -30,8 +29,7 @@ public class LogicTestService {
     private final LogicMachineService logicMachineService;
     private final LogicSpelService spelService;
 
-    public Map<String, Object> testCondition(String worldId, String ruleId,
-                                              Map<String, Object> inlineData) {
+    public Map<String, Object> testCondition(String worldId, String ruleId, Map<String, Object> inlineData) {
         return conditionService.testCondition(worldId, ruleId, inlineData);
     }
 
@@ -59,8 +57,7 @@ public class LogicTestService {
             result.put("flagsBefore", flagsBefore);
 
             // Check condition
-            String resolvedCondition = LogicConditionService.resolveShorthand(
-                    rule.getSpelCondition(), rulePackage);
+            String resolvedCondition = LogicConditionService.resolveShorthand(rule.getSpelCondition(), rulePackage);
             boolean conditionResult = conditionService.checkCondition(worldId, resolvedCondition);
             result.put("conditionResult", conditionResult);
 

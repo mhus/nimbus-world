@@ -20,8 +20,7 @@ public class WChestInstanceListener implements WWorldInstanceListener {
     private final WChestService chestService;
 
     @Override
-    public void worldInstanceCreated(WorldInstanceEvent event) {
-    }
+    public void worldInstanceCreated(WorldInstanceEvent event) {}
 
     @Override
     public void worldInstanceDeleted(WorldInstanceEvent event) {

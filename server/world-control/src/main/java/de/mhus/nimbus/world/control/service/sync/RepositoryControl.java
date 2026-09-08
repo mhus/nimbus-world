@@ -22,7 +22,8 @@ public interface RepositoryControl {
      * @param password       Git password/token for authentication (optional)
      * @throws IOException if initialization fails
      */
-    void initOrClone(Path localPath, String repositoryUrl, String branch, String username, String password) throws IOException;
+    void initOrClone(Path localPath, String repositoryUrl, String branch, String username, String password)
+            throws IOException;
 
     /**
      * Pull latest changes from remote.

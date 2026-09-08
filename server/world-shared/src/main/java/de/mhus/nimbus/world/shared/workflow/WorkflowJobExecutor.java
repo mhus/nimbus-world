@@ -3,19 +3,14 @@ package de.mhus.nimbus.world.shared.workflow;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(
-        value = "nimbus.services.workflows",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.workflows", havingValue = "true", matchIfMissing = false)
 public class WorkflowJobExecutor implements JobExecutor {
 
     public static final String NAME = "workflow-job-executor";
@@ -34,9 +29,7 @@ public class WorkflowJobExecutor implements JobExecutor {
                 job.getWorldId(),
                 workflowName,
                 job.getParameters() != null ? job.getParameters() : Map.of(),
-                job.getId()
-        );
+                job.getId());
         return JobResult.async("workflowId:" + workflowId);
     }
-
 }

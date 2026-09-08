@@ -2,14 +2,13 @@ package de.mhus.nimbus.world.life.service;
 
 import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
+import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registers this world-life pod's URL in Redis for each active world.

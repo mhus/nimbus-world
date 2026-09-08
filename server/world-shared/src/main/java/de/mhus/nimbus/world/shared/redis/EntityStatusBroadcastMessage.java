@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.redis;
 
 import de.mhus.nimbus.generated.types.EntityStatusUpdate;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Message format for entity status broadcasts via Redis.

@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.generator.composer.pathfinding;
 
+import java.util.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
 
 /**
  * A* pathfinding algorithm for routing streets through hex grid villages.

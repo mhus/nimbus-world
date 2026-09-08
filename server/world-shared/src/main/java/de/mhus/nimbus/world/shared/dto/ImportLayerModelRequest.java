@@ -18,37 +18,29 @@ public record ImportLayerModelRequest(
         /**
          * Optional: Override model name from JSON.
          */
-        @TypeScript(optional = true)
-        String name,
+        @TypeScript(optional = true) String name,
 
         /**
          * Optional: Override mount X coordinate from JSON.
          */
-        @TypeScript(optional = true)
-        Integer mountX,
+        @TypeScript(optional = true) Integer mountX,
 
         /**
          * Optional: Override mount Y coordinate from JSON.
          */
-        @TypeScript(optional = true)
-        Integer mountY,
+        @TypeScript(optional = true) Integer mountY,
 
         /**
          * Optional: Override mount Z coordinate from JSON.
          */
-        @TypeScript(optional = true)
-        Integer mountZ,
+        @TypeScript(optional = true) Integer mountZ,
 
         /**
          * Optional: Override rotation from JSON (0-3, in 90 degree steps).
          */
-        @TypeScript(optional = true)
-        Integer rotation,
+        @TypeScript(optional = true) Integer rotation,
 
         /**
          * Optional: Override order from JSON.
          */
-        @TypeScript(optional = true)
-        Integer order
-) {
-}
+        @TypeScript(optional = true) Integer order) {}

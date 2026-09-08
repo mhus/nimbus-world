@@ -6,21 +6,20 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.Area;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeDistance;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
-import de.mhus.nimbus.world.generator.composer.biome.BiomeDistance;
 import de.mhus.nimbus.world.generator.composer.town.TownConnectionPoint;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Point represents a specific location within a biome.
@@ -193,7 +192,6 @@ public abstract class Point extends Feature {
          */
         @Deprecated
         private String placedInBiome;
-
     }
 
     /**
@@ -273,7 +271,7 @@ public abstract class Point extends Feature {
         int divider = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
         setHexLocalPosition(new de.mhus.nimbus.world.shared.world.HexLocalPosition(
-            HexVector2.builder().q(0).r(0).build(), divider, size));
+                HexVector2.builder().q(0).r(0).build(), divider, size));
     }
 
     /**
@@ -319,14 +317,14 @@ public abstract class Point extends Feature {
         // NE(0°), E(60°), SE(120°), SW(180°), W(240°), NW(300°)
         // N and S are mapped to nearest hex directions
         return switch (direction) {
-            case N -> 330;    // North (top spike) → rounds to NW/NE
-            case NE -> 0;     // Northeast: top-right side
-            case E -> 60;     // East: right side
-            case SE -> 120;   // Southeast: bottom-right side
-            case S -> 150;    // South (bottom spike) → rounds to SE/SW
-            case SW -> 180;   // Southwest: bottom-left side
-            case W -> 240;    // West: left side
-            case NW -> 300;   // Northwest: top-left side
+            case N -> 330; // North (top spike) → rounds to NW/NE
+            case NE -> 0; // Northeast: top-right side
+            case E -> 60; // East: right side
+            case SE -> 120; // Southeast: bottom-right side
+            case S -> 150; // South (bottom spike) → rounds to SE/SW
+            case SW -> 180; // Southwest: bottom-left side
+            case W -> 240; // West: left side
+            case NW -> 300; // Northwest: top-left side
         };
     }
 
@@ -345,8 +343,8 @@ public abstract class Point extends Feature {
             }
         }
         return pointComposed.getPlacedCoordinate() != null
-            && pointComposed.getPlacedLx() != null
-            && pointComposed.getPlacedLz() != null;
+                && pointComposed.getPlacedLx() != null
+                && pointComposed.getPlacedLz() != null;
     }
 
     /**
@@ -364,21 +362,22 @@ public abstract class Point extends Feature {
         // New format: shared HexLocalPosition
         if (pointComposed.getHexLocalPosition() != null) {
             de.mhus.nimbus.world.shared.world.HexLocalPosition pos = pointComposed.getHexLocalPosition();
-            return String.format("hex[%d,%d] local[%d,%d] (divider=%d) in %s",
-                gridCoord.getQ(), gridCoord.getR(),
-                pos.position().getQ(), pos.position().getR(),
-                pos.divider(),
-                biomeName);
+            return String.format(
+                    "hex[%d,%d] local[%d,%d] (divider=%d) in %s",
+                    gridCoord.getQ(),
+                    gridCoord.getR(),
+                    pos.position().getQ(),
+                    pos.position().getR(),
+                    pos.divider(),
+                    biomeName);
         }
 
         // New format: shared HexLocalEdgeVector
         if (pointComposed.getHexLocalEdgeVector() != null) {
             de.mhus.nimbus.world.shared.world.HexLocalEdgeVector edge = pointComposed.getHexLocalEdgeVector();
-            return String.format("hex[%d,%d] edge[%s %d/%d] in %s",
-                gridCoord.getQ(), gridCoord.getR(),
-                edge.side(),
-                edge.numerator(), edge.denominator(),
-                biomeName);
+            return String.format(
+                    "hex[%d,%d] edge[%s %d/%d] in %s",
+                    gridCoord.getQ(), gridCoord.getR(), edge.side(), edge.numerator(), edge.denominator(), biomeName);
         }
 
         // Legacy format: placedLx/placedLz
@@ -387,10 +386,13 @@ public abstract class Point extends Feature {
         Integer placedLz = pointComposed.getPlacedLz();
         String placedInBiome = pointComposed.getPlacedInBiome();
         if (placedCoordinate != null && placedLx != null && placedLz != null) {
-            return String.format("hex[%d,%d] local[%d,%d] in %s",
-                placedCoordinate.getQ(), placedCoordinate.getR(),
-                placedLx, placedLz,
-                placedInBiome != null ? placedInBiome : "unknown");
+            return String.format(
+                    "hex[%d,%d] local[%d,%d] in %s",
+                    placedCoordinate.getQ(),
+                    placedCoordinate.getR(),
+                    placedLx,
+                    placedLz,
+                    placedInBiome != null ? placedInBiome : "unknown");
         }
 
         return "placed but no position data";

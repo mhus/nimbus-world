@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * MountainFacePoint represents a steep mountain face with branching ridges.
@@ -38,9 +37,9 @@ public class MountainFacePoint extends Point {
      * Dimension of the mountain face - affects size and complexity
      */
     public enum Dimension {
-        SMALL,   // Small cliff: 3-4 branches, 30-40 length, 1 sub-branch
-        MEDIUM,  // Medium cliff: 5-6 branches, 50-60 length, 2-3 sub-branches
-        LARGE    // Large cliff: 7-9 branches, 70-90 length, 3-4 sub-branches
+        SMALL, // Small cliff: 3-4 branches, 30-40 length, 1 sub-branch
+        MEDIUM, // Medium cliff: 5-6 branches, 50-60 length, 2-3 sub-branches
+        LARGE // Large cliff: 7-9 branches, 70-90 length, 3-4 sub-branches
     }
 
     /**
@@ -127,26 +126,30 @@ public class MountainFacePoint extends Point {
      * @param context The composition context
      */
     public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
-        log.debug("Configuring HexGrid for MountainFacePoint '{}' at [{},{}] with hexGridSize: {}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
+        log.debug(
+                "Configuring HexGrid for MountainFacePoint '{}' at [{},{}] with hexGridSize: {}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                hexGridSize);
 
         // Apply dimension defaults if specific values not set
         applyDimensionDefaults();
 
         // Create mountain face configuration
         MountainFaceConfig config = MountainFaceConfig.builder()
-            .faceName(getName())
-            .faceTitle(getTitle())
-            .dimension(dimension)
-            .baseHeight(baseHeight)
-            .faceHeight(faceHeight)
-            .branches(branches)
-            .branchLength(branchLength)
-            .subBranches(subBranches)
-            .recursionDepth(recursionDepth)
-            .seed(seed != null ? seed : System.currentTimeMillis())
-            .material(material)
-            .build();
+                .faceName(getName())
+                .faceTitle(getTitle())
+                .dimension(dimension)
+                .baseHeight(baseHeight)
+                .faceHeight(faceHeight)
+                .branches(branches)
+                .branchLength(branchLength)
+                .subBranches(subBranches)
+                .recursionDepth(recursionDepth)
+                .seed(seed != null ? seed : System.currentTimeMillis())
+                .material(material)
+                .build();
 
         // Serialize to JSON
         String configJson = serializeToJson(config);
@@ -155,17 +158,23 @@ public class MountainFacePoint extends Point {
         FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
         if (grid == null) {
-            log.error("MountainFacePoint '{}' cannot configure grid [{},{}] - registry access failed",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error(
+                    "MountainFacePoint '{}' cannot configure grid [{},{}] - registry access failed",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
         // Add g_mountain_face parameter as aspect (with collision check)
         String existingFace = grid.getParameters().get("g_mountain_face");
         if (existingFace != null && !existingFace.isBlank()) {
-            log.warn("MountainFacePoint '{}' - grid [{},{}] already has g_mountain_face parameter! " +
-                "Another aspect already defined a mountain face here. Skipping this MountainFacePoint.",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.warn(
+                    "MountainFacePoint '{}' - grid [{},{}] already has g_mountain_face parameter! "
+                            + "Another aspect already defined a mountain face here. Skipping this MountainFacePoint.",
+                    getName(),
+                    gridCoordinate.getQ(),
+                    gridCoordinate.getR());
             return;
         }
 
@@ -181,8 +190,13 @@ public class MountainFacePoint extends Point {
             grid.getParameters().putAll(parameters);
         }
 
-        log.debug("MountainFacePoint '{}' configured on grid [{},{}] with dimension={}, height={}",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR(), dimension, faceHeight);
+        log.debug(
+                "MountainFacePoint '{}' configured on grid [{},{}] with dimension={}, height={}",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR(),
+                dimension,
+                faceHeight);
     }
 
     /**
@@ -196,25 +210,25 @@ public class MountainFacePoint extends Point {
 
         if (branches == null) {
             branches = switch (dimension) {
-                case SMALL -> 3 + rng.nextInt(2);   // 3-4
-                case MEDIUM -> 5 + rng.nextInt(2);  // 5-6
-                case LARGE -> 7 + rng.nextInt(3);   // 7-9
+                case SMALL -> 3 + rng.nextInt(2); // 3-4
+                case MEDIUM -> 5 + rng.nextInt(2); // 5-6
+                case LARGE -> 7 + rng.nextInt(3); // 7-9
             };
         }
 
         if (branchLength == null) {
             branchLength = switch (dimension) {
-                case SMALL -> 30 + rng.nextInt(11);  // 30-40
+                case SMALL -> 30 + rng.nextInt(11); // 30-40
                 case MEDIUM -> 50 + rng.nextInt(11); // 50-60
-                case LARGE -> 70 + rng.nextInt(21);  // 70-90
+                case LARGE -> 70 + rng.nextInt(21); // 70-90
             };
         }
 
         if (subBranches == null) {
             subBranches = switch (dimension) {
-                case SMALL -> 1;                     // 1
-                case MEDIUM -> 2 + rng.nextInt(2);   // 2-3
-                case LARGE -> 3 + rng.nextInt(2);    // 3-4
+                case SMALL -> 1; // 1
+                case MEDIUM -> 2 + rng.nextInt(2); // 2-3
+                case LARGE -> 3 + rng.nextInt(2); // 3-4
             };
         }
     }
@@ -224,8 +238,7 @@ public class MountainFacePoint extends Point {
      */
     private String serializeToJson(MountainFaceConfig config) {
         try {
-            tools.jackson.databind.ObjectMapper mapper =
-                new tools.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize MountainFaceConfig to JSON", e);
@@ -244,16 +257,18 @@ public class MountainFacePoint extends Point {
      */
     private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.error("MountainFacePoint '{}' has no composition context - cannot access grid registry",
-                getName());
+            log.error("MountainFacePoint '{}' has no composition context - cannot access grid registry", getName());
             return null;
         }
 
         // Get grid from central registry (will be created if not exists)
         FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.debug("MountainFacePoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
-            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        log.debug(
+                "MountainFacePoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
+                getName(),
+                gridCoordinate.getQ(),
+                gridCoordinate.getR());
 
         return grid;
     }

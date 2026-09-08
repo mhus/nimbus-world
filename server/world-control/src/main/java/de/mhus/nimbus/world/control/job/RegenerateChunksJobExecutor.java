@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.job;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -12,13 +13,11 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import de.mhus.nimbus.shared.types.WorldId;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Job executor for marking chunks as dirty to trigger regeneration.
@@ -63,9 +62,7 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
             String worldId = job.getWorldId();
             String reason = params.getOrDefault("reason", "mcp-regenerate-chunks");
 
-            var wid = WorldId.of(worldId).orElseThrow(
-                    () -> new JobExecutionException("Invalid worldId: " + worldId)
-            );
+            var wid = WorldId.of(worldId).orElseThrow(() -> new JobExecutionException("Invalid worldId: " + worldId));
 
             String chunks = params.get("chunks");
             String hexQ = params.get("hexQ");
@@ -112,7 +109,8 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
         return JobResult.success(msg);
     }
 
-    private JobResult executeHexGrid(WorldId wid, String worldId, Map<String, String> params, String reason) throws JobExecutionException {
+    private JobResult executeHexGrid(WorldId wid, String worldId, Map<String, String> params, String reason)
+            throws JobExecutionException {
         String hexR = params.get("hexR");
         if (hexR == null) {
             throw new JobExecutionException("'hexR' is required when 'hexQ' is specified");
@@ -121,14 +119,14 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
         int q = Integer.parseInt(params.get("hexQ"));
         int r = Integer.parseInt(hexR);
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new JobExecutionException("World not found: " + worldId)
-        );
+        WWorld world = worldService
+                .getByWorldId(wid)
+                .orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
 
         HexVector2 hexPos = HexVector2.builder().q(q).r(r).build();
-        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos).orElseThrow(
-                () -> new JobExecutionException("HexGrid not found at q=" + q + " r=" + r)
-        );
+        WHexGrid hexGrid = hexGridService
+                .findByWorldIdAndPosition(worldId, hexPos)
+                .orElseThrow(() -> new JobExecutionException("HexGrid not found at q=" + q + " r=" + r));
 
         Set<String> affected = dirtyChunkService.markHexGridDirty(world, hexGrid, reason);
 
@@ -137,12 +135,14 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
         return JobResult.success(msg);
     }
 
-    private JobResult executeLayer(WorldId wid, String worldId, String layerName, Map<String, String> params, String reason) throws JobExecutionException {
+    private JobResult executeLayer(
+            WorldId wid, String worldId, String layerName, Map<String, String> params, String reason)
+            throws JobExecutionException {
         boolean recreateLayer = parseBooleanParameter(params, "recreateLayer", false);
 
-        WWorld world = worldService.getByWorldId(wid).orElseThrow(
-                () -> new JobExecutionException("World not found: " + worldId)
-        );
+        WWorld world = worldService
+                .getByWorldId(wid)
+                .orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
 
         Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
         if (layerOpt.isEmpty()) {
@@ -179,7 +179,9 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
 
         int dirtyCount = chunkKeys != null ? chunkKeys.size() : 0;
         String msg = recreateLayer
-                ? String.format("Recreated layer '%s' (%d terrain chunks), marked %d chunks dirty", layerName, recreatedChunks, dirtyCount)
+                ? String.format(
+                        "Recreated layer '%s' (%d terrain chunks), marked %d chunks dirty",
+                        layerName, recreatedChunks, dirtyCount)
                 : String.format("Marked %d chunks dirty for layer '%s'", dirtyCount, layerName);
         log.info(msg);
         return JobResult.success(msg);

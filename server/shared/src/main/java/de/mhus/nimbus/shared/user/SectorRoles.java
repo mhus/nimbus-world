@@ -12,4 +12,3 @@ public enum SectorRoles {
     ADMIN,
     PLAYER // deprecated -> use USER
 }
-

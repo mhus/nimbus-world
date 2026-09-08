@@ -29,7 +29,7 @@ public @interface GenerateTypeScript {
      * Wenn gesetzt, wird dieser Name anstelle des Java-Klassennamens verwendet.
      * Beispiel:
      *   @GenerateTypeScript(value="models", name="Human")
-     * erzeugt eine Datei "Human.ts" (sofern kein expliziter Dateiname via value mit 
+     * erzeugt eine Datei "Human.ts" (sofern kein expliziter Dateiname via value mit
      * ".ts" angegeben ist) mit "export interface Human { ... }".
      */
     String name() default "";

@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.control.service;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.EditAction;
 import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
@@ -20,12 +19,6 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Edit state management service.
@@ -69,15 +68,15 @@ public class EditService {
      */
     @Transactional(readOnly = true)
     public EditState getEditState(String worldId, String sessionId) {
-        return wSessionService.getEditState(sessionId).orElseGet(() ->
-                EditState.builder()
+        return wSessionService
+                .getEditState(sessionId)
+                .orElseGet(() -> EditState.builder()
                         .worldId(worldId)
                         .editMode(false)
                         .editAction(EditAction.OPEN_CONFIG_DIALOG)
                         .selectedGroup(null)
                         .lastUpdated(Instant.now())
-                        .build()
-        );
+                        .build());
     }
 
     /**
@@ -133,8 +132,7 @@ public class EditService {
                 state.setModelName(null);
             }
 
-            log.debug("Enriched EditState: layerDataId={}, modelName={}",
-                    state.getLayerDataId(), state.getModelName());
+            log.debug("Enriched EditState: layerDataId={}, modelName={}", state.getLayerDataId(), state.getModelName());
         }
     }
 
@@ -200,8 +198,7 @@ public class EditService {
             action = EditAction.OPEN_CONFIG_DIALOG; // Default
         }
 
-        log.debug("Executing edit action: session={} action={} pos=({},{},{})",
-                sessionId, action, x, y, z);
+        log.debug("Executing edit action: session={} action={} pos=({},{},{})", sessionId, action, x, y, z);
 
         switch (action) {
             case OPEN_CONFIG_DIALOG:
@@ -300,7 +297,7 @@ public class EditService {
                 sessionId,
                 origin,
                 "client",
-                List.of("setSelectedEditBlock", String.valueOf(x),String.valueOf(y),String.valueOf(z) ),
+                List.of("setSelectedEditBlock", String.valueOf(x), String.valueOf(y), String.valueOf(z)),
                 ctx);
     }
 
@@ -311,15 +308,11 @@ public class EditService {
                 .originServer("world-control")
                 .build();
         worldClient.sendPlayerCommand(
-                worldId,
-                sessionId,
-                origin,
-                "client",
-                List.of("openComponent", "edit_config" ),
-                ctx);
+                worldId, sessionId, origin, "client", List.of("openComponent", "edit_config"), ctx);
     }
 
-    private void clientOpenBlockEditorDialogAtClient(String worldId, String sessionId, String origin, int x, int y, int z) {
+    private void clientOpenBlockEditorDialogAtClient(
+            String worldId, String sessionId, String origin, int x, int y, int z) {
         CommandContext ctx = CommandContext.builder()
                 .worldId(worldId)
                 .sessionId(sessionId)
@@ -330,7 +323,7 @@ public class EditService {
                 sessionId,
                 origin,
                 "client",
-                List.of("openComponent", "block_editor", String.valueOf(x),String.valueOf(y),String.valueOf(z) ),
+                List.of("openComponent", "block_editor", String.valueOf(x), String.valueOf(y), String.valueOf(z)),
                 ctx);
     }
 
@@ -344,7 +337,6 @@ public class EditService {
         redisService.putValue(worldId, key + "selectedBlockY", String.valueOf(y), EDIT_STATE_TTL);
         redisService.putValue(worldId, key + "selectedBlockZ", String.valueOf(z), EDIT_STATE_TTL);
         log.debug("Selected block updated: session={} pos=({},{},{})", sessionId, x, y, z);
-
     }
 
     /**
@@ -363,7 +355,8 @@ public class EditService {
      * Store marked block info (complete block data with metadata) in Redis.
      * Used for copy/move operations.
      */
-    private void storeBlockDataRegistry(String worldId, String sessionId, de.mhus.nimbus.world.shared.dto.BlockInfoDto blockInfo) {
+    private void storeBlockDataRegistry(
+            String worldId, String sessionId, de.mhus.nimbus.world.shared.dto.BlockInfoDto blockInfo) {
         if (blockInfo == null) {
             wSessionService.deleteBlockRegister(sessionId);
             log.debug("Register block info cleared: session={}", sessionId);
@@ -386,7 +379,6 @@ public class EditService {
         }
     }
 
-
     /**
      * Get selected block coordinates (if set).
      */
@@ -402,11 +394,8 @@ public class EditService {
         }
 
         try {
-            return Optional.of(new BlockPosition(
-                    Integer.parseInt(xStr),
-                    Integer.parseInt(yStr),
-                    Integer.parseInt(zStr)
-            ));
+            return Optional.of(
+                    new BlockPosition(Integer.parseInt(xStr), Integer.parseInt(yStr), Integer.parseInt(zStr)));
         } catch (NumberFormatException e) {
             log.warn("Invalid block position in Redis: session={}", sessionId);
             return Optional.empty();
@@ -468,8 +457,11 @@ public class EditService {
         // Trigger apply changes via WEditCacheDirtyService
         editCacheDirtyService.applyChanges(worldId, layerDataId);
 
-        log.info("Apply changes triggered: worldId={}, layerDataId={}, layer={}",
-                worldId, layerDataId, state.getSelectedLayer());
+        log.info(
+                "Apply changes triggered: worldId={}, layerDataId={}, layer={}",
+                worldId,
+                layerDataId,
+                state.getSelectedLayer());
     }
 
     /**
@@ -500,8 +492,12 @@ public class EditService {
         // Discard changes via WEditCacheDirtyService
         long deletedCount = editCacheDirtyService.discardChanges(worldId, layerDataId);
 
-        log.info("Discard changes completed: worldId={}, layerDataId={}, layer={}, deleted={}",
-                worldId, layerDataId, state.getSelectedLayer(), deletedCount);
+        log.info(
+                "Discard changes completed: worldId={}, layerDataId={}, layer={}, deleted={}",
+                worldId,
+                layerDataId,
+                state.getSelectedLayer(),
+                deletedCount);
 
         return deletedCount;
     }
@@ -514,8 +510,8 @@ public class EditService {
      * @return List of edit cache statistics per layer
      */
     public List<Map<String, Object>> getEditCacheStatistics(String worldId) {
-        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        WorldId parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         boolean allEpochs = !parsedWorldId.isInstance();
 
         // Get all layers for this world (layerService always uses base worldId)
@@ -542,16 +538,16 @@ public class EditService {
 
             // Calculate timestamps
             Instant firstDate = caches.stream()
-                .map(de.mhus.nimbus.world.shared.layer.WEditCache::getCreatedAt)
-                .filter(d -> d != null)
-                .min(Instant::compareTo)
-                .orElse(null);
+                    .map(de.mhus.nimbus.world.shared.layer.WEditCache::getCreatedAt)
+                    .filter(d -> d != null)
+                    .min(Instant::compareTo)
+                    .orElse(null);
 
             Instant lastDate = caches.stream()
-                .map(de.mhus.nimbus.world.shared.layer.WEditCache::getModifiedAt)
-                .filter(d -> d != null)
-                .max(Instant::compareTo)
-                .orElse(null);
+                    .map(de.mhus.nimbus.world.shared.layer.WEditCache::getModifiedAt)
+                    .filter(d -> d != null)
+                    .max(Instant::compareTo)
+                    .orElse(null);
 
             Map<String, Object> stat = new HashMap<>();
             stat.put("layerDataId", layerDataId);
@@ -611,11 +607,7 @@ public class EditService {
         Block pastedBlock = BlockUtil.cloneBlock(originalBlock);
 
         // Set new position
-        pastedBlock.setPosition(Vector3Int.builder()
-                .x(x)
-                .y(y)
-                .z(z)
-                .build());
+        pastedBlock.setPosition(Vector3Int.builder().x(x).y(y).z(z).build());
 
         // Get edit state to determine layer
         EditState editState = getEditState(worldId, sessionId);
@@ -640,7 +632,7 @@ public class EditService {
             String selectedModelId = editState.getSelectedModelId();
             if (selectedModelId != null) {
                 Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt =
-                    layerService.loadModelById(selectedModelId);
+                        layerService.loadModelById(selectedModelId);
                 if (modelOpt.isPresent()) {
                     modelName = modelOpt.get().getName();
                 }
@@ -648,15 +640,21 @@ public class EditService {
         }
 
         // Calculate chunk coordinates
-        de.mhus.nimbus.world.shared.world.WWorld world = worldService.getByWorldId(worldId)
+        de.mhus.nimbus.world.shared.world.WWorld world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalStateException("World not found: " + worldId));
 
         // Save to WEditCache with modelName
         editCacheService.doSetAndSendBlock(world, layerDataId, modelName, pastedBlock, editState.getSelectedGroup());
 
-        log.info("Block pasted: session={} layer={} to=({},{},{}) type={}",
-                sessionId, layer.getName(), x, y, z, pastedBlock.getBlockTypeId());
-
+        log.info(
+                "Block pasted: session={} layer={} to=({},{},{}) type={}",
+                sessionId,
+                layer.getName(),
+                x,
+                y,
+                z,
+                pastedBlock.getBlockTypeId());
     }
 
     /**
@@ -691,8 +689,13 @@ public class EditService {
             // This handles all the overlay logic, client updates, etc.
             setBlock(worldId, sessionId, blockToClone, x, y, z);
 
-            log.info("Block cloned: session={} pos=({},{},{}) type={}",
-                    sessionId, x, y, z, blockToClone.getBlockTypeId());
+            log.info(
+                    "Block cloned: session={} pos=({},{},{}) type={}",
+                    sessionId,
+                    x,
+                    y,
+                    z,
+                    blockToClone.getBlockTypeId());
         } catch (Exception e) {
             log.error("Failed to clone block: session={} pos=({},{},{})", sessionId, x, y, z, e);
         }
@@ -705,7 +708,8 @@ public class EditService {
         if (state.getSelectedLayer() == null) {
             return Optional.empty();
         }
-        return layerService.findLayer(state.getWorldId(), state.getSelectedLayer())
+        return layerService
+                .findLayer(state.getWorldId(), state.getSelectedLayer())
                 .filter(WLayer::isEnabled);
     }
 
@@ -765,13 +769,7 @@ public class EditService {
                 .sessionId(sessionId)
                 .originServer("world-control")
                 .build();
-        worldClient.sendPlayerCommand(
-                worldId,
-                sessionId,
-                playerUrl,
-                "client",
-                List.of("setSelectedEditBlock"),
-                ctx);
+        worldClient.sendPlayerCommand(worldId, sessionId, playerUrl, "client", List.of("setSelectedEditBlock"), ctx);
 
         log.info("Marked block cleared: worldId={}, session={}", worldId, sessionId);
     }
@@ -832,26 +830,27 @@ public class EditService {
     public void setBlockRegisterData(String worldId, String sessionId, String blockJson) {
         try {
 
-            if (blockJson == null ) {
+            if (blockJson == null) {
                 storeBlockDataRegistry(worldId, sessionId, null);
-                log.info("Cleared block register data: worldId={}, sessionId={}",
-                        worldId, sessionId);
+                log.info("Cleared block register data: worldId={}, sessionId={}", worldId, sessionId);
                 return;
             }
             // Parse block JSON
             Block block = objectMapper.readValue(blockJson, Block.class);
 
             // Use existing store method with DTO
-            var blockInfo = new de.mhus.nimbus.world.shared.dto.BlockInfoDto(
-                    block, false, null, null, null, null, null);
+            var blockInfo =
+                    new de.mhus.nimbus.world.shared.dto.BlockInfoDto(block, false, null, null, null, null, null);
             storeBlockDataRegistry(worldId, sessionId, blockInfo);
 
-            log.info("Register block set from palette: worldId={}, sessionId={}, blockTypeId={}",
-                    worldId, sessionId, block.getBlockTypeId());
+            log.info(
+                    "Register block set from palette: worldId={}, sessionId={}, blockTypeId={}",
+                    worldId,
+                    sessionId,
+                    block.getBlockTypeId());
 
         } catch (Exception e) {
-            log.error("Failed to set register block data: worldId={}, sessionId={}",
-                    worldId, sessionId, e);
+            log.error("Failed to set register block data: worldId={}, sessionId={}", worldId, sessionId, e);
             throw new RuntimeException("Failed to set marked block data", e);
         }
     }
@@ -902,11 +901,7 @@ public class EditService {
 
         // Set position in block if not already set
         if (block.getPosition() == null) {
-            block.setPosition(Vector3Int.builder()
-                    .x(x)
-                    .y(y)
-                    .z(z)
-                    .build());
+            block.setPosition(Vector3Int.builder().x(x).y(y).z(z).build());
         }
 
         // Normalize legacy status "0" to "default"
@@ -943,7 +938,7 @@ public class EditService {
             if (selectedModelId != null) {
                 // Load model to get title
                 Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt =
-                    layerService.loadModelById(selectedModelId);
+                        layerService.loadModelById(selectedModelId);
                 if (modelOpt.isPresent()) {
                     modelName = modelOpt.get().getName();
                 } else {
@@ -955,7 +950,8 @@ public class EditService {
         }
 
         // Get world and calculate chunk key
-        var world = worldService.getByWorldId(worldId)
+        var world = worldService
+                .getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalStateException("World not found: " + worldId));
 
         editCacheService.doSetAndSendBlock(world, layerDataId, modelName, block, editState.getSelectedGroup());
@@ -979,7 +975,7 @@ public class EditService {
         if (state.getSelectedLayer() != null) {
             Optional<WLayer> layerOpt = layerService.findLayer(worldId, state.getSelectedLayer());
             if (layerOpt.isPresent() && layerOpt.get().getLayerType() == LayerType.MODEL) {
-                displayModelInClient(worldId, sessionId, layerOpt.get(),state.getSelectedGroup());
+                displayModelInClient(worldId, sessionId, layerOpt.get(), state.getSelectedGroup());
             }
         }
     }
@@ -1008,7 +1004,7 @@ public class EditService {
 
         // Also load blocks from WEditCache for this layer
         List<de.mhus.nimbus.world.shared.layer.WEditCache> editCacheBlocks =
-            editCacheService.findByWorldIdAndLayerDataId(worldId, layer.getLayerDataId());
+                editCacheService.findByWorldIdAndLayerDataId(worldId, layer.getLayerDataId());
 
         if (positions.isEmpty() && editCacheBlocks.isEmpty()) {
             log.debug("No blocks found in models or edit cache for layer {}", layer.getName());
@@ -1047,7 +1043,7 @@ public class EditService {
                         block.getPosition().getY(),
                         block.getPosition().getZ(),
                         "#dddd00" // modified/cached blocks
-                );
+                        );
             }
         }
 
@@ -1069,12 +1065,15 @@ public class EditService {
                 sessionId,
                 playerUrl,
                 "client.ShowModelSelector",
-                List.of(),  // No arguments needed - uses session ID from context
-                ctx
-        );
+                List.of(), // No arguments needed - uses session ID from context
+                ctx);
 
-        log.info("Stored model selector in WSession and sent display command: layer={} session={} modelBlocks={} cachedBlocks={} total={}",
-                layer.getName(), sessionId, positions.size(), editCacheBlocks.size(),
+        log.info(
+                "Stored model selector in WSession and sent display command: layer={} session={} modelBlocks={} cachedBlocks={} total={}",
+                layer.getName(),
+                sessionId,
+                positions.size(),
+                editCacheBlocks.size(),
                 positions.size() + editCacheBlocks.size());
     }
 
@@ -1108,13 +1107,7 @@ public class EditService {
 
         // Send disable command to client: modelselector, 'disable'
         worldClient.sendPlayerCommand(
-                worldId,
-                sessionId,
-                playerUrl,
-                "client",
-                List.of("modelselector", "disable"),
-                ctx
-        );
+                worldId, sessionId, playerUrl, "client", List.of("modelselector", "disable"), ctx);
 
         log.info("Cleared model display and removed from WSession: session={}", sessionId);
     }

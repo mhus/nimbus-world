@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Job executor for recreating a complete MODEL-based layer from all WLayerModel documents.
@@ -55,8 +54,10 @@ public class RecreateModelBasedLayerJobExecutor implements JobExecutor {
 
             boolean markChunksDirty = parseBooleanParameter(params, "markChunksDirty", true);
 
-            log.info("Starting model-based layer recreation: layerDataId={} markChunksDirty={}",
-                    layerDataId, markChunksDirty);
+            log.info(
+                    "Starting model-based layer recreation: layerDataId={} markChunksDirty={}",
+                    layerDataId,
+                    markChunksDirty);
 
             // Execute recreation
             int chunksProcessed = layerService.recreateModelBasedLayer(job.getWorldId(), layerDataId, markChunksDirty);
@@ -66,8 +67,7 @@ public class RecreateModelBasedLayerJobExecutor implements JobExecutor {
             }
 
             String resultMessage = String.format(
-                    "Recreated model-based layer: layerDataId=%s chunks=%d",
-                    layerDataId, chunksProcessed);
+                    "Recreated model-based layer: layerDataId=%s chunks=%d", layerDataId, chunksProcessed);
 
             log.info(resultMessage);
             return JobResult.success(resultMessage);

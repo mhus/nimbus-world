@@ -6,16 +6,15 @@ import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing WChest entities.
@@ -40,8 +39,7 @@ public class WChestController extends BaseEditorController {
             Integer capacity,
             String keyId,
             Integer lockPickingDifficulty,
-            List<ItemRef> items
-    ) {}
+            List<ItemRef> items) {}
 
     public record ChestResponse(
             String id,
@@ -57,12 +55,9 @@ public class WChestController extends BaseEditorController {
             int lockPickingDifficulty,
             List<ItemRef> items,
             Instant createdAt,
-            Instant updatedAt
-    ) {}
+            Instant updatedAt) {}
 
-    public record ItemRefRequest(
-            ItemRef itemRef
-    ) {}
+    public record ItemRefRequest(ItemRef itemRef) {}
 
     private ChestResponse toResponse(WChest chest) {
         return new ChestResponse(
@@ -79,8 +74,7 @@ public class WChestController extends BaseEditorController {
                 chest.getLockPickingDifficulty(),
                 chest.getItems(),
                 chest.getCreatedAt(),
-                chest.getUpdatedAt()
-        );
+                chest.getUpdatedAt());
     }
 
     /**
@@ -108,9 +102,7 @@ public class WChestController extends BaseEditorController {
                 chests = chestService.findByWorldId(worldId);
             }
 
-            List<ChestResponse> result = chests.stream()
-                    .map(this::toResponse)
-                    .toList();
+            List<ChestResponse> result = chests.stream().map(this::toResponse).toList();
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return bad(e.getMessage());
@@ -122,9 +114,7 @@ public class WChestController extends BaseEditorController {
      * GET /control/regions/{regionId}/chests/user/{playerId}
      */
     @GetMapping("/user/{playerId}")
-    public ResponseEntity<?> listUserChests(
-            @PathVariable String worldId,
-            @PathVariable String playerId) {
+    public ResponseEntity<?> listUserChests(@PathVariable String worldId, @PathVariable String playerId) {
 
         var error2 = validateId(playerId, "playerId");
         if (error2 != null) return error2;
@@ -144,8 +134,7 @@ public class WChestController extends BaseEditorController {
      * GET /control/regions/{regionId}/chests/region
      */
     @GetMapping("/region")
-    public ResponseEntity<?> listRegionChests(
-            @PathVariable String worldId) {
+    public ResponseEntity<?> listRegionChests(@PathVariable String worldId) {
 
         // in this case worldId is a @region: collection
         try {
@@ -163,14 +152,13 @@ public class WChestController extends BaseEditorController {
      * GET /control/regions/{regionId}/chests/{title}
      */
     @GetMapping("/{name}")
-    public ResponseEntity<?> get(
-            @PathVariable String worldId,
-            @PathVariable String name) {
+    public ResponseEntity<?> get(@PathVariable String worldId, @PathVariable String name) {
 
         var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
-        return chestService.getByWorldIdAndName(worldId, name)
+        return chestService
+                .getByWorldIdAndName(worldId, name)
                 .<ResponseEntity<?>>map(chest -> ResponseEntity.ok(toResponse(chest)))
                 .orElseGet(() -> notFound("Chest not found: " + name));
     }
@@ -180,9 +168,7 @@ public class WChestController extends BaseEditorController {
      * POST /control/world/{worldId}/chests
      */
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String worldId,
-            @RequestBody ChestRequest request) {
+    public ResponseEntity<?> create(@PathVariable String worldId, @RequestBody ChestRequest request) {
 
         if (Strings.isBlank(request.name())) {
             return bad("title is required");
@@ -194,8 +180,8 @@ public class WChestController extends BaseEditorController {
 
         // Validate type-specific requirements
         if ((request.type() == WChest.ChestType.PLAYER
-                || request.type() == WChest.ChestType.BANK
-                || request.type() == WChest.ChestType.TRANSFER)
+                        || request.type() == WChest.ChestType.BANK
+                        || request.type() == WChest.ChestType.TRANSFER)
                 && Strings.isBlank(request.playerId())) {
             return bad("playerId is required for " + request.type() + " type chests");
         }
@@ -211,15 +197,15 @@ public class WChestController extends BaseEditorController {
                     request.title(),
                     request.description(),
                     request.playerId(),
-                    request.type()
-            );
+                    request.type());
 
             // Set additional fields
             chestService.updateChest(created.getId(), chest -> {
                 if (request.pin() != null) chest.setPin(request.pin());
                 if (request.capacity() != null) chest.setCapacity(request.capacity());
                 if (request.keyId() != null) chest.setKeyId(request.keyId());
-                if (request.lockPickingDifficulty() != null) chest.setLockPickingDifficulty(request.lockPickingDifficulty());
+                if (request.lockPickingDifficulty() != null)
+                    chest.setLockPickingDifficulty(request.lockPickingDifficulty());
             });
 
             // Add initial item references if provided
@@ -227,7 +213,9 @@ public class WChestController extends BaseEditorController {
                 for (ItemRef itemRef : request.items()) {
                     chestService.addItem(created.getId(), itemRef);
                 }
-                created = chestService.getByWorldIdAndName(worldId, request.name()).orElseThrow();
+                created = chestService
+                        .getByWorldIdAndName(worldId, request.name())
+                        .orElseThrow();
             }
 
             return ResponseEntity.created(URI.create("/control/world/" + worldId + "/chests/" + created.getName()))
@@ -243,9 +231,7 @@ public class WChestController extends BaseEditorController {
      */
     @PutMapping("/{name}")
     public ResponseEntity<?> update(
-            @PathVariable String worldId,
-            @PathVariable String name,
-            @RequestBody ChestRequest request) {
+            @PathVariable String worldId, @PathVariable String name, @RequestBody ChestRequest request) {
 
         var error = validateId(worldId, "regionId");
         if (error != null) return error;
@@ -268,7 +254,8 @@ public class WChestController extends BaseEditorController {
                 if (request.pin() != null) chest.setPin(request.pin());
                 if (request.capacity() != null) chest.setCapacity(request.capacity());
                 if (request.keyId() != null) chest.setKeyId(request.keyId());
-                if (request.lockPickingDifficulty() != null) chest.setLockPickingDifficulty(request.lockPickingDifficulty());
+                if (request.lockPickingDifficulty() != null)
+                    chest.setLockPickingDifficulty(request.lockPickingDifficulty());
                 if (request.items() != null) chest.setItems(request.items());
             });
 
@@ -285,9 +272,7 @@ public class WChestController extends BaseEditorController {
      */
     @PostMapping("/{name}/items")
     public ResponseEntity<?> addItem(
-            @PathVariable String worldId,
-            @PathVariable String name,
-            @RequestBody ItemRefRequest request) {
+            @PathVariable String worldId, @PathVariable String name, @RequestBody ItemRefRequest request) {
 
         var error2 = validateId(name, "title");
         if (error2 != null) return error2;
@@ -354,9 +339,7 @@ public class WChestController extends BaseEditorController {
      */
     @DeleteMapping("/{name}/items/{itemId}")
     public ResponseEntity<?> removeItem(
-            @PathVariable String worldId,
-            @PathVariable String name,
-            @PathVariable String itemId) {
+            @PathVariable String worldId, @PathVariable String name, @PathVariable String itemId) {
 
         var error2 = validateId(name, "title");
         if (error2 != null) return error2;
@@ -383,9 +366,7 @@ public class WChestController extends BaseEditorController {
      * DELETE /control/regions/{regionId}/chests/{title}
      */
     @DeleteMapping("/{name}")
-    public ResponseEntity<?> delete(
-            @PathVariable String worldId,
-            @PathVariable String name) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, @PathVariable String name) {
 
         var error2 = validateId(name, "title");
         if (error2 != null) return error2;

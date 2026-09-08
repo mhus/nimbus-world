@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.shared.workflow;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +10,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for managing workflow journal entries.
@@ -22,16 +21,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(
-        value = "nimbus.services.workflows",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.workflows", havingValue = "true", matchIfMissing = false)
 public class WWorkflowJournalService {
 
     private final WWorkflowRecordRepository repository;
+
     @Getter
     private final ObjectMapper objectMapper;
+
     private final MongoTemplate mongoTemplate;
 
     /**
@@ -54,7 +51,8 @@ public class WWorkflowJournalService {
      * @param type Entry type filter
      * @return List of journal entries ordered by createdAt ascending
      */
-    public List<WWorkflowJournalRecord> getWorkflowJournalRecordsForType(String worldId, String workflowId, String type) {
+    public List<WWorkflowJournalRecord> getWorkflowJournalRecordsForType(
+            String worldId, String workflowId, String type) {
         log.debug("Getting workflow journal entries: worldId={}, workflowId={}, type={}", worldId, workflowId, type);
         return repository.findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(worldId, workflowId, type);
     }
@@ -77,9 +75,11 @@ public class WWorkflowJournalService {
         }
         if (entry instanceof JournalStringRecord journalStringEntry) {
             String data = journalStringEntry.entryToString();
-            return addWorkflowJournalRecord(worldId, workflowId, entry.getClass().getCanonicalName(), data);
+            return addWorkflowJournalRecord(
+                    worldId, workflowId, entry.getClass().getCanonicalName(), data);
         } else {
-            return addWorkflowJournalRecord(worldId, workflowId, entry.getClass().getCanonicalName(), toJson(entry));
+            return addWorkflowJournalRecord(
+                    worldId, workflowId, entry.getClass().getCanonicalName(), toJson(entry));
         }
     }
 
@@ -108,7 +108,8 @@ public class WWorkflowJournalService {
      * @param data Entry data (JSON, text, or any relevant information)
      * @return The created journal entry
      */
-    public WWorkflowJournalRecord addWorkflowJournalRecord(String worldId, String workflowId, String type, String data) {
+    public WWorkflowJournalRecord addWorkflowJournalRecord(
+            String worldId, String workflowId, String type, String data) {
         log.debug("Adding workflow journal entry: worldId={}, workflowId={}, type={}", worldId, workflowId, type);
 
         WWorkflowJournalRecord entry = WWorkflowJournalRecord.builder()
@@ -121,8 +122,12 @@ public class WWorkflowJournalService {
         entry.touchCreate();
 
         WWorkflowJournalRecord saved = repository.save(entry);
-        log.info("Created workflow journal entry: id={}, worldId={}, workflowId={}, type={}",
-                saved.getId(), worldId, workflowId, type);
+        log.info(
+                "Created workflow journal entry: id={}, worldId={}, workflowId={}, type={}",
+                saved.getId(),
+                worldId,
+                workflowId,
+                type);
 
         return saved;
     }
@@ -141,7 +146,8 @@ public class WWorkflowJournalService {
     }
 
     public void emigrateToWorld(String worldId, String workflowId, String newWorldId) {
-        repository.findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(worldId, workflowId)
+        repository
+                .findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(worldId, workflowId)
                 .forEach(entry -> {
                     entry.setWorldId(newWorldId);
                     repository.save(entry);
@@ -178,16 +184,23 @@ public class WWorkflowJournalService {
         if (maxSize < 1) {
             throw new IllegalArgumentException("maxSize must be at least 1");
         }
-        var journal = getWorkflowJournalRecords(worldId, workflowId).stream().filter(e -> e.getType().equals(type)).toList();
+        var journal = getWorkflowJournalRecords(worldId, workflowId).stream()
+                .filter(e -> e.getType().equals(type))
+                .toList();
         if (journal.size() > maxSize) {
             int toDelete = journal.size() - maxSize;
-            log.info("Compacting workflow journal: worldId={}, workflowId={}, type={}, currentSize={}, maxSize={}, toDelete={}",
-                    worldId, workflowId, type, journal.size(), maxSize, toDelete);
+            log.info(
+                    "Compacting workflow journal: worldId={}, workflowId={}, type={}, currentSize={}, maxSize={}, toDelete={}",
+                    worldId,
+                    workflowId,
+                    type,
+                    journal.size(),
+                    maxSize,
+                    toDelete);
             journal.stream().limit(toDelete).forEach(e -> {
                 log.debug("Deleting journal entry id={} to compact workflow journal", e.getId());
                 repository.delete(e);
             });
         }
     }
-
 }

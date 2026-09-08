@@ -94,27 +94,27 @@ public class PositionPoint extends Point {
 
         // North = r+ = Z+ in 3D world. No exceptions.
         switch (side) {
-            case N:  // North
+            case N: // North
                 r = distance;
                 break;
             case NE: // North-East
                 q = distance;
                 r = distance;
                 break;
-            case E:  // East
+            case E: // East
                 q = distance;
                 break;
             case SE: // South-East
                 r = -distance;
                 break;
-            case S:  // South
+            case S: // South
                 q = -distance;
                 r = -distance;
                 break;
             case SW: // South-West
                 q = -distance;
                 break;
-            case W:  // West
+            case W: // West
                 q = -distance;
                 break;
             case NW: // North-West
@@ -129,11 +129,7 @@ public class PositionPoint extends Point {
         // For now, we ignore sideOffset since we're placing at a single hex cell
         // TODO: Use sideOffset to interpolate between adjacent outer ring cells
 
-        HexVector2 hexPosition =
-            HexVector2.builder()
-                .q(q)
-                .r(r)
-                .build();
+        HexVector2 hexPosition = HexVector2.builder().q(q).r(r).build();
 
         int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
@@ -164,27 +160,27 @@ public class PositionPoint extends Point {
 
         // North = r+ = Z+ in 3D world. No exceptions.
         switch (getDirection()) {
-            case Direction.N:  // North: r increases
+            case Direction.N: // North: r increases
                 r = distance;
                 break;
             case Direction.NE: // North-East: q increases, r increases
                 q = distance;
                 r = distance;
                 break;
-            case Direction.E:  // East: q increases
+            case Direction.E: // East: q increases
                 q = distance;
                 break;
             case Direction.SE: // South-East: r decreases
                 r = -distance;
                 break;
-            case Direction.S:  // South: q decreases, r decreases
+            case Direction.S: // South: q decreases, r decreases
                 q = -distance;
                 r = -distance;
                 break;
             case Direction.SW: // South-West: q decreases
                 q = -distance;
                 break;
-            case Direction.W:  // West: q decreases
+            case Direction.W: // West: q decreases
                 q = -distance;
                 break;
             case Direction.NW: // North-West: r increases
@@ -195,11 +191,7 @@ public class PositionPoint extends Point {
                 break;
         }
 
-        HexVector2 hexPosition =
-            HexVector2.builder()
-                .q(q)
-                .r(r)
-                .build();
+        HexVector2 hexPosition = HexVector2.builder().q(q).r(r).build();
 
         int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
@@ -232,8 +224,8 @@ public class PositionPoint extends Point {
         }
 
         // Get reference point's composed position
-        if (referencePoint.getPointComposed() == null ||
-            referencePoint.getPointComposed().getHexLocalPosition() == null) {
+        if (referencePoint.getPointComposed() == null
+                || referencePoint.getPointComposed().getHexLocalPosition() == null) {
             // Reference point not yet composed - fall back to center
             return composeDefaultCenterPosition(context);
         }
@@ -251,27 +243,27 @@ public class PositionPoint extends Point {
         if (direction != null) {
             // North = r+ = Z+ in 3D world. No exceptions.
             switch (direction) {
-                case N:  // North
+                case N: // North
                     offsetR = distance;
                     break;
                 case NE: // North-East
                     offsetQ = distance;
                     offsetR = distance;
                     break;
-                case E:  // East
+                case E: // East
                     offsetQ = distance;
                     break;
                 case SE: // South-East
                     offsetR = -distance;
                     break;
-                case S:  // South
+                case S: // South
                     offsetQ = -distance;
                     offsetR = -distance;
                     break;
                 case SW: // South-West
                     offsetQ = -distance;
                     break;
-                case W:  // West
+                case W: // West
                     offsetQ = -distance;
                     break;
                 case NW: // North-West
@@ -285,9 +277,9 @@ public class PositionPoint extends Point {
 
         // Calculate new position by adding offset to reference position
         HexVector2 newHexPosition = HexVector2.builder()
-            .q(refPosition.position().getQ() + offsetQ)
-            .r(refPosition.position().getR() + offsetR)
-            .build();
+                .q(refPosition.position().getQ() + offsetQ)
+                .r(refPosition.position().getR() + offsetR)
+                .build();
 
         int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;
@@ -305,10 +297,7 @@ public class PositionPoint extends Point {
     private de.mhus.nimbus.world.shared.world.HexLocalPosition composeDefaultCenterPosition(ComposeContext context) {
         // Create center position <0;0>
         de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-            de.mhus.nimbus.generated.types.HexVector2.builder()
-                .q(0)
-                .r(0)
-                .build();
+                de.mhus.nimbus.generated.types.HexVector2.builder().q(0).r(0).build();
 
         int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
         int size = context.getHexGridSize() / divider;

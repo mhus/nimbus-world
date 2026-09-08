@@ -2,12 +2,11 @@ package de.mhus.nimbus.world.shared.region;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.mhus.nimbus.shared.user.RegionRoles;
 import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.sector.RUser;
-import org.junit.jupiter.api.Test;
-
-import de.mhus.nimbus.shared.user.RegionRoles; // neuer Import
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class RUserTest {
 

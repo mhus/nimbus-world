@@ -1,16 +1,13 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for HexCompositeBuilder - orchestrates complete composition pipeline.
@@ -40,8 +37,8 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
             var coordinate = TypeUtil.parseHexCoord(coordinateStr[1] + ";" + coordinateStr[2]);
             var flat = flatEntry.getValue();
             var center = HexMathUtil.hexToCartesian(coordinate, 400);
-            var mountX = (int)Math.floor(center[0] - flat.getSizeX()/2.0);
-            var mountZ = (int)Math.floor(center[1] - flat.getSizeZ()/2.0);
+            var mountX = (int) Math.floor(center[0] - flat.getSizeX() / 2.0);
+            var mountZ = (int) Math.floor(center[1] - flat.getSizeZ() / 2.0);
             assertEquals(mountX, flat.getMountX());
             assertEquals(mountZ, flat.getMountZ());
         }
@@ -62,5 +59,4 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
         var result = composite("enhanced-test-example1");
         createSchemaImage(result, "enhanced-test-example1-schema.png");
     }
-
 }

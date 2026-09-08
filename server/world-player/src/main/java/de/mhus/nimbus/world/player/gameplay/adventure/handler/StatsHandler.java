@@ -8,9 +8,8 @@ import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.PassiveStats;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles skills, constitution, and passive stats calculation.
@@ -36,8 +35,8 @@ public class StatsHandler {
             if (playerId == null) return;
 
             String regionId = session.getWorldId().getRegionId();
-            var characterOpt = gameplay.getCharacterService().getCharacter(
-                    playerId.getUserId(), regionId, playerId.getCharacterId());
+            var characterOpt = gameplay.getCharacterService()
+                    .getCharacter(playerId.getUserId(), regionId, playerId.getCharacterId());
             if (characterOpt.isEmpty()) return;
 
             var character = characterOpt.get();
@@ -47,11 +46,12 @@ public class StatsHandler {
             // Recalculate passive stats (skills affect them)
             recalculatePassiveStats(data);
 
-            log.debug("Refreshed skills cache for player {}: skills={}",
-                    entityId, data.getCachedSkills().size());
+            log.debug(
+                    "Refreshed skills cache for player {}: skills={}",
+                    entityId,
+                    data.getCachedSkills().size());
         } catch (Exception e) {
-            log.error("Failed to refresh skills cache for session {}: {}",
-                    session.getSessionId(), e.getMessage(), e);
+            log.error("Failed to refresh skills cache for session {}: {}", session.getSessionId(), e.getMessage(), e);
         }
     }
 
@@ -67,19 +67,21 @@ public class StatsHandler {
             if (playerId == null) return;
 
             String regionId = session.getWorldId().getRegionId();
-            var characterOpt = gameplay.getCharacterService().getCharacter(
-                    playerId.getUserId(), regionId, playerId.getCharacterId());
+            var characterOpt = gameplay.getCharacterService()
+                    .getCharacter(playerId.getUserId(), regionId, playerId.getCharacterId());
             if (characterOpt.isEmpty()) return;
 
             var character = characterOpt.get();
             data.setCachedCharacterDocId(character.getId());
             data.setCachedConstitution(new HashMap<>(character.getConstitution()));
 
-            log.debug("Refreshed constitution cache for player {}: {}",
-                    entityId, data.getCachedConstitution());
+            log.debug("Refreshed constitution cache for player {}: {}", entityId, data.getCachedConstitution());
         } catch (Exception e) {
-            log.error("Failed to refresh constitution cache for session {}: {}",
-                    session.getSessionId(), e.getMessage(), e);
+            log.error(
+                    "Failed to refresh constitution cache for session {}: {}",
+                    session.getSessionId(),
+                    e.getMessage(),
+                    e);
         }
     }
 
@@ -180,9 +182,12 @@ public class StatsHandler {
         double mDefensePercent = AdventureSkills.COMBAT_MAGIC_DEFENSE.getValue(skills) / 100.0 - 1.0;
         if (mDefensePercent != 0) stats.addEffect("magical.defensePercent", mDefensePercent);
 
-        log.debug("Recalculated passive stats: physDef={}, magDef={}, healthMax=+{}, manaMax=+{}",
-                stats.getPhysicalDefense(), stats.getMagicalDefense(),
-                stats.getHealthMax(), stats.getManaMax());
+        log.debug(
+                "Recalculated passive stats: physDef={}, magDef={}, healthMax=+{}, manaMax=+{}",
+                stats.getPhysicalDefense(),
+                stats.getMagicalDefense(),
+                stats.getHealthMax(),
+                stats.getManaMax());
     }
 
     /**

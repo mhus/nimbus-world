@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
@@ -8,14 +7,14 @@ import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Listens for entity pathway updates from all world-player and world-life pods.
@@ -86,7 +85,8 @@ public class PathwayBroadcastListener {
             // Parse containers
             List<PathwayBroadcastMessage.PathwayContainer> containers = new ArrayList<>();
             for (JsonNode containerNode : containersNode) {
-                PathwayBroadcastMessage.PathwayContainer container = engineMapper.treeToValue(containerNode, PathwayBroadcastMessage.PathwayContainer.class);
+                PathwayBroadcastMessage.PathwayContainer container =
+                        engineMapper.treeToValue(containerNode, PathwayBroadcastMessage.PathwayContainer.class);
                 containers.add(container);
             }
 
@@ -95,8 +95,8 @@ public class PathwayBroadcastListener {
             for (PathwayBroadcastMessage.PathwayContainer container : containers) {
                 String originSessionId = container.getSessionId() != null ? container.getSessionId() : "none";
                 pathwaysByOriginSession
-                    .computeIfAbsent(originSessionId, k -> new ArrayList<>())
-                    .add(container.getPathway());
+                        .computeIfAbsent(originSessionId, k -> new ArrayList<>())
+                        .add(container.getPathway());
             }
 
             // Broadcast per affected chunk (affectedChunks already correctly computed by world-life)
@@ -110,24 +110,25 @@ public class PathwayBroadcastListener {
 
                     JsonNode pathwaysArray = engineMapper.valueToTree(pathways);
 
-                    int sentCount = broadcastService.broadcastToWorld(
-                            worldId,
-                            "e.p",
-                            pathwaysArray,
-                            originSessionId,
-                            cx,
-                            cz
-                    );
+                    int sentCount =
+                            broadcastService.broadcastToWorld(worldId, "e.p", pathwaysArray, originSessionId, cx, cz);
 
                     if (sentCount > 0) {
-                        log.trace("Sent {} NPC pathways to {} clients for chunk ({}, {}) in world {} - {}",
-                                pathways.size(), sentCount, cx, cz, worldId, pathways.stream().map(EntityPathway::getEntityId).toList());
+                        log.trace(
+                                "Sent {} NPC pathways to {} clients for chunk ({}, {}) in world {} - {}",
+                                pathways.size(),
+                                sentCount,
+                                cx,
+                                cz,
+                                worldId,
+                                pathways.stream()
+                                        .map(EntityPathway::getEntityId)
+                                        .toList());
                     }
                 }
             }
 
-            log.trace("Handled pathway update: {} containers, {} chunks",
-                    containers.size(), affectedChunks.size());
+            log.trace("Handled pathway update: {} containers, {} chunks", containers.size(), affectedChunks.size());
 
         } catch (Exception e) {
             log.error("Failed to handle pathway update from topic {}: {}", topic, message, e);

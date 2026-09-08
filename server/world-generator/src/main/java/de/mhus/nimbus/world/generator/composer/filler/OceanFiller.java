@@ -2,21 +2,20 @@ package de.mhus.nimbus.world.generator.composer.filler;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.flow.Flow;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills gaps between disconnected terrain regions with ocean connections.
@@ -41,9 +40,7 @@ public class OceanFiller {
      * @param placementResult Placement result with all PlacedBiomes
      * @return Number of ocean connection biomes added
      */
-    public int fill(HexComposition composition,
-                    Set<String> existingCoords,
-                    BiomePlacementResult placementResult) {
+    public int fill(HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
 
         log.debug("Starting OceanFiller - ensuring all regions are connected");
 
@@ -53,7 +50,8 @@ public class OceanFiller {
         Set<String> connectedCoords = new HashSet<>();
 
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-            boolean isDecoupled = "true".equals(placed.getBiome().getParameters().get("decoupled"));
+            boolean isDecoupled =
+                    "true".equals(placed.getBiome().getParameters().get("decoupled"));
 
             if (!isDecoupled) {
                 for (HexVector2 coord : placed.getCoordinates()) {
@@ -97,8 +95,12 @@ public class OceanFiller {
                 HexVector2 centerA = groupCenters.get(i);
                 HexVector2 centerB = groupCenters.get(j);
 
-                log.debug("Creating ocean line from group {} ({}) to group {} ({})",
-                    i + 1, TypeUtil.toStringHexCoord(centerA), j + 1, TypeUtil.toStringHexCoord(centerB));
+                log.debug(
+                        "Creating ocean line from group {} ({}) to group {} ({})",
+                        i + 1,
+                        TypeUtil.toStringHexCoord(centerA),
+                        j + 1,
+                        TypeUtil.toStringHexCoord(centerB));
 
                 // Create straight line between centers
                 List<HexVector2> linePath = createStraightLine(centerA, centerB, existingCoords);
@@ -224,10 +226,7 @@ public class OceanFiller {
         int avgQ = sumQ / group.size();
         int avgR = sumR / group.size();
 
-        return HexVector2.builder()
-            .q(avgQ)
-            .r(avgR)
-            .build();
+        return HexVector2.builder().q(avgQ).r(avgR).build();
     }
 
     /**
@@ -241,8 +240,7 @@ public class OceanFiller {
      * @param existingCoords Coordinates to skip (already exist)
      * @return List of new coordinates forming the line
      */
-    private List<HexVector2> createStraightLine(HexVector2 start, HexVector2 end,
-                                                 Set<String> existingCoords) {
+    private List<HexVector2> createStraightLine(HexVector2 start, HexVector2 end, Set<String> existingCoords) {
         List<HexVector2> line = new ArrayList<>();
 
         int distance = hexDistance(start, end);
@@ -302,10 +300,7 @@ public class OceanFiller {
         }
 
         // Convert back to axial (q, r)
-        return HexVector2.builder()
-            .q(rx)
-            .r(rz)
-            .build();
+        return HexVector2.builder().q(rx).r(rz).build();
     }
 
     /**
@@ -336,9 +331,8 @@ public class OceanFiller {
      * @param placementResult Placement result to add new ocean PlacedBiomes
      * @return Number of ocean grids added
      */
-    public int fillFlowGaps(HexComposition composition,
-                            Set<String> existingCoords,
-                            BiomePlacementResult placementResult) {
+    public int fillFlowGaps(
+            HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
         log.debug("Starting OceanFiller.fillFlowGaps to fill grids crossed by flows");
 
         // Collect all coordinates that flows pass through
@@ -424,10 +418,11 @@ public class OceanFiller {
         }
 
         // Iterate through central registry and find grids with segments from this flow
-        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+        for (FeatureHexGrid centralGrid :
+                composition.getFeatureHexGridRegistry().values()) {
             if (centralGrid.getFlowSegments() != null) {
                 boolean hasFlowSegment = centralGrid.getFlowSegments().stream()
-                    .anyMatch(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()));
+                        .anyMatch(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()));
 
                 if (hasFlowSegment) {
                     String coordKey = centralGrid.getPositionKey();
@@ -439,4 +434,3 @@ public class OceanFiller {
         }
     }
 }
-

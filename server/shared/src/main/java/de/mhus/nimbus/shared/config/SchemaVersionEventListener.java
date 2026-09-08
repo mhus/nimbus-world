@@ -1,10 +1,11 @@
 package de.mhus.nimbus.shared.config;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.SchemaVersion;
+import java.lang.reflect.Field;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Field;
-import java.util.concurrent.ConcurrentHashMap;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * MongoDB event listener that automatically manages schema versioning for entities.
@@ -81,10 +80,11 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
         if (version != null) {
             document.put("_schema", version);
 
-            log.trace("Added _schema={} to {} in collection {}",
-                      version,
-                      source.getClass().getSimpleName(),
-                      event.getCollectionName());
+            log.trace(
+                    "Added _schema={} to {} in collection {}",
+                    version,
+                    source.getClass().getSimpleName(),
+                    event.getCollectionName());
         }
     }
 
@@ -146,8 +146,8 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
      */
     private void handleSchemaMismatch(Object entity, String documentSchema, String expectedSchema) {
         String entityType = entity.getClass().getSimpleName();
-        SchemaVersion currentVersion = documentSchema != null ?
-            SchemaVersion.create(documentSchema) : SchemaVersion.NULL;
+        SchemaVersion currentVersion =
+                documentSchema != null ? SchemaVersion.create(documentSchema) : SchemaVersion.NULL;
         SchemaVersion targetVersion = SchemaVersion.create(expectedSchema);
 
         String entityId = null;
@@ -155,11 +155,12 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             entityId = identifiable.getId();
         }
 
-        log.debug("Schema version mismatch for entity {} (ID: {}): document has schema '{}', expected '{}'",
-                 entityType,
-                 entityId != null ? entityId : "unknown",
-                 currentVersion,
-                 targetVersion);
+        log.debug(
+                "Schema version mismatch for entity {} (ID: {}): document has schema '{}', expected '{}'",
+                entityType,
+                entityId != null ? entityId : "unknown",
+                currentVersion,
+                targetVersion);
 
         // Automatic migration if enabled
         if (!autoMigrate) {
@@ -178,12 +179,16 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
         }
 
         try {
-            log.info("Performing automatic migration for {} (ID: {}) from {} to {}",
-                    entityType, entityId, currentVersion, targetVersion);
+            log.info(
+                    "Performing automatic migration for {} (ID: {}) from {} to {}",
+                    entityType,
+                    entityId,
+                    currentVersion,
+                    targetVersion);
 
             // Get the MongoDB collection name from entity annotation
             org.springframework.data.mongodb.core.mapping.Document docAnnotation =
-                entity.getClass().getAnnotation(org.springframework.data.mongodb.core.mapping.Document.class);
+                    entity.getClass().getAnnotation(org.springframework.data.mongodb.core.mapping.Document.class);
 
             if (docAnnotation == null) {
                 log.error("Cannot migrate entity {} - missing @Document annotation", entityType);
@@ -201,8 +206,11 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             Document document = mongoTemplate.findOne(query, Document.class, collectionName);
 
             if (document == null) {
-                log.error("Cannot migrate entity {} (ID: {}) - document not found in collection {}",
-                        entityType, entityId, collectionName);
+                log.error(
+                        "Cannot migrate entity {} (ID: {}) - document not found in collection {}",
+                        entityType,
+                        entityId,
+                        collectionName);
                 return;
             }
 
@@ -210,12 +218,7 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             String documentJson = document.toJson();
 
             // Perform migration
-            String migratedJson = migrationService.migrate(
-                documentJson,
-                entityType,
-                targetVersion,
-                currentVersion
-            );
+            String migratedJson = migrationService.migrate(documentJson, entityType, targetVersion, currentVersion);
 
             // Parse migrated JSON back to Document
             Document migratedDocument = Document.parse(migratedJson);
@@ -223,7 +226,7 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             // Update the document in MongoDB with all fields from migrated document
             Update update = new Update();
             migratedDocument.forEach((key, value) -> {
-                if (!key.equals("_id")) {  // Don't update _id field
+                if (!key.equals("_id")) { // Don't update _id field
                     update.set(key, value);
                 }
             });
@@ -233,15 +236,30 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             // Update the loaded entity with migrated values using reflection
             updateEntityFromDocument(entity, migratedDocument);
 
-            log.info("Successfully migrated and persisted entity {} (ID: {}) from {} to {}",
-                    entityType, entityId, currentVersion, targetVersion);
+            log.info(
+                    "Successfully migrated and persisted entity {} (ID: {}) from {} to {}",
+                    entityType,
+                    entityId,
+                    currentVersion,
+                    targetVersion);
 
         } catch (SchemaMigrationService.MigrationException e) {
-            log.error("Automatic migration failed for {} (ID: {}) from {} to {}: {}",
-                    entityType, entityId, currentVersion, targetVersion, e.getMessage());
+            log.error(
+                    "Automatic migration failed for {} (ID: {}) from {} to {}: {}",
+                    entityType,
+                    entityId,
+                    currentVersion,
+                    targetVersion,
+                    e.getMessage());
         } catch (Exception e) {
-            log.error("Automatic migration failed for {} (ID: {}) from {} to {}: {}",
-                    entityType, entityId, currentVersion, targetVersion, e.getMessage(), e);
+            log.error(
+                    "Automatic migration failed for {} (ID: {}) from {} to {}: {}",
+                    entityType,
+                    entityId,
+                    currentVersion,
+                    targetVersion,
+                    e.getMessage(),
+                    e);
         }
     }
 
@@ -255,10 +273,7 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
     private void updateEntityFromDocument(Object entity, Document migratedDocument) {
         try {
             // Convert migrated document back to entity type using MongoTemplate converter
-            Object migratedEntity = mongoTemplate.getConverter().read(
-                entity.getClass(),
-                migratedDocument
-            );
+            Object migratedEntity = mongoTemplate.getConverter().read(entity.getClass(), migratedDocument);
 
             // Copy all fields from migrated entity to original entity
             Class<?> entityClass = entity.getClass();

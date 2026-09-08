@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Bridge Block Manipulator - creates a bridge between two points with pillars.
@@ -47,9 +47,9 @@ public class BridgeBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a bridge between two points with optional pillars. " +
-                "Parameters: position {x,y,z}, endPosition {x,y,z}, width, pillarSpacing (optional), blockType (optional). " +
-                "Example: {\"bridge\": {\"transform\": \"position\", \"endPosition\": {\"x\": 150, \"y\": 70, \"z\": 150}, \"width\": 5, \"pillarSpacing\": 10}}";
+        return "Creates a bridge between two points with optional pillars. "
+                + "Parameters: position {x,y,z}, endPosition {x,y,z}, width, pillarSpacing (optional), blockType (optional). "
+                + "Example: {\"bridge\": {\"transform\": \"position\", \"endPosition\": {\"x\": 150, \"y\": 70, \"z\": 150}, \"width\": 5, \"pillarSpacing\": 10}}";
     }
 
     @Override
@@ -119,8 +119,17 @@ public class BridgeBlockManipulator implements BlockManipulator {
         }
 
         // Generate bridge
-        log.info("Generating bridge: start=({},{},{}), end=({},{},{}), width={}, pillarSpacing={}, blockType={}",
-                x1, y1, z1, x2, y2, z2, width, pillarSpacing, blockType);
+        log.info(
+                "Generating bridge: start=({},{},{}), end=({},{},{}), width={}, pillarSpacing={}, blockType={}",
+                x1,
+                y1,
+                z1,
+                x2,
+                y2,
+                z2,
+                width,
+                pillarSpacing,
+                blockType);
 
         painter.bridge(x1, y1, z1, x2, y2, z2, width, pillarSpacing);
 
@@ -128,7 +137,8 @@ public class BridgeBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated bridge: %d blocks (width %d, pillar spacing %d) from (%d,%d,%d) to (%d,%d,%d)",
+        String message = String.format(
+                "Generated bridge: %d blocks (width %d, pillar spacing %d) from (%d,%d,%d) to (%d,%d,%d)",
                 blockCount, width, pillarSpacing, x1, y1, z1, x2, y2, z2);
 
         log.info(message);

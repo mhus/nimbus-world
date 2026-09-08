@@ -4,17 +4,15 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
 import de.mhus.nimbus.world.generator.composer.pathfinding.EdgeSide;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexCoord;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexNodeType;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexPath;
 import de.mhus.nimbus.world.generator.composer.pathfinding.VillageHexPathfinder;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * VillageDesigner generates concrete village layouts from district and place definitions.
@@ -42,11 +41,11 @@ public class TownDesigner {
 
     // Divider to slot count mapping
     private static final Map<Integer, Integer> DIVIDER_TO_SLOTS = Map.of(
-        1, 1,   // BIG: 1 slot
-        3, 7,   // MEDIUM: 7 slots (but we use 3 from DistrictSlotSize)
-        5, 19,  // SMALL: 19 slots (but we use 5 from DistrictSlotSize)
-        7, 37   // TINY: 37 slots (but we use 7 from DistrictSlotSize)
-    );
+            1, 1, // BIG: 1 slot
+            3, 7, // MEDIUM: 7 slots (but we use 3 from DistrictSlotSize)
+            5, 19, // SMALL: 19 slots (but we use 5 from DistrictSlotSize)
+            7, 37 // TINY: 37 slots (but we use 7 from DistrictSlotSize)
+            );
 
     private final StructuresIndex buildingIndex;
     private final Random random;
@@ -69,8 +68,11 @@ public class TownDesigner {
      * @return VillageDesignResult with positioned districts and buildings
      */
     public TownDesignResult design(Town village, int hexGridSize) {
-        log.debug("Designing village: {} (style: {}, hexGridSize: {})",
-            village.getName(), village.getStyle(), hexGridSize);
+        log.debug(
+                "Designing village: {} (style: {}, hexGridSize: {})",
+                village.getName(),
+                village.getStyle(),
+                hexGridSize);
 
         TownDesignResult result = new TownDesignResult();
         result.setVillage(village);
@@ -112,9 +114,12 @@ public class TownDesigner {
             }
 
             result.setSuccess(true);
-            log.debug("Village design completed: {} districts, {} total places",
-                districtGrids.size(),
-                districtGrids.stream().mapToInt(d -> d.getPlacedPlaces().size()).sum());
+            log.debug(
+                    "Village design completed: {} districts, {} total places",
+                    districtGrids.size(),
+                    districtGrids.stream()
+                            .mapToInt(d -> d.getPlacedPlaces().size())
+                            .sum());
 
         } catch (Exception e) {
             result.setSuccess(false);
@@ -148,18 +153,19 @@ public class TownDesigner {
             }
 
             DistrictGrid districtGrid = DistrictGrid.builder()
-                .district(district)
-                .gridPosition(gridPosition)
-                .placedPlaces(new ArrayList<>())
-                .streets(new ArrayList<>())
-                .build();
+                    .district(district)
+                    .gridPosition(gridPosition)
+                    .placedPlaces(new ArrayList<>())
+                    .streets(new ArrayList<>())
+                    .build();
 
             districtGrids.add(districtGrid);
-            log.debug("Positioned district '{}' at grid [{},{}] with {} slot(s)",
-                district.getName(),
-                gridPosition.getQ(),
-                gridPosition.getR(),
-                district.getSlots() != null ? district.getSlots().getSlotCount() : 0);
+            log.debug(
+                    "Positioned district '{}' at grid [{},{}] with {} slot(s)",
+                    district.getName(),
+                    gridPosition.getQ(),
+                    gridPosition.getR(),
+                    district.getSlots() != null ? district.getSlots().getSlotCount() : 0);
         }
 
         return districtGrids;
@@ -214,17 +220,23 @@ public class TownDesigner {
                 positions.put(district.getName(), newPos);
                 changed = true;
 
-                log.debug("District '{}' positioned {} of '{}' at [{},{}]",
-                    district.getName(), district.getDirection(),
-                    anchorName, newPos.getQ(), newPos.getR());
+                log.debug(
+                        "District '{}' positioned {} of '{}' at [{},{}]",
+                        district.getName(),
+                        district.getDirection(),
+                        anchorName,
+                        newPos.getQ(),
+                        newPos.getR());
             }
         }
 
         // Warn about unpositioned districts
         for (District district : districts) {
             if (!positions.containsKey(district.getName())) {
-                log.warn("District '{}' could not be positioned (missing anchor '{}'?)",
-                    district.getName(), district.getAnchorDistrict());
+                log.warn(
+                        "District '{}' could not be positioned (missing anchor '{}'?)",
+                        district.getName(),
+                        district.getAnchorDistrict());
             }
         }
 
@@ -243,16 +255,16 @@ public class TownDesigner {
 
         // Flat-top hexagon neighbors (6 directions)
         return switch (direction) {
-            case N -> TypeUtil.hexVector2(q, r - 1);      // North
-            case NE -> TypeUtil.hexVector2(q + 1, r - 1);  // NorthEast
-            case SE -> TypeUtil.hexVector2(q + 1, r);      // SouthEast
-            case S -> TypeUtil.hexVector2(q, r + 1);      // South
-            case SW -> TypeUtil.hexVector2(q - 1, r + 1);  // SouthWest
-            case NW -> TypeUtil.hexVector2(q - 1, r);      // NorthWest
+            case N -> TypeUtil.hexVector2(q, r - 1); // North
+            case NE -> TypeUtil.hexVector2(q + 1, r - 1); // NorthEast
+            case SE -> TypeUtil.hexVector2(q + 1, r); // SouthEast
+            case S -> TypeUtil.hexVector2(q, r + 1); // South
+            case SW -> TypeUtil.hexVector2(q - 1, r + 1); // SouthWest
+            case NW -> TypeUtil.hexVector2(q - 1, r); // NorthWest
 
             // E and W are not direct neighbors in flat-top, approximate with diagonal
-            case E -> TypeUtil.hexVector2(q + 1, r);      // Same as SE
-            case W -> TypeUtil.hexVector2(q - 1, r);      // Same as NW
+            case E -> TypeUtil.hexVector2(q + 1, r); // Same as SE
+            case W -> TypeUtil.hexVector2(q - 1, r); // Same as NW
 
             default -> from; // Stay at same position
         };
@@ -279,21 +291,18 @@ public class TownDesigner {
         int divider = getDividerFromSlotSize(slotSize);
         int availableSlots = slotSize.getSlotCount();
 
-        log.debug("Arranging {} places in district '{}' (divider: {}, slots: {})",
-            district.getPlaces().size(),
-            district.getName(),
-            divider,
-            availableSlots);
+        log.debug(
+                "Arranging {} places in district '{}' (divider: {}, slots: {})",
+                district.getPlaces().size(),
+                district.getName(),
+                divider,
+                availableSlots);
 
         // Validate: Check if there are too many places for available slots
         if (district.getPlaces().size() > availableSlots) {
             String error = String.format(
-                "Not enough space in district '%s': %d places but only %d slots available (slot size: %s, divider: %d)",
-                district.getName(),
-                district.getPlaces().size(),
-                availableSlots,
-                slotSize,
-                divider);
+                    "Not enough space in district '%s': %d places but only %d slots available (slot size: %s, divider: %d)",
+                    district.getName(), district.getPlaces().size(), availableSlots, slotSize, divider);
             log.error(error);
             throw new IllegalStateException(error);
         }
@@ -307,9 +316,8 @@ public class TownDesigner {
 
             if (district.getPlaces().size() > 1) {
                 String error = String.format(
-                    "BIG district '%s' can only have 1 place, but %d places are defined",
-                    district.getName(),
-                    district.getPlaces().size());
+                        "BIG district '%s' can only have 1 place, but %d places are defined",
+                        district.getName(), district.getPlaces().size());
                 log.error(error);
                 throw new IllegalStateException(error);
             }
@@ -317,12 +325,12 @@ public class TownDesigner {
             // Single place in center
             Place place = district.getPlaces().getFirst();
             PlacedPlace placedPlace = PlacedPlace.builder()
-                .place(place)
-                .localX(hexGridSize / 2)
-                .localZ(hexGridSize / 2)
-                .divider(divider)
-                .slotIndex(0)
-                .build();
+                    .place(place)
+                    .localX(hexGridSize / 2)
+                    .localZ(hexGridSize / 2)
+                    .divider(divider)
+                    .slotIndex(0)
+                    .build();
             districtGrid.getPlacedPlaces().add(placedPlace);
             log.debug("Placed single large place '{}' at center", place.getName());
             return;
@@ -333,11 +341,8 @@ public class TownDesigner {
 
         if (slotPositions.size() < district.getPlaces().size()) {
             String error = String.format(
-                "Not enough hexagonal slots for district '%s': %d places but only %d slots for divider %d",
-                district.getName(),
-                district.getPlaces().size(),
-                slotPositions.size(),
-                divider);
+                    "Not enough hexagonal slots for district '%s': %d places but only %d slots for divider %d",
+                    district.getName(), district.getPlaces().size(), slotPositions.size(), divider);
             log.error(error);
             throw new IllegalStateException(error);
         }
@@ -354,21 +359,25 @@ public class TownDesigner {
             int localZ = hexGridSize / 2 + relativePos.getZ();
 
             PlacedPlace placedPlace = PlacedPlace.builder()
-                .place(place)
-                .hexQ(hexPos.getQ())
-                .hexR(hexPos.getR())
-                .relativePos(relativePos)
-                .localX(localX)
-                .localZ(localZ)
-                .divider(divider)
-                .slotIndex(slotIndex)
-                .build();
+                    .place(place)
+                    .hexQ(hexPos.getQ())
+                    .hexR(hexPos.getR())
+                    .relativePos(relativePos)
+                    .localX(localX)
+                    .localZ(localZ)
+                    .divider(divider)
+                    .slotIndex(slotIndex)
+                    .build();
 
             districtGrid.getPlacedPlaces().add(placedPlace);
             slotIndex++;
 
-            log.debug("Placed '{}' at hex slot <{};{}> (divider {})",
-                place.getName(), hexPos.getQ(), hexPos.getR(), divider);
+            log.debug(
+                    "Placed '{}' at hex slot <{};{}> (divider {})",
+                    place.getName(),
+                    hexPos.getQ(),
+                    hexPos.getR(),
+                    divider);
         }
     }
 
@@ -388,16 +397,17 @@ public class TownDesigner {
         positions.add(TypeUtil.hexVector2(0, 0));
 
         // Calculate number of rings based on divider
-        int rings = switch (divider) {
-            case 1 -> 0; // Only center
-            case 3 -> 1; // Center + ring 1 = 7 slots
-            case 5 -> 2; // Center + ring 1 + ring 2 = 19 slots
-            case 7 -> 3; // Center + ring 1 + ring 2 + ring 3 = 37 slots
-            default -> {
-                log.warn("Unknown divider {}, using rings=0", divider);
-                yield 0;
-            }
-        };
+        int rings =
+                switch (divider) {
+                    case 1 -> 0; // Only center
+                    case 3 -> 1; // Center + ring 1 = 7 slots
+                    case 5 -> 2; // Center + ring 1 + ring 2 = 19 slots
+                    case 7 -> 3; // Center + ring 1 + ring 2 + ring 3 = 37 slots
+                    default -> {
+                        log.warn("Unknown divider {}, using rings=0", divider);
+                        yield 0;
+                    }
+                };
 
         // Add hexagonal rings around center
         for (int ring = 1; ring <= rings; ring++) {
@@ -422,12 +432,12 @@ public class TownDesigner {
         // Direction vectors for FLAT-TOP hex neighbors (clockwise from N)
         // The 6 directions are: SE, S, SW, NW, N, NE
         int[][] directions = {
-            {1, 0},    // SE (move along q)
-            {0, 1},    // S  (move along r)
-            {-1, 1},   // SW (move along -q, +r)
-            {-1, 0},   // NW (move along -q)
-            {0, -1},   // N  (move along -r)
-            {1, -1}    // NE (move along +q, -r)
+            {1, 0}, // SE (move along q)
+            {0, 1}, // S  (move along r)
+            {-1, 1}, // SW (move along -q, +r)
+            {-1, 0}, // NW (move along -q)
+            {0, -1}, // N  (move along -r)
+            {1, -1} // NE (move along +q, -r)
         };
 
         // Walk around the ring clockwise
@@ -487,8 +497,11 @@ public class TownDesigner {
             }
 
             if (matchingBuildings.isEmpty()) {
-                log.warn("No buildings fit size {} (max with tolerance: {}) for place '{}'",
-                    maxSize, maxSizeWithTolerance, place.getName());
+                log.warn(
+                        "No buildings fit size {} (max with tolerance: {}) for place '{}'",
+                        maxSize,
+                        maxSizeWithTolerance,
+                        place.getName());
                 continue;
             }
 
@@ -503,10 +516,11 @@ public class TownDesigner {
                 placedPlace.setOversized(buildingSize > maxSize);
             }
 
-            log.debug("Assigned building '{}' to place '{}'{}",
-                selected.getBuildingId(),
-                place.getName(),
-                placedPlace.isOversized() ? " (OVERSIZED)" : "");
+            log.debug(
+                    "Assigned building '{}' to place '{}'{}",
+                    selected.getBuildingId(),
+                    place.getName(),
+                    placedPlace.isOversized() ? " (OVERSIZED)" : "");
         }
     }
 
@@ -531,29 +545,34 @@ public class TownDesigner {
             for (PlacedPlace placedPlace : districtGrid.getPlacedPlaces()) {
                 if (placedPlace.isConnectionPoint()) {
                     ConnectionPoint cp = ConnectionPoint.builder()
-                        .districtGrid(districtGrid)
-                        .placedPlace(placedPlace)
-                        .districtPosition(districtGrid.getGridPosition())
-                        .localX(placedPlace.getLocalX())
-                        .localZ(placedPlace.getLocalZ())
-                        .build();
+                            .districtGrid(districtGrid)
+                            .placedPlace(placedPlace)
+                            .districtPosition(districtGrid.getGridPosition())
+                            .localX(placedPlace.getLocalX())
+                            .localZ(placedPlace.getLocalZ())
+                            .build();
 
                     districtConnectionPoints.add(cp);
                     allConnectionPoints.add(cp);
 
-                    log.debug("CONNECTION_POINT: district='{}' name='{}' hex=<{};{}> local=({},{})",
-                        districtGrid.getName(), placedPlace.getPlace().getName(),
-                        placedPlace.getHexQ(), placedPlace.getHexR(),
-                        placedPlace.getLocalX(), placedPlace.getLocalZ());
+                    log.debug(
+                            "CONNECTION_POINT: district='{}' name='{}' hex=<{};{}> local=({},{})",
+                            districtGrid.getName(),
+                            placedPlace.getPlace().getName(),
+                            placedPlace.getHexQ(),
+                            placedPlace.getHexR(),
+                            placedPlace.getLocalX(),
+                            placedPlace.getLocalZ());
                 }
             }
 
             connectionPointsByDistrict.put(districtGrid.getGridPosition(), districtConnectionPoints);
-            log.debug("District '{}' at [{},{}] has {} connection point(s)",
-                districtGrid.getName(),
-                districtGrid.getGridPosition().getQ(),
-                districtGrid.getGridPosition().getR(),
-                districtConnectionPoints.size());
+            log.debug(
+                    "District '{}' at [{},{}] has {} connection point(s)",
+                    districtGrid.getName(),
+                    districtGrid.getGridPosition().getQ(),
+                    districtGrid.getGridPosition().getR(),
+                    districtConnectionPoints.size());
         }
 
         if (allConnectionPoints.isEmpty()) {
@@ -585,10 +604,11 @@ public class TownDesigner {
      * Connects districts by finding adjacent districts and creating streets between them.
      * Considers the entire village as one cohesive city map.
      */
-    private void connectDistrictBoundaries(List<DistrictGrid> districtGrids,
-                                          Map<HexVector2, List<ConnectionPoint>> connectionPointsByDistrict,
-                                          Town village,
-                                          int hexGridSize) {
+    private void connectDistrictBoundaries(
+            List<DistrictGrid> districtGrids,
+            Map<HexVector2, List<ConnectionPoint>> connectionPointsByDistrict,
+            Town village,
+            int hexGridSize) {
         log.debug("Connecting district boundaries");
 
         // For each district, find its neighbors and connect them
@@ -597,13 +617,13 @@ public class TownDesigner {
 
             // Check all 6 hex directions for neighbors (flat-top orientation)
             List<HexVector2> neighborDirections = List.of(
-                TypeUtil.hexVector2(pos.getQ() + 1, pos.getR()),     // SE
-                TypeUtil.hexVector2(pos.getQ() + 1, pos.getR() - 1), // NE
-                TypeUtil.hexVector2(pos.getQ(), pos.getR() - 1),     // N
-                TypeUtil.hexVector2(pos.getQ() - 1, pos.getR()),     // NW
-                TypeUtil.hexVector2(pos.getQ() - 1, pos.getR() + 1), // SW
-                TypeUtil.hexVector2(pos.getQ(), pos.getR() + 1)      // S
-            );
+                    TypeUtil.hexVector2(pos.getQ() + 1, pos.getR()), // SE
+                    TypeUtil.hexVector2(pos.getQ() + 1, pos.getR() - 1), // NE
+                    TypeUtil.hexVector2(pos.getQ(), pos.getR() - 1), // N
+                    TypeUtil.hexVector2(pos.getQ() - 1, pos.getR()), // NW
+                    TypeUtil.hexVector2(pos.getQ() - 1, pos.getR() + 1), // SW
+                    TypeUtil.hexVector2(pos.getQ(), pos.getR() + 1) // S
+                    );
 
             for (HexVector2 neighborPos : neighborDirections) {
                 // Check if neighbor exists
@@ -616,18 +636,24 @@ public class TownDesigner {
                 List<ConnectionPoint> currentPoints = connectionPointsByDistrict.get(pos);
                 List<ConnectionPoint> neighborPoints = connectionPointsByDistrict.get(neighborPos);
 
-                if (currentPoints == null || currentPoints.isEmpty() ||
-                    neighborPoints == null || neighborPoints.isEmpty()) {
-                    log.debug("No connection points between districts [{},{}] and [{},{}]",
-                        pos.getQ(), pos.getR(), neighborPos.getQ(), neighborPos.getR());
+                if (currentPoints == null
+                        || currentPoints.isEmpty()
+                        || neighborPoints == null
+                        || neighborPoints.isEmpty()) {
+                    log.debug(
+                            "No connection points between districts [{},{}] and [{},{}]",
+                            pos.getQ(),
+                            pos.getR(),
+                            neighborPos.getQ(),
+                            neighborPos.getR());
                     continue;
                 }
 
                 // Find the closest connection points between districts and connect them
                 connectClosestPointsAcrossBoundary(
-                    districtGrid, neighborGrid,
-                    currentPoints, neighborPoints,
-                    village, hexGridSize);
+                        districtGrid, neighborGrid,
+                        currentPoints, neighborPoints,
+                        village, hexGridSize);
             }
         }
     }
@@ -636,12 +662,13 @@ public class TownDesigner {
      * Connects the closest connection points across a district boundary.
      * The street must align at the edge of both grids.
      */
-    private void connectClosestPointsAcrossBoundary(DistrictGrid district1,
-                                                     DistrictGrid district2,
-                                                     List<ConnectionPoint> points1,
-                                                     List<ConnectionPoint> points2,
-                                                     Town village,
-                                                     int hexGridSize) {
+    private void connectClosestPointsAcrossBoundary(
+            DistrictGrid district1,
+            DistrictGrid district2,
+            List<ConnectionPoint> points1,
+            List<ConnectionPoint> points2,
+            Town village,
+            int hexGridSize) {
         // Find closest pair
         ConnectionPoint closest1 = null;
         ConnectionPoint closest2 = null;
@@ -672,38 +699,50 @@ public class TownDesigner {
 
         // Calculate edge coordinates for both districts
         EdgeConnection edge = calculateEdgeConnection(
-            closest1.getLocalX(), closest1.getLocalZ(),
-            closest2.getLocalX(), closest2.getLocalZ(),
-            dq, dr, hexGridSize);
+                closest1.getLocalX(),
+                closest1.getLocalZ(),
+                closest2.getLocalX(),
+                closest2.getLocalZ(),
+                dq,
+                dr,
+                hexGridSize);
 
         // Add street segment in district 1 (from connection point to edge)
         StreetSegment segment1 = StreetSegment.builder()
-            .fromX(closest1.getLocalX())
-            .fromZ(closest1.getLocalZ())
-            .toX(edge.getEdge1X())
-            .toZ(edge.getEdge1Z())
-            .width(4)
-            .type("street")
-            .level(village.getBaseLevel())
-            .build();
+                .fromX(closest1.getLocalX())
+                .fromZ(closest1.getLocalZ())
+                .toX(edge.getEdge1X())
+                .toZ(edge.getEdge1Z())
+                .width(4)
+                .type("street")
+                .level(village.getBaseLevel())
+                .build();
         district1.getStreets().add(segment1);
 
         // Add street segment in district 2 (from edge to connection point)
         StreetSegment segment2 = StreetSegment.builder()
-            .fromX(edge.getEdge2X())
-            .fromZ(edge.getEdge2Z())
-            .toX(closest2.getLocalX())
-            .toZ(closest2.getLocalZ())
-            .width(4)
-            .type("street")
-            .level(village.getBaseLevel())
-            .build();
+                .fromX(edge.getEdge2X())
+                .fromZ(edge.getEdge2Z())
+                .toX(closest2.getLocalX())
+                .toZ(closest2.getLocalZ())
+                .width(4)
+                .type("street")
+                .level(village.getBaseLevel())
+                .build();
         district2.getStreets().add(segment2);
 
-        log.debug("Connected districts [{},{}] and [{},{}] via edge at [{},{}/{}] <-> [{},{}/{}]",
-            pos1.getQ(), pos1.getR(), pos2.getQ(), pos2.getR(),
-            edge.getEdge1X(), edge.getEdge1Z(), closest1.getPlace().getName(),
-            edge.getEdge2X(), edge.getEdge2Z(), closest2.getPlace().getName());
+        log.debug(
+                "Connected districts [{},{}] and [{},{}] via edge at [{},{}/{}] <-> [{},{}/{}]",
+                pos1.getQ(),
+                pos1.getR(),
+                pos2.getQ(),
+                pos2.getR(),
+                edge.getEdge1X(),
+                edge.getEdge1Z(),
+                closest1.getPlace().getName(),
+                edge.getEdge2X(),
+                edge.getEdge2Z(),
+                closest2.getPlace().getName());
     }
 
     /**
@@ -711,10 +750,7 @@ public class TownDesigner {
      * Uses minimum spanning tree strategy to connect all points optimally.
      */
     private void connectInternalConnectionPointsWithPathfinding(
-            DistrictGrid districtGrid,
-            Town village,
-            int hexGridSize,
-            Map<String, HexCoord> hexGraph) {
+            DistrictGrid districtGrid, Town village, int hexGridSize, Map<String, HexCoord> hexGraph) {
 
         // Find all connection point HexCoords in this district
         List<HexCoord> connectionCoords = hexGraph.values().stream()
@@ -723,13 +759,17 @@ public class TownDesigner {
                 .toList();
 
         if (connectionCoords.size() < 2) {
-            log.debug("District '{}' has {} connection point(s), skipping internal connections",
-                    districtGrid.getName(), connectionCoords.size());
+            log.debug(
+                    "District '{}' has {} connection point(s), skipping internal connections",
+                    districtGrid.getName(),
+                    connectionCoords.size());
             return;
         }
 
-        log.debug("Connecting {} internal connection points in district '{}' using pathfinding",
-                connectionCoords.size(), districtGrid.getName());
+        log.debug(
+                "Connecting {} internal connection points in district '{}' using pathfinding",
+                connectionCoords.size(),
+                districtGrid.getName());
 
         // Minimum spanning tree approach: connect each unconnected point to the nearest connected point
         Set<HexCoord> connected = new HashSet<>();
@@ -771,22 +811,25 @@ public class TownDesigner {
                 districtGrid.getStreets().addAll(segments);
                 pathsCreated++;
 
-                log.debug("Created path in '{}': {} -> {} ({} segments)",
+                log.debug(
+                        "Created path in '{}': {} -> {} ({} segments)",
                         districtGrid.getName(),
                         closestConnected.getConnectionPointName(),
                         closestUnconnected.getConnectionPointName(),
                         segments.size());
             } else {
-                log.warn("Could not find path between connection points in district '{}'",
-                        districtGrid.getName());
+                log.warn("Could not find path between connection points in district '{}'", districtGrid.getName());
             }
 
             // Mark as connected
             connected.add(closestUnconnected);
         }
 
-        log.debug("District '{}': Created {} paths connecting {} connection points",
-                districtGrid.getName(), pathsCreated, connectionCoords.size());
+        log.debug(
+                "District '{}': Created {} paths connecting {} connection points",
+                districtGrid.getName(),
+                pathsCreated,
+                connectionCoords.size());
     }
 
     /**
@@ -803,8 +846,8 @@ public class TownDesigner {
         // Step 1: Convert all local hex centers to HexCoord objects
         for (DistrictGrid districtGrid : districtGrids) {
             District district = districtGrid.getDistrict();
-            int divider = getDividerFromSlotSize(district.getSlots() != null ?
-                    district.getSlots() : District.DistrictSlotSize.MEDIUM);
+            int divider = getDividerFromSlotSize(
+                    district.getSlots() != null ? district.getSlots() : District.DistrictSlotSize.MEDIUM);
 
             // Skip BIG districts (divider=1) - no internal streets
             if (divider == 1) {
@@ -815,8 +858,11 @@ public class TownDesigner {
             int hexRange = (divider - 1) / 2;
             int hexSlotSize = hexGridSize / divider;
 
-            log.debug("Building hex graph for district '{}' (divider={}, range={})",
-                    district.getName(), divider, hexRange);
+            log.debug(
+                    "Building hex graph for district '{}' (divider={}, range={})",
+                    district.getName(),
+                    divider,
+                    hexRange);
 
             // Create HexCoord for each local hex cell
             for (int q = -hexRange; q <= hexRange; q++) {
@@ -827,8 +873,7 @@ public class TownDesigner {
                     }
 
                     // Convert hex (q,r) to cartesian (x,z)
-                    HexLocalPosition hexPos = new HexLocalPosition(
-                            TypeUtil.hexVector2(q, r), divider, hexSlotSize);
+                    HexLocalPosition hexPos = new HexLocalPosition(TypeUtil.hexVector2(q, r), divider, hexSlotSize);
                     Vector2Int relativePos = HexLocalUtil.toHexGridLocalCenter(hexPos);
 
                     // Convert from relative to absolute (within grid)
@@ -842,8 +887,8 @@ public class TownDesigner {
 
             // Mark occupied cells and connection points
             for (PlacedPlace placedPlace : districtGrid.getPlacedPlaces()) {
-                String key = String.format("%s:%d,%d", districtGrid.getName(),
-                        placedPlace.getHexQ(), placedPlace.getHexR());
+                String key =
+                        String.format("%s:%d,%d", districtGrid.getName(), placedPlace.getHexQ(), placedPlace.getHexR());
                 HexCoord coord = hexGraph.get(key);
                 if (coord != null) {
                     if (placedPlace.isConnectionPoint()) {
@@ -876,12 +921,12 @@ public class TownDesigner {
     private void linkHexNeighbors(HexCoord coord, Map<String, HexCoord> hexGraph) {
         // Flat-top hexagon neighbors: N, NE, SE, S, SW, NW
         int[][] directions = {
-                {0, -1},   // N
-                {1, -1},   // NE
-                {1, 0},    // SE
-                {0, 1},    // S
-                {-1, 1},   // SW
-                {-1, 0}    // NW
+            {0, -1}, // N
+            {1, -1}, // NE
+            {1, 0}, // SE
+            {0, 1}, // S
+            {-1, 1}, // SW
+            {-1, 0} // NW
         };
 
         for (int[] dir : directions) {
@@ -934,8 +979,13 @@ public class TownDesigner {
                         .build();
                 segments.add(segment);
 
-                log.debug("STREET_SEGMENT: district='{}' FROM=({},{}) TO=({},{}) type='street'",
-                        from.getDistrictName(), from.getX(), from.getZ(), to.getX(), to.getZ());
+                log.debug(
+                        "STREET_SEGMENT: district='{}' FROM=({},{}) TO=({},{}) type='street'",
+                        from.getDistrictName(),
+                        from.getX(),
+                        from.getZ(),
+                        to.getX(),
+                        to.getZ());
             }
         }
 
@@ -952,8 +1002,7 @@ public class TownDesigner {
      * @param hexGridSize Size of hex grid
      * @return List with 2 segments (one per district)
      */
-    private List<StreetSegment> createCrossingSegments(HexCoord from, HexCoord to,
-                                                       Town village, int hexGridSize) {
+    private List<StreetSegment> createCrossingSegments(HexCoord from, HexCoord to, Town village, int hexGridSize) {
         List<StreetSegment> segments = new ArrayList<>();
 
         // Calculate direction between districts
@@ -961,10 +1010,8 @@ public class TownDesigner {
         int dr = to.getDistrictR() - from.getDistrictR();
 
         // Calculate edge positions using existing calculateEdgeConnection method
-        EdgeConnection edge = calculateEdgeConnection(
-                from.getX(), from.getZ(),
-                to.getX(), to.getZ(),
-                dq, dr, hexGridSize);
+        EdgeConnection edge =
+                calculateEdgeConnection(from.getX(), from.getZ(), to.getX(), to.getZ(), dq, dr, hexGridSize);
 
         // Segment 1: from -> edge in district 1
         StreetSegment segment1 = StreetSegment.builder()
@@ -990,11 +1037,18 @@ public class TownDesigner {
                 .build();
         segments.add(segment2);
 
-        log.debug("STREET_CROSSING: '{}' ({},{}) -> EDGE ({},{}) | EDGE ({},{}) -> '{}' ({},{})",
-                from.getDistrictName(), from.getX(), from.getZ(),
-                edge.getEdge1X(), edge.getEdge1Z(),
-                edge.getEdge2X(), edge.getEdge2Z(),
-                to.getDistrictName(), to.getX(), to.getZ());
+        log.debug(
+                "STREET_CROSSING: '{}' ({},{}) -> EDGE ({},{}) | EDGE ({},{}) -> '{}' ({},{})",
+                from.getDistrictName(),
+                from.getX(),
+                from.getZ(),
+                edge.getEdge1X(),
+                edge.getEdge1Z(),
+                edge.getEdge2X(),
+                edge.getEdge2Z(),
+                to.getDistrictName(),
+                to.getX(),
+                to.getZ());
 
         return segments;
     }
@@ -1003,12 +1057,17 @@ public class TownDesigner {
      * Checks if (dq, dr) represents an adjacent hex direction.
      */
     private boolean isAdjacentHexDirection(int dq, int dr) {
-        return (dq == 0 && dr == -1) ||  // N
-                (dq == 1 && dr == -1) ||  // NE
-                (dq == 1 && dr == 0) ||   // SE
-                (dq == 0 && dr == 1) ||   // S
-                (dq == -1 && dr == 1) ||  // SW
-                (dq == -1 && dr == 0);    // NW
+        return (dq == 0 && dr == -1)
+                || // N
+                (dq == 1 && dr == -1)
+                || // NE
+                (dq == 1 && dr == 0)
+                || // SE
+                (dq == 0 && dr == 1)
+                || // S
+                (dq == -1 && dr == 1)
+                || // SW
+                (dq == -1 && dr == 0); // NW
     }
 
     /**
@@ -1038,8 +1097,8 @@ public class TownDesigner {
 
         for (HexCoord neighbor : closeNeighbors) {
             coord.addNeighbor(neighbor);
-            log.debug("Linked cross-district: {} -> {} (distance: {})",
-                    coord.getKey(), neighbor.getKey(), (int)coord.cartesianDistance(neighbor));
+            log.debug("Linked cross-district: {} -> {} (distance: {})", coord.getKey(), neighbor.getKey(), (int)
+                    coord.cartesianDistance(neighbor));
         }
     }
 
@@ -1047,8 +1106,10 @@ public class TownDesigner {
      * Checks if two districts are adjacent in the hex grid.
      */
     private boolean isDistrictAdjacent(DistrictGrid district1, DistrictGrid district2) {
-        int dq = district2.getGridPosition().getQ() - district1.getGridPosition().getQ();
-        int dr = district2.getGridPosition().getR() - district1.getGridPosition().getR();
+        int dq =
+                district2.getGridPosition().getQ() - district1.getGridPosition().getQ();
+        int dr =
+                district2.getGridPosition().getR() - district1.getGridPosition().getR();
         return isAdjacentHexDirection(dq, dr);
     }
 
@@ -1068,10 +1129,8 @@ public class TownDesigner {
     /**
      * Calculates the edge connection points where a street crosses between two adjacent districts.
      */
-    private EdgeConnection calculateEdgeConnection(int local1X, int local1Z,
-                                                    int local2X, int local2Z,
-                                                    int dq, int dr,
-                                                    int hexGridSize) {
+    private EdgeConnection calculateEdgeConnection(
+            int local1X, int local1Z, int local2X, int local2Z, int dq, int dr, int hexGridSize) {
         // Determine which edge we're crossing based on direction (FLAT-TOP orientation)
         // Flat-top hexagons have N/S horizontal edges and NE/NW/SE/SW diagonal corners
         int edge1X, edge1Z, edge2X, edge2Z;
@@ -1115,11 +1174,11 @@ public class TownDesigner {
         }
 
         return EdgeConnection.builder()
-            .edge1X(edge1X)
-            .edge1Z(edge1Z)
-            .edge2X(edge2X)
-            .edge2Z(edge2Z)
-            .build();
+                .edge1X(edge1X)
+                .edge1Z(edge1Z)
+                .edge2X(edge2X)
+                .edge2Z(edge2Z)
+                .build();
     }
 
     /**
@@ -1127,10 +1186,10 @@ public class TownDesigner {
      */
     private DistrictGrid findDistrictByPosition(List<DistrictGrid> districtGrids, HexVector2 position) {
         return districtGrids.stream()
-            .filter(d -> d.getGridPosition().getQ() == position.getQ() &&
-                        d.getGridPosition().getR() == position.getR())
-            .findFirst()
-            .orElse(null);
+                .filter(d -> d.getGridPosition().getQ() == position.getQ()
+                        && d.getGridPosition().getR() == position.getR())
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -1180,21 +1239,23 @@ public class TownDesigner {
                 int rotation = calculateBuildingRotation(placedPlace, nearestStreet);
                 placedPlace.setRotation(rotation);
 
-                log.debug("Building '{}' oriented with rotation {} towards nearest street",
-                    placedPlace.getName(), rotation);
+                log.debug(
+                        "Building '{}' oriented with rotation {} towards nearest street",
+                        placedPlace.getName(),
+                        rotation);
             } else {
                 // No street nearby, use default rotation (0 = facing north)
                 placedPlace.setRotation(0);
-                log.debug("Building '{}' uses default rotation (no nearby street)",
-                    placedPlace.getName());
+                log.debug("Building '{}' uses default rotation (no nearby street)", placedPlace.getName());
             }
         }
 
-        log.debug("Positioned {} buildings in district '{}'",
-            districtGrid.getPlacedPlaces().stream()
-                .filter(p -> p.getPlace() instanceof BuildingPlace && p.getBuildingId() != null)
-                .count(),
-            districtGrid.getName());
+        log.debug(
+                "Positioned {} buildings in district '{}'",
+                districtGrid.getPlacedPlaces().stream()
+                        .filter(p -> p.getPlace() instanceof BuildingPlace && p.getBuildingId() != null)
+                        .count(),
+                districtGrid.getName());
     }
 
     /**
@@ -1214,9 +1275,7 @@ public class TownDesigner {
         for (StreetSegment street : streets) {
             // Calculate distance from place to street segment
             double distance = distanceToSegment(
-                placeX, placeZ,
-                street.getFromX(), street.getFromZ(),
-                street.getToX(), street.getToZ());
+                    placeX, placeZ, street.getFromX(), street.getFromZ(), street.getToX(), street.getToZ());
 
             if (distance < minDistance) {
                 minDistance = distance;
@@ -1335,22 +1394,24 @@ public class TownDesigner {
 
         // Get target fill rate: district-level overrides village-level
         // If district.fillRate is null, use village-level fillRate as fallback
-        double targetFillRate = district.getFillRate() != null
-            ? district.getFillRate()
-            : village.getFillRate();
+        double targetFillRate = district.getFillRate() != null ? district.getFillRate() : village.getFillRate();
         double currentOccupancy = (double) usedSlots / availableSlots;
 
-        log.debug("District '{}': {}/{} slots used ({}%), target: {}%",
-            district.getName(), usedSlots, availableSlots,
-            String.format("%.1f", currentOccupancy * 100),
-            String.format("%.1f", targetFillRate * 100));
+        log.debug(
+                "District '{}': {}/{} slots used ({}%), target: {}%",
+                district.getName(),
+                usedSlots,
+                availableSlots,
+                String.format("%.1f", currentOccupancy * 100),
+                String.format("%.1f", targetFillRate * 100));
 
         // Check if already at or above target occupancy
         if (currentOccupancy >= targetFillRate) {
-            log.debug("District '{}' already at target occupancy ({}% >= {}%), no filling needed",
-                district.getName(),
-                String.format("%.1f", currentOccupancy * 100),
-                String.format("%.1f", targetFillRate * 100));
+            log.debug(
+                    "District '{}' already at target occupancy ({}% >= {}%), no filling needed",
+                    district.getName(),
+                    String.format("%.1f", currentOccupancy * 100),
+                    String.format("%.1f", targetFillRate * 100));
             return;
         }
 
@@ -1362,17 +1423,21 @@ public class TownDesigner {
             return;
         }
 
-        log.debug("District '{}': Will fill {} additional slots (target: {}/{} = {}%)",
-            district.getName(), slotsToFill, targetSlots, availableSlots,
-            String.format("%.1f", targetFillRate * 100));
+        log.debug(
+                "District '{}': Will fill {} additional slots (target: {}/{} = {}%)",
+                district.getName(),
+                slotsToFill,
+                targetSlots,
+                availableSlots,
+                String.format("%.1f", targetFillRate * 100));
 
         // Get divider for this district
         int divider = getDividerFromSlotSize(slotSize);
 
         // Calculate which slots are already used
         List<Integer> usedSlotIndices = districtGrid.getPlacedPlaces().stream()
-            .map(PlacedPlace::getSlotIndex)
-            .toList();
+                .map(PlacedPlace::getSlotIndex)
+                .toList();
 
         // Collect empty slots with their distance to nearest street
         List<HexVector2> allSlotPositions = getHexagonalSlotPositions(divider);
@@ -1397,15 +1462,12 @@ public class TownDesigner {
             int localZ = hexGridSize / 2 + relativePos.getZ();
 
             // Check distance to nearest street
-            double distanceToStreet = calculateDistanceToNearestStreet(
-                localX, localZ, districtGrid.getStreets());
+            double distanceToStreet = calculateDistanceToNearestStreet(localX, localZ, districtGrid.getStreets());
 
             boolean isNearStreet = distanceToStreet < 50.0; // Within 50 blocks of a street
 
             // Add to candidates list (don't place yet)
-            candidates.add(new EmptySlotCandidate(
-                slotIndex, hexPos, localX, localZ, distanceToStreet, isNearStreet
-            ));
+            candidates.add(new EmptySlotCandidate(slotIndex, hexPos, localX, localZ, distanceToStreet, isNearStreet));
         }
 
         log.debug("Collected {} empty slot candidates for district '{}'", candidates.size(), district.getName());
@@ -1429,60 +1491,65 @@ public class TownDesigner {
                 if (roll < village.getBuildingTendency()) {
                     // Create building place (house)
                     newPlace = BuildingPlace.builder()
-                        .name("/house-" + candidate.getSlotIndex())
-                        .kind("house")
-                        .connectionPoint(false)
-                        .build();
+                            .name("/house-" + candidate.getSlotIndex())
+                            .kind("house")
+                            .connectionPoint(false)
+                            .build();
                     buildingCount++;
                 } else {
                     // Create free place (plaza or square)
-                    FreePlace.FreeKind kind = random.nextBoolean() ?
-                        FreePlace.FreeKind.PLAZA : FreePlace.FreeKind.SQUARE;
+                    FreePlace.FreeKind kind =
+                            random.nextBoolean() ? FreePlace.FreeKind.PLAZA : FreePlace.FreeKind.SQUARE;
                     newPlace = FreePlace.builder()
-                        .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
-                        .kind(kind)
-                        .connectionPoint(false)
-                        .build();
+                            .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                            .kind(kind)
+                            .connectionPoint(false)
+                            .build();
                     freeCount++;
                 }
             } else {
                 // Far from street: Always create free place (park or garden)
-                FreePlace.FreeKind kind = random.nextBoolean() ?
-                    FreePlace.FreeKind.PARK : FreePlace.FreeKind.GARDEN;
+                FreePlace.FreeKind kind = random.nextBoolean() ? FreePlace.FreeKind.PARK : FreePlace.FreeKind.GARDEN;
                 newPlace = FreePlace.builder()
-                    .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
-                    .kind(kind)
-                    .connectionPoint(false)
-                    .build();
+                        .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                        .kind(kind)
+                        .connectionPoint(false)
+                        .build();
                 freeCount++;
             }
 
             // Create PlacedPlace with hexagonal and cartesian coordinates
             PlacedPlace placedPlace = PlacedPlace.builder()
-                .place(newPlace)
-                .hexQ(candidate.getHexPos().getQ())
-                .hexR(candidate.getHexPos().getR())
-                .localX(candidate.getLocalX())
-                .localZ(candidate.getLocalZ())
-                .divider(divider)
-                .slotIndex(candidate.getSlotIndex())
-                .rotation(0)
-                .build();
+                    .place(newPlace)
+                    .hexQ(candidate.getHexPos().getQ())
+                    .hexR(candidate.getHexPos().getR())
+                    .localX(candidate.getLocalX())
+                    .localZ(candidate.getLocalZ())
+                    .divider(divider)
+                    .slotIndex(candidate.getSlotIndex())
+                    .rotation(0)
+                    .build();
 
             districtGrid.getPlacedPlaces().add(placedPlace);
             filledCount++;
 
-            log.debug("Filled slot {} with {} '{}' (distance to street: {:.1f}, near: {})",
-                candidate.getSlotIndex(),
-                newPlace instanceof BuildingPlace ? "building" : "free place",
-                newPlace instanceof BuildingPlace ? ((BuildingPlace) newPlace).getKind() :
-                    ((FreePlace) newPlace).getKind(),
-                candidate.getDistanceToStreet(),
-                candidate.isNearStreet());
+            log.debug(
+                    "Filled slot {} with {} '{}' (distance to street: {:.1f}, near: {})",
+                    candidate.getSlotIndex(),
+                    newPlace instanceof BuildingPlace ? "building" : "free place",
+                    newPlace instanceof BuildingPlace
+                            ? ((BuildingPlace) newPlace).getKind()
+                            : ((FreePlace) newPlace).getKind(),
+                    candidate.getDistanceToStreet(),
+                    candidate.isNearStreet());
         }
 
-        log.debug("Area filling completed for district '{}': filled {} slots ({} buildings, {} free places)",
-            district.getName(), filledCount, buildingCount, freeCount);
+        log.debug(
+                "Area filling completed for district '{}': filled {} slots ({} buildings, {} free places)",
+                district.getName(),
+                filledCount,
+                buildingCount,
+                freeCount);
 
         // Step 3b: Assign buildings to newly created BuildingPlaces
         if (buildingCount > 0) {
@@ -1502,10 +1569,8 @@ public class TownDesigner {
 
         double minDistance = Double.MAX_VALUE;
         for (StreetSegment street : streets) {
-            double distance = distanceToSegment(
-                x, z,
-                street.getFromX(), street.getFromZ(),
-                street.getToX(), street.getToZ());
+            double distance =
+                    distanceToSegment(x, z, street.getFromX(), street.getFromZ(), street.getToX(), street.getToZ());
             minDistance = Math.min(minDistance, distance);
         }
 

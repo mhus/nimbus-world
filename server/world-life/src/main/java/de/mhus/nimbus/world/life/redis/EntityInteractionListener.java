@@ -1,19 +1,18 @@
 package de.mhus.nimbus.world.life.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.service.EntityInteractionService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.HashSet;
-import java.util.Set;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Listens for entity interaction events from world-player pods.
@@ -61,7 +60,8 @@ public class EntityInteractionListener {
 
     private synchronized void subscribeToWorld(WorldId worldId) {
         if (subscribedWorlds.contains(worldId)) return;
-        redisMessaging.subscribe(worldId.getId(), "e.int", (topic, message) -> handleEntityInteraction(worldId, message));
+        redisMessaging.subscribe(
+                worldId.getId(), "e.int", (topic, message) -> handleEntityInteraction(worldId, message));
         subscribedWorlds.add(worldId);
         log.info("Subscribed to entity interactions for world: {}", worldId);
     }
@@ -115,18 +115,14 @@ public class EntityInteractionListener {
 
             // Process interaction via service
             interactionService.handleInteraction(
+                    worldId, entityId, action, timestamp, params, userId, sessionId, displayName);
+
+            log.debug(
+                    "World {}: Handled entity interaction: entityId={}, action={}, user={}",
                     worldId,
                     entityId,
                     action,
-                    timestamp,
-                    params,
-                    userId,
-                    sessionId,
-                    displayName
-            );
-
-            log.debug("World {}: Handled entity interaction: entityId={}, action={}, user={}",
-                    worldId, entityId, action, displayName);
+                    displayName);
 
         } catch (Exception e) {
             log.error("Failed to handle entity interaction for world {}: {}", worldId, message, e);

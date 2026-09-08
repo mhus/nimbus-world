@@ -5,9 +5,8 @@ import de.mhus.nimbus.world.generator.composer.build.ConnectionResult;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Connects roads and rivers across hex grid boundaries
@@ -29,10 +28,12 @@ public class RoadAndRiverConnector {
      * @return Empty result with success=true for backwards compatibility
      */
     @Deprecated
-    public ConnectionResult connect(HexGridFillResult fillResult,
-                                    List<RoadConnection> roadConnections,
-                                    List<RiverConnection> riverConnections) {
-        log.warn("RoadAndRiverConnector.connect() is deprecated and does nothing - Flow connections are now handled during composition");
+    public ConnectionResult connect(
+            HexGridFillResult fillResult,
+            List<RoadConnection> roadConnections,
+            List<RiverConnection> riverConnections) {
+        log.warn(
+                "RoadAndRiverConnector.connect() is deprecated and does nothing - Flow connections are now handled during composition");
         return ConnectionResult.builder()
                 .roadsApplied(0)
                 .riversApplied(0)
@@ -86,8 +87,7 @@ public class RoadAndRiverConnector {
             if (dq == 0 && dr == -1) return EDGE.SOUTH_WEST;
         }
 
-        throw new IllegalArgumentException("Invalid hex direction from (" + from.getQ() + "," + from.getR()
-            + ") to (" + to.getQ() + "," + to.getR() + "): dq=" + dq + ", dr=" + dr);
+        throw new IllegalArgumentException("Invalid hex direction from (" + from.getQ() + "," + from.getR() + ") to ("
+                + to.getQ() + "," + to.getR() + "): dq=" + dq + ", dr=" + dr);
     }
-
 }

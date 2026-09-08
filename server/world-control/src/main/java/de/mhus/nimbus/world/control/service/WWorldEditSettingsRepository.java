@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.control.service;
 
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
 
 /**
  * MongoDB Repository for WWorldEditSettings entities.

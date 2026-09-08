@@ -20,10 +20,10 @@ public class TownPlotDefinition {
     private String id;
     private int lx;
     private int lz;
-    private Integer sizeX;  // for rectangular plots
-    private Integer sizeZ;  // for rectangular plots
-    private Integer size;   // for circular plots
+    private Integer sizeX; // for rectangular plots
+    private Integer sizeZ; // for rectangular plots
+    private Integer size; // for circular plots
     private int level;
     private int material;
-    private Integer road;   // optional: connect to road index
+    private Integer road; // optional: connect to road index
 }

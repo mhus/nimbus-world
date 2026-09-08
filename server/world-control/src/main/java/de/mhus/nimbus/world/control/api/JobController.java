@@ -7,16 +7,15 @@ import de.mhus.nimbus.world.shared.job.JobStatus;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for managing WJob entities.
@@ -45,8 +44,7 @@ public class JobController extends BaseEditorController {
             Integer priority,
             Integer maxRetries,
             de.mhus.nimbus.world.shared.job.NextJob onSuccess,
-            de.mhus.nimbus.world.shared.job.NextJob onError
-    ) {}
+            de.mhus.nimbus.world.shared.job.NextJob onError) {}
 
     /**
      * Response DTO for job data.
@@ -73,19 +71,12 @@ public class JobController extends BaseEditorController {
             Instant startedAt,
             Instant completedAt,
             Instant modifiedAt,
-            boolean enabled
-    ) {}
+            boolean enabled) {}
 
     /**
      * Summary response for job counts.
      */
-    public record JobSummaryResponse(
-            String worldId,
-            long pending,
-            long running,
-            long completed,
-            long failed
-    ) {}
+    public record JobSummaryResponse(String worldId, long pending, long running, long completed, long failed) {}
 
     private JobResponse toResponse(WJob job) {
         return new JobResponse(
@@ -110,8 +101,7 @@ public class JobController extends BaseEditorController {
                 job.getStartedAt(),
                 job.getCompletedAt(),
                 job.getModifiedAt(),
-                job.isEnabled()
-        );
+                job.isEnabled());
     }
 
     /**
@@ -148,8 +138,7 @@ public class JobController extends BaseEditorController {
                     jobService.countJobs(worldId, JobStatus.PENDING),
                     jobService.countJobs(worldId, JobStatus.RUNNING),
                     jobService.countJobs(worldId, JobStatus.COMPLETED),
-                    jobService.countJobs(worldId, JobStatus.FAILED)
-            );
+                    jobService.countJobs(worldId, JobStatus.FAILED));
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
             return bad(e.getMessage());
@@ -161,9 +150,7 @@ public class JobController extends BaseEditorController {
      * GET /control/worlds/{worldId}/jobs/status/{status}
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<?> listByStatus(
-            @PathVariable String worldId,
-            @PathVariable String status) {
+    public ResponseEntity<?> listByStatus(@PathVariable String worldId, @PathVariable String status) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -186,9 +173,7 @@ public class JobController extends BaseEditorController {
      * GET /control/worlds/{worldId}/jobs/{jobId}
      */
     @GetMapping("/{jobId}")
-    public ResponseEntity<?> get(
-            @PathVariable String worldId,
-            @PathVariable String jobId) {
+    public ResponseEntity<?> get(@PathVariable String worldId, @PathVariable String jobId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -196,7 +181,8 @@ public class JobController extends BaseEditorController {
         var error2 = validateId(jobId, "jobId");
         if (error2 != null) return error2;
 
-        return jobService.getJob(jobId)
+        return jobService
+                .getJob(jobId)
                 .<ResponseEntity<?>>map(job -> {
                     if (!worldId.equals(job.getWorldId())) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -204,8 +190,8 @@ public class JobController extends BaseEditorController {
                     }
                     return ResponseEntity.ok(toResponse(job));
                 })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Job not found: " + jobId)));
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Job not found: " + jobId)));
     }
 
     /**
@@ -213,9 +199,7 @@ public class JobController extends BaseEditorController {
      * POST /control/worlds/{worldId}/jobs
      */
     @PostMapping
-    public ResponseEntity<?> create(
-            @PathVariable String worldId,
-            @RequestBody JobRequest request) {
+    public ResponseEntity<?> create(@PathVariable String worldId, @RequestBody JobRequest request) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -232,8 +216,8 @@ public class JobController extends BaseEditorController {
 
             // Generate default title if not provided
             String title = Strings.isBlank(request.title())
-                ? (request.executor() + (Strings.isNotBlank(type) ? " - " + type : ""))
-                : request.title();
+                    ? (request.executor() + (Strings.isNotBlank(type) ? " - " + type : ""))
+                    : request.title();
 
             WJob created = jobService.createJob(
                     worldId,
@@ -246,11 +230,9 @@ public class JobController extends BaseEditorController {
                     priority,
                     maxRetries,
                     request.onSuccess(),
-                    request.onError()
-            );
+                    request.onError());
 
-            return ResponseEntity.created(
-                            URI.create("/control/worlds/" + worldId + "/jobs/" + created.getId()))
+            return ResponseEntity.created(URI.create("/control/worlds/" + worldId + "/jobs/" + created.getId()))
                     .body(toResponse(created));
 
         } catch (IllegalArgumentException e) {
@@ -266,9 +248,7 @@ public class JobController extends BaseEditorController {
      */
     @PatchMapping("/{jobId}")
     public ResponseEntity<?> patch(
-            @PathVariable String worldId,
-            @PathVariable String jobId,
-            @RequestBody Map<String, Object> updates) {
+            @PathVariable String worldId, @PathVariable String jobId, @RequestBody Map<String, Object> updates) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -293,8 +273,7 @@ public class JobController extends BaseEditorController {
                 }
             });
 
-            return updated
-                    .<ResponseEntity<?>>map(j -> ResponseEntity.ok(toResponse(j)))
+            return updated.<ResponseEntity<?>>map(j -> ResponseEntity.ok(toResponse(j)))
                     .orElseGet(() -> notFound("Job not found: " + jobId));
 
         } catch (ClassCastException e) {
@@ -311,9 +290,7 @@ public class JobController extends BaseEditorController {
      * POST /control/worlds/{worldId}/jobs/{jobId}/cancel
      */
     @PostMapping("/{jobId}/cancel")
-    public ResponseEntity<?> cancel(
-            @PathVariable String worldId,
-            @PathVariable String jobId) {
+    public ResponseEntity<?> cancel(@PathVariable String worldId, @PathVariable String jobId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -321,7 +298,8 @@ public class JobController extends BaseEditorController {
         var error2 = validateId(jobId, "jobId");
         if (error2 != null) return error2;
 
-        return jobService.getJob(jobId)
+        return jobService
+                .getJob(jobId)
                 .map(job -> {
                     if (!worldId.equals(job.getWorldId())) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -330,17 +308,14 @@ public class JobController extends BaseEditorController {
 
                     boolean cancelled = jobService.deleteJob(jobId);
                     if (cancelled) {
-                        return ResponseEntity.ok(Map.of(
-                                "message", "Job cancelled",
-                                "jobId", jobId
-                        ));
+                        return ResponseEntity.ok(Map.of("message", "Job cancelled", "jobId", jobId));
                     } else {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(Map.of("error", "Failed to cancel job"));
                     }
                 })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Job not found: " + jobId)));
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Job not found: " + jobId)));
     }
 
     /**
@@ -348,9 +323,7 @@ public class JobController extends BaseEditorController {
      * DELETE /control/worlds/{worldId}/jobs/{jobId}
      */
     @DeleteMapping("/{jobId}")
-    public ResponseEntity<?> delete(
-            @PathVariable String worldId,
-            @PathVariable String jobId) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, @PathVariable String jobId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -358,7 +331,8 @@ public class JobController extends BaseEditorController {
         var error2 = validateId(jobId, "jobId");
         if (error2 != null) return error2;
 
-        return jobService.getJob(jobId)
+        return jobService
+                .getJob(jobId)
                 .map(job -> {
                     if (!worldId.equals(job.getWorldId())) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -373,8 +347,8 @@ public class JobController extends BaseEditorController {
                                 .body(Map.of("error", "Failed to delete job"));
                     }
                 })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Job not found: " + jobId)));
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Job not found: " + jobId)));
     }
 
     /**
@@ -382,9 +356,7 @@ public class JobController extends BaseEditorController {
      * POST /control/worlds/{worldId}/jobs/{jobId}/retry
      */
     @PostMapping("/{jobId}/retry")
-    public ResponseEntity<?> retry(
-            @PathVariable String worldId,
-            @PathVariable String jobId) {
+    public ResponseEntity<?> retry(@PathVariable String worldId, @PathVariable String jobId) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
@@ -392,7 +364,8 @@ public class JobController extends BaseEditorController {
         var error2 = validateId(jobId, "jobId");
         if (error2 != null) return error2;
 
-        return jobService.getJob(jobId)
+        return jobService
+                .getJob(jobId)
                 .map(job -> {
                     if (!worldId.equals(job.getWorldId())) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -411,13 +384,12 @@ public class JobController extends BaseEditorController {
                         j.setErrorMessage(null);
                     });
 
-                    return updated
-                            .<ResponseEntity<?>>map(j -> ResponseEntity.ok(toResponse(j)))
+                    return updated.<ResponseEntity<?>>map(j -> ResponseEntity.ok(toResponse(j)))
                             .orElseGet(() -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                     .body(Map.of("error", "Failed to retry job")));
                 })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Job not found: " + jobId)));
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Job not found: " + jobId)));
     }
 
     /**
@@ -434,10 +406,7 @@ public class JobController extends BaseEditorController {
 
             jobService.cleanup(retentionHours);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Cleanup completed",
-                    "retentionHours", retentionHours
-            ));
+            return ResponseEntity.ok(Map.of("message", "Cleanup completed", "retentionHours", retentionHours));
         } catch (Exception e) {
             return bad("Failed to cleanup jobs: " + e.getMessage());
         }
@@ -455,7 +424,6 @@ public class JobController extends BaseEditorController {
         return ResponseEntity.ok(Map.of(
                 "retentionHours", jobSettings.getRetentionHours(),
                 "cleanupEnabled", jobSettings.isCleanupEnabled(),
-                "cleanupIntervalMs", jobSettings.getCleanupIntervalMs()
-        ));
+                "cleanupIntervalMs", jobSettings.getCleanupIntervalMs()));
     }
 }

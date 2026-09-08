@@ -2,10 +2,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Set material manipulator.
@@ -31,8 +30,7 @@ public class SetMaterialManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting set-material manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse required parameters
@@ -57,7 +55,8 @@ public class SetMaterialManipulator implements FlatManipulator {
             materialId = Integer.parseInt(materialParam);
         } catch (NumberFormatException e) {
             // If not a number, try to resolve as material name
-            throw new IllegalArgumentException("Material must be an integer ID (material names not yet supported): " + materialParam);
+            throw new IllegalArgumentException(
+                    "Material must be an integer ID (material names not yet supported): " + materialParam);
         }
 
         // Validate parameters
@@ -72,8 +71,15 @@ public class SetMaterialManipulator implements FlatManipulator {
             log.warn("fromLevel > toLevel, swapping: fromLevel={}, toLevel={}", fromLevel, toLevel);
         }
 
-        log.info("SetMaterialManipulator: material={}, fromLevel={}, toLevel={}, region=({},{},{},{})",
-                materialId, fromLevel, toLevel, x, z, sizeX, sizeZ);
+        log.info(
+                "SetMaterialManipulator: material={}, fromLevel={}, toLevel={}, region=({},{},{},{})",
+                materialId,
+                fromLevel,
+                toLevel,
+                x,
+                z,
+                sizeX,
+                sizeZ);
 
         // Apply material to all positions in level range
         int changedCount = 0;
@@ -100,8 +106,13 @@ public class SetMaterialManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Set material manipulation completed: material={}, fromLevel={}, toLevel={}, changed={}, skipped={}",
-                materialId, fromLevel, toLevel, changedCount, skippedCount);
+        log.info(
+                "Set material manipulation completed: material={}, fromLevel={}, toLevel={}, changed={}, skipped={}",
+                materialId,
+                fromLevel,
+                toLevel,
+                changedCount,
+                skippedCount);
     }
 
     private Integer parseIntParameter(Map<String, String> parameters, String name, Integer defaultValue) {
@@ -111,8 +122,7 @@ public class SetMaterialManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

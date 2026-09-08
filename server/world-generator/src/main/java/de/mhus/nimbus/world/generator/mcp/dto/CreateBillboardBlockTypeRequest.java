@@ -9,5 +9,4 @@ public record CreateBillboardBlockTypeRequest(
         Map<String, Object> texture,
         String type,
         Boolean solid,
-        Double autoJump
-) {}
+        Double autoJump) {}

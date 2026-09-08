@@ -1,19 +1,17 @@
 package de.mhus.nimbus.world.control.dialog;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
-import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handles free text input from players during NPC dialogs.
@@ -79,12 +77,14 @@ public class DialogFreeTextService {
 
         // Build prompt and call AI
         String modelName = resolveModelName(ctx);
-        Optional<AiChat> chatOpt = aiModelService.createChat(modelName, AiChatOptions.builder()
-                .systemMessage(buildFreeTextSystemPrompt(ctx, currentNode))
-                .temperature(0.8)
-                .maxTokens(getMaxTokens(ctx))
-                .timeoutSeconds(30)
-                .build());
+        Optional<AiChat> chatOpt = aiModelService.createChat(
+                modelName,
+                AiChatOptions.builder()
+                        .systemMessage(buildFreeTextSystemPrompt(ctx, currentNode))
+                        .temperature(0.8)
+                        .maxTokens(getMaxTokens(ctx))
+                        .timeoutSeconds(30)
+                        .build());
 
         if (chatOpt.isEmpty()) {
             throw new DialogService.DialogException("AI not available");
@@ -107,7 +107,8 @@ public class DialogFreeTextService {
             incrementRequestCount(ctx);
 
             // Check if intent matched
-            if (aiResponse.matchedIntent() != null && !aiResponse.matchedIntent().isBlank()) {
+            if (aiResponse.matchedIntent() != null
+                    && !aiResponse.matchedIntent().isBlank()) {
                 return handleIntentMatch(ctx, currentNode, aiResponse);
             }
 
@@ -141,7 +142,9 @@ public class DialogFreeTextService {
 
         // Situation context
         if (ctx.getActiveSituation() != null && ctx.getActiveSituation().aiContext() != null) {
-            sb.append("\nSituation: ").append(ctx.getActiveSituation().aiContext()).append("\n");
+            sb.append("\nSituation: ")
+                    .append(ctx.getActiveSituation().aiContext())
+                    .append("\n");
         }
 
         // NPC state
@@ -152,7 +155,9 @@ public class DialogFreeTextService {
         // Player memory
         List<String> remembers = ctx.getPlayerRemembers();
         if (!remembers.isEmpty()) {
-            sb.append("Du erinnerst dich: ").append(String.join("; ", remembers)).append("\n");
+            sb.append("Du erinnerst dich: ")
+                    .append(String.join("; ", remembers))
+                    .append("\n");
         }
 
         // Boundaries
@@ -164,8 +169,9 @@ public class DialogFreeTextService {
                 }
             }
             if (!profile.freeText().forbiddenTopics().isEmpty()) {
-                sb.append("Verbotene Themen: ").append(
-                        String.join(", ", profile.freeText().forbiddenTopics())).append("\n");
+                sb.append("Verbotene Themen: ")
+                        .append(String.join(", ", profile.freeText().forbiddenTopics()))
+                        .append("\n");
             }
         }
 
@@ -207,7 +213,10 @@ public class DialogFreeTextService {
             sb.append("Bisheriger Verlauf:\n");
             for (Object entry : history) {
                 if (entry instanceof Map<?, ?> map) {
-                    sb.append(map.get("role")).append(": ").append(map.get("text")).append("\n");
+                    sb.append(map.get("role"))
+                            .append(": ")
+                            .append(map.get("text"))
+                            .append("\n");
                 }
             }
             sb.append("\n");
@@ -220,12 +229,7 @@ public class DialogFreeTextService {
     // --- Response parsing ---
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record FreeTextAiResponse(
-            String npcText,
-            String matchedIntent,
-            List<Effect> effects,
-            String reasoning
-    ) {
+    record FreeTextAiResponse(String npcText, String matchedIntent, List<Effect> effects, String reasoning) {
         FreeTextAiResponse {
             if (effects == null) effects = List.of();
         }
@@ -236,7 +240,9 @@ public class DialogFreeTextService {
             // Try to extract JSON from response (AI might wrap in markdown code blocks)
             String json = rawResponse.trim();
             if (json.startsWith("```")) {
-                json = json.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
+                json = json.replaceAll("```json\\s*", "")
+                        .replaceAll("```\\s*$", "")
+                        .trim();
             }
             return OBJECT_MAPPER.readValue(json, FreeTextAiResponse.class);
         } catch (Exception e) {
@@ -248,8 +254,8 @@ public class DialogFreeTextService {
 
     // --- Intent matching ---
 
-    private DialogNodeResponse handleIntentMatch(DialogContext ctx, DialogNode currentNode,
-                                                   FreeTextAiResponse aiResponse) {
+    private DialogNodeResponse handleIntentMatch(
+            DialogContext ctx, DialogNode currentNode, FreeTextAiResponse aiResponse) {
         String matchedIntent = aiResponse.matchedIntent();
 
         // Find the option with matching intent
@@ -264,10 +270,14 @@ public class DialogFreeTextService {
                     dialogService.closeDialog(ctx);
                     return new DialogNodeResponse(
                             ctx.getDialogLease().getLeaseId(),
-                            ctx.getNpcTitle(), ctx.getNpcPortrait(),
-                            aiResponse.npcText(), List.of(), false, true, null,
-                            ctx.getNavigate()
-                    );
+                            ctx.getNpcTitle(),
+                            ctx.getNpcPortrait(),
+                            aiResponse.npcText(),
+                            List.of(),
+                            false,
+                            true,
+                            null,
+                            ctx.getNavigate());
                 }
 
                 // Execute target node effects
@@ -276,17 +286,21 @@ public class DialogFreeTextService {
                     effectExecutor.executeAll(targetNode.effects(), ctx);
                 }
 
-                leaseService.setLeaseDataValue(
-                        ctx.getDialogLease().getLeaseId(), "currentNode", opt.next());
+                leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), "currentNode", opt.next());
 
                 // Return the AI-generated text for the transition, then evaluate new node
                 DialogNodeResponse nextNode = dialogService.evaluateNode(ctx, opt.next());
                 // Use AI-generated text for the response instead of cached/generated node text
                 return new DialogNodeResponse(
-                        nextNode.progressId(), nextNode.npcTitle(), nextNode.npcPortrait(),
-                        aiResponse.npcText(), nextNode.options(), nextNode.freeTextEnabled(), nextNode.finished(),
-                        nextNode.voice(), nextNode.navigate()
-                );
+                        nextNode.progressId(),
+                        nextNode.npcTitle(),
+                        nextNode.npcPortrait(),
+                        aiResponse.npcText(),
+                        nextNode.options(),
+                        nextNode.freeTextEnabled(),
+                        nextNode.finished(),
+                        nextNode.voice(),
+                        nextNode.navigate());
             }
         }
 
@@ -295,8 +309,8 @@ public class DialogFreeTextService {
         return buildFreeTextResponse(ctx, currentNode, ctx.getCurrentNodeId(), aiResponse.npcText());
     }
 
-    private DialogNodeResponse buildFreeTextResponse(DialogContext ctx, DialogNode currentNode,
-                                                       String nodeId, String npcText) {
+    private DialogNodeResponse buildFreeTextResponse(
+            DialogContext ctx, DialogNode currentNode, String nodeId, String npcText) {
         // Same options as current node (re-evaluate conditions)
         List<OptionView> options = new ArrayList<>();
         for (int i = 0; i < currentNode.options().size(); i++) {
@@ -308,11 +322,14 @@ public class DialogFreeTextService {
 
         return new DialogNodeResponse(
                 ctx.getDialogLease().getLeaseId(),
-                ctx.getNpcTitle(), ctx.getNpcPortrait(),
-                npcText, options, freeTextEnabled, false,
+                ctx.getNpcTitle(),
+                ctx.getNpcPortrait(),
+                npcText,
+                options,
+                freeTextEnabled,
+                false,
                 dialogService.buildVoiceInfo(ctx),
-                ctx.getNavigate()
-        );
+                ctx.getNavigate());
     }
 
     // --- History management ---
@@ -331,7 +348,8 @@ public class DialogFreeTextService {
 
         // Trim to max history
         int maxHistory = DEFAULT_MAX_HISTORY;
-        if (ctx.getNpcProfile() != null && ctx.getNpcProfile().freeText() != null
+        if (ctx.getNpcProfile() != null
+                && ctx.getNpcProfile().freeText() != null
                 && ctx.getNpcProfile().freeText().maxTokens() != null) {
             // maxHistory could come from world config; using default for now
         }
@@ -339,13 +357,11 @@ public class DialogFreeTextService {
             history.removeFirst();
         }
 
-        leaseService.setLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), "freeTextHistory", history);
+        leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), "freeTextHistory", history);
     }
 
     private void clearHistory(DialogContext ctx) {
-        leaseService.setLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), "freeTextHistory", List.of());
+        leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), "freeTextHistory", List.of());
     }
 
     // --- Rate limiting ---
@@ -363,8 +379,7 @@ public class DialogFreeTextService {
     }
 
     private void incrementRequestCount(DialogContext ctx) {
-        leaseService.incLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), "freeTextRequestCount", 1);
+        leaseService.incLeaseDataValue(ctx.getDialogLease().getLeaseId(), "freeTextRequestCount", 1);
     }
 
     // --- Effects filtering ---
@@ -373,21 +388,21 @@ public class DialogFreeTextService {
         if (effects == null || effects.isEmpty()) return List.of();
 
         Set<String> allowed = Set.of("addMemory", "setMemory"); // defaults
-        if (ctx.getNpcProfile() != null && ctx.getNpcProfile().freeText() != null
+        if (ctx.getNpcProfile() != null
+                && ctx.getNpcProfile().freeText() != null
                 && !ctx.getNpcProfile().freeText().allowedEffects().isEmpty()) {
             allowed = new HashSet<>(ctx.getNpcProfile().freeText().allowedEffects());
         }
 
         Set<String> finalAllowed = allowed;
-        return effects.stream()
-                .filter(e -> finalAllowed.contains(e.type()))
-                .collect(Collectors.toList());
+        return effects.stream().filter(e -> finalAllowed.contains(e.type())).collect(Collectors.toList());
     }
 
     // --- Config helpers ---
 
     private String resolveModelName(DialogContext ctx) {
-        if (ctx.getNpcProfile() != null && ctx.getNpcProfile().freeText() != null
+        if (ctx.getNpcProfile() != null
+                && ctx.getNpcProfile().freeText() != null
                 && ctx.getNpcProfile().freeText().aiModel() != null) {
             return ctx.getNpcProfile().freeText().aiModel();
         }
@@ -398,7 +413,8 @@ public class DialogFreeTextService {
     }
 
     private int getMaxTokens(DialogContext ctx) {
-        if (ctx.getNpcProfile() != null && ctx.getNpcProfile().freeText() != null
+        if (ctx.getNpcProfile() != null
+                && ctx.getNpcProfile().freeText() != null
                 && ctx.getNpcProfile().freeText().maxTokens() != null) {
             return ctx.getNpcProfile().freeText().maxTokens();
         }

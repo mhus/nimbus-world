@@ -3,20 +3,18 @@ package de.mhus.nimbus.world.control.api;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.mhus.nimbus.shared.persistence.SSettings;
 import de.mhus.nimbus.shared.service.SSettingsService;
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.shared.user.SectorRoles;
-import de.mhus.nimbus.world.shared.access.RequireSectorRole;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for managing global SSettings.
@@ -88,8 +86,7 @@ public class SettingsController extends BaseEditorController {
                 request.type(),
                 request.defaultValue(),
                 request.description(),
-                request.options()
-        );
+                request.options());
 
         log.info("Setting created: key={}, type={}", request.key(), request.type());
         return ResponseEntity.ok(setting);
@@ -102,9 +99,7 @@ public class SettingsController extends BaseEditorController {
      */
     @PutMapping("/{key}")
     @Operation(summary = "Update setting", description = "Updates an existing global setting")
-    public ResponseEntity<?> updateSetting(
-            @PathVariable String key,
-            @RequestBody UpdateSettingRequest request) {
+    public ResponseEntity<?> updateSetting(@PathVariable String key, @RequestBody UpdateSettingRequest request) {
 
         ResponseEntity<?> validation = validateId(key, "key");
         if (validation != null) return validation;
@@ -126,13 +121,7 @@ public class SettingsController extends BaseEditorController {
         }
 
         SSettings setting = settingsService.setSetting(
-                key,
-                valueToSet,
-                request.type(),
-                request.defaultValue(),
-                request.description(),
-                request.options()
-        );
+                key, valueToSet, request.type(), request.defaultValue(), request.description(), request.options());
 
         log.info("Setting updated: key={}, type={}", key, request.type());
         return ResponseEntity.ok(setting);
@@ -183,18 +172,12 @@ public class SettingsController extends BaseEditorController {
             String type,
             String defaultValue,
             String description,
-            Map<String, String> options
-    ) {}
+            Map<String, String> options) {}
 
     /**
      * Request for updating an existing setting.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UpdateSettingRequest(
-            String value,
-            String type,
-            String defaultValue,
-            String description,
-            Map<String, String> options
-    ) {}
+            String value, String type, String defaultValue, String description, Map<String, String> options) {}
 }

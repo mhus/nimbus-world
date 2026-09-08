@@ -5,13 +5,12 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Generates weather descriptors for hex grids based on biome configuration.
@@ -48,8 +47,8 @@ public class WeatherGeneratorService {
      * @return true if a weather descriptor was generated, false if skipped
      */
     public boolean generateWeather(String worldId, int hexQ, int hexR, int epoch) {
-        WorldId wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
         List<WHexGrid> grids = hexGridService.findAllByWorldIdAndPosition(wid.getId(), TypeUtil.hexVector2(hexQ, hexR));
 
@@ -102,8 +101,7 @@ public class WeatherGeneratorService {
         hexGrid.getParameters().put(weatherKey, descriptor);
         hexGridService.save(hexGrid);
 
-        log.info("Generated weather for hex {},{} epoch {} in world {}",
-                hexQ, hexR, epoch, worldId);
+        log.info("Generated weather for hex {},{} epoch {} in world {}", hexQ, hexR, epoch, worldId);
         return true;
     }
 

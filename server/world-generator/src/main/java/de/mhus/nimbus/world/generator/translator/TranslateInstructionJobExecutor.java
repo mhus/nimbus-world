@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
@@ -8,15 +7,15 @@ import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Job executor for translating textual instructions to Composer Model JSON.
@@ -79,8 +78,11 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                 throw new JobExecutionException("maxAttempts must be between 1 and 10, got: " + maxAttempts);
             }
 
-            log.info("Translating instruction: documentId={}, resultPath={}, maxAttempts={}",
-                    instructionsDocumentId, documentName, maxAttempts);
+            log.info(
+                    "Translating instruction: documentId={}, resultPath={}, maxAttempts={}",
+                    instructionsDocumentId,
+                    documentName,
+                    maxAttempts);
 
             String instructions = loadInstructions(job.getWorldId(), instructionsDocumentId);
 
@@ -96,7 +98,8 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
                 try {
                     // Attempt translation
-                    result = translatorService.translateInstructionToComposite(instructions, previousError, translatorContext);
+                    result = translatorService.translateInstructionToComposite(
+                            instructions, previousError, translatorContext);
 
                     if (result.isSuccessful()) {
                         // Override worldId with the one from job context (not from instruction/Gemini)
@@ -111,15 +114,11 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                         if (attempt < maxAttempts) {
                             // Prepare error feedback for next attempt
                             previousError = String.format(
-                                    "Attempt %d/%d failed with errors:\n%s",
-                                    attempt, maxAttempts, errorMsg
-                            );
+                                    "Attempt %d/%d failed with errors:\n%s", attempt, maxAttempts, errorMsg);
                         } else {
                             // Last attempt failed
                             String finalError = String.format(
-                                    "Translation failed after %d attempts. Final errors: %s",
-                                    maxAttempts, errorMsg
-                            );
+                                    "Translation failed after %d attempts. Final errors: %s", maxAttempts, errorMsg);
                             log.error(finalError);
                             return JobResult.failure(finalError);
                         }
@@ -129,14 +128,10 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
                     if (attempt < maxAttempts) {
                         previousError = String.format(
-                                "Attempt %d/%d crashed with exception: %s",
-                                attempt, maxAttempts, e.getMessage()
-                        );
+                                "Attempt %d/%d crashed with exception: %s", attempt, maxAttempts, e.getMessage());
                     } else {
                         String finalError = String.format(
-                                "Translation failed after %d attempts with exception: %s",
-                                maxAttempts, e.getMessage()
-                        );
+                                "Translation failed after %d attempts with exception: %s", maxAttempts, e.getMessage());
                         return JobResult.failure(finalError);
                     }
                 }
@@ -156,23 +151,26 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                         documentName,
                         instructionsDocumentId,
                         result.getComposition(),
-                        result.getComposerModelJson()
-                );
+                        result.getComposerModelJson());
 
                 log.info("Translation saved to document: {}", documentIdOut);
 
                 // Build success result
                 Map<String, Object> resultData = new HashMap<>();
                 resultData.put("documentId", documentIdOut);
-                resultData.put("featuresCount", result.getComposition().getFeatures() != null ?
-                        result.getComposition().getFeatures().size() : 0);
+                resultData.put(
+                        "featuresCount",
+                        result.getComposition().getFeatures() != null
+                                ? result.getComposition().getFeatures().size()
+                                : 0);
                 resultData.put("compositionName", result.getComposition().getName());
 
                 return JobResult.success(resultData);
 
             } catch (Exception e) {
                 log.error("Failed to save translation to document", e);
-                throw new JobExecutionException("Translation succeeded but failed to save document: " + e.getMessage(), e);
+                throw new JobExecutionException(
+                        "Translation succeeded but failed to save document: " + e.getMessage(), e);
             }
 
         } catch (JobExecutionException e) {
@@ -186,13 +184,14 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
     private String loadInstructions(String worldId, String instructionDocumentId) {
 
         // Create WorldId
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
-        return documentService.findByDocumentId(wid, INSTRUCTIONS_COLLECTION, instructionDocumentId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Instructions document not found: worldId=%s, collection=%s, documentId=%s",
-                                worldId, INSTRUCTIONS_COLLECTION, instructionDocumentId)))
+        return documentService
+                .findByDocumentId(wid, INSTRUCTIONS_COLLECTION, instructionDocumentId)
+                .orElseThrow(() -> new IllegalArgumentException(String.format(
+                        "Instructions document not found: worldId=%s, collection=%s, documentId=%s",
+                        worldId, INSTRUCTIONS_COLLECTION, instructionDocumentId)))
                 .getContent();
     }
 
@@ -201,16 +200,12 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
      * Creates a new document with timestamp to preserve history.
      */
     private String saveTranslationToDocument(
-            String worldId,
-            String documentName,
-            String instructionsDocumentId,
-            HexComposition composition,
-            String json
-    ) throws Exception {
+            String worldId, String documentName, String instructionsDocumentId, HexComposition composition, String json)
+            throws Exception {
 
         // Create WorldId
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
         // Generate unique document name with timestamp
         Instant now = Instant.now();
@@ -224,22 +219,30 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         metadata.put("generatedAt", now.toString());
         metadata.put("compositionName", composition.getName());
         metadata.put("compositionWorldId", composition.getWorldId());
-        metadata.put("featuresCount", String.valueOf(
-                composition.getFeatures() != null ? composition.getFeatures().size() : 0));
+        metadata.put(
+                "featuresCount",
+                String.valueOf(
+                        composition.getFeatures() != null
+                                ? composition.getFeatures().size()
+                                : 0));
         metadata.put("instructionsDocumentId", instructionsDocumentId);
 
         WDocument document = documentService.save(wid, TRANSLATIONS_COLLECTION, documentId, doc -> {
             doc.setName(finalDocumentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Generated World");
             doc.setFormat("json");
-            doc.setContent(json);  // Direct model JSON
+            doc.setContent(json); // Direct model JSON
             doc.setMetadata(metadata);
             doc.setType("composer-translation");
             doc.setReadOnly(false);
         });
 
-        log.info("Saved translation document: worldId={}, collection={}, documentId={}, name={}",
-                worldId, documentName, documentId, finalDocumentName);
+        log.info(
+                "Saved translation document: worldId={}, collection={}, documentId={}, name={}",
+                worldId,
+                documentName,
+                documentId,
+                finalDocumentName);
 
         // Return document id
         return documentId;

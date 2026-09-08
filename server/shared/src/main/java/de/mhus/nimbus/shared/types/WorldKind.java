@@ -16,9 +16,9 @@ public final class WorldKind {
 
     private static final Pattern PART = Pattern.compile("[a-zA-Z0-9-_]+", Pattern.UNICODE_CASE);
 
-    private final String worldId;   // Pflicht
-    private final String zone;      // optional (früher subWorld)
-    private final String branch;    // optional
+    private final String worldId; // Pflicht
+    private final String zone; // optional (früher subWorld)
+    private final String branch; // optional
 
     private WorldKind(String worldId, String zone, String branch) {
         this.worldId = worldId;
@@ -26,22 +26,54 @@ public final class WorldKind {
         this.branch = branch;
     }
 
-    public String worldId() { return worldId; }
-    public String zone() { return zone; }
-    public String branch() { return branch; }
+    public String worldId() {
+        return worldId;
+    }
 
-    public boolean hasZone() { return zone != null; }
-    public boolean hasBranch() { return branch != null; }
+    public String zone() {
+        return zone;
+    }
+
+    public String branch() {
+        return branch;
+    }
+
+    public boolean hasZone() {
+        return zone != null;
+    }
+
+    public boolean hasBranch() {
+        return branch != null;
+    }
 
     // Neue Convenience-Methoden
-    public boolean isMain() { return zone == null && branch == null; }
-    public boolean isZone() { return zone != null && branch == null; }
-    public boolean isBranch() { return branch != null; }
+    public boolean isMain() {
+        return zone == null && branch == null;
+    }
+
+    public boolean isZone() {
+        return zone != null && branch == null;
+    }
+
+    public boolean isBranch() {
+        return branch != null;
+    }
 
     // Deprecated alte API
-    @Deprecated public String subWorld() { return zone(); }
-    @Deprecated public boolean hasSubWorld() { return hasZone(); }
-    @Deprecated public boolean isSubworld() { return isZone(); }
+    @Deprecated
+    public String subWorld() {
+        return zone();
+    }
+
+    @Deprecated
+    public boolean hasSubWorld() {
+        return hasZone();
+    }
+
+    @Deprecated
+    public boolean isSubworld() {
+        return isZone();
+    }
 
     /**
      * Parst einen String nach Schema: world[$zone][:branch]
@@ -73,8 +105,10 @@ public final class WorldKind {
 
         // Validieren Teile
         if (!PART.matcher(worldPart).matches()) throw new IllegalArgumentException("Invalid worldId: " + worldPart);
-        if (zonePart != null && !PART.matcher(zonePart).matches()) throw new IllegalArgumentException("Invalid zone: " + zonePart);
-        if (branchPart != null && !PART.matcher(branchPart).matches()) throw new IllegalArgumentException("Invalid branch: " + branchPart);
+        if (zonePart != null && !PART.matcher(zonePart).matches())
+            throw new IllegalArgumentException("Invalid zone: " + zonePart);
+        if (branchPart != null && !PART.matcher(branchPart).matches())
+            throw new IllegalArgumentException("Invalid branch: " + branchPart);
 
         return new WorldKind(worldPart, zonePart, branchPart);
     }
@@ -91,9 +125,13 @@ public final class WorldKind {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof WorldKind wk)) return false;
-        return Objects.equals(worldId, wk.worldId) && Objects.equals(zone, wk.zone) && Objects.equals(branch, wk.branch);
+        return Objects.equals(worldId, wk.worldId)
+                && Objects.equals(zone, wk.zone)
+                && Objects.equals(branch, wk.branch);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(worldId, zone, branch); }
+    public int hashCode() {
+        return Objects.hash(worldId, zone, branch);
+    }
 }

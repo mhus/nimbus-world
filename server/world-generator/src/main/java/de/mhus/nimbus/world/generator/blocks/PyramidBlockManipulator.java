@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Pyramid Block Manipulator - creates a filled pyramid.
@@ -45,9 +45,9 @@ public class PyramidBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a filled pyramid with square base. " +
-                "Parameters: position {x,y,z}, size, height, blockType (optional). " +
-                "Example: {\"pyramid\": {\"transform\": \"position\", \"size\": 20, \"height\": 15}}";
+        return "Creates a filled pyramid with square base. "
+                + "Parameters: position {x,y,z}, size, height, blockType (optional). "
+                + "Example: {\"pyramid\": {\"transform\": \"position\", \"size\": 20, \"height\": 15}}";
     }
 
     @Override
@@ -100,8 +100,14 @@ public class PyramidBlockManipulator implements BlockManipulator {
         }
 
         // Generate pyramid
-        log.info("Generating filled pyramid: pos=({},{},{}), size={}, height={}, blockType={}",
-                x, y, z, size, height, blockType);
+        log.info(
+                "Generating filled pyramid: pos=({},{},{}), size={}, height={}, blockType={}",
+                x,
+                y,
+                z,
+                size,
+                height,
+                blockType);
 
         painter.pyramid(x, y, z, size, height);
 
@@ -109,7 +115,8 @@ public class PyramidBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated filled pyramid: %d blocks (base %dx%d, height %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated filled pyramid: %d blocks (base %dx%d, height %d) at (%d,%d,%d)",
                 blockCount, size, size, height, x, y, z);
 
         log.info(message);

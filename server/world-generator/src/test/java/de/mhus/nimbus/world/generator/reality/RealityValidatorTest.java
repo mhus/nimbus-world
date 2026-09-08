@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 /** Offline tests for the mechanical validator (C1). */
 class RealityValidatorTest {
@@ -48,9 +47,7 @@ class RealityValidatorTest {
         sword.setItemClass("iron");
         sword.setRecipe(List.of("Iron Ingot"));
 
-        ValidationReport r = validator.validate(plan(
-                List.of(clazz("iron", 2, "IRON")),
-                List.of(ingot, sword)));
+        ValidationReport r = validator.validate(plan(List.of(clazz("iron", 2, "IRON")), List.of(ingot, sword)));
 
         assertThat(r.isValid()).isTrue();
         assertThat(r.errors()).isEmpty();
@@ -68,9 +65,9 @@ class RealityValidatorTest {
 
     @Test
     void flagsDuplicateItemIdAsError() {
-        ValidationReport r = validator.validate(plan(null, List.of(
-                item("Peat Brick", "material"),
-                item("peat brick", "material")))); // same slug -> peat_brick
+        ValidationReport r = validator.validate(plan(
+                null,
+                List.of(item("Peat Brick", "material"), item("peat brick", "material")))); // same slug -> peat_brick
 
         assertThat(r.hasErrors()).isTrue();
         assertThat(hasCode(r, "duplicate_item")).isTrue();
@@ -102,7 +99,7 @@ class RealityValidatorTest {
 
         ValidationReport r = validator.validate(plan(null, List.of(forever, material, crafted)));
 
-        assertThat(r.isValid()).isTrue();                       // only warnings, no errors
+        assertThat(r.isValid()).isTrue(); // only warnings, no errors
         assertThat(hasCode(r, "material_no_source")).isTrue();
         assertThat(hasCode(r, "unknown_recipe_ref")).isTrue();
         assertThat(hasCode(r, "super_contradiction")).isFalse();

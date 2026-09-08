@@ -10,26 +10,25 @@ import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
-import de.mhus.nimbus.world.shared.session.EditState;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.session.EditState;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Editor REST API controller.
@@ -63,13 +62,9 @@ public class EditorController extends BaseEditorController {
      * Returns full edit state
      */
     @GetMapping("/{worldId}/session/{sessionId}/edit")
-    public ResponseEntity<?> getEditState(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> getEditState(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -78,7 +73,9 @@ public class EditorController extends BaseEditorController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("editMode", state.isEditMode());
-        response.put("editAction", state.getEditAction() != null ? state.getEditAction().name() : "OPEN_CONFIG_DIALOG");
+        response.put(
+                "editAction",
+                state.getEditAction() != null ? state.getEditAction().name() : "OPEN_CONFIG_DIALOG");
         response.put("selectedLayer", state.getSelectedLayer());
         response.put("selectedModelId", state.getSelectedModelId());
         response.put("mountX", state.getMountX() != null ? state.getMountX() : 0);
@@ -91,8 +88,7 @@ public class EditorController extends BaseEditorController {
             Map<String, Integer> blockPos = Map.of(
                     "x", selectedBlock.get().x(),
                     "y", selectedBlock.get().y(),
-                    "z", selectedBlock.get().z()
-            );
+                    "z", selectedBlock.get().z());
             response.put("selectedBlock", blockPos);
         } else {
             response.put("selectedBlock", null);
@@ -107,13 +103,9 @@ public class EditorController extends BaseEditorController {
      */
     @PutMapping("/{worldId}/session/{sessionId}/edit")
     public ResponseEntity<?> updateEditState(
-            @PathVariable String worldId,
-            @PathVariable String sessionId,
-            @RequestBody EditStateUpdateRequest request) {
+            @PathVariable String worldId, @PathVariable String sessionId, @RequestBody EditStateUpdateRequest request) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -151,7 +143,9 @@ public class EditorController extends BaseEditorController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("editMode", updated.isEditMode());
-        response.put("editAction", updated.getEditAction() != null ? updated.getEditAction().name() : "OPEN_CONFIG_DIALOG");
+        response.put(
+                "editAction",
+                updated.getEditAction() != null ? updated.getEditAction().name() : "OPEN_CONFIG_DIALOG");
         response.put("selectedLayer", updated.getSelectedLayer());
         response.put("selectedModelId", updated.getSelectedModelId());
         response.put("mountX", updated.getMountX() != null ? updated.getMountX() : 0);
@@ -171,9 +165,7 @@ public class EditorController extends BaseEditorController {
     @GetMapping("/{worldId}/layers")
     public ResponseEntity<?> listLayers(@PathVariable String worldId) {
 
-        WorldId wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         // Filter layers by editor epoch if in editor instance
         List<WLayer> layers;
@@ -206,12 +198,9 @@ public class EditorController extends BaseEditorController {
      */
     @PostMapping("/{worldId}/layers")
     public ResponseEntity<?> createLayer(
-            @PathVariable String worldId,
-            @RequestBody de.mhus.nimbus.world.shared.dto.CreateLayerRequest request) {
+            @PathVariable String worldId, @RequestBody de.mhus.nimbus.world.shared.dto.CreateLayerRequest request) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(request.name(), "title");
         if (validation != null) return validation;
 
@@ -222,14 +211,14 @@ public class EditorController extends BaseEditorController {
         }
 
         // Create new layer
-        de.mhus.nimbus.world.shared.layer.LayerType layerType = request.layerType() != null
-            ? request.layerType()
-            : de.mhus.nimbus.world.shared.layer.LayerType.GROUND;
+        de.mhus.nimbus.world.shared.layer.LayerType layerType =
+                request.layerType() != null ? request.layerType() : de.mhus.nimbus.world.shared.layer.LayerType.GROUND;
         int order = request.order() != null ? request.order() : 10;
         boolean allChunks = request.allChunks() != null ? request.allChunks() : false;
         boolean baseGround = request.baseGround() != null ? request.baseGround() : false;
 
-        WLayer saved = layerService.createLayer(worldId, request.name(), layerType, order, allChunks, List.of(), baseGround);
+        WLayer saved =
+                layerService.createLayer(worldId, request.name(), layerType, order, allChunks, List.of(), baseGround);
 
         // Note: mountX/Y/Z are now in WLayerModel, not WLayer
         // Models should be created separately via model creation endpoint
@@ -248,13 +237,9 @@ public class EditorController extends BaseEditorController {
      * Delete a layer and all its data.
      */
     @DeleteMapping("/{worldId}/layers/{layerName}")
-    public ResponseEntity<?> deleteLayer(
-            @PathVariable String worldId,
-            @PathVariable String layerName) {
+    public ResponseEntity<?> deleteLayer(@PathVariable String worldId, @PathVariable String layerName) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(layerName, "layerName");
         if (validation != null) return validation;
 
@@ -278,13 +263,9 @@ public class EditorController extends BaseEditorController {
      */
     @PutMapping("/{worldId}/session/{sessionId}/block")
     public ResponseEntity<?> updateBlock(
-            @PathVariable String worldId,
-            @PathVariable String sessionId,
-            @RequestBody String request) {
+            @PathVariable String worldId, @PathVariable String sessionId, @RequestBody String request) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -330,8 +311,14 @@ public class EditorController extends BaseEditorController {
                 return bad("Failed to save block to edit cache");
             }
 
-            log.info("Block saved and update sent: session={} layer={} pos=({},{},{}) blockTypeId={}",
-                    sessionId, state.getSelectedLayer(), x, y, z, block.getBlockTypeId());
+            log.info(
+                    "Block saved and update sent: session={} layer={} pos=({},{},{}) blockTypeId={}",
+                    sessionId,
+                    state.getSelectedLayer(),
+                    x,
+                    y,
+                    z,
+                    block.getBlockTypeId());
 
             Map<String, Object> response = new HashMap<>();
             response.put("blockTypeId", block.getBlockTypeId());
@@ -374,8 +361,8 @@ public class EditorController extends BaseEditorController {
      */
     @Data
     public static class UpdateBlockRequest {
-        private String blockJson;  // Complete block definition as JSON string
-        private String meta;  // Optional additional metadata
+        private String blockJson; // Complete block definition as JSON string
+        private String meta; // Optional additional metadata
     }
 
     // ===== EDIT MODE CONTROL =====
@@ -385,13 +372,9 @@ public class EditorController extends BaseEditorController {
      * Activates edit mode for the session.
      */
     @PostMapping("/{worldId}/session/{sessionId}/activate")
-    public ResponseEntity<?> activateEditMode(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> activateEditMode(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         try {
             // 1. Validate: selectedLayer must be set
             EditState state = editService.getEditState(worldId, sessionId);
@@ -418,28 +401,22 @@ public class EditorController extends BaseEditorController {
                     .build();
 
             try {
-                worldClientService.sendPlayerCommand(
-                        worldId,
-                        sessionId,
-                        playerUrl,
-                        "edit",
-                        List.of("true"),
-                        ctx
-                );
+                worldClientService.sendPlayerCommand(worldId, sessionId, playerUrl, "edit", List.of("true"), ctx);
             } catch (Exception e) {
                 log.warn("Failed to send edit command to player: {}", e.getMessage());
                 // Continue anyway - Redis state is updated
             }
 
-            log.info("Edit mode activated: worldId={}, sessionId={}, layer={}",
-                    worldId, sessionId, state.getSelectedLayer());
+            log.info(
+                    "Edit mode activated: worldId={}, sessionId={}, layer={}",
+                    worldId,
+                    sessionId,
+                    state.getSelectedLayer());
 
             // 5. Return successful
-            return ResponseEntity.ok().body(Map.of(
-                    "editMode", true,
-                    "layer", state.getSelectedLayer(),
-                    "message", "Edit mode activated"
-            ));
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "editMode", true, "layer", state.getSelectedLayer(), "message", "Edit mode activated"));
 
         } catch (Exception e) {
             log.error("Failed to activate edit mode: worldId={}, sessionId={}", worldId, sessionId, e);
@@ -452,13 +429,9 @@ public class EditorController extends BaseEditorController {
      * Discards cached changes for current layer and deactivates edit mode.
      */
     @PostMapping("/{worldId}/session/{sessionId}/discard")
-    public ResponseEntity<?> discardOverlays(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> discardOverlays(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         try {
             // 1. Validate: editMode must be active
             EditState state = editService.getEditState(worldId, sessionId);
@@ -472,16 +445,24 @@ public class EditorController extends BaseEditorController {
             // 2. Discard changes (deletes cached blocks for current layer, marks chunks dirty for refresh)
             long deletedCount = editService.discardChanges(worldId, sessionId);
 
-            log.info("Discard changes completed: worldId={}, sessionId={}, layer={}, deleted={}",
-                    worldId, sessionId, state.getSelectedLayer(), deletedCount);
+            log.info(
+                    "Discard changes completed: worldId={}, sessionId={}, layer={}, deleted={}",
+                    worldId,
+                    sessionId,
+                    state.getSelectedLayer(),
+                    deletedCount);
 
             // 3. Return count
-            return ResponseEntity.ok().body(Map.of(
-                    "deleted", deletedCount,
-                    "layer", state.getSelectedLayer(),
-                    "editMode", state.isEditMode(),
-                    "message", "Discarded " + deletedCount + " cached blocks"
-            ));
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "deleted",
+                            deletedCount,
+                            "layer",
+                            state.getSelectedLayer(),
+                            "editMode",
+                            state.isEditMode(),
+                            "message",
+                            "Discarded " + deletedCount + " cached blocks"));
 
         } catch (Exception e) {
             log.error("Failed to discard changes: worldId={}, sessionId={}", worldId, sessionId, e);
@@ -495,13 +476,9 @@ public class EditorController extends BaseEditorController {
      * Preserves cached changes (WEditCache) so user can select a different layer.
      */
     @PostMapping("/{worldId}/session/{sessionId}/change")
-    public ResponseEntity<?> changeLayer(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> changeLayer(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         try {
             // 1. Validate: editMode must be active
             EditState state = editService.getEditState(worldId, sessionId);
@@ -518,15 +495,21 @@ public class EditorController extends BaseEditorController {
                 s.setSelectedModelId(null);
             });
 
-            log.info("Change layer completed: worldId={}, sessionId={}, previousLayer={}",
-                    worldId, sessionId, previousLayer);
+            log.info(
+                    "Change layer completed: worldId={}, sessionId={}, previousLayer={}",
+                    worldId,
+                    sessionId,
+                    previousLayer);
 
             // 3. Return successful
-            return ResponseEntity.ok().body(Map.of(
-                    "previousLayer", previousLayer != null ? previousLayer : "",
-                    "editMode", false,
-                    "message", "Edit mode deactivated, cached changes preserved"
-            ));
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "previousLayer",
+                            previousLayer != null ? previousLayer : "",
+                            "editMode",
+                            false,
+                            "message",
+                            "Edit mode deactivated, cached changes preserved"));
 
         } catch (Exception e) {
             log.error("Failed to change layer: worldId={}, sessionId={}", worldId, sessionId, e);
@@ -539,13 +522,9 @@ public class EditorController extends BaseEditorController {
      * Saves overlays to the selected layer (fire-and-forget).
      */
     @PostMapping("/{worldId}/session/{sessionId}/save")
-    public ResponseEntity<?> saveOverlays(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> saveOverlays(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         try {
             // 1. Validate
             EditState state = editService.getEditState(worldId, sessionId);
@@ -559,16 +538,21 @@ public class EditorController extends BaseEditorController {
             // 2. Apply changes (creates WEditCacheDirty entry, processes asynchronously)
             editService.applyChanges(worldId, sessionId);
 
-            log.info("Apply changes triggered: worldId={}, sessionId={}, layer={}",
-                    worldId, sessionId, state.getSelectedLayer());
+            log.info(
+                    "Apply changes triggered: worldId={}, sessionId={}, layer={}",
+                    worldId,
+                    sessionId,
+                    state.getSelectedLayer());
 
             // 3. Return 202 Accepted immediately
             return ResponseEntity.accepted()
                     .body(Map.of(
-                            "message", "Apply changes operation started",
-                            "layer", state.getSelectedLayer(),
-                            "editMode", true
-                    ));
+                            "message",
+                            "Apply changes operation started",
+                            "layer",
+                            state.getSelectedLayer(),
+                            "editMode",
+                            true));
 
         } catch (Exception e) {
             log.error("Failed to start apply changes: worldId={}, sessionId={}", worldId, sessionId, e);
@@ -583,16 +567,18 @@ public class EditorController extends BaseEditorController {
      */
     @GetMapping("/{worldId}/editcache/statistics")
     public ResponseEntity<?> getEditCacheStatistics(@PathVariable String worldId) {
-        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         try {
             // Works for both specific epoch (instance worldId) and all epochs (base worldId)
             List<Map<String, Object>> statistics = editService.getEditCacheStatistics(worldId);
 
-            log.debug("Edit cache statistics retrieved: worldId={}, layerCount={}, allEpochs={}",
-                    worldId, statistics.size(), !parsedWorldId.isInstance());
+            log.debug(
+                    "Edit cache statistics retrieved: worldId={}, layerCount={}, allEpochs={}",
+                    worldId,
+                    statistics.size(),
+                    !parsedWorldId.isInstance());
 
             return ResponseEntity.ok(statistics);
 
@@ -608,13 +594,10 @@ public class EditorController extends BaseEditorController {
      * Used by EditCache-Editor to delete cached blocks without requiring active edit mode.
      */
     @PostMapping("/{worldId}/editcache/{layerDataId}/discard")
-    public ResponseEntity<?> discardEditCacheForLayer(
-            @PathVariable String worldId,
-            @PathVariable String layerDataId) {
+    public ResponseEntity<?> discardEditCacheForLayer(@PathVariable String worldId, @PathVariable String layerDataId) {
 
-        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         try {
             long deletedCount;
@@ -623,21 +606,26 @@ public class EditorController extends BaseEditorController {
                 deletedCount = editCacheDirtyService.discardChanges(worldId, layerDataId);
             } else {
                 // All epochs: find distinct instance worldIds and discard each
-                List<String> instanceWorldIds = editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
+                List<String> instanceWorldIds =
+                        editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
                 deletedCount = 0;
                 for (String instanceWorldId : instanceWorldIds) {
                     deletedCount += editCacheDirtyService.discardChanges(instanceWorldId, layerDataId);
                 }
             }
 
-            log.info("Discard edit cache completed: worldId={}, layerDataId={}, deleted={}, allEpochs={}",
-                    worldId, layerDataId, deletedCount, !parsedWorldId.isInstance());
+            log.info(
+                    "Discard edit cache completed: worldId={}, layerDataId={}, deleted={}, allEpochs={}",
+                    worldId,
+                    layerDataId,
+                    deletedCount,
+                    !parsedWorldId.isInstance());
 
-            return ResponseEntity.ok().body(Map.of(
-                    "deleted", deletedCount,
-                    "layerDataId", layerDataId,
-                    "message", "Discarded " + deletedCount + " cached blocks"
-            ));
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "deleted", deletedCount,
+                            "layerDataId", layerDataId,
+                            "message", "Discarded " + deletedCount + " cached blocks"));
 
         } catch (Exception e) {
             log.error("Failed to discard edit cache: worldId={}, layerDataId={}", worldId, layerDataId, e);
@@ -651,13 +639,10 @@ public class EditorController extends BaseEditorController {
      * Used by EditCache-Editor to merge cached blocks into layer without requiring active edit mode.
      */
     @PostMapping("/{worldId}/editcache/{layerDataId}/apply")
-    public ResponseEntity<?> applyEditCacheForLayer(
-            @PathVariable String worldId,
-            @PathVariable String layerDataId) {
+    public ResponseEntity<?> applyEditCacheForLayer(@PathVariable String worldId, @PathVariable String layerDataId) {
 
-        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId parsedWorldId =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         try {
             long blockCount;
@@ -667,17 +652,16 @@ public class EditorController extends BaseEditorController {
 
                 if (blockCount == 0) {
                     log.debug("No cached blocks to apply: worldId={}, layerDataId={}", worldId, layerDataId);
-                    return ResponseEntity.ok().body(Map.of(
-                            "applied", 0L,
-                            "layerDataId", layerDataId,
-                            "message", "No cached blocks to apply"
-                    ));
+                    return ResponseEntity.ok()
+                            .body(Map.of(
+                                    "applied", 0L, "layerDataId", layerDataId, "message", "No cached blocks to apply"));
                 }
 
                 editCacheDirtyService.applyChanges(worldId, layerDataId);
             } else {
                 // All epochs: find distinct instance worldIds and apply each
-                List<String> instanceWorldIds = editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
+                List<String> instanceWorldIds =
+                        editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
                 blockCount = 0;
                 for (String instanceWorldId : instanceWorldIds) {
                     blockCount += editCacheService.countByWorldIdAndLayerDataId(instanceWorldId, layerDataId);
@@ -685,22 +669,24 @@ public class EditorController extends BaseEditorController {
                 }
 
                 if (blockCount == 0) {
-                    return ResponseEntity.ok().body(Map.of(
-                            "applied", 0L,
-                            "layerDataId", layerDataId,
-                            "message", "No cached blocks to apply"
-                    ));
+                    return ResponseEntity.ok()
+                            .body(Map.of(
+                                    "applied", 0L, "layerDataId", layerDataId, "message", "No cached blocks to apply"));
                 }
             }
 
-            log.info("Apply edit cache completed: worldId={}, layerDataId={}, applied={}, allEpochs={}",
-                    worldId, layerDataId, blockCount, !parsedWorldId.isInstance());
+            log.info(
+                    "Apply edit cache completed: worldId={}, layerDataId={}, applied={}, allEpochs={}",
+                    worldId,
+                    layerDataId,
+                    blockCount,
+                    !parsedWorldId.isInstance());
 
-            return ResponseEntity.ok().body(Map.of(
-                    "applied", blockCount,
-                    "layerDataId", layerDataId,
-                    "message", "Applied " + blockCount + " cached blocks"
-            ));
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "applied", blockCount,
+                            "layerDataId", layerDataId,
+                            "message", "Applied " + blockCount + " cached blocks"));
 
         } catch (Exception e) {
             log.error("Failed to apply edit cache: worldId={}, layerDataId={}", worldId, layerDataId, e);
@@ -718,13 +704,9 @@ public class EditorController extends BaseEditorController {
      * Returns 200 with null/empty response if no marked block exists.
      */
     @GetMapping("/{worldId}/session/{sessionId}/blockRegister")
-    public ResponseEntity<?> getBlockRegisterData(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> getBlockRegisterData(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -744,8 +726,11 @@ public class EditorController extends BaseEditorController {
             // Serialize to JSON
             String blockJson = engineMapper.writeValueAsString(block);
 
-            log.info("Retrieved marked block data: worldId={}, sessionId={}, blockTypeId={}",
-                    worldId, sessionId, block.getBlockTypeId());
+            log.info(
+                    "Retrieved marked block data: worldId={}, sessionId={}, blockTypeId={}",
+                    worldId,
+                    sessionId,
+                    block.getBlockTypeId());
 
             // Return as JSON
             return ResponseEntity.ok()
@@ -753,8 +738,7 @@ public class EditorController extends BaseEditorController {
                     .body(blockJson);
 
         } catch (Exception e) {
-            log.error("Failed to serialize marked block: worldId={}, sessionId={}",
-                    worldId, sessionId, e);
+            log.error("Failed to serialize marked block: worldId={}, sessionId={}", worldId, sessionId, e);
             return bad("Failed to serialize marked block: " + e.getMessage());
         }
     }
@@ -767,13 +751,9 @@ public class EditorController extends BaseEditorController {
      */
     @PostMapping("/{worldId}/session/{sessionId}/blockRegister")
     public ResponseEntity<?> setBlockRegisterData(
-            @PathVariable String worldId,
-            @PathVariable String sessionId,
-            @RequestBody String blockJson) {
+            @PathVariable String worldId, @PathVariable String sessionId, @RequestBody String blockJson) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -792,13 +772,14 @@ public class EditorController extends BaseEditorController {
             // Store via EditService
             editService.setBlockRegisterData(worldId, sessionId, blockJson);
 
-            log.info("register block set from palette: worldId={}, sessionId={}, blockTypeId={}",
-                    worldId, sessionId, block.getBlockTypeId());
+            log.info(
+                    "register block set from palette: worldId={}, sessionId={}, blockTypeId={}",
+                    worldId,
+                    sessionId,
+                    block.getBlockTypeId());
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Marked block set successfully",
-                    "blockTypeId", block.getBlockTypeId()
-            ));
+            return ResponseEntity.ok(
+                    Map.of("message", "Marked block set successfully", "blockTypeId", block.getBlockTypeId()));
 
         } catch (Exception e) {
             log.error("Failed to set register block: worldId={}, sessionId={}", worldId, sessionId, e);
@@ -813,13 +794,9 @@ public class EditorController extends BaseEditorController {
      * Position in block.position is optional/ignored - only block content matters.
      */
     @DeleteMapping("/{worldId}/session/{sessionId}/blockRegister")
-    public ResponseEntity<?> clearBlockRegisterData(
-            @PathVariable String worldId,
-            @PathVariable String sessionId) {
+    public ResponseEntity<?> clearBlockRegisterData(@PathVariable String worldId, @PathVariable String sessionId) {
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
 
@@ -827,12 +804,9 @@ public class EditorController extends BaseEditorController {
             // Store via EditService
             editService.setBlockRegisterData(worldId, sessionId, null);
 
-            log.info("Register block cleared: worldId={}, sessionId={}",
-                    worldId, sessionId);
+            log.info("Register block cleared: worldId={}, sessionId={}", worldId, sessionId);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Register block cleared successfully"
-            ));
+            return ResponseEntity.ok(Map.of("message", "Register block cleared successfully"));
 
         } catch (Exception e) {
             log.error("Failed to set marked block: worldId={}, sessionId={}", worldId, sessionId, e);

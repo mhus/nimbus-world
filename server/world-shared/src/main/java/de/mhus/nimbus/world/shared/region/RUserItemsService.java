@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.shared.region;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @Validated
@@ -20,7 +19,14 @@ public class RUserItemsService {
     /**
      * Create or update an item for a user in a specific region
      */
-    public RUserItems saveItem(String userId, String regionId, String itemId, Integer amount, String texture, String name, Set<String> labels) {
+    public RUserItems saveItem(
+            String userId,
+            String regionId,
+            String itemId,
+            Integer amount,
+            String texture,
+            String name,
+            Set<String> labels) {
         if (userId == null || userId.isBlank()) throw new IllegalArgumentException("userId is blank");
         if (regionId == null || regionId.isBlank()) throw new IllegalArgumentException("regionId is blank");
         if (itemId == null || itemId.isBlank()) throw new IllegalArgumentException("itemId is blank");
@@ -108,7 +114,8 @@ public class RUserItemsService {
      * Add a label to an item
      */
     public RUserItems addLabel(String userId, String regionId, String itemId, String label) {
-        RUserItems item = repository.findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
+        RUserItems item = repository
+                .findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
         item.addLabel(label);
         return repository.save(item);
@@ -118,7 +125,8 @@ public class RUserItemsService {
      * Remove a label from an item
      */
     public RUserItems removeLabel(String userId, String regionId, String itemId, String label) {
-        RUserItems item = repository.findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
+        RUserItems item = repository
+                .findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
         item.removeLabel(label);
         return repository.save(item);
@@ -128,7 +136,8 @@ public class RUserItemsService {
      * Update item amount
      */
     public RUserItems updateAmount(String userId, String regionId, String itemId, Integer amount) {
-        RUserItems item = repository.findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
+        RUserItems item = repository
+                .findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
         item.setAmount(amount);
         return repository.save(item);
@@ -138,7 +147,8 @@ public class RUserItemsService {
      * Increment item amount
      */
     public RUserItems incrementAmount(String userId, String regionId, String itemId, int delta) {
-        RUserItems item = repository.findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
+        RUserItems item = repository
+                .findByUserIdAndRegionIdAndItemId(userId, regionId, itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
         int newAmount = (item.getAmount() != null ? item.getAmount() : 0) + delta;
         item.setAmount(Math.max(0, newAmount));

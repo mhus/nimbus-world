@@ -1,8 +1,7 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
-import lombok.Getter;
-
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Defines a skill type with its metadata and level boundaries.
@@ -35,7 +34,8 @@ public class Skill {
     /** Maximum possible level */
     private final int max;
 
-    private Skill(String name, String title, String description, String group, boolean free, int start, int min, int max) {
+    private Skill(
+            String name, String title, String description, String group, boolean free, int start, int min, int max) {
         this.name = name;
         this.title = title;
         this.description = description;
@@ -59,7 +59,8 @@ public class Skill {
      * @param max         Maximum level
      * @return Skill instance
      */
-    public static Skill of(String name, String title, String description, String group, boolean free, int start, int min, int max) {
+    public static Skill of(
+            String name, String title, String description, String group, boolean free, int start, int min, int max) {
         return new Skill(name, title, description, group, free, start, min, max);
     }
 

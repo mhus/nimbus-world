@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +13,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * Dirty chunk entity - regeneration queue.
  * Tracks chunks that need to be regenerated from layers.
@@ -21,8 +20,8 @@ import java.time.Instant;
 @Document(collection = "w_dirty_chunks")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_chunk_idx", def = "{ 'worldId': 1, 'chunkKey': 1 }", unique = true),
-        @CompoundIndex(name = "world_timestamp_idx", def = "{ 'worldId': 1, 'timestamp': 1 }")
+    @CompoundIndex(name = "world_chunk_idx", def = "{ 'worldId': 1, 'chunkKey': 1 }", unique = true),
+    @CompoundIndex(name = "world_timestamp_idx", def = "{ 'worldId': 1, 'timestamp': 1 }")
 })
 @Data
 @Builder

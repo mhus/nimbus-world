@@ -6,9 +6,8 @@ import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 /**
  * Proxy agent on world-generator that delegates to the eliza agent on world-control.
@@ -42,8 +41,8 @@ public class ElizaProxyChatAgent extends ProxyChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId,
-                                               String message, String sessionId, WChatContext context) {
+    public List<WChatMessage> chatWithSession(
+            WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
         return super.chatWithSession(worldId, chatId, playerId, message, sessionId, context);
     }
 }

@@ -10,12 +10,11 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Fill Selected Blocks Manipulator.
@@ -65,9 +64,9 @@ public class SelectedBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Fills all selected blocks with a specified block type or the registered block type. " +
-                "Parameters: blockType (string) OR registered (boolean). " +
-                "Example: {\"selected\": {\"blockType\": \"n:s\"}}";
+        return "Fills all selected blocks with a specified block type or the registered block type. "
+                + "Parameters: blockType (string) OR registered (boolean). "
+                + "Example: {\"selected\": {\"blockType\": \"n:s\"}}";
     }
 
     @Override
@@ -135,7 +134,8 @@ public class SelectedBlockManipulator implements BlockManipulator {
             // Use registered block from BlockRegister
             Optional<BlockRegister> blockRegisterOpt = wSessionService.getBlockRegister(sessionId);
             if (blockRegisterOpt.isEmpty()) {
-                return ManipulatorResult.error("No block registered. Please mark a block first (MARK_BLOCK) or select from palette.");
+                return ManipulatorResult.error(
+                        "No block registered. Please mark a block first (MARK_BLOCK) or select from palette.");
             }
 
             BlockRegister blockRegister = blockRegisterOpt.get();
@@ -165,9 +165,7 @@ public class SelectedBlockManipulator implements BlockManipulator {
 
         // Create new ModelSelector for filled blocks
         String layerName = context.getLayerName();
-        String autoSelectName = layerName != null && !layerName.isBlank()
-                ? layerDataId + ":" + layerName
-                : layerDataId;
+        String autoSelectName = layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
         ModelSelector newModelSelector = ModelSelector.builder()
                 .defaultColor(modelSelector.getDefaultColor())
@@ -194,11 +192,7 @@ public class SelectedBlockManipulator implements BlockManipulator {
                 if (templateBlock != null) {
                     // Clone registered block with new position
                     newBlock = Block.builder()
-                            .position(Vector3Int.builder()
-                                    .x(x)
-                                    .y(y)
-                                    .z(z)
-                                    .build())
+                            .position(Vector3Int.builder().x(x).y(y).z(z).build())
                             .blockTypeId(templateBlock.getBlockTypeId())
                             .offsets(templateBlock.getOffsets())
                             .rotation(templateBlock.getRotation())
@@ -212,11 +206,7 @@ public class SelectedBlockManipulator implements BlockManipulator {
                 } else {
                     // Create block from BlockDef
                     newBlock = Block.builder()
-                            .position(Vector3Int.builder()
-                                    .x(x)
-                                    .y(y)
-                                    .z(z)
-                                    .build())
+                            .position(Vector3Int.builder().x(x).y(y).z(z).build())
                             .build();
                     blockDef.fillBlock(newBlock);
                 }
@@ -246,12 +236,11 @@ public class SelectedBlockManipulator implements BlockManipulator {
         // Build result message
         String message;
         if (errorCount > 0) {
-            message = String.format("Filled %d blocks with %s, %d errors occurred",
-                    filledCount, fillSource, errorCount);
+            message =
+                    String.format("Filled %d blocks with %s, %d errors occurred", filledCount, fillSource, errorCount);
             log.warn(message);
         } else {
-            message = String.format("Successfully filled %d blocks with %s",
-                    filledCount, fillSource);
+            message = String.format("Successfully filled %d blocks with %s", filledCount, fillSource);
             log.info(message);
         }
 

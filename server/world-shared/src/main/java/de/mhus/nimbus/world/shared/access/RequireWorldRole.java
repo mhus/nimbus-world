@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.shared.access;
 
 import de.mhus.nimbus.shared.user.WorldRoles;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.List;
-
 /**
  * Logic Machine rule definition.
  * Rules are defined at the World level and evaluated against World-Instance state.
@@ -26,9 +25,9 @@ import java.util.List;
 @Document(collection = "w_logic_rules")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_affected_idx", def = "{ 'worldId': 1, 'affected': 1, 'enabled': 1 }"),
-        @CompoundIndex(name = "world_priority_idx", def = "{ 'worldId': 1, 'priority': 1 }"),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
+    @CompoundIndex(name = "world_affected_idx", def = "{ 'worldId': 1, 'affected': 1, 'enabled': 1 }"),
+    @CompoundIndex(name = "world_priority_idx", def = "{ 'worldId': 1, 'priority': 1 }"),
+    @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
 @Builder

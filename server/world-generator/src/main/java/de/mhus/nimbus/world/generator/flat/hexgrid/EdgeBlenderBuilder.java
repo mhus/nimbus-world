@@ -3,9 +3,8 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * EdgeBlender manipulator builder.
@@ -64,8 +63,13 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Side flats for blending: {}, width={}, randomness={}, shake={}, blur={}",
-                sideFlats, width, randomness, shakeStrength, blurRadius);
+        log.debug(
+                "Side flats for blending: {}, width={}, randomness={}, shake={}, blur={}",
+                sideFlats,
+                width,
+                randomness,
+                shakeStrength,
+                blurRadius);
 
         // Check if flatService is available
         if (context.getFlatService() == null) {
@@ -74,7 +78,8 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
         }
 
         // Blend sides with neighbors using the side blender
-        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, width, context, randomness, shakeStrength, blurRadius);
+        HexGridEdgeBlender edgeBlender =
+                new HexGridEdgeBlender(flat, width, context, randomness, shakeStrength, blurRadius);
         edgeBlender.blendAllSides(sideFlats);
 
         log.debug("Side blending completed for flat: {}", flat.getFlatId());
@@ -82,12 +87,12 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 0;  // EdgeBlender doesn't use land offset
+        return 0; // EdgeBlender doesn't use land offset
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 0;  // EdgeBlender doesn't use land level
+        return 0; // EdgeBlender doesn't use land level
     }
 
     @Override

@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 /**
  * Event object for world instance lifecycle events.

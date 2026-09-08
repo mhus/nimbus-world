@@ -20,6 +20,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD})
 public @interface TypeScript {
     boolean follow() default false;
+
     String type() default "";
     /**
      * Vollständige TypeScript-Importzeile für diesen Feldtyp (inline Import am Feld).
@@ -29,12 +30,19 @@ public @interface TypeScript {
     // Da "import" ein Java-Schlüsselwort ist, kann das Element nicht exakt so heißen.
     // Der Parser unterstützt mehrere Alias-Namen (tsImport, import_, importPath, importValue, importAs),
     // um dennoch Import-Zeilen zu erfassen.
-    String tsImport() default "";    // bevorzugter Alias
-    String importAs() default "";    // weitere Aliase
+    String tsImport() default ""; // bevorzugter Alias
+
+    String importAs() default ""; // weitere Aliase
+
     String import_() default "";
+
     String importValue() default "";
+
     String importPath() default "";
+
     boolean ignore() default false;
+
     boolean optional() default false;
+
     String description() default "";
 }

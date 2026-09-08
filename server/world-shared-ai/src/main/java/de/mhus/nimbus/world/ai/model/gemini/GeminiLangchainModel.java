@@ -6,12 +6,11 @@ import de.mhus.nimbus.world.ai.model.LangchainModel;
 import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
+import java.time.Duration;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.Optional;
 
 /**
  * Google Gemini implementation of LangchainModel.
@@ -69,8 +68,11 @@ public class GeminiLangchainModel implements LangchainModel {
             // Validate and adjust options for this model
             AiChatOptions adjustedOptions = validateAndAdjustOptions(modelName, options);
 
-            log.debug("Creating Gemini ChatModel: model={}, maxOutputTokens={}, temperature={}, timeout={}s",
-                    modelName, adjustedOptions.getMaxTokens(), adjustedOptions.getTemperature(),
+            log.debug(
+                    "Creating Gemini ChatModel: model={}, maxOutputTokens={}, temperature={}, timeout={}s",
+                    modelName,
+                    adjustedOptions.getMaxTokens(),
+                    adjustedOptions.getTemperature(),
                     adjustedOptions.getTimeoutSeconds());
 
             ChatModel chatModel = GoogleAiGeminiChatModel.builder()
@@ -97,11 +99,16 @@ public class GeminiLangchainModel implements LangchainModel {
                     }
                 }
                 rateLimiter = flashRateLimiter;
-                log.info("Created Gemini chat: model={}, maxTokens={}, rateLimit={} RPM (shared)",
-                        modelName, adjustedOptions.getMaxTokens(), settings.getFlashRateLimit());
+                log.info(
+                        "Created Gemini chat: model={}, maxTokens={}, rateLimit={} RPM (shared)",
+                        modelName,
+                        adjustedOptions.getMaxTokens(),
+                        settings.getFlashRateLimit());
             } else {
-                log.info("Created Gemini chat: model={}, maxTokens={}, no rate limit",
-                        modelName, adjustedOptions.getMaxTokens());
+                log.info(
+                        "Created Gemini chat: model={}, maxTokens={}, no rate limit",
+                        modelName,
+                        adjustedOptions.getMaxTokens());
             }
 
             AiChat chat = new GeminiChat(fullName, chatModel, adjustedOptions, rateLimiter);
@@ -132,8 +139,12 @@ public class GeminiLangchainModel implements LangchainModel {
         }
         // Warn and adjust if exceeds model limit
         else if (maxTokens > modelMaxTokens) {
-            log.warn("Requested maxTokens ({}) exceeds {} limit ({}), adjusting to {}",
-                    maxTokens, modelName, modelMaxTokens, modelMaxTokens);
+            log.warn(
+                    "Requested maxTokens ({}) exceeds {} limit ({}), adjusting to {}",
+                    maxTokens,
+                    modelName,
+                    modelMaxTokens,
+                    modelMaxTokens);
             adjustedMaxTokens = modelMaxTokens;
         }
         // Warn if unusually low (might indicate configuration issue)
@@ -183,7 +194,8 @@ public class GeminiLangchainModel implements LangchainModel {
 
         // Gemini 2.0 (deprecated, will be shut down March 31, 2026): 8,192 tokens
         if (lowerName.contains("2.0")) {
-            log.warn("Gemini 2.0 models are deprecated and will be shut down on March 31, 2026. Consider migrating to Gemini 2.5+");
+            log.warn(
+                    "Gemini 2.0 models are deprecated and will be shut down on March 31, 2026. Consider migrating to Gemini 2.5+");
             return 8192;
         }
 

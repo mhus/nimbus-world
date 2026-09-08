@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Dome Outline Block Manipulator - creates a hollow dome (half-sphere shell).
@@ -54,9 +54,9 @@ public class DomeOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow dome (half-sphere shell). " +
-                "Parameters: position {x,y,z}, radius, blockType (optional). " +
-                "Example: {\"dome-outline\": {\"transform\": \"position\", \"radius\": 8}}";
+        return "Creates a hollow dome (half-sphere shell). "
+                + "Parameters: position {x,y,z}, radius, blockType (optional). "
+                + "Example: {\"dome-outline\": {\"transform\": \"position\", \"radius\": 8}}";
     }
 
     @Override
@@ -103,8 +103,7 @@ public class DomeOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate dome outline
-        log.info("Generating dome outline: pos=({},{},{}), radius={}, blockType={}",
-                x, y, z, radius, blockType);
+        log.info("Generating dome outline: pos=({},{},{}), radius={}, blockType={}", x, y, z, radius, blockType);
 
         painter.domeOutline(x, y, z, radius);
 
@@ -112,8 +111,8 @@ public class DomeOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated dome outline: %d blocks (radius %d) at (%d,%d,%d)",
-                blockCount, radius, x, y, z);
+        String message = String.format(
+                "Generated dome outline: %d blocks (radius %d) at (%d,%d,%d)", blockCount, radius, x, y, z);
 
         log.info(message);
 

@@ -12,11 +12,10 @@ import de.mhus.nimbus.world.player.gameplay.BasicGameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles inventory management: caching backpack/wearing/shortcut items,
@@ -57,8 +56,8 @@ public class InventoryHandler {
 
             // Cache raw data
             data.setCachedBackpack(backpack != null ? backpack : new PlayerBackpack());
-            data.setCachedShortcuts(playerInfo != null && playerInfo.getShortcuts() != null
-                    ? playerInfo.getShortcuts() : Map.of());
+            data.setCachedShortcuts(
+                    playerInfo != null && playerInfo.getShortcuts() != null ? playerInfo.getShortcuts() : Map.of());
 
             // Reuse already cached items (items don't change during a session)
             Map<String, WItem> existingItems = data.getCachedItems();
@@ -69,7 +68,9 @@ public class InventoryHandler {
             if (backpack != null && backpack.getItemIds() != null) {
                 for (String itemId : backpack.getItemIds().keySet()) {
                     if (!items.containsKey(itemId)) {
-                        gameplay.getItemService().findByItemId(worldId, itemId).ifPresent(item -> items.put(itemId, item));
+                        gameplay.getItemService()
+                                .findByItemId(worldId, itemId)
+                                .ifPresent(item -> items.put(itemId, item));
                     }
                 }
             }
@@ -78,7 +79,9 @@ public class InventoryHandler {
             if (backpack != null && backpack.getWearingItemIds() != null) {
                 for (String itemId : backpack.getWearingItemIds().values()) {
                     if (itemId != null && !items.containsKey(itemId)) {
-                        gameplay.getItemService().findByItemId(worldId, itemId).ifPresent(item -> items.put(itemId, item));
+                        gameplay.getItemService()
+                                .findByItemId(worldId, itemId)
+                                .ifPresent(item -> items.put(itemId, item));
                     }
                 }
             }
@@ -87,7 +90,8 @@ public class InventoryHandler {
             if (playerInfo != null && playerInfo.getShortcuts() != null) {
                 for (ShortcutDefinition shortcut : playerInfo.getShortcuts().values()) {
                     if (shortcut != null && shortcut.getItemId() != null && !items.containsKey(shortcut.getItemId())) {
-                        gameplay.getItemService().findByItemId(worldId, shortcut.getItemId())
+                        gameplay.getItemService()
+                                .findByItemId(worldId, shortcut.getItemId())
                                 .ifPresent(item -> items.put(shortcut.getItemId(), item));
                     }
                 }
@@ -102,15 +106,20 @@ public class InventoryHandler {
             // Recalculate passive stats from wearings + skills
             gameplay.getStatsHandler().recalculatePassiveStats(data);
 
-            log.debug("Refreshed inventory cache for player {}: backpack={}, wearings={}, shortcuts={}, items={}",
+            log.debug(
+                    "Refreshed inventory cache for player {}: backpack={}, wearings={}, shortcuts={}, items={}",
                     entityId,
-                    backpack != null && backpack.getItemIds() != null ? backpack.getItemIds().size() : 0,
-                    backpack != null && backpack.getWearingItemIds() != null ? backpack.getWearingItemIds().size() : 0,
+                    backpack != null && backpack.getItemIds() != null
+                            ? backpack.getItemIds().size()
+                            : 0,
+                    backpack != null && backpack.getWearingItemIds() != null
+                            ? backpack.getWearingItemIds().size()
+                            : 0,
                     data.getCachedShortcuts().size(),
                     items.size());
         } catch (Exception e) {
-            log.error("Failed to refresh inventory cache for session {}: {}",
-                    session.getSessionId(), e.getMessage(), e);
+            log.error(
+                    "Failed to refresh inventory cache for session {}: {}", session.getSessionId(), e.getMessage(), e);
         }
     }
 
@@ -196,7 +205,9 @@ public class InventoryHandler {
         }
 
         // Fallback: item not in cache, load from DB
-        WItem item = gameplay.getItemService().findByItemId(session.getWorldId(), itemId).orElse(null);
+        WItem item = gameplay.getItemService()
+                .findByItemId(session.getWorldId(), itemId)
+                .orElse(null);
         if (item == null || item.getServer() == null) return null;
         return item.getServer().get("action");
     }
@@ -214,7 +225,9 @@ public class InventoryHandler {
         var cachedItems = data.getCachedItems();
         WItem item = cachedItems != null ? cachedItems.get(itemId) : null;
         if (item == null) {
-            item = gameplay.getItemService().findByItemId(session.getWorldId(), itemId).orElse(null);
+            item = gameplay.getItemService()
+                    .findByItemId(session.getWorldId(), itemId)
+                    .orElse(null);
         }
         if (item == null || item.getPublicData() == null) return;
 
@@ -242,9 +255,7 @@ public class InventoryHandler {
                         .texture("n:textures/hands/fist.png")
                         .build())
                 .server(Map.of(
-                        "action", "attack",
-                        "effects", "physical.damage:" + physDmg + ",physical.accuracy:" + physAcc
-                ))
+                        "action", "attack", "effects", "physical.damage:" + physDmg + ",physical.accuracy:" + physAcc))
                 .build();
     }
 
@@ -266,9 +277,10 @@ public class InventoryHandler {
                         .texture("n:textures/hands/block.png")
                         .build())
                 .server(Map.of(
-                        "action", "block",
-                        "effects", "physical.defense:" + physDef + ",physical.evasion:" + physEvasion
-                ))
+                        "action",
+                        "block",
+                        "effects",
+                        "physical.defense:" + physDef + ",physical.evasion:" + physEvasion))
                 .build();
     }
 

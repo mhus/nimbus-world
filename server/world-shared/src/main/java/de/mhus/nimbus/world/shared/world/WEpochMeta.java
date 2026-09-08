@@ -55,5 +55,4 @@ public class WEpochMeta {
      * Splash screen audio URL played when this epoch becomes active.
      */
     private String splashScreenAudio;
-
 }

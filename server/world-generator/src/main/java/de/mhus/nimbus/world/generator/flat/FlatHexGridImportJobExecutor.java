@@ -69,7 +69,8 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
             String layerName = getRequiredParameter(job, "layerName");
 
             // Extract optional parameters
-            String flatId = getOptionalParameter(job, "flatId", java.util.UUID.randomUUID().toString());
+            String flatId = getOptionalParameter(
+                    job, "flatId", java.util.UUID.randomUUID().toString());
             String title = getOptionalParameter(job, "title", null);
             String description = getOptionalParameter(job, "description", null);
             String paletteName = getOptionalParameter(job, "paletteName", null);
@@ -77,7 +78,7 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
             // Get job type to determine coordinate system
             String jobType = job.getType();
             if (jobType == null || jobType.isBlank()) {
-                jobType = "grid";  // Default to grid mode
+                jobType = "grid"; // Default to grid mode
             }
 
             WFlat flat;
@@ -87,14 +88,19 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
                 int hexQ = getRequiredIntParameter(job, "hexQ");
                 int hexR = getRequiredIntParameter(job, "hexR");
 
-                log.info("Importing HexGrid flat (grid mode): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
-                        worldId, layerName, flatId, hexQ, hexR, title, description, paletteName);
+                log.info(
+                        "Importing HexGrid flat (grid mode): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
+                        worldId,
+                        layerName,
+                        flatId,
+                        hexQ,
+                        hexR,
+                        title,
+                        description,
+                        paletteName);
 
                 // Execute import with auto-calculated size/mount
-                flat = flatCreateService.importHexGridFlat(
-                        worldId, layerName, flatId,
-                        hexQ, hexR, title, description
-                );
+                flat = flatCreateService.importHexGridFlat(worldId, layerName, flatId, hexQ, hexR, title, description);
             } else if ("rectangular".equals(jobType)) {
                 // Rectangular mode: use explicit rectangular coordinates
                 int sizeX = getRequiredIntParameter(job, "sizeX");
@@ -112,15 +118,24 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
                     throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
                 }
 
-                log.info("Importing HexGrid flat (rectangular mode): worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}, palette={}",
-                        worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description, paletteName);
+                log.info(
+                        "Importing HexGrid flat (rectangular mode): worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}, palette={}",
+                        worldId,
+                        layerName,
+                        flatId,
+                        sizeX,
+                        sizeZ,
+                        mountX,
+                        mountZ,
+                        hexQ,
+                        hexR,
+                        title,
+                        description,
+                        paletteName);
 
                 // Execute import with explicit rectangular coordinates
                 flat = flatCreateService.importHexGridFlat(
-                        worldId, layerName, flatId,
-                        sizeX, sizeZ, mountX, mountZ,
-                        hexQ, hexR, title, description
-                );
+                        worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
             } else {
                 throw new JobExecutionException("Unknown job type: " + jobType + ". Valid types: grid, rectangular");
             }
@@ -130,7 +145,10 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
                 log.info("Applying material palette: flatId={}, paletteName={}", flat.getId(), paletteName);
                 try {
                     flatMaterialService.setPalette(flat.getId(), paletteName);
-                    log.info("Material palette applied successfully: flatId={}, paletteName={}", flat.getId(), paletteName);
+                    log.info(
+                            "Material palette applied successfully: flatId={}, paletteName={}",
+                            flat.getId(),
+                            paletteName);
                 } catch (IllegalArgumentException e) {
                     log.warn("Failed to apply material palette: {}", e.getMessage());
                     // Continue - don't fail the job if palette application fails
@@ -139,15 +157,24 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
 
             // Build successful result
             String hexCoords = flat.getHexGrid() != null
-                ? String.format("(%d,%d)", flat.getHexGrid().getQ(), flat.getHexGrid().getR())
-                : "(unknown)";
+                    ? String.format(
+                            "(%d,%d)",
+                            flat.getHexGrid().getQ(), flat.getHexGrid().getR())
+                    : "(unknown)";
 
             String resultData = String.format(
                     "Successfully imported HexGrid flat (type=%s): id=%s, flatId=%s, worldId=%s, layerName=%s, hex=%s, size=%dx%d, mount=(%d,%d), palette=%s, unknownProtected=true",
-                    jobType, flat.getId(), flatId, worldId, layerName, hexCoords,
-                    flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
-                    paletteName != null ? paletteName : "none"
-            );
+                    jobType,
+                    flat.getId(),
+                    flatId,
+                    worldId,
+                    layerName,
+                    hexCoords,
+                    flat.getSizeX(),
+                    flat.getSizeZ(),
+                    flat.getMountX(),
+                    flat.getMountZ(),
+                    paletteName != null ? paletteName : "none");
 
             log.info("Flat hexgrid import completed successfully: flatId={}, id={}", flatId, flat.getId());
             return JobResult.success(resultData);

@@ -2,18 +2,16 @@ package de.mhus.nimbus.world.shared.region;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Document(collection = "r_regions")
 @ActualSchemaVersion("1.0.0")
 @Data
-
 public class RRegion implements Identifiable {
 
     @Id

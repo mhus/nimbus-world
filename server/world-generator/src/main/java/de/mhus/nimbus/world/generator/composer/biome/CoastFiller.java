@@ -5,9 +5,8 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fills gaps around all biomes with coastal grids.
@@ -49,9 +48,7 @@ public class CoastFiller {
      * @param placementResult Placement result from BiomeComposer
      * @return Number of coast biomes added
      */
-    public int fill(HexComposition composition,
-                    Set<String> existingCoords,
-                    BiomePlacementResult placementResult) {
+    public int fill(HexComposition composition, Set<String> existingCoords, BiomePlacementResult placementResult) {
 
         log.debug("Starting CoastFiller with ring width: {}", coastRingWidth);
 
@@ -78,7 +75,8 @@ public class CoastFiller {
                     }
 
                     // Skip if we already added this neighbor in this iteration
-                    if (coastCoords.stream().anyMatch(c -> TypeUtil.toStringHexCoord(c).equals(neighborKey))) {
+                    if (coastCoords.stream()
+                            .anyMatch(c -> TypeUtil.toStringHexCoord(c).equals(neighborKey))) {
                         continue;
                     }
 
@@ -126,7 +124,6 @@ public class CoastFiller {
         return biomesAdded;
     }
 
-
     /**
      * Gets all 6 neighbors of a hex coordinate using odd-r offset coordinates.
      */
@@ -137,5 +134,4 @@ public class CoastFiller {
         }
         return neighbors;
     }
-
 }

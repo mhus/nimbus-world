@@ -14,9 +14,9 @@ import lombok.NoArgsConstructor;
 @GenerateTypeScript("entities")
 public class PlayerCharacter {
 
-    @TypeScript(import_ = "PlayerInfo",importPath = "../../types/PlayerInfo")
+    @TypeScript(import_ = "PlayerInfo", importPath = "../../types/PlayerInfo")
     private PlayerInfo publicData;
-    @TypeScript(import_ = "PlayerBackpack",importPath = "../../configs/EngineConfiguration")
-    private PlayerBackpack backpack;
 
+    @TypeScript(import_ = "PlayerBackpack", importPath = "../../configs/EngineConfiguration")
+    private PlayerBackpack backpack;
 }

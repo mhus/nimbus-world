@@ -23,7 +23,7 @@ public class HexGridFlatFiller {
                 }
                 var level = flat.getLevel(x, z);
                 if (level == WFlat.LEVEL_NOT_SET) {
-                    int average = getAverageAround(x,z);
+                    int average = getAverageAround(x, z);
                     if (average > 0) {
                         flat.setLevel(x, z, average);
                     } else {
@@ -53,7 +53,6 @@ public class HexGridFlatFiller {
         }
         if (count > 0) {
             return sum / count;
-        } else
-            return -1;
+        } else return -1;
     }
 }

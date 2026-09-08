@@ -10,51 +10,34 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 @GenerateTypeScript("dto")
 public record BlockOriginDto(
         // Layer information
-        @TypeScript(optional = true)
-        String layerId,
+        @TypeScript(optional = true) String layerId,
 
-        @TypeScript(optional = true)
-        String layerName,
+        @TypeScript(optional = true) String layerName,
 
-        @TypeScript(optional = true)
-        String layerType,
+        @TypeScript(optional = true) String layerType,
 
-        @TypeScript(optional = true)
-        Integer layerOrder,
+        @TypeScript(optional = true) Integer layerOrder,
 
         // Terrain information
-        @TypeScript(optional = true)
-        String terrainId,
+        @TypeScript(optional = true) String terrainId,
 
-        @TypeScript(optional = true)
-        String terrainChunkKey,
+        @TypeScript(optional = true) String terrainChunkKey,
 
         // Model information (only for MODEL layers)
-        @TypeScript(optional = true)
-        String modelId,
+        @TypeScript(optional = true) String modelId,
 
-        @TypeScript(optional = true)
-        String modelName,
+        @TypeScript(optional = true) String modelName,
 
-        @TypeScript(optional = true)
-        String modelTitle,
+        @TypeScript(optional = true) String modelTitle,
 
-        @TypeScript(optional = true)
-        Integer mountX,
+        @TypeScript(optional = true) Integer mountX,
 
-        @TypeScript(optional = true)
-        Integer mountY,
+        @TypeScript(optional = true) Integer mountY,
 
-        @TypeScript(optional = true)
-        Integer mountZ,
+        @TypeScript(optional = true) Integer mountZ,
 
-        @TypeScript(optional = true)
-        String group,
+        @TypeScript(optional = true) String group,
 
-        @TypeScript(optional = true)
-        String groupName,  // Title of the group if block is in a group (optional)
+        @TypeScript(optional = true) String groupName, // Title of the group if block is in a group (optional)
 
-        @TypeScript(optional = true)
-        String metadata
-) {
-}
+        @TypeScript(optional = true) String metadata) {}

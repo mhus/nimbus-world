@@ -2,19 +2,18 @@ package de.mhus.nimbus.world.player.commands;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.engine.EngineMapper;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * BlockUpdate command - sends "b.u" message to client via WebSocket.
@@ -76,10 +75,8 @@ public class BlockUpdateCommand implements Command {
             PlayerSession session = sessionOpt.get();
 
             // Build "b.u" message
-            NetworkMessage message = NetworkMessage.builder()
-                    .t("b.u")
-                    .d(blockJson)
-                    .build();
+            NetworkMessage message =
+                    NetworkMessage.builder().t("b.u").d(blockJson).build();
 
             String json = engineMapper.writeValueAsString(message);
             TextMessage textMessage = new TextMessage(json);
@@ -87,8 +84,7 @@ public class BlockUpdateCommand implements Command {
             // Send via WebSocket
             session.sendMessage(textMessage);
 
-            log.debug("Sent block update to client: session={} blocks={}",
-                    sessionId, blocks.length);
+            log.debug("Sent block update to client: session={} blocks={}", sessionId, blocks.length);
 
             return CommandResult.success("Block update sent to client");
 
@@ -107,6 +103,6 @@ public class BlockUpdateCommand implements Command {
 
     @Override
     public boolean requiresSession() {
-        return false;  // sessionId in context
+        return false; // sessionId in context
     }
 }

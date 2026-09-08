@@ -13,12 +13,6 @@ import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.generator.composer.town.Town;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +21,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -73,7 +72,8 @@ public class HexComposition implements BuildFeature {
     // Map version for internal use (fast lookup by coordinate)
     @JsonIgnore
     @Builder.Default
-    private Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGridRegistry = new HashMap<>();
+    private Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGridRegistry =
+            new HashMap<>();
 
     // List version for JSON export (Jackson has issues with Map<String, FeatureHexGrid>)
     // This is populated before export
@@ -82,6 +82,7 @@ public class HexComposition implements BuildFeature {
 
     @Builder.Default
     private String version = "1.0.0";
+
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
@@ -129,11 +130,12 @@ public class HexComposition implements BuildFeature {
         String key = TypeUtil.toStringHexCoord(coordinate);
         // Via the accessor, not the field: it guarantees a non-null registry even for instances that
         // were built without it (e.g. deserialized by a creator that skipped the default).
-        return getFeatureHexGridRegistry().computeIfAbsent(key, k ->
-            de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid.builder()
-                .coordinate(coordinate)
-                .build()
-        );
+        return getFeatureHexGridRegistry()
+                .computeIfAbsent(
+                        key,
+                        k -> de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid.builder()
+                                .coordinate(coordinate)
+                                .build());
     }
 
     /**
@@ -184,9 +186,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Biome)
-            .map(f -> (Biome) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Biome)
+                .map(f -> (Biome) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -195,9 +197,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Town)
-            .map(f -> (Town) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Town)
+                .map(f -> (Town) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -206,9 +208,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Composite)
-            .map(f -> (Composite) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Composite)
+                .map(f -> (Composite) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -217,9 +219,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Flow)
-            .map(f -> (Flow) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Flow)
+                .map(f -> (Flow) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -228,9 +230,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Road)
-            .map(f -> (Road) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Road)
+                .map(f -> (Road) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -239,9 +241,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof River)
-            .map(f -> (River) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof River)
+                .map(f -> (River) f)
+                .collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -250,9 +252,9 @@ public class HexComposition implements BuildFeature {
             return new ArrayList<>();
         }
         return features.stream()
-            .filter(f -> f instanceof Wall)
-            .map(f -> (Wall) f)
-            .collect(Collectors.toList());
+                .filter(f -> f instanceof Wall)
+                .map(f -> (Wall) f)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -265,12 +267,12 @@ public class HexComposition implements BuildFeature {
     @Override
     public CompositionResult build(BuildContext context) {
         return HexCompositeBuilder.builder()
-            .composition(this)
-            .worldId(context.getWorldId())
-            .seed(context.getSeed())
-            .fillGaps(context.isFillGaps())
-            .oceanBorderRings(context.getOceanBorderRings())
-            .build()
-            .compose();
+                .composition(this)
+                .worldId(context.getWorldId())
+                .seed(context.getSeed())
+                .fillGaps(context.isFillGaps())
+                .oceanBorderRings(context.getOceanBorderRings())
+                .build()
+                .compose();
     }
 }

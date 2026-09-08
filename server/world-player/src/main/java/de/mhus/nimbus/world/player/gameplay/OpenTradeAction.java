@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WTrader;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Action handler for opening a trade dialog with an NPC trader.
@@ -62,20 +61,12 @@ public class OpenTradeAction extends AbstractGamplayAction {
         leaseData.put("traderType", trader.getTraderType().name());
         leaseData.put("chestId", trader.getChestId());
 
-        var lease = basic.getLeaseService().acquire(
-                worldId,
-                playerId,
-                "trade-access",
-                traderEntityId,
-                "Trade",
-                leaseData
-        );
+        var lease =
+                basic.getLeaseService().acquire(worldId, playerId, "trade-access", traderEntityId, "Trade", leaseData);
 
-        basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("trade", lease.getLeaseId()));
+        basic.getBasicClientService().sendCommand(session, "openComponent", List.of("trade", lease.getLeaseId()));
 
-        log.debug("Sent open.trade to player {}: trader={}, leaseId={}",
-                playerId, traderEntityId, lease.getLeaseId());
+        log.debug("Sent open.trade to player {}: trader={}, leaseId={}", playerId, traderEntityId, lease.getLeaseId());
         return true;
     }
 }

@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
@@ -9,12 +7,6 @@ import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +14,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for hex grids.
@@ -47,7 +46,8 @@ public class HexGridResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path hexGridsDir = dataPath.resolve("hexgrids");
         Files.createDirectories(hexGridsDir);
 
@@ -85,9 +85,11 @@ public class HexGridResourceSyncType implements ResourceSyncType {
         int deleted = 0;
         if (removeOvertaken && Files.exists(hexGridsDir)) {
             try (Stream<Path> files = Files.list(hexGridsDir)) {
-                for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
+                for (Path file :
+                        files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     String filename = file.getFileName().toString();
-                    String position = filename.substring(0, filename.length() - 5).replace('_', ':'); // Remove .yaml and restore :
+                    String position = filename.substring(0, filename.length() - 5)
+                            .replace('_', ':'); // Remove .yaml and restore :
 
                     if (!dbPositions.contains(position)) {
                         Files.delete(file);
@@ -102,7 +104,9 @@ public class HexGridResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path hexGridsDir = dataPath.resolve("hexgrids");
         if (!Files.exists(hexGridsDir)) {
             log.info("No hexgrids directory found");
@@ -137,10 +141,10 @@ public class HexGridResourceSyncType implements ResourceSyncType {
                     documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + position)
-                    Document existing = hexGridService.findDocumentByWorldIdAndPosition(
-                            migratedDoc.getString("worldId"),
-                            migratedDoc.getString("position")
-                    ).orElse(null);
+                    Document existing = hexGridService
+                            .findDocumentByWorldIdAndPosition(
+                                    migratedDoc.getString("worldId"), migratedDoc.getString("position"))
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {

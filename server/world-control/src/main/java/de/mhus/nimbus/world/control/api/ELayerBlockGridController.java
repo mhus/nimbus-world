@@ -5,12 +5,11 @@ import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST controller for block grid visualization.
@@ -38,10 +37,16 @@ public class ELayerBlockGridController {
             @RequestParam(required = false, defaultValue = "0") int centerY,
             @RequestParam(required = false, defaultValue = "0") int centerZ,
             @RequestParam(required = false, defaultValue = "16") int radiusXZ,
-            @RequestParam(required = false, defaultValue = "32") int radiusY
-    ) {
-        log.debug("Loading terrain blocks for worldId={}, layerId={}, center=({},{},{}), radiusXZ={}, radiusY={}",
-                worldId, layerId, centerX, centerY, centerZ, radiusXZ, radiusY);
+            @RequestParam(required = false, defaultValue = "32") int radiusY) {
+        log.debug(
+                "Loading terrain blocks for worldId={}, layerId={}, center=({},{},{}), radiusXZ={}, radiusY={}",
+                worldId,
+                layerId,
+                centerX,
+                centerY,
+                centerZ,
+                radiusXZ,
+                radiusY);
 
         // Load layer
         Optional<WLayer> layerOpt = layerService.findById(layerId);
@@ -82,8 +87,8 @@ public class ELayerBlockGridController {
                 String chunkKey = chunkX + ":" + chunkZ;
 
                 // Load chunk data via service
-                Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(
-                        layer.getWorldId(), layer.getLayerDataId(), chunkKey);
+                Optional<LayerChunkData> chunkDataOpt =
+                        layerService.loadTerrainChunk(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
                 if (chunkDataOpt.isEmpty()) {
                     log.trace("Chunk {} not found for layerDataId={}", chunkKey, layer.getLayerDataId());
@@ -121,15 +126,24 @@ public class ELayerBlockGridController {
             }
         }
 
-        log.info("Terrain blocks: checked {} chunks, found {} chunks, returning {} block coordinates (center={},{},{}, radiusXZ={}, radiusY={})",
-                chunksChecked, chunksFound, blockCoordinates.size(), centerX, centerY, centerZ, radiusXZ, radiusY);
+        log.info(
+                "Terrain blocks: checked {} chunks, found {} chunks, returning {} block coordinates (center={},{},{}, radiusXZ={}, radiusY={})",
+                chunksChecked,
+                chunksFound,
+                blockCoordinates.size(),
+                centerX,
+                centerY,
+                centerZ,
+                radiusXZ,
+                radiusY);
 
         // If no blocks found and center is at origin, provide a hint
         String hint = null;
         if (blockCoordinates.isEmpty() && centerX == 0 && centerY == 64 && centerZ == 0) {
             long chunkCount = layerService.countTerrainChunks(layer.getWorldId(), layer.getLayerDataId());
             if (chunkCount > 0) {
-                hint = "No blocks at default center (0,64,0). Found " + chunkCount + " chunks total. Try navigating to find blocks.";
+                hint = "No blocks at default center (0,64,0). Found " + chunkCount
+                        + " chunks total. Try navigating to find blocks.";
             } else {
                 hint = "No terrain chunks found for this layer.";
             }
@@ -156,10 +170,9 @@ public class ELayerBlockGridController {
             @PathVariable String layerId,
             @PathVariable int x,
             @PathVariable int y,
-            @PathVariable int z
-    ) {
-        log.debug("Loading terrain block details for worldId={}, layerId={}, pos=({},{},{})",
-                worldId, layerId, x, y, z);
+            @PathVariable int z) {
+        log.debug(
+                "Loading terrain block details for worldId={}, layerId={}, pos=({},{},{})", worldId, layerId, x, y, z);
 
         Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
@@ -178,8 +191,8 @@ public class ELayerBlockGridController {
         int chunkZ = Math.floorDiv(z, chunkSize);
         String chunkKey = chunkX + ":" + chunkZ;
 
-        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(
-                layer.getWorldId(), layer.getLayerDataId(), chunkKey);
+        Optional<LayerChunkData> chunkDataOpt =
+                layerService.loadTerrainChunk(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
         if (chunkDataOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -196,8 +209,7 @@ public class ELayerBlockGridController {
                     return ResponseEntity.ok(Map.of(
                             "block", layerBlock.getBlock(),
                             "group", layerBlock.getGroup(),
-                            "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""
-                    ));
+                            "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""));
                 }
             }
         }
@@ -210,12 +222,8 @@ public class ELayerBlockGridController {
      */
     @GetMapping("/models/{modelId}/blocks")
     public ResponseEntity<?> getModelBlocks(
-            @PathVariable String worldId,
-            @PathVariable String layerId,
-            @PathVariable String modelId
-    ) {
-        log.debug("Loading model blocks for worldId={}, layerId={}, modelId={}",
-                worldId, layerId, modelId);
+            @PathVariable String worldId, @PathVariable String layerId, @PathVariable String modelId) {
+        log.debug("Loading model blocks for worldId={}, layerId={}, modelId={}", worldId, layerId, modelId);
 
         Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
@@ -261,13 +269,12 @@ public class ELayerBlockGridController {
         return ResponseEntity.ok(Map.of(
                 "blocks", blockCoordinates,
                 "count", blockCoordinates.size(),
-                "mountPoint", Map.of(
-                        "x", model.getMountX(),
-                        "y", model.getMountY(),
-                        "z", model.getMountZ()
-                ),
-                "rotation", model.getRotation()
-        ));
+                "mountPoint",
+                        Map.of(
+                                "x", model.getMountX(),
+                                "y", model.getMountY(),
+                                "z", model.getMountZ()),
+                "rotation", model.getRotation()));
     }
 
     /**
@@ -280,10 +287,15 @@ public class ELayerBlockGridController {
             @PathVariable String modelId,
             @PathVariable int x,
             @PathVariable int y,
-            @PathVariable int z
-    ) {
-        log.debug("Loading model block details for worldId={}, layerId={}, modelId={}, pos=({},{},{})",
-                worldId, layerId, modelId, x, y, z);
+            @PathVariable int z) {
+        log.debug(
+                "Loading model block details for worldId={}, layerId={}, modelId={}, pos=({},{},{})",
+                worldId,
+                layerId,
+                modelId,
+                x,
+                y,
+                z);
 
         Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
@@ -311,8 +323,7 @@ public class ELayerBlockGridController {
                     return ResponseEntity.ok(Map.of(
                             "block", layerBlock.getBlock(),
                             "group", layerBlock.getGroup(),
-                            "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""
-                    ));
+                            "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""));
                 }
             }
         }
@@ -322,8 +333,8 @@ public class ELayerBlockGridController {
 
     private String getGroupColor(String groupId) {
         String[] colors = {
-                "#3b82f6", "#ef4444", "#10b981", "#f59e0b",
-                "#8b5cf6", "#ec4899", "#06b6d4", "#f97316"
+            "#3b82f6", "#ef4444", "#10b981", "#f59e0b",
+            "#8b5cf6", "#ec4899", "#06b6d4", "#f97316"
         };
         int hash = Math.abs(groupId.hashCode());
         return colors[hash % colors.length];

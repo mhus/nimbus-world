@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WProgress entities.
@@ -35,7 +34,8 @@ public interface WProgressRepository extends MongoRepository<WProgress, String> 
     /**
      * Find a specific progress entry by world, player, type, and quest.
      */
-    Optional<WProgress> findByWorldIdAndPlayerIdAndTypeAndQuest(String worldId, String playerId, String type, String quest);
+    Optional<WProgress> findByWorldIdAndPlayerIdAndTypeAndQuest(
+            String worldId, String playerId, String type, String quest);
 
     /**
      * Find a progress entry by its progressId.

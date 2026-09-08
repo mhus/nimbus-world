@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import de.mhus.nimbus.world.player.service.GameplayUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import tools.jackson.databind.JsonNode;
 
 /**
  * GameplayAction for opening/closing doors.
@@ -61,9 +60,18 @@ public class DoorAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId,
-                                     String blockAction, JsonNode params, String userAction, String shortcutKey,
-                                     Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (session.getWorldId() == null) return false;
         if (!basic.canUseBlock(session, x, y, z, serverInfo)) return false;
 
@@ -126,24 +134,36 @@ public class DoorAction implements GameplayAction {
         playSound(session, serverInfo, newStatus, x, y, z);
 
         // Fire logic effect with status variables for placeholder replacement
-        basic.fireLogicEffect(session, serverInfo, Map.of(
-                "status", newStatus,
-                "open", String.valueOf("open".equals(newStatus)),
-                "closed", String.valueOf("closed".equals(newStatus))
-        ));
+        basic.fireLogicEffect(
+                session,
+                serverInfo,
+                Map.of(
+                        "status", newStatus,
+                        "open", String.valueOf("open".equals(newStatus)),
+                        "closed", String.valueOf("closed".equals(newStatus))));
 
-        log.debug("{} action: worldId={}, chunkKey={}, targets={}, status={}", getActionName(), worldId, chunkKey, blockKeys, newStatus);
+        log.debug(
+                "{} action: worldId={}, chunkKey={}, targets={}, status={}",
+                getActionName(),
+                worldId,
+                chunkKey,
+                blockKeys,
+                newStatus);
         return true;
     }
 
-    protected void playSound(PlayerSession session, Map<String, String> serverInfo, String newStatus, int x, int y, int z) {
+    protected void playSound(
+            PlayerSession session, Map<String, String> serverInfo, String newStatus, int x, int y, int z) {
         boolean isOpen = "open".equals(newStatus);
         String soundKey = isOpen ? "sound_open" : "sound_close";
         String soundValue = serverInfo != null ? serverInfo.get(soundKey) : null;
         String defaultSound = isOpen ? getDefaultSoundOpen() : getDefaultSoundClose();
         String sound = GameplayUtil.resolveSound(soundValue, defaultSound);
-        basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
-                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
+        basic.getBasicClientService()
+                .sendCommand(
+                        session,
+                        "playSoundAtPosition",
+                        List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
     }
 
     /**
@@ -151,8 +171,8 @@ public class DoorAction implements GameplayAction {
      *
      * @return List of block keys ("x,y,z") to toggle, always includes the target itself
      */
-    protected List<String> collectToggleTargets(WorldId worldId, Map<String, String> serverInfo, String chunkKey,
-                                               int targetX, int targetY, int targetZ) {
+    protected List<String> collectToggleTargets(
+            WorldId worldId, Map<String, String> serverInfo, String chunkKey, int targetX, int targetY, int targetZ) {
         String targetKey = targetX + "," + targetY + "," + targetZ;
         String toggleType = serverInfo != null ? serverInfo.get("toggleType") : null;
         if (Strings.isBlank(toggleType)) {
@@ -169,8 +189,8 @@ public class DoorAction implements GameplayAction {
     /**
      * Auto-detect: find adjacent blocks (up/down) in the same chunk with same action.
      */
-    protected List<String> collectAutoTargets(WorldId worldId, String chunkKey,
-                                             int targetX, int targetY, int targetZ, String targetKey) {
+    protected List<String> collectAutoTargets(
+            WorldId worldId, String chunkKey, int targetX, int targetY, int targetZ, String targetKey) {
         WChunk chunk = basic.getChunkService().find(worldId, chunkKey).orElse(null);
         if (chunk == null || chunk.getInfoServer() == null) {
             return List.of(targetKey);
@@ -196,8 +216,8 @@ public class DoorAction implements GameplayAction {
     /**
      * Group: find all blocks in the same chunk with matching toggleGroup and same action.
      */
-    protected List<String> collectGroupTargets(WorldId worldId, Map<String, String> serverInfo,
-                                              String chunkKey, String targetKey) {
+    protected List<String> collectGroupTargets(
+            WorldId worldId, Map<String, String> serverInfo, String chunkKey, String targetKey) {
         String groupName = serverInfo != null ? serverInfo.get("toggleGroup") : null;
         if (Strings.isBlank(groupName)) {
             log.warn("toggleType=group but no toggleGroup specified, falling back to single");
@@ -226,7 +246,8 @@ public class DoorAction implements GameplayAction {
         return targets;
     }
 
-    protected String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
+    protected String resolveStatus(
+            String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
         return switch (value.toLowerCase()) {
             case "open" -> "open";
             case "close", "closed" -> "closed";
@@ -249,8 +270,13 @@ public class DoorAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction,
-                                      String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         return false;
     }
 
@@ -260,8 +286,13 @@ public class DoorAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey,
-                                      Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         return false;
     }
 }

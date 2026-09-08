@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.shared.redis;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Redis-based distributed lock service for chunk updates.
@@ -61,8 +60,7 @@ public class WorldRedisLockService {
         Boolean acquired = redis.opsForValue().setIfAbsent(lockKey, token, ttl);
 
         if (Boolean.TRUE.equals(acquired)) {
-            log.trace("Acquired chunk update lock: world={} token={} ttl={}ms",
-                    worldId, token, ttl.toMillis());
+            log.trace("Acquired chunk update lock: world={} token={} ttl={}ms", worldId, token, ttl.toMillis());
             return token;
         }
 
@@ -134,8 +132,7 @@ public class WorldRedisLockService {
         Boolean acquired = redis.opsForValue().setIfAbsent(fullKey, token, ttl);
 
         if (Boolean.TRUE.equals(acquired)) {
-            log.trace("Acquired lock: key={} token={} ttl={}ms",
-                    lockKey, token, ttl.toMillis());
+            log.trace("Acquired lock: key={} token={} ttl={}ms", lockKey, token, ttl.toMillis());
             return token;
         }
 

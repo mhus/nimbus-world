@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
+import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructurePlacementResult;
-import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Result of a composition build operation.
@@ -20,6 +19,7 @@ import java.util.List;
 public class CompositionResult {
     private boolean success;
     private String errorMessage;
+
     @Builder.Default
     private List<String> warnings = new ArrayList<>();
 
@@ -59,17 +59,15 @@ public class CompositionResult {
      */
     public static CompositionResult failed(String errorMessage) {
         return CompositionResult.builder()
-            .success(false)
-            .errorMessage(errorMessage)
-            .build();
+                .success(false)
+                .errorMessage(errorMessage)
+                .build();
     }
 
     /**
      * Creates a successful result
      */
     public static CompositionResult successful() {
-        return CompositionResult.builder()
-            .success(true)
-            .build();
+        return CompositionResult.builder().success(true).build();
     }
 }

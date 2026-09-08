@@ -4,10 +4,9 @@ import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Normal terrain manipulator with simplex noise.
@@ -80,19 +79,24 @@ public class NormalTerrainManipulator implements FlatManipulator {
                 flat.setLevel(flatX, flatZ, terrainHeight);
 
                 // Set column (material based on height vs water level)
-                int materialId = terrainHeight <= oceanLevel
-                        ? FlatMaterialService.SAND
-                        : FlatMaterialService.GRASS;
+                int materialId = terrainHeight <= oceanLevel ? FlatMaterialService.SAND : FlatMaterialService.GRASS;
                 flat.setColumn(flatX, flatZ, materialId);
             }
         }
 
-        log.info("Normal terrain manipulated: region=({},{},{},{}), base={}, variation={}, seed={}",
-                x, z, sizeX, sizeZ, baseHeight, heightVariation, seed);
+        log.info(
+                "Normal terrain manipulated: region=({},{},{},{}), base={}, variation={}, seed={}",
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                baseHeight,
+                heightVariation,
+                seed);
     }
 
-    private int calculateTerrainHeight(FastNoiseLite noise, int worldX, int worldZ,
-                                       int baseHeight, int heightVariation) {
+    private int calculateTerrainHeight(
+            FastNoiseLite noise, int worldX, int worldZ, int baseHeight, int heightVariation) {
         // Multi-octave noise for natural-looking terrain
         double noise1 = noise.GetNoise((float) (worldX * SCALE_1), (float) (worldZ * SCALE_1));
         double noise2 = noise.GetNoise((float) (worldX * SCALE_2), (float) (worldZ * SCALE_2));

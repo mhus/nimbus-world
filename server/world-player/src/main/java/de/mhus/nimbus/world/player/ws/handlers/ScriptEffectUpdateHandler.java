@@ -1,14 +1,14 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles effect parameter update messages from clients.
@@ -42,7 +42,8 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Effect update from unauthenticated session: {}",
+            log.warn(
+                    "Effect update from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -66,8 +67,7 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
         // Publish to Redis for multi-pod broadcasting
         publishToRedis(session, data);
 
-        log.trace("Effect update: effectId={}, session={}, data={}",
-                effectId, session.getSessionId(), data);
+        log.trace("Effect update: effectId={}, session={}, data={}", effectId, session.getSessionId(), data);
     }
 
     /**
@@ -83,8 +83,10 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
             enriched.put("title", session.getTitle());
 
             // Copy original data
-            if (originalData.has("effectId")) enriched.put("effectId", originalData.get("effectId").asText());
-            if (originalData.has("paramName")) enriched.put("paramName", originalData.get("paramName").asText());
+            if (originalData.has("effectId"))
+                enriched.put("effectId", originalData.get("effectId").asText());
+            if (originalData.has("paramName"))
+                enriched.put("paramName", originalData.get("paramName").asText());
             if (originalData.has("value")) enriched.set("value", originalData.get("value"));
             if (originalData.has("chunks")) enriched.set("chunks", originalData.get("chunks"));
             if (originalData.has("targeting")) enriched.set("targeting", originalData.get("targeting"));
@@ -92,8 +94,10 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
             String json = objectMapper.writeValueAsString(enriched);
             redisMessaging.publish(session.getWorldId().getId(), "s.u", json);
 
-            log.trace("Published effect update to Redis: worldId={}, sessionId={}",
-                    session.getWorldId(), session.getSessionId());
+            log.trace(
+                    "Published effect update to Redis: worldId={}, sessionId={}",
+                    session.getWorldId(),
+                    session.getSessionId());
 
         } catch (Exception e) {
             log.error("Failed to publish effect update to Redis", e);

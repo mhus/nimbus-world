@@ -5,10 +5,9 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Desert scenario builder.
@@ -43,10 +42,16 @@ public class DesertBuilder extends HexGridBuilder {
         int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
-        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.7"), 0.7d);
+        double frequency =
+                CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.7"), 0.7d);
 
-        log.debug("Desert terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
-                baseHeight, hillHeight, seaLevel, seed, frequency);
+        log.debug(
+                "Desert terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                seed,
+                frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -56,19 +61,18 @@ public class DesertBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base desert terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set materials based on height
         setDesertMaterials(flat, seaLevel);
 
-        log.debug("Desert scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, seaLevel);
+        log.debug(
+                "Desert scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight,
+                hillHeight,
+                seaLevel);
     }
 
     /**
@@ -89,22 +93,33 @@ public class DesertBuilder extends HexGridBuilder {
 
         // Get materials from parameters (with defaults)
         int sandMaterial = parseMaterialParameter(parameters, "sandMaterial", FlatMaterialService.SAND);
-        int desertSandMaterial = parseMaterialParameter(parameters, "desertSandMaterial", FlatMaterialService.DESERT_SAND);
+        int desertSandMaterial =
+                parseMaterialParameter(parameters, "desertSandMaterial", FlatMaterialService.DESERT_SAND);
         int dirtMaterial = parseMaterialParameter(parameters, "dirtMaterial", FlatMaterialService.DIRT);
         int stoneMaterial = parseMaterialParameter(parameters, "stoneMaterial", FlatMaterialService.STONE);
         int snowMaterial = parseMaterialParameter(parameters, "snowMaterial", FlatMaterialService.SNOW);
 
         // Material ratios
-        double dirtRatio = parseDoubleParameter(parameters, "dirtRatio", 0.05);  // 5% dirt patches
-        double stoneRatio = parseDoubleParameter(parameters, "stoneRatio", 0.3);  // 30% stone in rocky areas
+        double dirtRatio = parseDoubleParameter(parameters, "dirtRatio", 0.05); // 5% dirt patches
+        double stoneRatio = parseDoubleParameter(parameters, "stoneRatio", 0.3); // 30% stone in rocky areas
 
         int desertToStoneThreshold = oceanLevel + stoneOffset;
         int snowThreshold = oceanLevel + snowOffset;
 
-        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
-                desertToStoneThreshold, snowThreshold, oceanLevel);
-        log.debug("Materials: sand={}, desertSand={}, dirt={}, stone={}, snow={}, dirtRatio={}, stoneRatio={}",
-                sandMaterial, desertSandMaterial, dirtMaterial, stoneMaterial, snowMaterial, dirtRatio, stoneRatio);
+        log.debug(
+                "Material thresholds: stone={}, snow={} (oceanLevel={})",
+                desertToStoneThreshold,
+                snowThreshold,
+                oceanLevel);
+        log.debug(
+                "Materials: sand={}, desertSand={}, dirt={}, stone={}, snow={}, dirtRatio={}, stoneRatio={}",
+                sandMaterial,
+                desertSandMaterial,
+                dirtMaterial,
+                stoneMaterial,
+                snowMaterial,
+                dirtRatio,
+                stoneRatio);
 
         // Use seed-based random for consistent material distribution
         long seed = context.getWorld().getNoiseSeed();
@@ -144,12 +159,12 @@ public class DesertBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 15;  // DESERT: moderate to high dunes and hills
+        return 15; // DESERT: moderate to high dunes and hills
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 30;  // DESERT: elevated, dry terrain
+        return 30; // DESERT: elevated, dry terrain
     }
 
     @Override
@@ -259,7 +274,7 @@ public class DesertBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

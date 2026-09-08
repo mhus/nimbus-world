@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import de.mhus.nimbus.world.generator.flora.FloraCategory;
-
 import java.util.OptionalInt;
 
 /**
@@ -22,12 +21,10 @@ public record FloraConstraints(
         boolean land,
         boolean water,
         boolean sea,
-        boolean emerse
-) {
+        boolean emerse) {
 
-    public static final FloraConstraints UNCONSTRAINED =
-            new FloraConstraints(OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(),
-                    true, true, true, false);
+    public static final FloraConstraints UNCONSTRAINED = new FloraConstraints(
+            OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(), true, true, true, false);
 
     /**
      * Check whether a plant fits at a given position.
@@ -39,9 +36,15 @@ public record FloraConstraints(
     public boolean fitsPosition(int waterDepth, FloraCategory category) {
         // Check category flags
         switch (category) {
-            case LAND -> { if (!land) return false; }
-            case WATER -> { if (!water) return false; }
-            case SEA -> { if (!sea) return false; }
+            case LAND -> {
+                if (!land) return false;
+            }
+            case WATER -> {
+                if (!water) return false;
+            }
+            case SEA -> {
+                if (!sea) return false;
+            }
         }
 
         // For LAND, no water constraints apply

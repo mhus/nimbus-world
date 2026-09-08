@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.HashMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
 
 /**
  * Plains biome with flat, open grassland terrain.
@@ -59,10 +58,10 @@ public class PlainsBiome extends Biome {
      * Plains variation presets with terrain and lake parameters.
      */
     public enum PlainsVariation {
-        FLAT(2, 15, 0.4, 0.05, false, 3),          // Very flat, no lakes
-        ROLLING(5, 15, 0.5, 0.1, true, 4),         // Gently rolling, occasional lakes [Default]
-        MEADOW(7, 18, 0.6, 0.15, true, 5),         // Varied meadows, more lakes
-        STEPPE(4, 20, 0.5, 0.2, false, 3);         // Dry grassland, higher, few lakes
+        FLAT(2, 15, 0.4, 0.05, false, 3), // Very flat, no lakes
+        ROLLING(5, 15, 0.5, 0.1, true, 4), // Gently rolling, occasional lakes [Default]
+        MEADOW(7, 18, 0.6, 0.15, true, 5), // Varied meadows, more lakes
+        STEPPE(4, 20, 0.5, 0.2, false, 3); // Dry grassland, higher, few lakes
 
         private final int landOffset;
         private final int aboveSeaLevel;
@@ -71,7 +70,13 @@ public class PlainsBiome extends Biome {
         private final boolean enableLakes;
         private final int lakeDepth;
 
-        PlainsVariation(int landOffset, int aboveSeaLevel, double frequency, double dirtRatio, boolean enableLakes, int lakeDepth) {
+        PlainsVariation(
+                int landOffset,
+                int aboveSeaLevel,
+                double frequency,
+                double dirtRatio,
+                boolean enableLakes,
+                int lakeDepth) {
             this.landOffset = landOffset;
             this.aboveSeaLevel = aboveSeaLevel;
             this.frequency = frequency;
@@ -134,12 +139,18 @@ public class PlainsBiome extends Biome {
 
         // Apply ground type materials if specified
         if (groundType == null) {
-            groundType = GroundType.GRASSY;  // Plains default to GRASSY ground type
+            groundType = GroundType.GRASSY; // Plains default to GRASSY ground type
         }
         groundType.applyToParameters(getParameters());
 
-        log.debug("Applied PlainsBiome defaults for '{}': variation={}, landOffset={}, landLevel={}, dirtRatio={}, lakes={}, groundType={}",
-            getName(), variation, variation.getLandOffset(), variation.getAboveSeaLevel(), variation.getDirtRatio(), variation.isEnableLakes(), groundType);
+        log.debug(
+                "Applied PlainsBiome defaults for '{}': variation={}, landOffset={}, landLevel={}, dirtRatio={}, lakes={}, groundType={}",
+                getName(),
+                variation,
+                variation.getLandOffset(),
+                variation.getAboveSeaLevel(),
+                variation.getDirtRatio(),
+                variation.isEnableLakes(),
+                groundType);
     }
 }
-

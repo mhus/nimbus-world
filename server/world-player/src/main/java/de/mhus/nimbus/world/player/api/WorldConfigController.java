@@ -23,16 +23,15 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * World Configuration REST API
@@ -57,19 +56,18 @@ public class WorldConfigController {
     private final Environment env;
 
     @GetMapping("/config")
-    @Operation(summary = "Get complete EngineConfiguration",
-               description = "Returns worldInfo, playerInfo, playerBackpack, and settings")
-    public ResponseEntity<?> getConfig(
-            HttpServletRequest request,
-            @RequestParam(required = false) String client) {
+    @Operation(
+            summary = "Get complete EngineConfiguration",
+            description = "Returns worldInfo, playerInfo, playerBackpack, and settings")
+    public ResponseEntity<?> getConfig(HttpServletRequest request, @RequestParam(required = false) String client) {
 
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
-        var playerId = accessUtil.getPlayerId(request).orElseThrow(
-                () -> new IllegalStateException("Player ID not found in request")
-        );
+        var playerId = accessUtil
+                .getPlayerId(request)
+                .orElseThrow(() -> new IllegalStateException("Player ID not found in request"));
 
         String clientVariant = client != null ? client : "viewer";
         log.info("Loading config for world: {}, player: {}, clientVariant: {}", worldId, playerId, clientVariant);
@@ -127,7 +125,12 @@ public class WorldConfigController {
      * @param playerId The playerId
      * @param request The HTTP request (for session lookup)
      */
-    private void patchWorldInfo(WorldInfo worldInfo, WWorld world, de.mhus.nimbus.shared.types.WorldId worldId, PlayerId playerId, HttpServletRequest request) {
+    private void patchWorldInfo(
+            WorldInfo worldInfo,
+            WWorld world,
+            de.mhus.nimbus.shared.types.WorldId worldId,
+            PlayerId playerId,
+            HttpServletRequest request) {
         // Set worldId to the full session worldId (includes instance if present)
         worldInfo.setWorldId(worldId.getId());
 
@@ -142,8 +145,10 @@ public class WorldConfigController {
         // Resolve epoch from world instance
         int epoch = 0;
         if (worldId.isInstance()) {
-            epoch = worldInstanceService.findByInstanceIdWithValidation(worldId.getId())
-                    .map(inst -> inst.getEpoch()).orElse(0);
+            epoch = worldInstanceService
+                    .findByInstanceIdWithValidation(worldId.getId())
+                    .map(inst -> inst.getEpoch())
+                    .orElse(0);
         }
 
         // Override status with worldStatus from current epoch definition
@@ -152,8 +157,7 @@ public class WorldConfigController {
             world.getEpoches().stream()
                     .filter(e -> e.getEpoch() == resolvedEpoch)
                     .findFirst()
-                    .ifPresent(epochMeta ->
-                            worldInfo.setStatus(epochMeta.getWorldStatus()));
+                    .ifPresent(epochMeta -> worldInfo.setStatus(epochMeta.getWorldStatus()));
         }
 
         // Get session to determine entry point
@@ -221,13 +225,15 @@ public class WorldConfigController {
                     .size(Vector3Int.builder().x(1).y(1).z(1).build()) // Single point
                     .build();
 
-            WorldInfoEntryPointDTO entryPointDTO = WorldInfoEntryPointDTO.builder()
-                    .area(area)
-                    .build();
+            WorldInfoEntryPointDTO entryPointDTO =
+                    WorldInfoEntryPointDTO.builder().area(area).build();
 
             worldInfo.setEntryPoint(entryPointDTO);
-            log.info("Restored entry point from saved session: worldId={}, playerId={}, position={}",
-                    worldId, playerId, position);
+            log.info(
+                    "Restored entry point from saved session: worldId={}, playerId={}, position={}",
+                    worldId,
+                    playerId,
+                    position);
         }
     }
 
@@ -250,25 +256,22 @@ public class WorldConfigController {
             int r = Integer.parseInt(coords[1].trim());
 
             // Create HexVector2 from coordinates
-            HexVector2 hexGrid = HexVector2.builder()
-                    .q(q)
-                    .r(r)
-                    .build();
+            HexVector2 hexGrid = HexVector2.builder().q(q).r(r).build();
             var hexGridOpt = wHexGridService.findByWorldIdAndPosition(worldInfo.getWorldId(), hexGrid, epoch);
             if (hexGridOpt.isEmpty()) {
                 log.warn("Hex grid position not found in world: {}, q={}, r={}", worldInfo.getWorldId(), q, r);
                 return;
             }
-            if (hexGridOpt.get().getPublicData() == null || hexGridOpt.get().getPublicData().getEntryPoint() == null) {
+            if (hexGridOpt.get().getPublicData() == null
+                    || hexGridOpt.get().getPublicData().getEntryPoint() == null) {
                 log.warn("Hex grid entry point data missing for world: {}, q={}, r={}", worldInfo.getWorldId(), q, r);
                 return;
             }
 
             var entryPointArea = hexGridOpt.get().getPublicData().getEntryPoint();
 
-            WorldInfoEntryPointDTO entryPointDTO = WorldInfoEntryPointDTO.builder()
-                    .area(entryPointArea)
-                    .build();
+            WorldInfoEntryPointDTO entryPointDTO =
+                    WorldInfoEntryPointDTO.builder().area(entryPointArea).build();
 
             worldInfo.setEntryPoint(entryPointDTO);
             log.info("Set hex grid entry point: q={}, r={}, area={}", q, r, entryPointArea);
@@ -309,9 +312,8 @@ public class WorldConfigController {
                     .size(Vector3Int.builder().x(1).y(1).z(1).build()) // Single point
                     .build();
 
-            WorldInfoEntryPointDTO entryPointDTO = WorldInfoEntryPointDTO.builder()
-                    .area(area)
-                    .build();
+            WorldInfoEntryPointDTO entryPointDTO =
+                    WorldInfoEntryPointDTO.builder().area(area).build();
 
             worldInfo.setEntryPoint(entryPointDTO);
             log.info("Set position entry point: x={}, y={}, z={}", x, y, z);
@@ -324,9 +326,9 @@ public class WorldConfigController {
     @GetMapping("/config/worldinfo")
     @Operation(summary = "Get WorldInfo only")
     public ResponseEntity<?> getWorldInfo(HttpServletRequest request) {
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);
         if (worldOpt.isEmpty()) {
@@ -341,13 +343,13 @@ public class WorldConfigController {
     @GetMapping("/config/playerinfo")
     @Operation(summary = "Get PlayerInfo only")
     public ResponseEntity<?> getPlayerInfo(HttpServletRequest request) {
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
-        var playerId = accessUtil.getPlayerId(request).orElseThrow(
-                () -> new IllegalStateException("Player ID not found in request")
-        );
+        var playerId = accessUtil
+                .getPlayerId(request)
+                .orElseThrow(() -> new IllegalStateException("Player ID not found in request"));
 
         Optional<PlayerData> playerDataOpt = playerService.getPlayer(playerId, ClientType.WEB, worldId.getRegionId());
         if (playerDataOpt.isEmpty()) {
@@ -360,13 +362,13 @@ public class WorldConfigController {
     @GetMapping("/config/playerbackpack")
     @Operation(summary = "Get PlayerBackpack only")
     public ResponseEntity<?> getPlayerBackpack(HttpServletRequest request) {
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
-        var playerId = accessUtil.getPlayerId(request).orElseThrow(
-                () -> new IllegalStateException("Player ID not found in request")
-        );
+        var playerId = accessUtil
+                .getPlayerId(request)
+                .orElseThrow(() -> new IllegalStateException("Player ID not found in request"));
 
         Optional<PlayerData> playerDataOpt = playerService.getPlayer(playerId, ClientType.WEB, worldId.getRegionId());
         if (playerDataOpt.isEmpty()) {
@@ -378,17 +380,15 @@ public class WorldConfigController {
 
     @GetMapping("/config/settings")
     @Operation(summary = "Get Settings only")
-    public ResponseEntity<?> getSettings(
-            HttpServletRequest request,
-            @RequestParam(required = false) String client) {
+    public ResponseEntity<?> getSettings(HttpServletRequest request, @RequestParam(required = false) String client) {
 
-        var worldId = accessUtil.getWorldId(request).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var worldId = accessUtil
+                .getWorldId(request)
+                .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
-        var playerId = accessUtil.getPlayerId(request).orElseThrow(
-                () -> new IllegalStateException("Player ID not found in request")
-        );
+        var playerId = accessUtil
+                .getPlayerId(request)
+                .orElseThrow(() -> new IllegalStateException("Player ID not found in request"));
 
         // Always use WEB as ClientType for now
         Optional<PlayerData> playerDataOpt = playerService.getPlayer(playerId, ClientType.WEB, worldId.getRegionId());
@@ -452,7 +452,8 @@ public class WorldConfigController {
         }
 
         // Ensure all states have complete values with defaults
-        for (Map.Entry<String, MovementStateValues> entry : playerInfo.getStateValues().entrySet()) {
+        for (Map.Entry<String, MovementStateValues> entry :
+                playerInfo.getStateValues().entrySet()) {
             String stateKey = entry.getKey();
             MovementStateValues state = entry.getValue();
 
@@ -515,5 +516,4 @@ public class WorldConfigController {
             settings.setProperties(new java.util.HashMap<>());
         }
     }
-
 }

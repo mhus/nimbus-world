@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Roughen manipulator.
@@ -50,8 +49,7 @@ public class RoughenManipulator implements FlatManipulator {
         // Apply random additive effect using fillRectangle
         painter.fillRectangle(x, z, x2, z2, level);
 
-        log.info("Terrain roughened: region=({},{},{},{}), level={}",
-                x, z, sizeX, sizeZ, level);
+        log.info("Terrain roughened: region=({},{},{},{}), level={}", x, z, sizeX, sizeZ, level);
     }
 
     private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {

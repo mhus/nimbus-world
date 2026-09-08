@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +13,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * Edit cache dirty entity - work queue for merging cached edits into layers.
  * Tracks layers that have pending changes in WEditCache that need to be committed.
@@ -22,8 +21,8 @@ import java.time.Instant;
 @Document(collection = "w_edit_cache_dirty")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }", unique = true),
-        @CompoundIndex(name = "createdAt_idx", def = "{ 'createdAt': 1 }")
+    @CompoundIndex(name = "worldId_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }", unique = true),
+    @CompoundIndex(name = "createdAt_idx", def = "{ 'createdAt': 1 }")
 })
 @Data
 @Builder

@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.composer.pathfinding;
 
 import de.mhus.nimbus.world.generator.composer.town.DistrictGrid;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 /**
  * Represents a hex cell node in the village pathfinding graph.
@@ -151,7 +150,6 @@ public class HexNode {
 
     @Override
     public String toString() {
-        return String.format("HexNode[%s:(%d,%d) type=%s walkable=%s]",
-                district.getName(), q, r, type, walkable);
+        return String.format("HexNode[%s:(%d,%d) type=%s walkable=%s]", district.getName(), q, r, type, walkable);
     }
 }

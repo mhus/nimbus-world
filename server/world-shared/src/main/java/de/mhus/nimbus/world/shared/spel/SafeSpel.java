@@ -24,8 +24,7 @@ public final class SafeSpel {
      * disabled, so an expression can only read state, never mutate it.
      */
     public static EvaluationContext readOnly(Object rootObject) {
-        return SimpleEvaluationContext
-                .forPropertyAccessors(new MapAccessor())
+        return SimpleEvaluationContext.forPropertyAccessors(new MapAccessor())
                 .withAssignmentDisabled()
                 .withRootObject(rootObject)
                 .build();
@@ -37,8 +36,7 @@ public final class SafeSpel {
      * constructors or method calls — assignment targets only map properties.
      */
     public static EvaluationContext readWrite(Object rootObject) {
-        return SimpleEvaluationContext
-                .forPropertyAccessors(new MapAccessor())
+        return SimpleEvaluationContext.forPropertyAccessors(new MapAccessor())
                 .withRootObject(rootObject)
                 .build();
     }

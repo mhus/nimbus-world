@@ -10,11 +10,10 @@ import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 /**
  * Job executor for generating AI-powered summaries for documents.
@@ -63,8 +62,14 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
             int maxTokens = getOptionalIntParameter(job, "maxTokens", DEFAULT_MAX_TOKENS);
             double temperature = getOptionalDoubleParameter(job, "temperature", DEFAULT_TEMPERATURE);
 
-            log.info("Parameters: worldId={}, collection={}, documentId={}, aiModel={}, maxTokens={}, temperature={}",
-                    worldIdStr, collection, documentId, aiModel, maxTokens, temperature);
+            log.info(
+                    "Parameters: worldId={}, collection={}, documentId={}, aiModel={}, maxTokens={}, temperature={}",
+                    worldIdStr,
+                    collection,
+                    documentId,
+                    aiModel,
+                    maxTokens,
+                    temperature);
 
             // Parse worldId
             WorldId worldId = WorldId.of(worldIdStr)
@@ -88,7 +93,8 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
             log.info("Document loaded: title='{}', contentLength={}", document.getTitle(), content.length());
 
             // Generate summary using AI
-            log.debug("Creating AI chat with model: {}, maxTokens: {}, temperature: {}", aiModel, maxTokens, temperature);
+            log.debug(
+                    "Creating AI chat with model: {}, maxTokens: {}, temperature: {}", aiModel, maxTokens, temperature);
             AiChatOptions options = AiChatOptions.builder()
                     .maxTokens(maxTokens)
                     .temperature(temperature)
@@ -128,8 +134,10 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
                 doc.setSummary(cleanedSummary);
             });
 
-            log.info("Document summary generated successfully: documentId={}, summaryLength={}",
-                    documentId, cleanedSummary.length());
+            log.info(
+                    "Document summary generated successfully: documentId={}, summaryLength={}",
+                    documentId,
+                    cleanedSummary.length());
 
             return JobResult.success("Summary generated: " + cleanedSummary.length() + " characters");
 
@@ -177,8 +185,8 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
         summary = summary.trim();
 
         // Remove surrounding quotes if present
-        if ((summary.startsWith("\"") && summary.endsWith("\"")) ||
-            (summary.startsWith("'") && summary.endsWith("'"))) {
+        if ((summary.startsWith("\"") && summary.endsWith("\""))
+                || (summary.startsWith("'") && summary.endsWith("'"))) {
             summary = summary.substring(1, summary.length() - 1).trim();
         }
 

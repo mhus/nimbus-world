@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.life.commands;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.world.LogicConditionService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Test a SpEL condition against the current logic state.
@@ -48,9 +47,8 @@ public class LogicConditionCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Test a SpEL condition against current logic state\n" +
-                "Usage: /logic-condition <spelExpression>\n" +
-                "Expression must be fully qualified: state.pkg.key == value\n" +
-                "Example: /logic-condition state.puzzle.hasKey == true";
+        return "Test a SpEL condition against current logic state\n" + "Usage: /logic-condition <spelExpression>\n"
+                + "Expression must be fully qualified: state.pkg.key == value\n"
+                + "Example: /logic-condition state.puzzle.hasKey == true";
     }
 }

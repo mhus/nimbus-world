@@ -2,6 +2,20 @@ package de.mhus.nimbus.shared.security;
 
 import de.mhus.nimbus.shared.persistence.SKey;
 import de.mhus.nimbus.shared.persistence.SKeyRepository;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,21 +23,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Implementierung der Provider-Interfaces, die Schlüssel aus der SKey-Entity lädt.
@@ -47,7 +46,9 @@ public class KeyService {
     }
 
     public List<PublicKey> getPublicKeysForIntent(KeyType type, KeyIntent intent) {
-        return repository.findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(type.name(), KIND_PUBLIC, intent.owner(), intent.intent())
+        return repository
+                .findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        type.name(), KIND_PUBLIC, intent.owner(), intent.intent())
                 .stream()
                 .filter(sKey -> sKey.isEnabled() && !sKey.isExpired())
                 .map(key -> toPublicKey(key).orElse(null))
@@ -62,7 +63,9 @@ public class KeyService {
     }
 
     public List<PrivateKey> getPrivateKeysForOwner(KeyType type, KeyIntent intent) {
-        return repository.findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(type.name(), KIND_PRIVATE, intent.owner(), intent.intent())
+        return repository
+                .findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        type.name(), KIND_PRIVATE, intent.owner(), intent.intent())
                 .stream()
                 .filter(sKey -> sKey.isEnabled() && !sKey.isExpired())
                 .map(key -> toPrivateKey(key).orElse(null))
@@ -89,7 +92,9 @@ public class KeyService {
 
     public List<SecretKey> getSecretKeysForOwner(KeyType type, KeyIntent intent) {
         // Bugfix: vorher KIND_PRIVATE, korrekt ist KIND_SECRET ("symmetric")
-        return repository.findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(type.name(), KIND_SECRET, intent.owner(), intent.intent())
+        return repository
+                .findAllByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        type.name(), KIND_SECRET, intent.owner(), intent.intent())
                 .stream()
                 .filter(sKey -> sKey.isEnabled() && !sKey.isExpired())
                 .map(key -> toSecretKey(key).orElse(null))
@@ -118,7 +123,9 @@ public class KeyService {
     }
 
     public Optional<PrivateKey> getLatestPrivateKey(KeyType keyType, KeyIntent intent) {
-        return repository.findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(keyType.name(), KIND_PRIVATE, intent.owner(), intent.intent())
+        return repository
+                .findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        keyType.name(), KIND_PRIVATE, intent.owner(), intent.intent())
                 .stream()
                 .filter(SKey::isEnabled)
                 .filter(k -> !k.isExpired())
@@ -127,7 +134,9 @@ public class KeyService {
     }
 
     public Optional<PrivateKey> getLatestPublicKey(KeyType keyType, KeyIntent intent) {
-        return repository.findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(keyType.name(), KIND_PUBLIC, intent.owner(), intent.intent())
+        return repository
+                .findTop1ByTypeAndKindAndOwnerAndIntentOrderByCreatedAtDesc(
+                        keyType.name(), KIND_PUBLIC, intent.owner(), intent.intent())
                 .stream()
                 .filter(SKey::isEnabled)
                 .filter(k -> !k.isExpired())
@@ -136,8 +145,7 @@ public class KeyService {
     }
 
     public Optional<SecretKey> getLatestSecretKey(KeyType keyType, String owner) {
-        return repository.findTop1ByTypeAndKindAndOwnerOrderByCreatedAtDesc(keyType.name(), KIND_SECRET, owner)
-                .stream()
+        return repository.findTop1ByTypeAndKindAndOwnerOrderByCreatedAtDesc(keyType.name(), KIND_SECRET, owner).stream()
                 .filter(SKey::isEnabled)
                 .filter(k -> !k.isExpired())
                 .findFirst()
@@ -157,8 +165,9 @@ public class KeyService {
     }
 
     private KeyId requireKeyId(String keyId) {
-        return parseKeyId(keyId).orElseThrow(() ->
-                new IllegalArgumentException("Invalid keyId format (expected 'owner;intent;id'): " + keyId));
+        return parseKeyId(keyId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid keyId format (expected 'owner;intent;id'): " + keyId));
     }
 
     /**
@@ -203,15 +212,21 @@ public class KeyService {
     }
 
     public void deleteAllForIntent(KeyIntent intent) {
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(KeyType.UNIVERSE.name(), KeyKind.PUBLIC.name(), intent.owner(), intent.intent());
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(KeyType.UNIVERSE.name(), KeyKind.PRIVATE.name(), intent.owner(), intent.intent());
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(KeyType.UNIVERSE.name(), KeyKind.SECRET.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                KeyType.UNIVERSE.name(), KeyKind.PUBLIC.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                KeyType.UNIVERSE.name(), KeyKind.PRIVATE.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                KeyType.UNIVERSE.name(), KeyKind.SECRET.name(), intent.owner(), intent.intent());
     }
 
     public void deleteAllForIntent(KeyType keyType, KeyIntent intent) {
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(keyType.name(), KeyKind.PUBLIC.name(), intent.owner(), intent.intent());
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(keyType.name(), KeyKind.PRIVATE.name(), intent.owner(), intent.intent());
-        repository.deleteAllByTypeAndKindAndOwnerAndIntent(keyType.name(), KeyKind.SECRET.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                keyType.name(), KeyKind.PUBLIC.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                keyType.name(), KeyKind.PRIVATE.name(), intent.owner(), intent.intent());
+        repository.deleteAllByTypeAndKindAndOwnerAndIntent(
+                keyType.name(), KeyKind.SECRET.name(), intent.owner(), intent.intent());
     }
 
     public void storePublicKey(KeyType type, FormattedKey formattedKey) {
@@ -220,14 +235,21 @@ public class KeyService {
 
     public void storePublicKey(KeyType type, KeyId keyId, String publicKey) {
         if (type == null || publicKey == null || publicKey.isBlank()) {
-            log.warn("storePublicKey: ungültige Parameter (type/name/publicKey)" );
+            log.warn("storePublicKey: ungültige Parameter (type/name/publicKey)");
             throw new IllegalArgumentException("Ungültige Parameter für storePublicKey");
         }
         String ownerStr = keyId.owner();
         String intentStr = keyId.intent();
         // Existenz prüfen
-        if (repository.findByTypeAndKindAndOwnerAndKeyId(type.name(), KeyKind.PUBLIC.name(), ownerStr, keyId.id()).isPresent()) {
-            log.warn("storePublicKey: Public Key existiert bereits type={} owner={} intent={} keyId={}", type, ownerStr, intentStr, keyId.id());
+        if (repository
+                .findByTypeAndKindAndOwnerAndKeyId(type.name(), KeyKind.PUBLIC.name(), ownerStr, keyId.id())
+                .isPresent()) {
+            log.warn(
+                    "storePublicKey: Public Key existiert bereits type={} owner={} intent={} keyId={}",
+                    type,
+                    ownerStr,
+                    intentStr,
+                    keyId.id());
             throw new IllegalStateException("Public Key existiert bereits für " + keyId);
         }
         String trimmed = publicKey.trim();
@@ -237,8 +259,13 @@ public class KeyService {
             boolean inside = false;
             for (String line : trimmed.split("\\R")) {
                 line = line.trim();
-                if (line.startsWith("-----BEGIN") && line.contains("PUBLIC KEY")) { inside = true; continue; }
-                if (line.startsWith("-----END") && line.contains("PUBLIC KEY")) { break; }
+                if (line.startsWith("-----BEGIN") && line.contains("PUBLIC KEY")) {
+                    inside = true;
+                    continue;
+                }
+                if (line.startsWith("-----END") && line.contains("PUBLIC KEY")) {
+                    break;
+                }
                 if (inside && !line.isEmpty() && !line.startsWith("#")) sb.append(line);
             }
             base64 = sb.toString();
@@ -246,15 +273,26 @@ public class KeyService {
             base64 = java.util.Arrays.stream(trimmed.split("\\R"))
                     .map(String::trim)
                     .filter(l -> !l.isEmpty() && !l.startsWith("#"))
-                    .reduce("", (a,b) -> a + b);
+                    .reduce("", (a, b) -> a + b);
         }
         if (base64.isBlank()) {
-            log.warn("storePublicKey: extrahierter Base64-Inhalt leer für owner='{}' intent='{}' keyId='{}'", ownerStr, intentStr, keyId.id());
+            log.warn(
+                    "storePublicKey: extrahierter Base64-Inhalt leer für owner='{}' intent='{}' keyId='{}'",
+                    ownerStr,
+                    intentStr,
+                    keyId.id());
             throw new IllegalArgumentException("Leerer Public Key Inhalt");
         }
         byte[] der;
-        try { der = Base64.getDecoder().decode(base64); } catch (Exception e) {
-            log.warn("storePublicKey: Base64 Decode Fehler für owner='{}' intent='{}' keyId='{}': {}", ownerStr, intentStr, keyId.id(), e.toString());
+        try {
+            der = Base64.getDecoder().decode(base64);
+        } catch (Exception e) {
+            log.warn(
+                    "storePublicKey: Base64 Decode Fehler für owner='{}' intent='{}' keyId='{}': {}",
+                    ownerStr,
+                    intentStr,
+                    keyId.id(),
+                    e.toString());
             throw new IllegalArgumentException("Public Key Base64 ungültig", e);
         }
         PublicKey pubKey;
@@ -267,15 +305,32 @@ public class KeyService {
                 pubKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(der));
                 algorithm = "RSA";
             } catch (Exception ex) {
-                log.warn("storePublicKey: Algorithmus nicht erkannt für owner='{}' intent='{}' keyId='{}': {}", ownerStr, intentStr, keyId.id(), ex.toString());
+                log.warn(
+                        "storePublicKey: Algorithmus nicht erkannt für owner='{}' intent='{}' keyId='{}': {}",
+                        ownerStr,
+                        intentStr,
+                        keyId.id(),
+                        ex.toString());
                 throw new IllegalArgumentException("Public Key Algorithmus nicht erkannt", ex);
             }
         }
         try {
             repository.save(SKey.ofPublicKey(type, keyId, pubKey));
-            log.info("storePublicKey: Public Key gespeichert type={} owner={} intent={} keyId={} alg={}", type, ownerStr, intentStr, keyId.id(), algorithm);
+            log.info(
+                    "storePublicKey: Public Key gespeichert type={} owner={} intent={} keyId={} alg={}",
+                    type,
+                    ownerStr,
+                    intentStr,
+                    keyId.id(),
+                    algorithm);
         } catch (Exception e) {
-            log.error("storePublicKey: Fehler beim Speichern des Public Keys type={} owner={} intent={} keyId={}: {}", type, ownerStr, intentStr, keyId.id(), e.toString());
+            log.error(
+                    "storePublicKey: Fehler beim Speichern des Public Keys type={} owner={} intent={} keyId={}: {}",
+                    type,
+                    ownerStr,
+                    intentStr,
+                    keyId.id(),
+                    e.toString());
             throw new IllegalStateException("Speichern des Public Keys fehlgeschlagen", e);
         }
     }
@@ -323,7 +378,8 @@ public class KeyService {
      * @param intent    explicit intent (optional)
      * @return the persisted key
      */
-    public SKey createKey(KeyType type, KeyKind kind, String algorithm, String name, String key, String owner, String intent) {
+    public SKey createKey(
+            KeyType type, KeyKind kind, String algorithm, String name, String key, String owner, String intent) {
         SKey e = new SKey();
         e.setType(type);
         e.setKind(kind);

@@ -6,7 +6,6 @@ import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WItemPosition;
 import de.mhus.nimbus.world.shared.world.WItemPositionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,18 +13,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for ItemPosition CRUD operations.
@@ -53,15 +51,11 @@ public class EItemPositionController extends BaseEditorController {
             String chunk,
             boolean enabled,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
-    public record CreateItemRequest(ItemBlockRef itemBlockRef) {
-    }
+    public record CreateItemRequest(ItemBlockRef itemBlockRef) {}
 
-    public record UpdateItemRequest(ItemBlockRef itemBlockRef) {
-    }
+    public record UpdateItemRequest(ItemBlockRef itemBlockRef) {}
 
     /**
      * Get single Item by ID.
@@ -70,9 +64,9 @@ public class EItemPositionController extends BaseEditorController {
     @GetMapping("/{itemId}")
     @Operation(summary = "Get Item by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "200", description = "Item found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -80,9 +74,7 @@ public class EItemPositionController extends BaseEditorController {
 
         log.debug("GET item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
@@ -106,8 +98,8 @@ public class EItemPositionController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List/search Items")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -117,12 +109,16 @@ public class EItemPositionController extends BaseEditorController {
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST items: worldId={}, query={}, cx={}, cz={}, offset={}, limit={}",
-                worldId, query, cx, cz, offset, limit);
+        log.debug(
+                "LIST items: worldId={}, query={}, cx={}, cz={}, offset={}, limit={}",
+                worldId,
+                query,
+                cx,
+                cz,
+                offset,
+                limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -164,8 +160,7 @@ public class EItemPositionController extends BaseEditorController {
                 "items", publicDataList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -175,20 +170,20 @@ public class EItemPositionController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new Item")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Item created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Item already exists")
+        @ApiResponse(responseCode = "201", description = "Item created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Item already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @RequestBody CreateItemRequest request) {
 
-        log.debug("CREATE item: worldId={}, itemId={}", worldId,
+        log.debug(
+                "CREATE item: worldId={}, itemId={}",
+                worldId,
                 request.itemBlockRef() != null ? request.itemBlockRef().getName() : "null");
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         if (request.itemBlockRef() == null) {
             return bad("itemBlockRef required");
         }
@@ -230,9 +225,9 @@ public class EItemPositionController extends BaseEditorController {
     @PutMapping("/{itemId}")
     @Operation(summary = "Update Item")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "200", description = "Item updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -241,9 +236,7 @@ public class EItemPositionController extends BaseEditorController {
 
         log.debug("UPDATE item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -296,9 +289,9 @@ public class EItemPositionController extends BaseEditorController {
     @DeleteMapping("/{itemId}")
     @Operation(summary = "Delete Item")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Item deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Item not found")
+        @ApiResponse(responseCode = "204", description = "Item deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Item not found")
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -306,9 +299,7 @@ public class EItemPositionController extends BaseEditorController {
 
         log.debug("DELETE item: worldId={}, itemId={}", worldId, itemId);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("World ID not found in request")
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("World ID not found in request"));
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
@@ -333,8 +324,7 @@ public class EItemPositionController extends BaseEditorController {
                 item.getChunk(),
                 item.isEnabled(),
                 item.getCreatedAt(),
-                item.getUpdatedAt()
-        );
+                item.getUpdatedAt());
     }
 
     private List<WItemPosition> filterByQuery(List<WItemPosition> items, String query) {
@@ -343,9 +333,10 @@ public class EItemPositionController extends BaseEditorController {
                 .filter(item -> {
                     String itemId = item.getItemId();
                     ItemBlockRef publicData = item.getPublicData();
-                    return (itemId != null && itemId.toLowerCase().contains(lowerQuery)) ||
-                            (publicData != null && publicData.getTexture() != null &&
-                                    publicData.getTexture().toLowerCase().contains(lowerQuery));
+                    return (itemId != null && itemId.toLowerCase().contains(lowerQuery))
+                            || (publicData != null
+                                    && publicData.getTexture() != null
+                                    && publicData.getTexture().toLowerCase().contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }

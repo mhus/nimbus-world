@@ -7,5 +7,6 @@ public class GenesisConst {
     public static final String PHASES = "phases";
     public static final String EPOCH = "epoch";
 
-    public static final String DEFAULT_PHASES = "createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,structuresAll,imagesAll,compositeImages,waitForChunks";
+    public static final String DEFAULT_PHASES =
+            "createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,structuresAll,imagesAll,compositeImages,waitForChunks";
 }

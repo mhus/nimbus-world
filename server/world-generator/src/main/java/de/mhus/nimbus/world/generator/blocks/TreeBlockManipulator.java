@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Tree Block Manipulator - creates a tree with trunk and crown.
@@ -45,9 +45,9 @@ public class TreeBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a tree with trunk and spherical crown. " +
-                "Parameters: position {x,y,z}, trunkHeight, crownRadius, blockType (optional). " +
-                "Example: {\"tree\": {\"transform\": \"position\", \"trunkHeight\": 8, \"crownRadius\": 4}}";
+        return "Creates a tree with trunk and spherical crown. "
+                + "Parameters: position {x,y,z}, trunkHeight, crownRadius, blockType (optional). "
+                + "Example: {\"tree\": {\"transform\": \"position\", \"trunkHeight\": 8, \"crownRadius\": 4}}";
     }
 
     @Override
@@ -100,8 +100,14 @@ public class TreeBlockManipulator implements BlockManipulator {
         }
 
         // Generate tree
-        log.info("Generating tree: pos=({},{},{}), trunkHeight={}, crownRadius={}, blockType={}",
-                x, y, z, trunkHeight, crownRadius, blockType);
+        log.info(
+                "Generating tree: pos=({},{},{}), trunkHeight={}, crownRadius={}, blockType={}",
+                x,
+                y,
+                z,
+                trunkHeight,
+                crownRadius,
+                blockType);
 
         painter.tree(x, y, z, trunkHeight, crownRadius);
 
@@ -109,7 +115,8 @@ public class TreeBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated tree: %d blocks (trunk height %d, crown radius %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated tree: %d blocks (trunk height %d, crown radius %d) at (%d,%d,%d)",
                 blockCount, trunkHeight, crownRadius, x, y, z);
 
         log.info(message);

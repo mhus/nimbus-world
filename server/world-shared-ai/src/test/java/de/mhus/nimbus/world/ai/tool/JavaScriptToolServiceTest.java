@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.ai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.graalvm.polyglot.Engine;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies the GraalVM-sandboxed JavaScript tool: functional console output,
@@ -54,8 +54,8 @@ class JavaScriptToolServiceTest {
 
     @Test
     void javaHostAccessIsBlocked() {
-        String result = getService().executeJavaScript(
-                "var Runtime = Java.type('java.lang.Runtime'); Runtime.getRuntime().exec('id');");
+        String result = getService()
+                .executeJavaScript("var Runtime = Java.type('java.lang.Runtime'); Runtime.getRuntime().exec('id');");
         // Java.type must not exist in the sandbox -> the eval fails, no OS call happens.
         assertThat(result).startsWith("Error:");
         assertThat(result).doesNotContain("uid=");
@@ -65,8 +65,7 @@ class JavaScriptToolServiceTest {
     void hostClassLookupIsBlocked() {
         // Even a benign host class must be unreachable: the Java global object
         // may exist, but every class lookup through it is denied.
-        String result = getService().executeJavaScript(
-                "Java.type('java.lang.System').exit(1);");
+        String result = getService().executeJavaScript("Java.type('java.lang.System').exit(1);");
         assertThat(result).startsWith("Error:");
     }
 

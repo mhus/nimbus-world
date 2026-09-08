@@ -1,5 +1,7 @@
 package de.mhus.nimbus.shared.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -7,11 +9,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Service for raw MongoDB document operations without Java object deserialization.
@@ -142,7 +140,8 @@ public class MongoRawDocumentService {
         // Atomic in-place replace (single operation, no upsert): avoids the
         // remove-then-insert window where a failed insert would leave the
         // original permanently deleted and readers would see no document.
-        com.mongodb.client.result.UpdateResult result = mongoTemplate.getCollection(collectionName)
+        com.mongodb.client.result.UpdateResult result = mongoTemplate
+                .getCollection(collectionName)
                 .replaceOne(com.mongodb.client.model.Filters.eq("_id", idValue), newDocument);
 
         if (result.getMatchedCount() > 0) {

@@ -2,17 +2,16 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder
@@ -62,7 +61,9 @@ public class River extends Flow {
      * or genuinely closer to the goal than the best high-priority alternative.
      */
     @Override
-    public HexVector2 selectNextStep(HexVector2 current, HexVector2 goal,
+    public HexVector2 selectNextStep(
+            HexVector2 current,
+            HexVector2 goal,
             List<HexVector2> neighbors,
             ToIntFunction<HexVector2> terrainLevelAt,
             Predicate<HexVector2> isLowPriorityBiome) {
@@ -113,7 +114,10 @@ public class River extends Flow {
         int bestDist = Integer.MAX_VALUE;
         for (HexVector2 n : candidates) {
             int dist = hexDistance(n, goal);
-            if (dist < bestDist) { bestDist = dist; best = n; }
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = n;
+            }
         }
         return best;
     }
@@ -128,8 +132,8 @@ public class River extends Flow {
      * All levels are absolute (not relative to biome).
      */
     @Override
-    public List<Integer> calculateRouteLevels(List<HexVector2> route,
-            ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
+    public List<Integer> calculateRouteLevels(
+            List<HexVector2> route, ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
         List<Integer> levels = new ArrayList<>(route.size());
 
         // Pass 1: Get raw level at each coordinate
@@ -160,11 +164,15 @@ public class River extends Flow {
      * The main river level calculation now uses calculateRouteLevels() for two-pass approach.
      */
     @Override
-    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
-                                      Integer gridBLandLevel, Integer gridBLandOffset,
-                                      Integer previousLevel, Integer fixedLevel) {
+    public int calculateSegmentLevel(
+            Integer gridALandLevel,
+            Integer gridALandOffset,
+            Integer gridBLandLevel,
+            Integer gridBLandOffset,
+            Integer previousLevel,
+            Integer fixedLevel) {
         // Use parent calculation (raw level without river-specific constraints)
-        return super.calculateSegmentLevel(gridALandLevel, gridALandOffset,
-            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+        return super.calculateSegmentLevel(
+                gridALandLevel, gridALandOffset, gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
     }
 }

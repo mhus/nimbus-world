@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Pyramid Outline Block Manipulator - creates a hollow pyramid (edges only).
@@ -57,9 +57,9 @@ public class PyramidOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow pyramid (edges only). " +
-                "Parameters: position {x,y,z}, width, height, blockType (optional). " +
-                "Example: {\"pyramid-outline\": {\"transform\": \"position\", \"width\": 10, \"height\": 8}}";
+        return "Creates a hollow pyramid (edges only). "
+                + "Parameters: position {x,y,z}, width, height, blockType (optional). "
+                + "Example: {\"pyramid-outline\": {\"transform\": \"position\", \"width\": 10, \"height\": 8}}";
     }
 
     @Override
@@ -112,8 +112,14 @@ public class PyramidOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate pyramid outline
-        log.info("Generating pyramid outline: pos=({},{},{}), width={}, height={}, blockType={}",
-                x, y, z, width, height, blockType);
+        log.info(
+                "Generating pyramid outline: pos=({},{},{}), width={}, height={}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                height,
+                blockType);
 
         painter.pyramidOutline(x, y, z, width, height);
 
@@ -121,7 +127,8 @@ public class PyramidOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated pyramid outline: %d blocks (base %dx%d, height %d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated pyramid outline: %d blocks (base %dx%d, height %d) at (%d,%d,%d)",
                 blockCount, width, width, height, x, y, z);
 
         log.info(message);

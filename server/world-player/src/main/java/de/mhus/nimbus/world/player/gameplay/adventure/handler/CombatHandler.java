@@ -12,11 +12,10 @@ import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles combat mechanics: incoming attacks, player death, armor wear,
@@ -26,8 +25,14 @@ import java.util.Set;
 public class CombatHandler {
 
     public static final Set<WEARABLE_SLOT> BODY_ARMOR_SLOTS = Set.of(
-            WEARABLE_SLOT.HEAD, WEARABLE_SLOT.BODY, WEARABLE_SLOT.LEGS, WEARABLE_SLOT.FEET,
-            WEARABLE_SLOT.NECK, WEARABLE_SLOT.ARMS, WEARABLE_SLOT.LEFT_RING, WEARABLE_SLOT.RIGHT_RING);
+            WEARABLE_SLOT.HEAD,
+            WEARABLE_SLOT.BODY,
+            WEARABLE_SLOT.LEGS,
+            WEARABLE_SLOT.FEET,
+            WEARABLE_SLOT.NECK,
+            WEARABLE_SLOT.ARMS,
+            WEARABLE_SLOT.LEFT_RING,
+            WEARABLE_SLOT.RIGHT_RING);
 
     public static final Set<WEARABLE_SLOT> HAND_SLOTS = Set.of(
             WEARABLE_SLOT.LEFT_HAND_1, WEARABLE_SLOT.RIGHT_HAND_1,
@@ -51,14 +56,21 @@ public class CombatHandler {
      * @param msg     The incoming attack message
      */
     public void handleIncomingAttack(PlayerSession session, AdventureData data, VitalDeltaBroadcastMessage msg) {
-        log.debug("Incoming attack on player {} from {} [phys={}/{}, mag={}/{}]",
-                msg.getTargetEntityId(), msg.getSourceEntityId(),
-                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
-                msg.getMagicalDamage(), msg.getMagicalAccuracy());
+        log.debug(
+                "Incoming attack on player {} from {} [phys={}/{}, mag={}/{}]",
+                msg.getTargetEntityId(),
+                msg.getSourceEntityId(),
+                msg.getPhysicalDamage(),
+                msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(),
+                msg.getMagicalAccuracy());
         // Check gameMode on defender side
         if (!isAttackAllowed(session, msg.getSourceEntityId())) {
-            log.debug("Incoming attack blocked by gameMode: {} -> {} (gameMode={})",
-                    msg.getSourceEntityId(), msg.getTargetEntityId(), gameplay.resolveGameMode(session));
+            log.debug(
+                    "Incoming attack blocked by gameMode: {} -> {} (gameMode={})",
+                    msg.getSourceEntityId(),
+                    msg.getTargetEntityId(),
+                    gameplay.resolveGameMode(session));
             return;
         }
 
@@ -73,18 +85,32 @@ public class CombatHandler {
 
         // Resolve damage
         double damage = CombatResolver.resolve(
-                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
-                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
-                msg.getCritChance(), msg.getCritMultiplier(),
-                defPhysDef, defPhysEvasion,
-                defMagDef, defMagEvasion);
+                msg.getPhysicalDamage(),
+                msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(),
+                msg.getMagicalAccuracy(),
+                msg.getCritChance(),
+                msg.getCritMultiplier(),
+                defPhysDef,
+                defPhysEvasion,
+                defMagDef,
+                defMagEvasion);
 
         if (damage == 0) {
-            log.debug("Attack from {} on {} missed (phyDef={}, phyEva={}, magDef={}, magEva={})",
-                    msg.getSourceEntityId(), msg.getTargetEntityId(),
-                    defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
+            log.debug(
+                    "Attack from {} on {} missed (phyDef={}, phyEva={}, magDef={}, magEva={})",
+                    msg.getSourceEntityId(),
+                    msg.getTargetEntityId(),
+                    defPhysDef,
+                    defPhysEvasion,
+                    defMagDef,
+                    defMagEvasion);
             // Sound: attack blocked
-            gameplay.getClientService().sendCommand(session, "playSound", List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_BLOCKED)));
+            gameplay.getClientService()
+                    .sendCommand(
+                            session,
+                            "playSound",
+                            List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_BLOCKED)));
             // Successful active defense: +1 skill experience
             if (data.getCachedCharacterDocId() != null) {
                 gameplay.getCharacterService().addSkillExperience(data.getCachedCharacterDocId(), 1);
@@ -99,7 +125,9 @@ public class CombatHandler {
         gameplay.getVitalsHandler().applyDamage(session, data, damage);
 
         // Sound: attack hit
-        gameplay.getClientService().sendCommand(session, "playSound", List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_HIT)));
+        gameplay.getClientService()
+                .sendCommand(
+                        session, "playSound", List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_HIT)));
 
         // Armor constitution wear - only wear items matching the incoming damage type
         boolean physicalHit = msg.getPhysicalDamage() > 0;
@@ -211,8 +239,8 @@ public class CombatHandler {
      * @param itemWear  Base wear from item server property (e.g. 0.01)
      * @param careSkill Skill that reduces wear (higher = less wear)
      */
-    public void applyConstitutionWear(PlayerSession session, AdventureData data,
-                                       String category, double itemWear, Skill careSkill) {
+    public void applyConstitutionWear(
+            PlayerSession session, AdventureData data, String category, double itemWear, Skill careSkill) {
         if (itemWear <= 0) return;
 
         // Skill factor: skill 100 = 1.0x wear, skill 200 = 0.5x wear
@@ -236,8 +264,8 @@ public class CombatHandler {
         var playerId = de.mhus.nimbus.shared.types.PlayerId.of(entityId).orElse(null);
         if (playerId == null) return;
         String regionId = session.getWorldId().getRegionId();
-        var characterOpt = gameplay.getCharacterService().getCharacter(
-                playerId.getUserId(), regionId, playerId.getCharacterId());
+        var characterOpt =
+                gameplay.getCharacterService().getCharacter(playerId.getUserId(), regionId, playerId.getCharacterId());
         if (characterOpt.isEmpty()) return;
 
         gameplay.getCharacterService().reduceConstitution(characterOpt.get().getId(), category, actualWear);
@@ -249,8 +277,7 @@ public class CombatHandler {
     public boolean matchesDamageType(WItem item, boolean physicalHit, boolean magicalHit) {
         String damageType = getServerProp(item, "damageType");
         if (damageType == null || damageType.isBlank()) return physicalHit; // default: physical armor
-        return (physicalHit && damageType.contains("physical"))
-                || (magicalHit && damageType.contains("magical"));
+        return (physicalHit && damageType.contains("physical")) || (magicalHit && damageType.contains("magical"));
     }
 
     /**
@@ -303,8 +330,11 @@ public class CombatHandler {
         String entityId = session.getEntityId();
         if (worldId == null || entityId == null) return;
 
-        gameplay.getEntityStatusPublisher().publishStatusUpdate(worldId, entityId,
-                Map.of("health", health.getCurrent(), "healthMax", health.getEffectiveMax()),
-                session.getWebSocketSession().getId());
+        gameplay.getEntityStatusPublisher()
+                .publishStatusUpdate(
+                        worldId,
+                        entityId,
+                        Map.of("health", health.getCurrent(), "healthMax", health.getEffectiveMax()),
+                        session.getWebSocketSession().getId());
     }
 }

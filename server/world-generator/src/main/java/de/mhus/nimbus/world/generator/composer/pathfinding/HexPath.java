@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.pathfinding;
 
 import de.mhus.nimbus.world.generator.composer.town.DistrictGrid;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Data;
 
 /**
  * Represents a path through hex coordinates in a village.
@@ -93,8 +92,8 @@ public class HexPath {
 
     @Override
     public String toString() {
-        return String.format("HexPath[length=%d cost=%d districts=%d start=%s goal=%s]",
-                getLength(), totalCost, getCrossedDistricts().size(),
-                getStart(), getGoal());
+        return String.format(
+                "HexPath[length=%d cost=%d districts=%d start=%s goal=%s]",
+                getLength(), totalCost, getCrossedDistricts().size(), getStart(), getGoal());
     }
 }

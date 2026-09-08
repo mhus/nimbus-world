@@ -5,6 +5,10 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -12,11 +16,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing WEditCache entities.
@@ -47,7 +46,8 @@ public class WEditCacheService {
      * @return Cached block if found, empty otherwise
      */
     @Transactional(readOnly = true)
-    public Optional<WEditCache> findByCoordinates(String worldId, String layerDataId, String modelName, int x, int y, int z) {
+    public Optional<WEditCache> findByCoordinates(
+            String worldId, String layerDataId, String modelName, int x, int y, int z) {
         List<WEditCache> results = repository.findByWorldIdAndLayerDataIdAndModelNameAndXAndYAndZ(
                 worldId, layerDataId, modelName, x, y, z);
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
@@ -67,7 +67,8 @@ public class WEditCacheService {
     @Transactional
     public Optional<WEditCache> findByCoordinates(String worldId, String layerDataId, int x, int y, int z) {
         List<WEditCache> results = repository.findByWorldIdAndLayerDataIdAndXAndYAndZ(worldId, layerDataId, x, y, z);
-        return cleanupDuplicates(results, "worldId={}, layerDataId={}, x={}, y={}, z={}", worldId, layerDataId, x, y, z);
+        return cleanupDuplicates(
+                results, "worldId={}, layerDataId={}, x={}, y={}, z={}", worldId, layerDataId, x, y, z);
     }
 
     /**
@@ -123,27 +124,23 @@ public class WEditCacheService {
         if (!sent) {
             log.warn("Failed to send block update to clients: position={}", block.getPosition());
         }
-
     }
 
     public WEditCache setBlock(WWorld world, String layerDataId, String modelName, Block block, String group) {
-        LayerBlock layerBlock = LayerBlock.builder()
-                .block(block)
-                .group(group)
-                .build();
+        LayerBlock layerBlock = LayerBlock.builder().block(block).group(group).build();
         return setBlock(world, layerDataId, modelName, layerBlock);
     }
-        /**
-         * Set or update a block in the edit cache.
-         * Uses unique index on (worldId, layerDataId, modelName, x, y, z) to prevent duplicates.
-         * Checks if entry exists and updates it, or creates a new one.
-         *
-         * @param world World Object
-         * @param layerDataId Layer data identifier
-         * @param modelName Model name (null for GROUND layers)
-         * @param block Block data
-         * @return Saved cache entry
-         */
+    /**
+     * Set or update a block in the edit cache.
+     * Uses unique index on (worldId, layerDataId, modelName, x, y, z) to prevent duplicates.
+     * Checks if entry exists and updates it, or creates a new one.
+     *
+     * @param world World Object
+     * @param layerDataId Layer data identifier
+     * @param modelName Model name (null for GROUND layers)
+     * @param block Block data
+     * @return Saved cache entry
+     */
     @Transactional
     public WEditCache setBlock(WWorld world, String layerDataId, String modelName, LayerBlock block) {
         // WEditCache must always be written with instance worldId, never with base worldId
@@ -176,16 +173,31 @@ public class WEditCacheService {
                     .block(block)
                     .build();
             cache.touchCreate();
-            log.debug("Creating new cache entry: worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}, chunk={}",
-                    world.getWorldId(), layerDataId, modelName, x, y, z, chunk);
+            log.debug(
+                    "Creating new cache entry: worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}, chunk={}",
+                    world.getWorldId(),
+                    layerDataId,
+                    modelName,
+                    x,
+                    y,
+                    z,
+                    chunk);
         } else {
             // Update existing entry (unique index guarantees only one result)
             cache = existing.get(0);
             cache.setBlock(block);
             cache.setChunk(chunk); // Update chunk in case it changed
             cache.touchUpdate();
-            log.debug("Updating existing cache entry: id={}, worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}, chunk={}",
-                    cache.getId(), world.getWorldId(), layerDataId, modelName, x, y, z, chunk);
+            log.debug(
+                    "Updating existing cache entry: id={}, worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}, chunk={}",
+                    cache.getId(),
+                    world.getWorldId(),
+                    layerDataId,
+                    modelName,
+                    x,
+                    y,
+                    z,
+                    chunk);
         }
 
         return repository.save(cache);
@@ -209,8 +221,14 @@ public class WEditCacheService {
                 worldId, layerDataId, modelName, x, y, z);
         if (!existing.isEmpty()) {
             repository.delete(existing.get(0)); // Unique index guarantees only one result
-            log.debug("Deleted cache entry for worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}",
-                    worldId, layerDataId, modelName, x, y, z);
+            log.debug(
+                    "Deleted cache entry for worldId={}, layerDataId={}, modelName={}, x={}, y={}, z={}",
+                    worldId,
+                    layerDataId,
+                    modelName,
+                    x,
+                    y,
+                    z);
             return true;
         }
         return false;
@@ -232,8 +250,14 @@ public class WEditCacheService {
         List<WEditCache> existing = repository.findByWorldIdAndLayerDataIdAndXAndYAndZ(worldId, layerDataId, x, y, z);
         if (!existing.isEmpty()) {
             existing.forEach(repository::delete);
-            log.debug("Deleted {} cache entries for worldId={}, layerDataId={}, x={}, y={}, z={}",
-                    existing.size(), worldId, layerDataId, x, y, z);
+            log.debug(
+                    "Deleted {} cache entries for worldId={}, layerDataId={}, x={}, y={}, z={}",
+                    existing.size(),
+                    worldId,
+                    layerDataId,
+                    x,
+                    y,
+                    z);
             return true;
         }
         return false;
@@ -256,7 +280,8 @@ public class WEditCacheService {
         if (deleted) {
             // Send block update to clients indicating deletion (null block)
             String source = layerDataId + ":" + (modelName == null ? "delete" : modelName + ":delete");
-            boolean sent = blockUpdateService.sendBlockUpdateWithSource(world.getWorldId(), "", BlockUtil.createAirBlock(x, y, z), source, null);
+            boolean sent = blockUpdateService.sendBlockUpdateWithSource(
+                    world.getWorldId(), "", BlockUtil.createAirBlock(x, y, z), source, null);
             if (!sent) {
                 log.warn("Failed to send block deletion update to clients: position=({}, {}, {})", x, y, z);
             }
@@ -279,7 +304,8 @@ public class WEditCacheService {
         boolean deleted = deleteBlock(world.getWorldId(), layerDataId, x, y, z);
         if (deleted) {
             // Send block update to clients indicating deletion (null block)
-            boolean sent = blockUpdateService.sendBlockUpdateWithSource(world.getWorldId(), "", BlockUtil.createAirBlock(x, y, z), layerDataId + ":delete", null);
+            boolean sent = blockUpdateService.sendBlockUpdateWithSource(
+                    world.getWorldId(), "", BlockUtil.createAirBlock(x, y, z), layerDataId + ":delete", null);
             if (!sent) {
                 log.warn("Failed to send block deletion update to clients: position=({}, {}, {})", x, y, z);
             }
@@ -332,7 +358,8 @@ public class WEditCacheService {
             args[0] = results.size();
             System.arraycopy(logArgs, 0, args, 1, logArgs.length);
             args[args.length - 1] = results.size() - 1;
-            log.warn("Found {} duplicate cache entries for " + logPattern + ", keeping first and deleting {} duplicates",
+            log.warn(
+                    "Found {} duplicate cache entries for " + logPattern + ", keeping first and deleting {} duplicates",
                     args);
             for (int i = 1; i < results.size(); i++) {
                 repository.delete(results.get(i));
@@ -420,8 +447,9 @@ public class WEditCacheService {
      */
     @Transactional
     public long deleteByWorldId(String worldId) {
-        long deleted = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)), WEditCache.class).getDeletedCount();
+        long deleted = mongoTemplate
+                .remove(new Query(Criteria.where("worldId").is(worldId)), WEditCache.class)
+                .getDeletedCount();
         log.info("Deleted {} edit cache entries for world {}", deleted, worldId);
         return deleted;
     }

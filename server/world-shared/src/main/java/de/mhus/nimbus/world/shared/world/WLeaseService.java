@@ -1,5 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -7,15 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for managing WLease entities.
@@ -44,21 +42,38 @@ public class WLeaseService {
      * @param leaseData  Data needed by the widget
      * @return the acquired lease
      */
-    public WLease acquire(String worldId, String playerId, String type, String resourceId, String title, Map<String, Object> leaseData) {
+    public WLease acquire(
+            String worldId,
+            String playerId,
+            String type,
+            String resourceId,
+            String title,
+            Map<String, Object> leaseData) {
         return acquire(worldId, playerId, type, resourceId, title, leaseData, DEFAULT_TTL);
     }
 
     /**
      * Acquire a lease with custom TTL.
      */
-    public WLease acquire(String worldId, String playerId, String type, String resourceId, String title, Map<String, Object> leaseData, Duration ttl) {
+    public WLease acquire(
+            String worldId,
+            String playerId,
+            String type,
+            String resourceId,
+            String title,
+            Map<String, Object> leaseData,
+            Duration ttl) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(ttl);
 
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(playerId)
-                .and("type").is(type)
-                .and("resourceId").is(resourceId));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("playerId")
+                .is(playerId)
+                .and("type")
+                .is(type)
+                .and("resourceId")
+                .is(resourceId));
 
         Update update = new Update()
                 .set("title", title)
@@ -72,14 +87,15 @@ public class WLeaseService {
                 .setOnInsert("createdAt", now);
 
         WLease lease = mongoTemplate.findAndModify(
-                query,
-                update,
-                FindAndModifyOptions.options().upsert(true).returnNew(true),
-                WLease.class
-        );
+                query, update, FindAndModifyOptions.options().upsert(true).returnNew(true), WLease.class);
 
-        log.debug("Acquired lease: worldId={}, playerId={}, type={}, resourceId={}, leaseId={}",
-                worldId, playerId, type, resourceId, lease.getLeaseId());
+        log.debug(
+                "Acquired lease: worldId={}, playerId={}, type={}, resourceId={}, leaseId={}",
+                worldId,
+                playerId,
+                type,
+                resourceId,
+                lease.getLeaseId());
         return lease;
     }
 
@@ -104,8 +120,8 @@ public class WLeaseService {
      * @return the lease if valid, empty otherwise
      */
     public Optional<WLease> validate(String leaseId, String worldId, String playerId, String expectedType) {
-        Query query = new Query(Criteria.where("leaseId").is(leaseId)
-                .and("worldId").is(worldId));
+        Query query =
+                new Query(Criteria.where("leaseId").is(leaseId).and("worldId").is(worldId));
 
         WLease lease = mongoTemplate.findOne(query, WLease.class);
         if (lease == null) return Optional.empty();
@@ -137,8 +153,7 @@ public class WLeaseService {
      */
     public boolean setLeaseDataValue(String leaseId, String key, Object value) {
         Query query = new Query(Criteria.where("leaseId").is(leaseId));
-        Update update = new Update()
-                .set("leaseData." + key, value);
+        Update update = new Update().set("leaseData." + key, value);
 
         var result = mongoTemplate.updateFirst(query, update, WLease.class);
         return result.getModifiedCount() > 0;
@@ -164,8 +179,7 @@ public class WLeaseService {
      */
     public boolean incLeaseDataValue(String leaseId, String key, int delta) {
         Query query = new Query(Criteria.where("leaseId").is(leaseId));
-        Update update = new Update()
-                .inc("leaseData." + key, delta);
+        Update update = new Update().inc("leaseData." + key, delta);
 
         var result = mongoTemplate.updateFirst(query, update, WLease.class);
         return result.getModifiedCount() > 0;
@@ -176,8 +190,7 @@ public class WLeaseService {
      */
     public boolean replaceLeaseData(String leaseId, Map<String, Object> leaseData) {
         Query query = new Query(Criteria.where("leaseId").is(leaseId));
-        Update update = new Update()
-                .set("leaseData", leaseData);
+        Update update = new Update().set("leaseData", leaseData);
 
         var result = mongoTemplate.updateFirst(query, update, WLease.class);
         return result.getModifiedCount() > 0;
@@ -200,8 +213,8 @@ public class WLeaseService {
      * Release all leases for a player in a world.
      */
     public void releaseByWorldIdAndPlayerId(String worldId, String playerId) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(playerId));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("playerId").is(playerId));
         var result = mongoTemplate.remove(query, WLease.class);
         log.debug("Released {} leases: worldId={}, playerId={}", result.getDeletedCount(), worldId, playerId);
     }

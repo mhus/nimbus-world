@@ -2,6 +2,9 @@ package de.mhus.nimbus.world.shared.generator;
 
 import de.mhus.nimbus.world.shared.world.DuplicateRepairHelper;
 import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -10,10 +13,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Service for managing WFlat entities.
@@ -36,8 +35,11 @@ public class WFlatService {
      */
     @Transactional
     public WFlat create(WFlat flat) {
-        log.debug("Creating new flat: worldId={}, layerDataId={}, flatId={}",
-                flat.getWorldId(), flat.getLayerDataId(), flat.getFlatId());
+        log.debug(
+                "Creating new flat: worldId={}, layerDataId={}, flatId={}",
+                flat.getWorldId(),
+                flat.getLayerDataId(),
+                flat.getFlatId());
 
         flat.touchCreate();
         WFlat saved = wFlatRepository.save(flat);
@@ -53,8 +55,12 @@ public class WFlatService {
      */
     @Transactional
     public WFlat update(WFlat flat) {
-        log.debug("Updating flat: id={}, worldId={}, layerDataId={}, flatId={}",
-                flat.getId(), flat.getWorldId(), flat.getLayerDataId(), flat.getFlatId());
+        log.debug(
+                "Updating flat: id={}, worldId={}, layerDataId={}, flatId={}",
+                flat.getId(),
+                flat.getWorldId(),
+                flat.getLayerDataId(),
+                flat.getFlatId());
 
         flat.touchUpdate();
         WFlat saved = wFlatRepository.save(flat);
@@ -194,10 +200,7 @@ public class WFlatService {
     @Transactional
     public int deleteByWorldId(String worldId) {
         log.info("Deleting flats for world {}", worldId);
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WFlat.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WFlat.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} flats for world {}", deleted, worldId);
         return (int) deleted;
@@ -245,8 +248,7 @@ public class WFlatService {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} flats from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} flats from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -259,15 +261,12 @@ public class WFlatService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WFlat.class, "flat", worldId,
-                doc -> {
-                    String layerDataId = doc.getString("layerDataId");
-                    String flatId = doc.getString("flatId");
-                    if (flatId == null) return null;
-                    return doc.getString("worldId") + "|" + (layerDataId != null ? layerDataId : "") + "|" + flatId;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WFlat.class, "flat", worldId, doc -> {
+            String layerDataId = doc.getString("layerDataId");
+            String flatId = doc.getString("flatId");
+            if (flatId == null) return null;
+            return doc.getString("worldId") + "|" + (layerDataId != null ? layerDataId : "") + "|" + flatId;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -290,11 +289,15 @@ public class WFlatService {
      * Find a single WFlat document by worldId + layerDataId + flatId (unique key).
      */
     @Transactional(readOnly = true)
-    public Optional<Document> findDocumentByWorldIdAndLayerDataIdAndFlatId(String worldId, String layerDataId, String flatId) {
+    public Optional<Document> findDocumentByWorldIdAndLayerDataIdAndFlatId(
+            String worldId, String layerDataId, String flatId) {
         String collectionName = mongoTemplate.getCollectionName(WFlat.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("layerDataId").is(layerDataId)
-                .and("flatId").is(flatId));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("layerDataId")
+                .is(layerDataId)
+                .and("flatId")
+                .is(flatId));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -306,9 +309,12 @@ public class WFlatService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WFlat.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("layerDataId").is(doc.getString("layerDataId"))
-                .and("flatId").is(doc.getString("flatId")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("layerDataId")
+                .is(doc.getString("layerDataId"))
+                .and("flatId")
+                .is(doc.getString("flatId")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {

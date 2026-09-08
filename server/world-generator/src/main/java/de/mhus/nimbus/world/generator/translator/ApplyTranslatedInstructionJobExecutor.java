@@ -1,14 +1,11 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.StructuresGeneratorService;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -16,10 +13,6 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -27,8 +20,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Job executor for applying translated instructions (generating composed world model).
@@ -90,8 +88,13 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                 throw new JobExecutionException("maxAttempts must be between 1 and 10, got: " + maxAttempts);
             }
 
-            log.info("Applying composition: translationDocumentId={}, maxAttempts={}, seed={}, fillGaps={}, oceanBorderRings={}",
-                    translationDocumentId, maxAttempts, seed, fillGaps, oceanBorderRings);
+            log.info(
+                    "Applying composition: translationDocumentId={}, maxAttempts={}, seed={}, fillGaps={}, oceanBorderRings={}",
+                    translationDocumentId,
+                    maxAttempts,
+                    seed,
+                    fillGaps,
+                    oceanBorderRings);
 
             // Load translated document
             HexComposition composition;
@@ -107,9 +110,12 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                 // Override worldId with the one from job context (defensive programming)
                 composition.setWorldId(job.getWorldId());
 
-                log.info("Loaded composition: name='{}', features={}",
+                log.info(
+                        "Loaded composition: name='{}', features={}",
                         composition.getName(),
-                        composition.getFeatures() != null ? composition.getFeatures().size() : 0);
+                        composition.getFeatures() != null
+                                ? composition.getFeatures().size()
+                                : 0);
 
             } catch (Exception e) {
                 log.error("Failed to load translated document", e);
@@ -137,7 +143,10 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             StructuresIndex structuresIndex = null;
             try {
                 structuresIndex = structuresService.findStructuresForWorldId(job.getWorldId());
-                log.info("Loaded StructuresIndex for worldId={}: {} buildings", job.getWorldId(), structuresIndex.getTotalBuildingCount());
+                log.info(
+                        "Loaded StructuresIndex for worldId={}: {} buildings",
+                        job.getWorldId(),
+                        structuresIndex.getTotalBuildingCount());
             } catch (Exception e) {
                 log.warn("Failed to load structures index, continuing without: {}", e.getMessage());
                 structuresIndex = new StructuresIndex();
@@ -168,10 +177,14 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             .compose();
 
                     if (result.isSuccess()) {
-                        log.info("Composition successful on attempt {}/{}: totalGrids={}, features={}, flows={}",
-                                attempt, maxAttempts,
+                        log.info(
+                                "Composition successful on attempt {}/{}: totalGrids={}, features={}, flows={}",
+                                attempt,
+                                maxAttempts,
                                 result.getTotalGrids(),
-                                composition.getFeatures() != null ? composition.getFeatures().size() : 0,
+                                composition.getFeatures() != null
+                                        ? composition.getFeatures().size()
+                                        : 0,
                                 result.getTotalFlows());
                         break;
                     } else {
@@ -180,10 +193,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                         log.warn("Composition attempt {}/{} failed: {}", attempt, maxAttempts, errorMsg);
 
                         if (attempt < maxAttempts) {
-                            previousError = String.format(
-                                    "Attempt %d/%d failed: %s",
-                                    attempt, maxAttempts, errorMsg
-                            );
+                            previousError = String.format("Attempt %d/%d failed: %s", attempt, maxAttempts, errorMsg);
 
                             // Reload composition for retry (it might have been modified)
                             LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), translationDocumentId);
@@ -191,9 +201,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                         } else {
                             // Last attempt failed
                             String finalError = String.format(
-                                    "Composition failed after %d attempts. Final error: %s",
-                                    maxAttempts, errorMsg
-                            );
+                                    "Composition failed after %d attempts. Final error: %s", maxAttempts, errorMsg);
                             log.error(finalError);
                             return JobResult.failure(finalError);
                         }
@@ -202,10 +210,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                     log.error("Unexpected error during composition attempt {}/{}", attempt, maxAttempts, e);
 
                     if (attempt < maxAttempts) {
-                        previousError = String.format(
-                                "Attempt %d/%d crashed: %s",
-                                attempt, maxAttempts, e.getMessage()
-                        );
+                        previousError =
+                                String.format("Attempt %d/%d crashed: %s", attempt, maxAttempts, e.getMessage());
 
                         // Reload composition for retry
                         try {
@@ -213,13 +219,12 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             composition = reloaded.composition;
                         } catch (Exception reloadEx) {
                             log.error("Failed to reload composition for retry", reloadEx);
-                            throw new JobExecutionException("Composition failed and cannot reload: " + e.getMessage(), e);
+                            throw new JobExecutionException(
+                                    "Composition failed and cannot reload: " + e.getMessage(), e);
                         }
                     } else {
                         String finalError = String.format(
-                                "Composition failed after %d attempts with exception: %s",
-                                maxAttempts, e.getMessage()
-                        );
+                                "Composition failed after %d attempts with exception: %s", maxAttempts, e.getMessage());
                         return JobResult.failure(finalError);
                     }
                 }
@@ -234,13 +239,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
             // Save composed model to document
             try {
-                String outputDocumentId = saveComposedModel(
-                        job.getWorldId(),
-                        documentName,
-                        originalInstruction,
-                        composition,
-                        result
-                );
+                String outputDocumentId =
+                        saveComposedModel(job.getWorldId(), documentName, originalInstruction, composition, result);
 
                 log.info("Composed model saved to document: {}", outputDocumentId);
 
@@ -264,7 +264,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
             } catch (Exception e) {
                 log.error("Failed to save composed model to document", e);
-                throw new JobExecutionException("Composition succeeded but failed to save document: " + e.getMessage(), e);
+                throw new JobExecutionException(
+                        "Composition succeeded but failed to save document: " + e.getMessage(), e);
             }
 
         } catch (JobExecutionException e) {
@@ -280,11 +281,12 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
      */
     private LoadedDocument loadTranslatedDocument(String worldId, String documentId) throws Exception {
         // Create WorldId
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
         // Load document by ID
-        Optional<WDocument> docOpt = documentService.findByDocumentId(wid, TranslateInstructionJobExecutor.TRANSLATIONS_COLLECTION, documentId);
+        Optional<WDocument> docOpt = documentService.findByDocumentId(
+                wid, TranslateInstructionJobExecutor.TRANSLATIONS_COLLECTION, documentId);
         if (docOpt.isEmpty()) {
             throw new IllegalArgumentException("Document not found: " + documentId);
         }
@@ -298,7 +300,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
         // Parse composition directly from document content (no wrapper)
         ObjectMapper compMapper = JsonMapper.builder()
-                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
@@ -310,9 +312,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         }
 
         // Get instructionsDocumentId from document metadata (not from content)
-        String instructionsDocumentId = document.getMetadata() != null
-            ? document.getMetadata().get("instructionsDocumentId")
-            : "";
+        String instructionsDocumentId =
+                document.getMetadata() != null ? document.getMetadata().get("instructionsDocumentId") : "";
 
         LoadedDocument result = new LoadedDocument();
         result.composition = composition;
@@ -330,30 +331,32 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             String sourceDocumentName,
             String originalInstruction,
             HexComposition composition,
-            CompositionResult compositionResult
-    ) throws Exception {
+            CompositionResult compositionResult)
+            throws Exception {
 
         // Create WorldId
-        WorldId wid = WorldId.of(worldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        WorldId wid =
+                WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
         // Generate document identifiers (keep same name as source, but in different collection)
         String documentId = UUID.randomUUID().toString();
-        String documentName = sourceDocumentName;  // Same name as source document
+        String documentName = sourceDocumentName; // Same name as source document
 
         // Convert featureHexGridRegistry Map to featureHexGrids List for JSON serialization
         // (Jackson has issues with Map<String, FeatureHexGrid>)
-        if (composition.getFeatureHexGridRegistry() != null && !composition.getFeatureHexGridRegistry().isEmpty()) {
-            composition.setFeatureHexGrids(new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
-            log.info("Converted {} FeatureHexGrids from registry to list for serialization",
+        if (composition.getFeatureHexGridRegistry() != null
+                && !composition.getFeatureHexGridRegistry().isEmpty()) {
+            composition.setFeatureHexGrids(
+                    new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
+            log.info(
+                    "Converted {} FeatureHexGrids from registry to list for serialization",
                     composition.getFeatureHexGrids().size());
         } else {
             log.warn("No FeatureHexGrids in registry to convert");
         }
 
         // Serialize composition directly to JSON (no wrapper)
-        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(composition);
+        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(composition);
 
         // Create document metadata (for search/filtering, not part of content)
         Map<String, String> metadata = new HashMap<>();
@@ -370,18 +373,23 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         metadata.put("instructionsDocumentId", originalInstruction);
 
         // Save document with composition as direct JSON content
-        WDocument document = documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
-            doc.setName(documentName);
-            doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
-            doc.setFormat("json");
-            doc.setContent(compositionJson);  // Direct model JSON
-            doc.setMetadata(metadata);
-            doc.setType("composer-composed");
-            doc.setReadOnly(false);
-        });
+        WDocument document =
+                documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
+                    doc.setName(documentName);
+                    doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
+                    doc.setFormat("json");
+                    doc.setContent(compositionJson); // Direct model JSON
+                    doc.setMetadata(metadata);
+                    doc.setType("composer-composed");
+                    doc.setReadOnly(false);
+                });
 
-        log.info("Saved composed model document: worldId={}, collection={}, documentId={}, name={}",
-                worldId, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, documentName);
+        log.info(
+                "Saved composed model document: worldId={}, collection={}, documentId={}, name={}",
+                worldId,
+                TranslateInstructionJobExecutor.COMPOSED_COLLECTION,
+                documentId,
+                documentName);
 
         // Return document ID
         return documentId;

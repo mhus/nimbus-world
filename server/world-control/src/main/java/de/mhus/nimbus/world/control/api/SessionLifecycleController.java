@@ -24,10 +24,7 @@ public class SessionLifecycleController {
     /**
      * Request DTO for session closed event.
      */
-    public record SessionClosedRequest(
-            String worldId,
-            String playerId
-    ) {}
+    public record SessionClosedRequest(String worldId, String playerId) {}
 
     /**
      * Called by world-player when a session is closed.
@@ -56,8 +53,12 @@ public class SessionLifecycleController {
             // Delegate to service (handles all business logic)
             instanceService.removePlayerAndDeleteIfEmpty(request.worldId(), request.playerId());
         } catch (Exception e) {
-            log.error("Error handling session closed event for worldId={}, playerId={}: {}",
-                    request.worldId(), request.playerId(), e.getMessage(), e);
+            log.error(
+                    "Error handling session closed event for worldId={}, playerId={}: {}",
+                    request.worldId(),
+                    request.playerId(),
+                    e.getMessage(),
+                    e);
         }
 
         // Always return 204 (fire-and-forget, idempotent)

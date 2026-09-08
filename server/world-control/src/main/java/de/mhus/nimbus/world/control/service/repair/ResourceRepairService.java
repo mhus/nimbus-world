@@ -3,13 +3,12 @@ package de.mhus.nimbus.world.control.service.repair;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Orchestrator service for resource repair operations.
@@ -38,8 +37,7 @@ public class ResourceRepairService {
                 ? repairTypes.stream().map(ResourceRepairer::name).toList()
                 : types;
 
-        log.info("Starting resource repair for world {} types={}",
-                worldId, typesToRepair);
+        log.info("Starting resource repair for world {} types={}", worldId, typesToRepair);
 
         // Repair each type
         List<ProcessResult> results = new ArrayList<>();
@@ -62,8 +60,7 @@ public class ResourceRepairService {
                         typeName,
                         false,
                         "Repair failed: " + e.getMessage(),
-                        Instant.now().toEpochMilli()
-                ));
+                        Instant.now().toEpochMilli()));
             }
         }
 
@@ -118,22 +115,12 @@ public class ResourceRepairService {
             try {
                 service.deleteWorldResources(worldId);
                 processed.add(new ProcessResult(
-                        service.name(),
-                        true,
-                        "Deleted resources successfully",
-                        System.currentTimeMillis()
-                ));
+                        service.name(), true, "Deleted resources successfully", System.currentTimeMillis()));
 
             } catch (Exception e) {
-                String errorMsg = String.format("Failed to delete %s: %s",
-                        service.name(), e.getMessage());
+                String errorMsg = String.format("Failed to delete %s: %s", service.name(), e.getMessage());
                 log.error(errorMsg, e);
-                processed.add(new ProcessResult(
-                        service.name(),
-                        false,
-                        errorMsg,
-                        System.currentTimeMillis()
-                ));
+                processed.add(new ProcessResult(service.name(), false, errorMsg, System.currentTimeMillis()));
 
                 // Continue with other services even if one fails
                 // This allows partial cleanup and better error reporting
@@ -168,8 +155,7 @@ public class ResourceRepairService {
                             service.name() + " (getKnownWorldIds)",
                             false,
                             "Failed to get worldIds: " + e.getMessage(),
-                            System.currentTimeMillis()
-                    ));
+                            System.currentTimeMillis()));
                 }
             }
 
@@ -207,8 +193,7 @@ public class ResourceRepairService {
                         "orphaned-worlds-check",
                         true,
                         "No orphaned world resources found",
-                        System.currentTimeMillis()
-                ));
+                        System.currentTimeMillis()));
             } else {
                 for (String orphanedWorldId : orphanedWorldIds) {
                     log.info("Deleting resources for orphaned worldId: {}", orphanedWorldId);
@@ -217,16 +202,18 @@ public class ResourceRepairService {
                     results.addAll(deleteResults);
 
                     // Add summary result for this world
-                    long successCount = deleteResults.stream().filter(ProcessResult::success).count();
+                    long successCount = deleteResults.stream()
+                            .filter(ProcessResult::success)
+                            .count();
                     long totalCount = deleteResults.size();
 
                     results.add(new ProcessResult(
                             "orphaned-world-" + orphanedWorldId,
                             successCount == totalCount,
-                            String.format("Deleted resources for orphaned world: %d/%d services succeeded",
+                            String.format(
+                                    "Deleted resources for orphaned world: %d/%d services succeeded",
                                     successCount, totalCount),
-                            System.currentTimeMillis()
-                    ));
+                            System.currentTimeMillis()));
                 }
             }
 
@@ -235,21 +222,12 @@ public class ResourceRepairService {
         } catch (Exception e) {
             log.error("Failed to delete orphaned world resources", e);
             results.add(new ProcessResult(
-                    "orphaned-worlds-cleanup",
-                    false,
-                    "Cleanup failed: " + e.getMessage(),
-                    System.currentTimeMillis()
-            ));
+                    "orphaned-worlds-cleanup", false, "Cleanup failed: " + e.getMessage(), System.currentTimeMillis()));
         }
 
         return results;
     }
 
-    public record ProcessResult(
-            String serviceName,
-            boolean success,
-            String message,
-            long timestamp
-    ) {
-    };
+    public record ProcessResult(String serviceName, boolean success, String message, long timestamp) {}
+    ;
 }

@@ -1,22 +1,18 @@
 package de.mhus.nimbus.world.player.gameplay;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
-import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.world.WItem;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for the combat system: weapon types, skill factors,
@@ -455,8 +451,7 @@ class CombatSystemTest {
             if (item == null || item.getServer() == null) return physicalHit;
             String damageType = item.getServer().get("damageType");
             if (damageType == null || damageType.isBlank()) return physicalHit;
-            return (physicalHit && damageType.contains("physical"))
-                    || (magicalHit && damageType.contains("magical"));
+            return (physicalHit && damageType.contains("physical")) || (magicalHit && damageType.contains("magical"));
         }
 
         @Test
@@ -541,7 +536,9 @@ class CombatSystemTest {
             boolean hasPhysical = damageType.contains("physical");
             boolean hasMagical = damageType.contains("magical");
 
-            double physDmg = hasPhysical ? data.getCombatStat("physical.damage").getEffective() * weaponCon * rangeSkillFactor : 0;
+            double physDmg = hasPhysical
+                    ? data.getCombatStat("physical.damage").getEffective() * weaponCon * rangeSkillFactor
+                    : 0;
             double magDmg = hasMagical ? data.getCombatStat("magical.damage").getEffective() * weaponCon : 0;
 
             assertThat(physDmg).isCloseTo(20.0, within(0.01)); // 10 * 1.0 * 2.0
@@ -562,7 +559,8 @@ class CombatSystemTest {
             boolean hasMagical = damageType.contains("magical");
 
             double physDmg = hasPhysical ? data.getCombatStat("physical.damage").getEffective() * weaponCon : 0;
-            double magDmg = hasMagical ? data.getCombatStat("magical.damage").getEffective() * weaponCon * magicSkillFactor : 0;
+            double magDmg =
+                    hasMagical ? data.getCombatStat("magical.damage").getEffective() * weaponCon * magicSkillFactor : 0;
 
             assertThat(physDmg).isEqualTo(0.0); // zeroed (magical only)
             assertThat(magDmg).isCloseTo(24.0, within(0.01)); // 15 * 0.8 * 2.0
@@ -585,7 +583,7 @@ class CombatSystemTest {
             double magDmg = damageType.contains("magical") ? 8.0 * weaponCon * magicSkillFactor : 0;
 
             assertThat(physDmg).isCloseTo(15.0, within(0.01)); // 10 * 1.5
-            assertThat(magDmg).isCloseTo(9.6, within(0.01));   // 8 * 1.2
+            assertThat(magDmg).isCloseTo(9.6, within(0.01)); // 8 * 1.2
         }
 
         @Test
@@ -618,10 +616,10 @@ class CombatSystemTest {
             double defMagDef = 8.0 * armorCon * magDefSkill;
             double defMagEvasion = 0.1 * armorCon * magDefSkill;
 
-            assertThat(defPhysDef).isCloseTo(20.0, within(0.01));     // 10 * 2.0
-            assertThat(defPhysEvasion).isCloseTo(0.4, within(0.01));  // 0.2 * 2.0
-            assertThat(defMagDef).isCloseTo(12.0, within(0.01));      // 8 * 1.5
-            assertThat(defMagEvasion).isCloseTo(0.15, within(0.01));  // 0.1 * 1.5
+            assertThat(defPhysDef).isCloseTo(20.0, within(0.01)); // 10 * 2.0
+            assertThat(defPhysEvasion).isCloseTo(0.4, within(0.01)); // 0.2 * 2.0
+            assertThat(defMagDef).isCloseTo(12.0, within(0.01)); // 8 * 1.5
+            assertThat(defMagEvasion).isCloseTo(0.15, within(0.01)); // 0.1 * 1.5
         }
 
         @Test
@@ -658,8 +656,17 @@ class CombatSystemTest {
             double defMagDef = 0.0;
             double defMagEvasion = 0.0;
 
-            double damage = CombatResolver.resolve(physDmg, physAcc, magDmg, magAcc,
-                    critChance, critMult, defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
+            double damage = CombatResolver.resolve(
+                    physDmg,
+                    physAcc,
+                    magDmg,
+                    magAcc,
+                    critChance,
+                    critMult,
+                    defPhysDef,
+                    defPhysEvasion,
+                    defMagDef,
+                    defMagEvasion);
 
             assertThat(damage).isEqualTo(-7.0);
         }
@@ -667,9 +674,9 @@ class CombatSystemTest {
         @Test
         void magicalWand_vsLowMagicDefense() {
             double damage = CombatResolver.resolve(
-                    0, 0, 20, 1.0,  // no phys, 20 mag damage
-                    0, 1.0,          // no crit
-                    0, 0, 5, 0);     // 5 magical defense
+                    0, 0, 20, 1.0, // no phys, 20 mag damage
+                    0, 1.0, // no crit
+                    0, 0, 5, 0); // 5 magical defense
 
             assertThat(damage).isEqualTo(-15.0);
         }
@@ -678,8 +685,8 @@ class CombatSystemTest {
         void strongDefense_nullifiesAttack() {
             double damage = CombatResolver.resolve(
                     10, 1.0, 5, 1.0, // 10 phys + 5 mag
-                    0, 1.0,           // no crit
-                    15, 0, 10, 0);    // 15 phys def + 10 mag def
+                    0, 1.0, // no crit
+                    15, 0, 10, 0); // 15 phys def + 10 mag def
 
             assertThat(damage).isEqualTo(0.0);
         }
@@ -698,7 +705,7 @@ class CombatSystemTest {
 
             assertThat(damages[0]).isCloseTo(10.0, within(0.01));
             assertThat(damages[4]).isCloseTo(10.0 * 0.92, within(0.01)); // after 4 wears
-            assertThat(weaponCon).isCloseTo(0.9, within(0.01));           // after 5 wears
+            assertThat(weaponCon).isCloseTo(0.9, within(0.01)); // after 5 wears
         }
 
         @Test
@@ -779,7 +786,11 @@ class CombatSystemTest {
             if (item == null || item.getServer() == null) return defaultWear;
             String val = item.getServer().get("wear");
             if (val == null || val.isBlank()) return defaultWear;
-            try { return Double.parseDouble(val.trim()); } catch (NumberFormatException e) { return defaultWear; }
+            try {
+                return Double.parseDouble(val.trim());
+            } catch (NumberFormatException e) {
+                return defaultWear;
+            }
         }
 
         private boolean matchesDamageType(WItem item, boolean physicalHit, boolean magicalHit) {
@@ -811,8 +822,13 @@ class CombatSystemTest {
             // Physical hit: only body armor matches
             double totalWear = 0;
             int count = 0;
-            for (var slot : java.util.Set.of(WEARABLE_SLOT.HEAD, WEARABLE_SLOT.BODY, WEARABLE_SLOT.LEGS,
-                    WEARABLE_SLOT.FEET, WEARABLE_SLOT.NECK, WEARABLE_SLOT.ARMS)) {
+            for (var slot : java.util.Set.of(
+                    WEARABLE_SLOT.HEAD,
+                    WEARABLE_SLOT.BODY,
+                    WEARABLE_SLOT.LEGS,
+                    WEARABLE_SLOT.FEET,
+                    WEARABLE_SLOT.NECK,
+                    WEARABLE_SLOT.ARMS)) {
                 String itemId = wearing.get(slot);
                 if (itemId == null) continue;
                 WItem item = items.get(itemId);
@@ -839,8 +855,11 @@ class CombatSystemTest {
 
             // Hand slots: only shields contribute to armor wear
             int shieldCount = 0;
-            for (var slot : java.util.Set.of(WEARABLE_SLOT.LEFT_HAND_1, WEARABLE_SLOT.RIGHT_HAND_1,
-                    WEARABLE_SLOT.LEFT_HAND_2, WEARABLE_SLOT.RIGHT_HAND_2)) {
+            for (var slot : java.util.Set.of(
+                    WEARABLE_SLOT.LEFT_HAND_1,
+                    WEARABLE_SLOT.RIGHT_HAND_1,
+                    WEARABLE_SLOT.LEFT_HAND_2,
+                    WEARABLE_SLOT.RIGHT_HAND_2)) {
                 String itemId = wearing.get(slot);
                 if (itemId == null) continue;
                 WItem item = items.get(itemId);

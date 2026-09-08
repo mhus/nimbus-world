@@ -7,12 +7,11 @@ import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.shared.layer.WEditCache;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * EditCache-based painter that writes blocks through WEditCacheService.
@@ -49,9 +48,11 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
 
     public static class ConcatinatingPainter extends BlockPainter {
         private final BlockPainter[] painters;
+
         public ConcatinatingPainter(BlockPainter... painters) {
             this.painters = painters;
         }
+
         @Override
         public void paint(EditCachePainter painter, int x, int y, int z) {
             for (BlockPainter p : painters) {
@@ -80,14 +81,20 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
 
     @Getter
     final WEditCacheService editService;
+
     @Getter
     private WWorld world;
+
     @Getter
     private String layerDataId;
+
     @Getter
     private String modelName;
-    @Getter @Setter
+
+    @Getter
+    @Setter
     private BlockPainter painter = DEFAULT_PAINTER;
+
     @Getter
     private ManipulatorContext context;
 

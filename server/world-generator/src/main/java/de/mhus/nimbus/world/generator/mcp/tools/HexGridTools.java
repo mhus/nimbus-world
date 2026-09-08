@@ -1,21 +1,19 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
-import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -24,18 +22,24 @@ public class HexGridTools implements McpToolBean {
 
     private final WHexGridService hexGridService;
 
-    @Tool(name = "list_hexgrids", description = "List all hex grids for a world. Returns id, position (q,r), name, title, description, enabled status, epoches, and parameters. Use epoch parameter to filter by specific epoch.")
+    @Tool(
+            name = "list_hexgrids",
+            description =
+                    "List all hex grids for a world. Returns id, position (q,r), name, title, description, enabled status, epoches, and parameters. Use epoch parameter to filter by specific epoch.")
     public Map<String, Object> listHexGrids(
-            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
-            @ToolParam(description = "Optional epoch number to filter hex grids belonging to this epoch", required = false) Integer epoch) {
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.")
+                    String worldId,
+            @ToolParam(
+                            description = "Optional epoch number to filter hex grids belonging to this epoch",
+                            required = false)
+                    Integer epoch) {
         log.debug("MCP: List hex grids: worldId={}, epoch={}", worldId, epoch);
 
         if (Strings.isBlank(worldId)) {
             throw new McpToolException("worldId is required");
         }
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         List<WHexGrid> hexGrids;
         if (epoch != null) {
@@ -49,33 +53,41 @@ public class HexGridTools implements McpToolBean {
         return Map.of(
                 "worldId", worldId,
                 "count", dtos.size(),
-                "hexGrids", dtos
-        );
+                "hexGrids", dtos);
     }
 
-    @Tool(name = "get_hexgrid", description = "Get a single hex grid by its position (q, r). Returns full data including publicData, parameters, areas, and epoches.")
+    @Tool(
+            name = "get_hexgrid",
+            description =
+                    "Get a single hex grid by its position (q, r). Returns full data including publicData, parameters, areas, and epoches.")
     public Map<String, Object> getHexGrid(
-            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.")
+                    String worldId,
             @ToolParam(description = "Hex position Q coordinate") int q,
             @ToolParam(description = "Hex position R coordinate") int r,
-            @ToolParam(description = "Optional epoch number to get the hex grid variant for this epoch", required = false) Integer epoch) {
+            @ToolParam(
+                            description = "Optional epoch number to get the hex grid variant for this epoch",
+                            required = false)
+                    Integer epoch) {
         log.debug("MCP: Get hex grid: worldId={}, q={}, r={}, epoch={}", worldId, q, r, epoch);
 
         if (Strings.isBlank(worldId)) {
             throw new McpToolException("worldId is required");
         }
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         HexVector2 hexPos = HexVector2.builder().q(q).r(r).build();
 
         WHexGrid hexGrid;
         if (epoch != null) {
-            hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos, epoch)
-                    .orElseThrow(() -> new McpToolException("Hex grid not found at position " + q + ";" + r + " for epoch " + epoch));
+            hexGrid = hexGridService
+                    .findByWorldIdAndPosition(worldId, hexPos, epoch)
+                    .orElseThrow(() -> new McpToolException(
+                            "Hex grid not found at position " + q + ";" + r + " for epoch " + epoch));
         } else {
-            hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+            hexGrid = hexGridService
+                    .findByWorldIdAndPosition(worldId, hexPos)
                     .orElseThrow(() -> new McpToolException("Hex grid not found at position " + q + ";" + r));
         }
 
@@ -86,25 +98,33 @@ public class HexGridTools implements McpToolBean {
         return result;
     }
 
-    @Tool(name = "create_hexgrid", description = "Create a new hex grid at the given position. Multiple hex grids can exist at the same position with different epoches.")
+    @Tool(
+            name = "create_hexgrid",
+            description =
+                    "Create a new hex grid at the given position. Multiple hex grids can exist at the same position with different epoches.")
     public Map<String, Object> createHexGrid(
-            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.")
+                    String worldId,
             @ToolParam(description = "Hex position Q coordinate") int q,
             @ToolParam(description = "Hex position R coordinate") int r,
             @ToolParam(description = "Technical name for the hex grid") String name,
             @ToolParam(description = "Description of the hex grid area") String description,
             @ToolParam(description = "Display title", required = false) String title,
             @ToolParam(description = "Icon identifier", required = false) String icon,
-            @ToolParam(description = "Generator parameters as key-value pairs", required = false) Map<String, String> parameters,
-            @ToolParam(description = "Epoch numbers this hex grid belongs to (e.g. [0,1,2]). If not specified, defaults to empty list (= not visible in any epoch).", required = false) List<Integer> epoches) {
+            @ToolParam(description = "Generator parameters as key-value pairs", required = false)
+                    Map<String, String> parameters,
+            @ToolParam(
+                            description =
+                                    "Epoch numbers this hex grid belongs to (e.g. [0,1,2]). If not specified, defaults to empty list (= not visible in any epoch).",
+                            required = false)
+                    List<Integer> epoches) {
         log.debug("MCP: Create hex grid: worldId={}, q={}, r={}, name={}", worldId, q, r, name);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(name) || Strings.isBlank(description)) {
             throw new McpToolException("worldId, name, and description are required");
         }
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         try {
             HexGrid publicData = HexGrid.builder()
@@ -117,12 +137,7 @@ public class HexGridTools implements McpToolBean {
 
             WHexGrid created = hexGridService.create(worldId, publicData, parameters, null, epoches);
 
-            return Map.of(
-                    "id", created.getId(),
-                    "worldId", worldId,
-                    "position", q + ";" + r,
-                    "status", "created"
-            );
+            return Map.of("id", created.getId(), "worldId", worldId, "position", q + ";" + r, "status", "created");
         } catch (IllegalStateException e) {
             throw new McpToolException("Conflict: " + e.getMessage());
         } catch (Exception e) {
@@ -130,27 +145,38 @@ public class HexGridTools implements McpToolBean {
         }
     }
 
-    @Tool(name = "update_hexgrid", description = "Update an existing hex grid. Only provided fields are updated. Use the hex grid's MongoDB id for precise updates when multiple epoch variants exist at the same position.")
+    @Tool(
+            name = "update_hexgrid",
+            description =
+                    "Update an existing hex grid. Only provided fields are updated. Use the hex grid's MongoDB id for precise updates when multiple epoch variants exist at the same position.")
     public Map<String, Object> updateHexGrid(
-            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.")
+                    String worldId,
             @ToolParam(description = "Hex position Q coordinate") int q,
             @ToolParam(description = "Hex position R coordinate") int r,
-            @ToolParam(description = "MongoDB document ID for precise update when multiple epoch variants exist at same position. Use list_hexgrids to find the id.", required = false) String id,
+            @ToolParam(
+                            description =
+                                    "MongoDB document ID for precise update when multiple epoch variants exist at same position. Use list_hexgrids to find the id.",
+                            required = false)
+                    String id,
             @ToolParam(description = "New technical name", required = false) String name,
             @ToolParam(description = "New description", required = false) String description,
             @ToolParam(description = "New display title", required = false) String title,
             @ToolParam(description = "New icon", required = false) String icon,
             @ToolParam(description = "Whether the hex grid is enabled", required = false) Boolean enabled,
-            @ToolParam(description = "Generator parameters (replaces existing)", required = false) Map<String, String> parameters,
-            @ToolParam(description = "Epoch numbers this hex grid belongs to (replaces existing epoches)", required = false) List<Integer> epoches) {
+            @ToolParam(description = "Generator parameters (replaces existing)", required = false)
+                    Map<String, String> parameters,
+            @ToolParam(
+                            description = "Epoch numbers this hex grid belongs to (replaces existing epoches)",
+                            required = false)
+                    List<Integer> epoches) {
         log.debug("MCP: Update hex grid: worldId={}, q={}, r={}, id={}", worldId, q, r, id);
 
         if (Strings.isBlank(worldId)) {
             throw new McpToolException("worldId is required");
         }
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         try {
             Optional<WHexGrid> updated;
@@ -170,11 +196,7 @@ public class HexGridTools implements McpToolBean {
             }
 
             return Map.of(
-                    "id", updated.get().getId(),
-                    "worldId", worldId,
-                    "position", q + ";" + r,
-                    "status", "updated"
-            );
+                    "id", updated.get().getId(), "worldId", worldId, "position", q + ";" + r, "status", "updated");
         } catch (McpToolException e) {
             throw e;
         } catch (Exception e) {
@@ -182,21 +204,29 @@ public class HexGridTools implements McpToolBean {
         }
     }
 
-    @Tool(name = "delete_hexgrid", description = "Delete a hex grid. Use id for precise deletion when multiple epoch variants exist at the same position.")
+    @Tool(
+            name = "delete_hexgrid",
+            description =
+                    "Delete a hex grid. Use id for precise deletion when multiple epoch variants exist at the same position.")
     public Map<String, Object> deleteHexGrid(
-            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.")
+                    String worldId,
             @ToolParam(description = "Hex position Q coordinate") int q,
             @ToolParam(description = "Hex position R coordinate") int r,
-            @ToolParam(description = "MongoDB document ID for precise deletion. If not provided, deletes the first variant found at this position.", required = false) String id,
-            @ToolParam(description = "If true, deletes ALL epoch variants at this position", required = false) Boolean deleteAll) {
+            @ToolParam(
+                            description =
+                                    "MongoDB document ID for precise deletion. If not provided, deletes the first variant found at this position.",
+                            required = false)
+                    String id,
+            @ToolParam(description = "If true, deletes ALL epoch variants at this position", required = false)
+                    Boolean deleteAll) {
         log.debug("MCP: Delete hex grid: worldId={}, q={}, r={}, id={}, deleteAll={}", worldId, q, r, id, deleteAll);
 
         if (Strings.isBlank(worldId)) {
             throw new McpToolException("worldId is required");
         }
 
-        WorldId.of(worldId).orElseThrow(
-                () -> new McpToolException("Invalid worldId: " + worldId));
+        WorldId.of(worldId).orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
 
         try {
             if (Strings.isNotBlank(id)) {
@@ -226,8 +256,15 @@ public class HexGridTools implements McpToolBean {
         }
     }
 
-    private void applyUpdates(WHexGrid hexGrid, String name, String description, String title,
-                              String icon, Boolean enabled, Map<String, String> parameters, List<Integer> epoches) {
+    private void applyUpdates(
+            WHexGrid hexGrid,
+            String name,
+            String description,
+            String title,
+            String icon,
+            Boolean enabled,
+            Map<String, String> parameters,
+            List<Integer> epoches) {
         HexGrid publicData = hexGrid.getPublicData();
         if (publicData == null) {
             publicData = HexGrid.builder()
@@ -250,9 +287,21 @@ public class HexGridTools implements McpToolBean {
         map.put("id", hexGrid.getId());
         map.put("position", hexGrid.getPosition());
         if (hexGrid.getPublicData() != null) {
-            map.put("name", hexGrid.getPublicData().getName() != null ? hexGrid.getPublicData().getName() : "");
-            map.put("title", hexGrid.getPublicData().getTitle() != null ? hexGrid.getPublicData().getTitle() : "");
-            map.put("description", hexGrid.getPublicData().getDescription() != null ? hexGrid.getPublicData().getDescription() : "");
+            map.put(
+                    "name",
+                    hexGrid.getPublicData().getName() != null
+                            ? hexGrid.getPublicData().getName()
+                            : "");
+            map.put(
+                    "title",
+                    hexGrid.getPublicData().getTitle() != null
+                            ? hexGrid.getPublicData().getTitle()
+                            : "");
+            map.put(
+                    "description",
+                    hexGrid.getPublicData().getDescription() != null
+                            ? hexGrid.getPublicData().getDescription()
+                            : "");
             if (hexGrid.getPublicData().getIcon() != null) {
                 map.put("icon", hexGrid.getPublicData().getIcon());
             }

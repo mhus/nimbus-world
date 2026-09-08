@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
 import de.mhus.nimbus.world.shared.spel.SafeSpel;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-
-import java.util.Map;
 
 /**
  * Evaluates SpEL condition expressions against a variable map.

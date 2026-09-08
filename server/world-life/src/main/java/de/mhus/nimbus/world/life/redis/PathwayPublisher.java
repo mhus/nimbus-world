@@ -7,15 +7,14 @@ import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Publishes entity pathways to world-player pods via Redis.
@@ -81,8 +80,11 @@ public class PathwayPublisher {
                 updateChunkEntityIndex(worldId, pathway.getEntityId(), affectedChunks);
             }
 
-            log.trace("World {}: Published {} pathways to Redis, affecting {} chunks",
-                    worldId, pathways.size(), affectedChunks.size());
+            log.trace(
+                    "World {}: Published {} pathways to Redis, affecting {} chunks",
+                    worldId,
+                    pathways.size(),
+                    affectedChunks.size());
 
         } catch (Exception e) {
             log.error("World {}: Failed to publish pathways to Redis: {} pathways", worldId, pathways.size(), e);
@@ -115,8 +117,11 @@ public class PathwayPublisher {
                 }
             }
 
-            log.debug("World {}: Cleaned up Redis for entity {} from {} chunks",
-                    worldId, entityId, affectedChunks != null ? affectedChunks.size() : 0);
+            log.debug(
+                    "World {}: Cleaned up Redis for entity {} from {} chunks",
+                    worldId,
+                    entityId,
+                    affectedChunks != null ? affectedChunks.size() : 0);
         } catch (Exception e) {
             log.error("World {}: Failed to clean up Redis for entity {}", worldId, entityId, e);
         }
@@ -132,7 +137,8 @@ public class PathwayPublisher {
     private void cacheIndividualPathway(WorldId worldId, EntityPathway pathway) {
         try {
             String json = engineMapper.writeValueAsString(pathway);
-            worldRedisService.putValue(worldId.getId(), NPC_PATHWAY_PREFIX + pathway.getEntityId(), json, NPC_PATHWAY_TTL);
+            worldRedisService.putValue(
+                    worldId.getId(), NPC_PATHWAY_PREFIX + pathway.getEntityId(), json, NPC_PATHWAY_TTL);
         } catch (Exception e) {
             log.error("World {}: Failed to cache pathway for entity {}", worldId, pathway.getEntityId(), e);
         }

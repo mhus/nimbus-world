@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.dto;
 
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import jakarta.validation.constraints.NotBlank;
 
 /**
  * Request DTO for development agent login.

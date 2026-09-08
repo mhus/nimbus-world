@@ -35,10 +35,16 @@ public final class CombatResolver {
      * @return Negative value = damage to health, 0 = complete miss
      */
     public static double resolve(
-            double physDmg, double physAcc, double magDmg, double magAcc,
-            double critChance, double critMult,
-            double defPhysDef, double defPhysEvasion,
-            double defMagDef, double defMagEvasion) {
+            double physDmg,
+            double physAcc,
+            double magDmg,
+            double magAcc,
+            double critChance,
+            double critMult,
+            double defPhysDef,
+            double defPhysEvasion,
+            double defMagDef,
+            double defMagEvasion) {
 
         var rng = ThreadLocalRandom.current();
 

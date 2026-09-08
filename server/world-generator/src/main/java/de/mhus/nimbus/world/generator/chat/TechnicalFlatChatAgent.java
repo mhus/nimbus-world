@@ -1,8 +1,5 @@
 package de.mhus.nimbus.world.generator.chat;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.flat.FlatToolService;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
@@ -10,10 +7,6 @@ import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +15,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Technical Flat Builder Chat Agent.
@@ -95,14 +94,19 @@ public class TechnicalFlatChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+    public List<WChatMessage> chat(
+            WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
         return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
-        log.info("🏔️ Technical Flat Builder processing message from player {} (session={}): {}",
-                playerId, sessionId, message);
+    public List<WChatMessage> chatWithSession(
+            WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
+        log.info(
+                "🏔️ Technical Flat Builder processing message from player {} (session={}): {}",
+                playerId,
+                sessionId,
+                message);
 
         // Check if message is empty
         if (message == null || message.trim().isBlank()) {
@@ -137,12 +141,12 @@ public class TechnicalFlatChatAgent implements WChatAgent {
         // Validate that exactly one command type is present
         int commandCount = (hasManipulator ? 1 : 0) + (hasCreate ? 1 : 0) + (hasExport ? 1 : 0);
         if (commandCount == 0) {
-            return List.of(createErrorMessage(worldId,
-                "No command specified. Use 'manipulator', 'create', or 'export'."));
+            return List.of(
+                    createErrorMessage(worldId, "No command specified. Use 'manipulator', 'create', or 'export'."));
         }
         if (commandCount > 1) {
-            return List.of(createErrorMessage(worldId,
-                "Multiple commands specified. Use only one of: 'manipulator', 'create', 'export'."));
+            return List.of(createErrorMessage(
+                    worldId, "Multiple commands specified. Use only one of: 'manipulator', 'create', 'export'."));
         }
 
         // Execute command in background
@@ -167,16 +171,14 @@ public class TechnicalFlatChatAgent implements WChatAgent {
             chatService.saveMessages(worldId, chatId, sessionId, true, responses);
         });
 
-        return List.of(
-                WChatMessage.builder()
-                        .worldId(worldId.toBaseWorldId().getId())
-                        .messageId(UUID.randomUUID().toString())
-                        .senderId(AGENT_ID)
-                        .message("⏳ Processing command...")
-                        .type("text")
-                        .createdAt(Instant.now())
-                        .build()
-        );
+        return List.of(WChatMessage.builder()
+                .worldId(worldId.toBaseWorldId().getId())
+                .messageId(UUID.randomUUID().toString())
+                .senderId(AGENT_ID)
+                .message("⏳ Processing command...")
+                .type("text")
+                .createdAt(Instant.now())
+                .build());
     }
 
     /**
@@ -189,16 +191,14 @@ public class TechnicalFlatChatAgent implements WChatAgent {
             return List.of(createErrorMessage(worldId, result.getError()));
         }
 
-        return List.of(
-                WChatMessage.builder()
-                        .worldId(worldId.toBaseWorldId().getId())
-                        .messageId(UUID.randomUUID().toString())
-                        .senderId(AGENT_ID)
-                        .message("✅ " + result.getMessage())
-                        .type("text")
-                        .createdAt(Instant.now())
-                        .build()
-        );
+        return List.of(WChatMessage.builder()
+                .worldId(worldId.toBaseWorldId().getId())
+                .messageId(UUID.randomUUID().toString())
+                .senderId(AGENT_ID)
+                .message("✅ " + result.getMessage())
+                .type("text")
+                .createdAt(Instant.now())
+                .build());
     }
 
     /**
@@ -249,23 +249,24 @@ public class TechnicalFlatChatAgent implements WChatAgent {
             return List.of(createErrorMessage(worldId, result.getError()));
         }
 
-        return List.of(
-                WChatMessage.builder()
-                        .worldId(worldId.toBaseWorldId().getId())
-                        .messageId(UUID.randomUUID().toString())
-                        .senderId(AGENT_ID)
-                        .message("✅ " + result.getMessage())
-                        .type("text")
-                        .createdAt(Instant.now())
-                        .build()
-        );
+        return List.of(WChatMessage.builder()
+                .worldId(worldId.toBaseWorldId().getId())
+                .messageId(UUID.randomUUID().toString())
+                .senderId(AGENT_ID)
+                .message("✅ " + result.getMessage())
+                .type("text")
+                .createdAt(Instant.now())
+                .build());
     }
 
     @Override
-    public List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
-                                            String command, Map<String, Object> params) {
-        log.info("🏔️ Technical Flat Builder executing command '{}' from player {}, params: {}",
-                command, playerId, params);
+    public List<WChatMessage> executeCommand(
+            WorldId worldId, String chatId, String playerId, String command, Map<String, Object> params) {
+        log.info(
+                "🏔️ Technical Flat Builder executing command '{}' from player {}, params: {}",
+                command,
+                playerId,
+                params);
 
         // Handle "flat-id" command - store flatId for later use
         if ("flat-id".equals(command)) {
@@ -282,8 +283,8 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
             try {
                 // Load the command message containing flatId
-                Optional<WChatMessage> messageOpt = chatService.findByWorldIdAndChatIdAndMessageId(
-                        worldId, chatId, messageId);
+                Optional<WChatMessage> messageOpt =
+                        chatService.findByWorldIdAndChatIdAndMessageId(worldId, chatId, messageId);
 
                 if (messageOpt.isEmpty()) {
                     return List.of(createErrorMessage(worldId, "Command message not found: " + messageId));
@@ -306,8 +307,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
             } catch (Exception e) {
                 log.error("Failed to load flat-id", e);
-                return List.of(createErrorMessage(worldId,
-                        "Failed to load flat-id: " + e.getMessage()));
+                return List.of(createErrorMessage(worldId, "Failed to load flat-id: " + e.getMessage()));
             }
         }
 
@@ -344,5 +344,4 @@ public class TechnicalFlatChatAgent implements WChatAgent {
     public WChatAgentScope getScope() {
         return WChatAgentScope.EDITOR;
     }
-
 }

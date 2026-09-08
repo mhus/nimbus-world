@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.Map;
-
 /**
  * MongoDB Entity for documents in the world.
  * Documents can exist in worlds or world collections, but not in world instances.
@@ -24,8 +23,11 @@ import java.util.Map;
 @Document(collection = "w_documents")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_collection_documentId_idx", def = "{ 'worldId': 1, 'collection': 1, 'documentId': 1 }", unique = true),
-        @CompoundIndex(name = "worldId_documentId_idx", def = "{ 'worldId': 1, 'documentId': 1 }", unique = true)
+    @CompoundIndex(
+            name = "worldId_collection_documentId_idx",
+            def = "{ 'worldId': 1, 'collection': 1, 'documentId': 1 }",
+            unique = true),
+    @CompoundIndex(name = "worldId_documentId_idx", def = "{ 'worldId': 1, 'documentId': 1 }", unique = true)
 })
 @Data
 @Builder

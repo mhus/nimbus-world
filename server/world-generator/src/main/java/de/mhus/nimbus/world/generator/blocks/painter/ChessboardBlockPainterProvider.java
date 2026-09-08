@@ -4,11 +4,10 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Chessboard block painter provider - paints blocks in a chessboard pattern with multiple block types.
@@ -120,22 +119,21 @@ public class ChessboardBlockPainterProvider implements BlockPainterProvider {
 
                 // Create and paint block with selected BlockDef
                 Block block = Block.builder()
-                        .position(
-                                de.mhus.nimbus.generated.types.Vector3Int.builder()
-                                        .x(x)
-                                        .y(y)
-                                        .z(z)
-                                        .build()
-                        ).build();
+                        .position(de.mhus.nimbus.generated.types.Vector3Int.builder()
+                                .x(x)
+                                .y(y)
+                                .z(z)
+                                .build())
+                        .build();
 
                 blockDef.fillBlock(block);
-                painter.getEditService().doSetAndSendBlock(
-                        painter.getWorld(),
-                        painter.getLayerDataId(),
-                        painter.getModelName(),
-                        block,
-                        painter.getGroupId()
-                );
+                painter.getEditService()
+                        .doSetAndSendBlock(
+                                painter.getWorld(),
+                                painter.getLayerDataId(),
+                                painter.getModelName(),
+                                block,
+                                painter.getGroupId());
 
                 // Add block to ModelSelector if context is available
                 if (painter.getContext() != null && painter.getContext().getModelSelector() != null) {

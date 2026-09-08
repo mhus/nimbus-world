@@ -4,13 +4,12 @@ import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WEditCacheDirtyService;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Deletes transient cache data: dirty chunks, edit cache, and edit cache dirty markers.
@@ -38,8 +37,12 @@ public class DeleteCacheService implements DeleteWorldResources {
         long editCache = editCacheService.deleteByWorldId(worldId);
         long editCacheDirty = editCacheDirtyService.deleteByWorldId(worldId);
 
-        log.info("Deleted cache for world {}: {} dirty chunks, {} edit cache, {} edit cache dirty",
-                worldId, dirtyChunks, editCache, editCacheDirty);
+        log.info(
+                "Deleted cache for world {}: {} dirty chunks, {} edit cache, {} edit cache dirty",
+                worldId,
+                dirtyChunks,
+                editCache,
+                editCacheDirty);
     }
 
     @Override

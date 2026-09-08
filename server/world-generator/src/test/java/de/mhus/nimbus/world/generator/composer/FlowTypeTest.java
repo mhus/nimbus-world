@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.flow.River;
@@ -7,8 +9,6 @@ import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.RoadType;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for FlowType Rich Enum pattern
@@ -104,7 +104,7 @@ class FlowTypeTest {
         // Create road with pre-set level
         Road road = new Road();
         road.setType(FlowType.ROAD);
-        road.setLevel(80);  // Pre-set value
+        road.setLevel(80); // Pre-set value
 
         // Apply defaults
         road.applyDefaults();
@@ -180,9 +180,7 @@ class FlowTypeTest {
     @Test
     void testBuilderWithDefaults() {
         // Builder pattern still works, but doesn't auto-apply defaults
-        Road road = Road.builder()
-            .endPointId("biome2")
-            .build();
+        Road road = Road.builder().endPointId("biome2").build();
 
         // Manually set parent fields and type
         road.setStartPointId("biome1");
@@ -204,7 +202,7 @@ class FlowTypeTest {
 
         assertEquals(4, road.getEffectiveWidthBlocks());
         assertEquals(4, river.getEffectiveWidthBlocks());
-        assertEquals(2, wall.getEffectiveWidthBlocks());  // Walls are narrower
+        assertEquals(2, wall.getEffectiveWidthBlocks()); // Walls are narrower
 
         // But each has different specific properties
         assertNotNull(road.getRoadType());

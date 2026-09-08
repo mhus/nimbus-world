@@ -6,13 +6,12 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.TerrainService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Block-based movement system for terrain-aware entity pathfinding.
@@ -60,15 +59,42 @@ public class BlockBasedMovement {
         direction.setY(0.0);
 
         switch (choice) {
-            case 0 -> { direction.setX(1.0); direction.setZ(0.0); }  // East
-            case 1 -> { direction.setX(-1.0); direction.setZ(0.0); } // West
-            case 2 -> { direction.setX(0.0); direction.setZ(1.0); }  // South
-            case 3 -> { direction.setX(0.0); direction.setZ(-1.0); } // North
-            case 4 -> { direction.setX(1.0); direction.setZ(1.0); }  // SE
-            case 5 -> { direction.setX(1.0); direction.setZ(-1.0); } // NE
-            case 6 -> { direction.setX(-1.0); direction.setZ(1.0); } // SW
-            case 7 -> { direction.setX(-1.0); direction.setZ(-1.0); }// NW
-            default -> { direction.setX(1.0); direction.setZ(0.0); }
+            case 0 -> {
+                direction.setX(1.0);
+                direction.setZ(0.0);
+            } // East
+            case 1 -> {
+                direction.setX(-1.0);
+                direction.setZ(0.0);
+            } // West
+            case 2 -> {
+                direction.setX(0.0);
+                direction.setZ(1.0);
+            } // South
+            case 3 -> {
+                direction.setX(0.0);
+                direction.setZ(-1.0);
+            } // North
+            case 4 -> {
+                direction.setX(1.0);
+                direction.setZ(1.0);
+            } // SE
+            case 5 -> {
+                direction.setX(1.0);
+                direction.setZ(-1.0);
+            } // NE
+            case 6 -> {
+                direction.setX(-1.0);
+                direction.setZ(1.0);
+            } // SW
+            case 7 -> {
+                direction.setX(-1.0);
+                direction.setZ(-1.0);
+            } // NW
+            default -> {
+                direction.setX(1.0);
+                direction.setZ(0.0);
+            }
         }
 
         return direction;
@@ -133,16 +159,15 @@ public class BlockBasedMovement {
                     worldId,
                     (int) Math.floor(nextX),
                     (int) Math.floor(nextZ),
-                    (int) currentY + 5,  // Search start slightly above current position
-                    false,  // Cannot walk on water
-                    epoch
-            );
+                    (int) currentY + 5, // Search start slightly above current position
+                    false, // Cannot walk on water
+                    epoch);
 
             // Check if position is invalid (water or not found)
             if (groundY < 0) {
                 // Position has water and entity cannot walk on it, skip
                 waterSkips++;
-                log.trace("Skipping waypoint due to water: pos=({}, {})", (int)nextX, (int)nextZ);
+                log.trace("Skipping waypoint due to water: pos=({}, {})", (int) nextX, (int) nextZ);
                 continue;
             }
 
@@ -151,8 +176,13 @@ public class BlockBasedMovement {
             if (heightDiff > 3) {
                 // Too steep, skip this waypoint
                 steepSkips++;
-                log.trace("Skipping waypoint due to steep terrain: heightDiff={}, groundY={}, currentY={}, pos=({}, {})",
-                        heightDiff, groundY, (int)currentY, (int)nextX, (int)nextZ);
+                log.trace(
+                        "Skipping waypoint due to steep terrain: heightDiff={}, groundY={}, currentY={}, pos=({}, {})",
+                        heightDiff,
+                        groundY,
+                        (int) currentY,
+                        (int) nextX,
+                        (int) nextZ);
                 continue;
             }
 
@@ -219,7 +249,7 @@ public class BlockBasedMovement {
 
         Rotation rotation = new Rotation();
         rotation.setY(yawDeg);
-        rotation.setP(0.0);  // Horizontal pitch
+        rotation.setP(0.0); // Horizontal pitch
         return rotation;
     }
 
@@ -243,7 +273,7 @@ public class BlockBasedMovement {
 
         Vector3 position = new Vector3();
         position.setX(center.getX() + offsetX);
-        position.setY(center.getY());  // Y will be adjusted by terrain lookup
+        position.setY(center.getY()); // Y will be adjusted by terrain lookup
         position.setZ(center.getZ() + offsetZ);
 
         return position;

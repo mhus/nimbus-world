@@ -24,8 +24,10 @@ public class RelativePosition {
     private Direction direction;
     private DistanceRange distance;
     private String anchor;
+
     @Builder.Default
     private int priority = 5;
+
     private Integer distanceFrom;
     private Integer distanceTo;
 

@@ -26,5 +26,4 @@ public class StartRecord implements JournalStringRecord {
     public void stringToRecord(String data) {
         workflow = data;
     }
-
 }

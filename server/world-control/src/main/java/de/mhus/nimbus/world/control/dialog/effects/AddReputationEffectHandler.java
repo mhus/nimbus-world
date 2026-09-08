@@ -16,13 +16,19 @@ public class AddReputationEffectHandler implements DialogEffectHandler {
     private final RCharacterService characterService;
 
     @Override
-    public String getEffectType() { return "addReputation"; }
+    public String getEffectType() {
+        return "addReputation";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
         if (ctx.getCharacter() == null) return;
         int delta = effect.delta() != null ? effect.delta() : 0;
         characterService.changeReputation(ctx.getCharacter().getId(), effect.faction(), delta);
-        log.debug("Changed reputation {} by {} for character {}", effect.faction(), delta, ctx.getCharacter().getId());
+        log.debug(
+                "Changed reputation {} by {} for character {}",
+                effect.faction(),
+                delta,
+                ctx.getCharacter().getId());
     }
 }

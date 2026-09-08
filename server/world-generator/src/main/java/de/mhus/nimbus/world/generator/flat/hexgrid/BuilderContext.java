@@ -3,14 +3,13 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import de.mhus.nimbus.world.shared.world.WChunkService;
-import lombok.Builder;
-import lombok.Getter;
-
 import java.util.Map;
 import java.util.Optional;
+import lombok.Builder;
+import lombok.Getter;
 
 /**
  * Context object containing all information needed for terrain generation.
@@ -67,5 +66,4 @@ public class BuilderContext {
     public int getHexGridSize() {
         return world.getPublicData().getHexGridSize();
     }
-
 }

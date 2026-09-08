@@ -34,5 +34,4 @@ public interface DeleteWorldResources {
     void deleteWorldResources(String worldId) throws Exception;
 
     List<String> getKnownWorldIds() throws Exception;
-
 }

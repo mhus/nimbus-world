@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +13,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * Edit cache entity - temporary block storage for editing.
  * Stores edited blocks before they are committed to layers.
@@ -22,9 +21,12 @@ import java.time.Instant;
 @Document(collection = "w_edit_cache")
 @ActualSchemaVersion("1.1.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_chunk_idx", def = "{ 'worldId': 1, 'chunk': 1 }"),
-        @CompoundIndex(name = "worldId_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }"),
-        @CompoundIndex(name = "unique_block_position_idx", def = "{ 'worldId': 1, 'layerDataId': 1, 'modelName': 1, 'x': 1, 'y': 1, 'z': 1 }", unique = true)
+    @CompoundIndex(name = "worldId_chunk_idx", def = "{ 'worldId': 1, 'chunk': 1 }"),
+    @CompoundIndex(name = "worldId_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }"),
+    @CompoundIndex(
+            name = "unique_block_position_idx",
+            def = "{ 'worldId': 1, 'layerDataId': 1, 'modelName': 1, 'x': 1, 'y': 1, 'z': 1 }",
+            unique = true)
 })
 @Data
 @Builder

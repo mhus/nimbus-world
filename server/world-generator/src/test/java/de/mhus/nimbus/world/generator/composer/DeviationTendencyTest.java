@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
-import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
-import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
-import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
-import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for DeviationTendency enum in LINE-shaped biomes.
@@ -42,12 +41,12 @@ public class DeviationTendencyTest {
         HexComposition composition = createComposition(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(12345L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(12345L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess());
 
@@ -79,12 +78,12 @@ public class DeviationTendencyTest {
         HexComposition composition = createComposition(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(22222L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(22222L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess());
 
@@ -116,12 +115,12 @@ public class DeviationTendencyTest {
         HexComposition composition = createComposition(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(33333L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(33333L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess());
 
@@ -153,12 +152,12 @@ public class DeviationTendencyTest {
         HexComposition composition = createComposition(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(44444L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(44444L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess());
 
@@ -183,19 +182,19 @@ public class DeviationTendencyTest {
         mountain.setShape(AreaShape.LINE);
         mountain.setSizeFrom(10);
         mountain.setSizeTo(12);
-        mountain.setTendLeft(DeviationTendency.STRONG);   // 60% left
-        mountain.setTendRight(DeviationTendency.SLIGHT);  // 20% right
+        mountain.setTendLeft(DeviationTendency.STRONG); // 60% left
+        mountain.setTendRight(DeviationTendency.SLIGHT); // 20% right
         mountain.setPositions(java.util.List.of(createOriginPosition()));
 
         HexComposition composition = createComposition(mountain);
 
         CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("test-world")
-            .seed(55555L)
-            .fillGaps(false)
-            .build()
-            .compose();
+                .composition(composition)
+                .worldId("test-world")
+                .seed(55555L)
+                .fillGaps(false)
+                .build()
+                .compose();
 
         assertTrue(result.isSuccess());
 
@@ -229,8 +228,8 @@ public class DeviationTendencyTest {
         // Test priority: tendLeft/Right should override deprecated values
         MountainBiome mountain3 = new MountainBiome();
         mountain3.setTendLeft(DeviationTendency.MODERATE);
-        mountain3.setDeviationLeft(0.9);  // Should be ignored
-        mountain3.setDirectionDeviation(0.8);  // Should be ignored
+        mountain3.setDeviationLeft(0.9); // Should be ignored
+        mountain3.setDirectionDeviation(0.8); // Should be ignored
         assertEquals(0.4, mountain3.getEffectiveDeviationLeft(), 0.01, "tendLeft should have priority");
 
         log.info("=== Backward Compatibility Test Completed ===");
@@ -238,19 +237,19 @@ public class DeviationTendencyTest {
 
     private HexComposition createComposition(MountainBiome mountain) {
         HexComposition composition = HexComposition.builder()
-            .worldId("test-world")
-            .name("tendency-test")
-            .features(new ArrayList<>())
-            .build();
+                .worldId("test-world")
+                .name("tendency-test")
+                .features(new ArrayList<>())
+                .build();
         composition.getFeatures().add(mountain);
         return composition;
     }
 
     private PlacedBiome getPlacedMountain(CompositionResult result, String name) {
         return result.getBiomePlacementResult().getPlacedBiomes().stream()
-            .filter(pb -> pb.getBiome().getName().equals(name))
-            .findFirst()
-            .orElseThrow();
+                .filter(pb -> pb.getBiome().getName().equals(name))
+                .findFirst()
+                .orElseThrow();
     }
 
     private RelativePosition createOriginPosition() {

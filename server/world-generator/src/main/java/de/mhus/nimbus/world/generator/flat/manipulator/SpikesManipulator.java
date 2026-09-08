@@ -3,13 +3,12 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.composer.point.SpikesPoint;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * SpikesManipulator creates fields of spike formations.
@@ -46,8 +45,7 @@ public class SpikesManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting spikes manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -76,13 +74,11 @@ public class SpikesManipulator implements FlatManipulator {
         int minSpacing = getMinSpacing(density);
         int maxSpacing = getMaxSpacing(density);
 
-        log.debug("Generating {} spikes with density={}, spacing={}-{}",
-            spikeCount, density, minSpacing, maxSpacing);
+        log.debug("Generating {} spikes with density={}, spacing={}-{}", spikeCount, density, minSpacing, maxSpacing);
 
         // Generate spike positions with minimum spacing
         List<SpikePosition> positions = generateSpikePositions(
-            centerX, centerZ, spikeCount, minSpacing, maxSpacing,
-            Math.min(sizeX, sizeZ) / 2, random);
+                centerX, centerZ, spikeCount, minSpacing, maxSpacing, Math.min(sizeX, sizeZ) / 2, random);
 
         log.debug("Generated {} spike positions", positions.size());
 
@@ -91,22 +87,25 @@ public class SpikesManipulator implements FlatManipulator {
             // Random dimensions for this spike
             int spikeHeight = minHeight + random.nextInt(maxHeight - minHeight + 1);
             int spikeWidth = minWidth + random.nextInt(maxWidth - minWidth + 1);
-            String group = "spike_" + (pos.x + flat.getMountX()) + "," + (pos.z + flat.getMountZ()); // Unique group name for this spike
+            String group = "spike_" + (pos.x + flat.getMountX()) + ","
+                    + (pos.z + flat.getMountZ()); // Unique group name for this spike
 
             // Create the spike
             createSpike(flat, pos.x, pos.z, baseHeight, spikeHeight, spikeWidth, taperFactor, random, group, material);
         }
 
-        log.info("Spikes manipulation completed: {} spikes created, density={}, amount={}",
-            positions.size(), density, amount);
+        log.info(
+                "Spikes manipulation completed: {} spikes created, density={}, amount={}",
+                positions.size(),
+                density,
+                amount);
     }
 
     /**
      * Generate spike positions with minimum spacing
      */
-    private List<SpikePosition> generateSpikePositions(int centerX, int centerZ,
-                                                       int count, int minSpacing, int maxSpacing,
-                                                       int maxRadius, Random random) {
+    private List<SpikePosition> generateSpikePositions(
+            int centerX, int centerZ, int count, int minSpacing, int maxSpacing, int maxRadius, Random random) {
         List<SpikePosition> positions = new ArrayList<>();
         int attempts = 0;
         int maxAttempts = count * 10; // Prevent infinite loop
@@ -126,10 +125,7 @@ public class SpikesManipulator implements FlatManipulator {
             int requiredSpacing = minSpacing + random.nextInt(maxSpacing - minSpacing + 1);
 
             for (SpikePosition existing : positions) {
-                double dist = Math.sqrt(
-                    Math.pow(x - existing.x, 2) +
-                    Math.pow(z - existing.z, 2)
-                );
+                double dist = Math.sqrt(Math.pow(x - existing.x, 2) + Math.pow(z - existing.z, 2));
                 if (dist < requiredSpacing) {
                     tooClose = true;
                     break;
@@ -142,8 +138,7 @@ public class SpikesManipulator implements FlatManipulator {
         }
 
         if (positions.size() < count) {
-            log.debug("Could only place {} of {} requested spikes due to spacing constraints",
-                positions.size(), count);
+            log.debug("Could only place {} of {} requested spikes due to spacing constraints", positions.size(), count);
         }
 
         return positions;
@@ -152,9 +147,17 @@ public class SpikesManipulator implements FlatManipulator {
     /**
      * Create a single spike at the specified position
      */
-    private void createSpike(WFlat flat, int centerX, int centerZ,
-                             int baseHeight, int height, int baseWidth,
-                             double taperFactor, Random random, String group, int material) {
+    private void createSpike(
+            WFlat flat,
+            int centerX,
+            int centerZ,
+            int baseHeight,
+            int height,
+            int baseWidth,
+            double taperFactor,
+            Random random,
+            String group,
+            int material) {
         // Build spike layer by layer from bottom to top
         for (int layer = 0; layer < height; layer++) {
             // Calculate width at this height using taper factor
@@ -174,14 +177,14 @@ public class SpikesManipulator implements FlatManipulator {
             drawSpikeLayer(flat, centerX, centerZ, currentWidth, currentHeight, group, material);
         }
 
-        log.debug("Created spike at ({},{}) with height={}, baseWidth={}",
-            centerX, centerZ, height, baseWidth);
+        log.debug("Created spike at ({},{}) with height={}, baseWidth={}", centerX, centerZ, height, baseWidth);
     }
 
     /**
      * Draw a single layer of a spike
      */
-    private void drawSpikeLayer(WFlat flat, int centerX, int centerZ, int radius, int height, String group, int material) {
+    private void drawSpikeLayer(
+            WFlat flat, int centerX, int centerZ, int radius, int height, String group, int material) {
         // Use diamond/circular pattern
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
@@ -215,9 +218,9 @@ public class SpikesManipulator implements FlatManipulator {
      */
     private int getSpikeCount(SpikesPoint.Amount amount, Random random) {
         return switch (amount) {
-            case FEW -> 3 + random.nextInt(8);      // 3-10
+            case FEW -> 3 + random.nextInt(8); // 3-10
             case NORMAL -> 10 + random.nextInt(21); // 10-30
-            case MANY -> 30 + random.nextInt(21);   // 30-50
+            case MANY -> 30 + random.nextInt(21); // 30-50
         };
     }
 
@@ -278,8 +281,7 @@ public class SpikesManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -291,8 +293,7 @@ public class SpikesManipulator implements FlatManipulator {
         try {
             return Double.parseDouble(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid double parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -304,8 +305,7 @@ public class SpikesManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

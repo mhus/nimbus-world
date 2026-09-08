@@ -6,14 +6,13 @@ import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Effect handler that changes block status and publishes it via Redis.
@@ -93,8 +92,14 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
             }
         }
 
-        log.debug("block_status: worldId={}, chunk={}, targets={}, status={} (type={}, default={})",
-                worldId, chunkKey, targets, newStatus, toggleType, defaultState);
+        log.debug(
+                "block_status: worldId={}, chunk={}, targets={}, status={} (type={}, default={})",
+                worldId,
+                chunkKey,
+                targets,
+                newStatus,
+                toggleType,
+                defaultState);
 
         return Set.of();
     }
@@ -102,9 +107,8 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
     /**
      * Collect target block keys based on toggleType.
      */
-    private List<String> collectTargets(WorldId worldId, String chunkKey,
-                                        int x, int y, int z,
-                                        String toggleType, Map<String, String> parameters) {
+    private List<String> collectTargets(
+            WorldId worldId, String chunkKey, int x, int y, int z, String toggleType, Map<String, String> parameters) {
         String targetKey = x + "," + y + "," + z;
 
         return switch (toggleType.toLowerCase()) {
@@ -117,9 +121,8 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
     /**
      * Auto: find adjacent blocks (up/down, up to 2 in each direction) with same action.
      */
-    private List<String> collectAutoTargets(WorldId worldId, String chunkKey,
-                                            int x, int y, int z, String targetKey,
-                                            Map<String, String> parameters) {
+    private List<String> collectAutoTargets(
+            WorldId worldId, String chunkKey, int x, int y, int z, String targetKey, Map<String, String> parameters) {
         String actionName = parameters.getOrDefault("action", DEFAULT_ACTION);
         WChunk chunk = chunkService.find(worldId, chunkKey).orElse(null);
         if (chunk == null || chunk.getInfoServer() == null) {
@@ -143,8 +146,8 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
     /**
      * Group: find all blocks in the chunk with matching toggleGroup and action.
      */
-    private List<String> collectGroupTargets(WorldId worldId, String chunkKey,
-                                             String targetKey, Map<String, String> parameters) {
+    private List<String> collectGroupTargets(
+            WorldId worldId, String chunkKey, String targetKey, Map<String, String> parameters) {
         String groupName = parameters.get("toggleGroup");
         String actionName = parameters.getOrDefault("action", DEFAULT_ACTION);
 
@@ -172,8 +175,7 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
         return targets;
     }
 
-    private String resolveStatus(String worldId, String chunkKey, String blockKey,
-                                 String value, String defaultState) {
+    private String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultState) {
         return switch (value.toLowerCase()) {
             case "open" -> "open";
             case "close", "closed" -> "closed";
@@ -195,10 +197,8 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
             return null;
         }
         try {
-            return new int[]{
-                    Integer.parseInt(parts[0].trim()),
-                    Integer.parseInt(parts[1].trim()),
-                    Integer.parseInt(parts[2].trim())
+            return new int[] {
+                Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())
             };
         } catch (NumberFormatException e) {
             log.error("block_status: invalid coordinates in blockKey '{}'", blockKey);

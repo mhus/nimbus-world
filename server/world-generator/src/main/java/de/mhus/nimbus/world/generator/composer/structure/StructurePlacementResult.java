@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.generator.composer.structure;
 
 import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Result of structure placement operation.

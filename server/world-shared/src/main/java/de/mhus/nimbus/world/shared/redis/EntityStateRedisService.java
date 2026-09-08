@@ -1,20 +1,19 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityPathway;
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-
+import de.mhus.nimbus.shared.types.WorldId;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Central Redis storage for entity runtime state.
@@ -53,11 +52,12 @@ public class EntityStateRedisService {
     public void updateState(String worldId, String entityId, String lifecycle, double health, double healthMax) {
         String key = key(worldId, entityId);
         var ops = redis.opsForHash();
-        ops.putAll(key, Map.of(
-                FIELD_LIFECYCLE, lifecycle,
-                FIELD_HEALTH, String.valueOf(health),
-                FIELD_HEALTH_MAX, String.valueOf(healthMax)
-        ));
+        ops.putAll(
+                key,
+                Map.of(
+                        FIELD_LIFECYCLE, lifecycle,
+                        FIELD_HEALTH, String.valueOf(health),
+                        FIELD_HEALTH_MAX, String.valueOf(healthMax)));
         redis.expire(key, TTL);
     }
 
@@ -217,9 +217,12 @@ public class EntityStateRedisService {
                 if (now >= from.getTimestamp() && now < to.getTimestamp()) {
                     double t = (double) (now - from.getTimestamp()) / (to.getTimestamp() - from.getTimestamp());
                     return Vector3.builder()
-                            .x(from.getTarget().getX() + (to.getTarget().getX() - from.getTarget().getX()) * t)
-                            .y(from.getTarget().getY() + (to.getTarget().getY() - from.getTarget().getY()) * t)
-                            .z(from.getTarget().getZ() + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
+                            .x(from.getTarget().getX()
+                                    + (to.getTarget().getX() - from.getTarget().getX()) * t)
+                            .y(from.getTarget().getY()
+                                    + (to.getTarget().getY() - from.getTarget().getY()) * t)
+                            .z(from.getTarget().getZ()
+                                    + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
                             .build();
                 }
             }

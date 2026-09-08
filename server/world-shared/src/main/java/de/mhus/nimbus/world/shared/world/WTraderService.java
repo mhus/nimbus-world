@@ -2,6 +2,11 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.ItemRef;
 import de.mhus.nimbus.shared.types.WorldId;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -10,12 +15,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Service for managing WTrader entities and trade operations.
@@ -66,7 +65,8 @@ public class WTraderService {
 
     @Transactional
     public boolean delete(String worldId, String entityId) {
-        return repository.findByWorldIdAndEntityId(worldId, entityId)
+        return repository
+                .findByWorldIdAndEntityId(worldId, entityId)
                 .map(trader -> {
                     repository.delete(trader);
                     log.debug("Trader deleted: worldId={}, entityId={}", worldId, entityId);
@@ -89,10 +89,7 @@ public class WTraderService {
      */
     @Transactional
     public int deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WTrader.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WTrader.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} traders for worldId={}", deleted, worldId);
         return (int) deleted;
@@ -129,18 +126,30 @@ public class WTraderService {
                     .worldId(targetWorldId)
                     .entityId(source.getEntityId())
                     .traderType(source.getTraderType())
-                    .categories(source.getCategories() != null ? new ArrayList<>(source.getCategories()) : new ArrayList<>())
+                    .categories(
+                            source.getCategories() != null
+                                    ? new ArrayList<>(source.getCategories())
+                                    : new ArrayList<>())
                     .personalityModifier(source.getPersonalityModifier())
                     .silverAmount(source.getSilverAmount())
                     .chestId(source.getChestId())
                     .poolChestId(source.getPoolChestId())
-                    .questItems(source.getQuestItems() != null ? new ArrayList<>(source.getQuestItems()) : new ArrayList<>())
+                    .questItems(
+                            source.getQuestItems() != null
+                                    ? new ArrayList<>(source.getQuestItems())
+                                    : new ArrayList<>())
                     .maxDisplayItems(source.getMaxDisplayItems())
                     .goldExchangeRate(source.getGoldExchangeRate())
-                    .trainableSkills(source.getTrainableSkills() != null ? new ArrayList<>(source.getTrainableSkills()) : new ArrayList<>())
+                    .trainableSkills(
+                            source.getTrainableSkills() != null
+                                    ? new ArrayList<>(source.getTrainableSkills())
+                                    : new ArrayList<>())
                     .maxSkillPoints(source.getMaxSkillPoints())
                     .costPerSkillPoint(source.getCostPerSkillPoint())
-                    .repairTypes(source.getRepairTypes() != null ? new ArrayList<>(source.getRepairTypes()) : new ArrayList<>())
+                    .repairTypes(
+                            source.getRepairTypes() != null
+                                    ? new ArrayList<>(source.getRepairTypes())
+                                    : new ArrayList<>())
                     .repairCostPerPoint(source.getRepairCostPerPoint())
                     .poolSyncIntervalSeconds(source.getPoolSyncIntervalSeconds())
                     .enabled(source.isEnabled())
@@ -151,8 +160,7 @@ public class WTraderService {
             duplicatedCount++;
         }
 
-        log.info("Duplicated {} traders from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} traders from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -171,15 +179,13 @@ public class WTraderService {
 
         Query query;
         if (amount < 0) {
-            query = new Query(Criteria.where("id").is(traderId)
-                    .and("silverAmount").gte(-amount));
+            query = new Query(
+                    Criteria.where("id").is(traderId).and("silverAmount").gte(-amount));
         } else {
             query = new Query(Criteria.where("id").is(traderId));
         }
 
-        Update update = new Update()
-                .inc("silverAmount", amount)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().inc("silverAmount", amount).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WTrader.class);
 
@@ -206,7 +212,8 @@ public class WTraderService {
     @Transactional
     public boolean syncPoolIfDue(WTrader trader) {
         if (trader.getLastPoolSync() != null) {
-            long elapsed = Instant.now().getEpochSecond() - trader.getLastPoolSync().getEpochSecond();
+            long elapsed =
+                    Instant.now().getEpochSecond() - trader.getLastPoolSync().getEpochSecond();
             if (elapsed < trader.getPoolSyncIntervalSeconds()) {
                 return false;
             }
@@ -262,12 +269,11 @@ public class WTraderService {
 
         // Update last sync time
         Query query = new Query(Criteria.where("id").is(trader.getId()));
-        Update update = new Update()
-                .set("lastPoolSync", Instant.now())
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("lastPoolSync", Instant.now()).set("updatedAt", Instant.now());
         mongoTemplate.updateFirst(query, update, WTrader.class);
 
-        log.info("Pool synced for trader entityId={}: shop={} items, pool={} items",
+        log.info(
+                "Pool synced for trader entityId={}: shop={} items, pool={} items",
                 trader.getEntityId(),
                 shop.getItems() != null ? shop.getItems().size() : 0,
                 pool.getItems() != null ? pool.getItems().size() : 0);
@@ -322,7 +328,12 @@ public class WTraderService {
             target.getItems().add(sourceRef);
         }
 
-        log.debug("Moved item {} (x{}) from chest {} to {}", itemId, sourceRef.getAmount(), source.getName(), target.getName());
+        log.debug(
+                "Moved item {} (x{}) from chest {} to {}",
+                itemId,
+                sourceRef.getAmount(),
+                source.getName(),
+                target.getName());
     }
 
     /**
@@ -332,8 +343,10 @@ public class WTraderService {
     private String resolveItemType(WorldId worldId, String itemId) {
         if (worldId == null) return null;
         try {
-            return itemService.findByItemId(worldId, itemId)
-                    .map(item -> item.getPublicData() != null ? item.getPublicData().getType() : null)
+            return itemService
+                    .findByItemId(worldId, itemId)
+                    .map(item ->
+                            item.getPublicData() != null ? item.getPublicData().getType() : null)
                     .orElse(null);
         } catch (Exception e) {
             log.debug("Could not resolve item type for {}: {}", itemId, e.getMessage());

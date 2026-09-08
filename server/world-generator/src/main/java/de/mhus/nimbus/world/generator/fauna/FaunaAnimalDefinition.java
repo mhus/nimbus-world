@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.generator.fauna;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Definition of a single animal type within a fauna type.
@@ -33,22 +32,27 @@ public class FaunaAnimalDefinition {
     /** Total amount range */
     @Builder.Default
     private int amountMin = 1;
+
     @Builder.Default
     private int amountMax = 1;
 
     /** Number of groups to distribute animals into */
     @Builder.Default
     private int groupsMin = 1;
+
     @Builder.Default
     private int groupsMax = 1;
 
     /** Category flags - which terrain categories this animal can spawn on */
     @Builder.Default
     private boolean land = false;
+
     @Builder.Default
     private boolean water = false;
+
     @Builder.Default
     private boolean sea = false;
+
     @Builder.Default
     private boolean aerial = false;
 

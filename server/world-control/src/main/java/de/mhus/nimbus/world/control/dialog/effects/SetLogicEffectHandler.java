@@ -4,12 +4,11 @@ import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -23,7 +22,9 @@ public class SetLogicEffectHandler implements DialogEffectHandler {
     private final WProgressService progressService;
 
     @Override
-    public String getEffectType() { return "setLogic"; }
+    public String getEffectType() {
+        return "setLogic";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
@@ -41,8 +42,7 @@ public class SetLogicEffectHandler implements DialogEffectHandler {
             state.put(LOGIC_PACKAGE, pkg);
             progressService.save(ctx.getWorldId(), LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null, state);
         } else {
-            progressService.setProgressDataValue(logicProgress.getProgressId(),
-                    LOGIC_PACKAGE + "." + flag, value);
+            progressService.setProgressDataValue(logicProgress.getProgressId(), LOGIC_PACKAGE + "." + flag, value);
         }
 
         log.debug("Set logic flag dialog.{} = {} in world {}", flag, value, ctx.getWorldId());

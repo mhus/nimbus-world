@@ -3,6 +3,10 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,11 +15,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Business logic service for WWorldInstance.
@@ -137,8 +136,11 @@ public class WWorldInstanceService {
         // Validate that instance belongs to expected worldId
         return instanceOpt.filter(instance -> {
             if (!expectedWorldId.equals(instance.getWorldId())) {
-                log.warn("Instance worldId mismatch: instanceId={}, expected={}, actual={}",
-                        fullInstanceId, expectedWorldId, instance.getWorldId());
+                log.warn(
+                        "Instance worldId mismatch: instanceId={}, expected={}, actual={}",
+                        fullInstanceId,
+                        expectedWorldId,
+                        instance.getWorldId());
                 return false;
             }
             return true;
@@ -238,8 +240,8 @@ public class WWorldInstanceService {
      * @throws IllegalArgumentException if world does not exist
      */
     @Transactional
-    public WWorldInstance createInstanceForPlayer(String worldId, String worldTitle,
-                                                    String playerId, String playerDisplayName) {
+    public WWorldInstance createInstanceForPlayer(
+            String worldId, String worldTitle, String playerId, String playerDisplayName) {
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId cannot be null or blank");
         }
@@ -258,8 +260,8 @@ public class WWorldInstanceService {
         String instanceId = baseWorldId.toWorldWithInstance(readableId).getId();
 
         // Create instance
-        String title = (worldTitle != null ? worldTitle : baseWorldId) + " - " +
-                       (playerDisplayName != null ? playerDisplayName : playerId);
+        String title = (worldTitle != null ? worldTitle : baseWorldId) + " - "
+                + (playerDisplayName != null ? playerDisplayName : playerId);
         String description = "Auto-created instance for player " + playerId;
 
         WWorldInstance instance = WWorldInstance.builder()
@@ -282,8 +284,11 @@ public class WWorldInstanceService {
         // Save
         repository.save(instance);
 
-        log.info("World instance created for player: instanceId={}, worldId={}, playerId={}",
-                instanceId, worldId, playerId);
+        log.info(
+                "World instance created for player: instanceId={}, worldId={}, playerId={}",
+                instanceId,
+                worldId,
+                playerId);
 
         // Notify listeners
         notifyListenersCreated(instance);
@@ -306,8 +311,8 @@ public class WWorldInstanceService {
      * @throws IllegalArgumentException if world does not exist
      */
     @Transactional
-    public WWorldInstance create(String instanceId, String worldId, String title, String description,
-                                   String creator, List<String> players) {
+    public WWorldInstance create(
+            String instanceId, String worldId, String title, String description, String creator, List<String> players) {
         if (repository.existsByInstanceId(instanceId)) {
             throw new IllegalStateException("Instance already exists: " + instanceId);
         }
@@ -332,8 +337,7 @@ public class WWorldInstanceService {
         instance.touchCreate();
         repository.save(instance);
 
-        log.debug("World instance created: instanceId={}, worldId={}, creator={}",
-                instanceId, worldId, creator);
+        log.debug("World instance created: instanceId={}, worldId={}, creator={}", instanceId, worldId, creator);
 
         // Notify listeners
         notifyListenersCreated(instance);
@@ -382,14 +386,17 @@ public class WWorldInstanceService {
      */
     @Transactional
     public boolean addPlayer(String instanceId, String playerId) {
-        return repository.findByInstanceId(instanceId).map(instance -> {
-            boolean added = instance.addPlayer(playerId);
-            if (added) {
-                save(instance);
-                log.debug("Player added to instance: instanceId={}, playerId={}", instanceId, playerId);
-            }
-            return added;
-        }).orElse(false);
+        return repository
+                .findByInstanceId(instanceId)
+                .map(instance -> {
+                    boolean added = instance.addPlayer(playerId);
+                    if (added) {
+                        save(instance);
+                        log.debug("Player added to instance: instanceId={}, playerId={}", instanceId, playerId);
+                    }
+                    return added;
+                })
+                .orElse(false);
     }
 
     /**
@@ -401,14 +408,17 @@ public class WWorldInstanceService {
      */
     @Transactional
     public boolean removePlayer(String instanceId, String playerId) {
-        return repository.findByInstanceId(instanceId).map(instance -> {
-            boolean removed = instance.removePlayer(playerId);
-            if (removed) {
-                save(instance);
-                log.debug("Player removed from instance: instanceId={}, playerId={}", instanceId, playerId);
-            }
-            return removed;
-        }).orElse(false);
+        return repository
+                .findByInstanceId(instanceId)
+                .map(instance -> {
+                    boolean removed = instance.removePlayer(playerId);
+                    if (removed) {
+                        save(instance);
+                        log.debug("Player removed from instance: instanceId={}, playerId={}", instanceId, playerId);
+                    }
+                    return removed;
+                })
+                .orElse(false);
     }
 
     /**
@@ -420,7 +430,8 @@ public class WWorldInstanceService {
      */
     @Transactional(readOnly = true)
     public boolean hasPlayerAccess(String instanceId, String playerId) {
-        return repository.findByInstanceId(instanceId)
+        return repository
+                .findByInstanceId(instanceId)
                 .map(instance -> instance.isPlayerAllowed(playerId))
                 .orElse(false);
     }
@@ -534,9 +545,7 @@ public class WWorldInstanceService {
      * @return true if the update was applied
      */
     public boolean addPlayerAtomic(String instanceId, String playerId) {
-        Update update = new Update()
-                .addToSet("players", playerId)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().addToSet("players", playerId).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
         if (result.getModifiedCount() > 0) {
             log.debug("Player added atomically: instanceId={}, playerId={}", instanceId, playerId);
@@ -554,9 +563,7 @@ public class WWorldInstanceService {
      * @return true if the update was applied
      */
     public boolean removePlayerAtomic(String instanceId, String playerId) {
-        Update update = new Update()
-                .pull("players", playerId)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().pull("players", playerId).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
         if (result.getModifiedCount() > 0) {
             log.debug("Player removed atomically: instanceId={}, playerId={}", instanceId, playerId);
@@ -624,10 +631,9 @@ public class WWorldInstanceService {
         List<WWorldInstance> playerInstances = repository.findByPlayersContaining(playerId);
 
         // Combine both lists (use stream to avoid duplicates)
-        return java.util.stream.Stream.concat(
-                createdInstances.stream(),
-                playerInstances.stream()
-        ).distinct().toList();
+        return java.util.stream.Stream.concat(createdInstances.stream(), playerInstances.stream())
+                .distinct()
+                .toList();
     }
 
     /**
@@ -678,8 +684,11 @@ public class WWorldInstanceService {
         boolean removed = instance.removeActivePlayer(playerId);
 
         if (removed) {
-            log.info("Player {} removed from instance {} (active players: {})",
-                    playerId, instanceIdOrWorldId, instance.getActivePlayerCount());
+            log.info(
+                    "Player {} removed from instance {} (active players: {})",
+                    playerId,
+                    instanceIdOrWorldId,
+                    instance.getActivePlayerCount());
 
             // Check if instance is now empty and should be auto-deleted
             if (instance.hasNoActivePlayers() && instance.isDeleteWhenEmpty()) {
@@ -691,8 +700,7 @@ public class WWorldInstanceService {
             }
             return true;
         } else {
-            log.debug("Player {} was not in active players list for instance {}",
-                    playerId, instanceIdOrWorldId);
+            log.debug("Player {} was not in active players list for instance {}", playerId, instanceIdOrWorldId);
             return false;
         }
     }
@@ -718,10 +726,9 @@ public class WWorldInstanceService {
                 "delete-world-instance",
                 "Delete instance " + instanceWorldId.getInstance(),
                 "delete-world-instance",
-                Map.of("instanceWorldId", fullInstanceId)
-        );
-        log.info("Scheduled delete-world-instance job: baseWorldId={}, instanceWorldId={}",
-                baseWorldId, fullInstanceId);
+                Map.of("instanceWorldId", fullInstanceId));
+        log.info(
+                "Scheduled delete-world-instance job: baseWorldId={}, instanceWorldId={}", baseWorldId, fullInstanceId);
     }
 
     /**
@@ -734,9 +741,7 @@ public class WWorldInstanceService {
      * @return true if the epoch was updated, false if instance not found or unchanged
      */
     public boolean switchInstanceEpoch(String instanceId, int newEpoch) {
-        Update update = new Update()
-                .set("epoch", newEpoch)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("epoch", newEpoch).set("updatedAt", Instant.now());
         var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
         if (result.getMatchedCount() == 0) {
             log.warn("Epoch switch failed: instance not found: {}", instanceId);
@@ -780,12 +785,17 @@ public class WWorldInstanceService {
             try {
                 listener.worldInstanceCreated(event);
             } catch (Exception e) {
-                log.error("Error notifying listener {} about instance creation: {}",
-                        listener.getClass().getSimpleName(), e.getMessage(), e);
+                log.error(
+                        "Error notifying listener {} about instance creation: {}",
+                        listener.getClass().getSimpleName(),
+                        e.getMessage(),
+                        e);
             }
         }
-        log.debug("Notified {} listeners about instance creation: instanceId={}",
-                listeners.size(), instance.getInstanceId());
+        log.debug(
+                "Notified {} listeners about instance creation: instanceId={}",
+                listeners.size(),
+                instance.getInstanceId());
     }
 
     /**
@@ -803,11 +813,16 @@ public class WWorldInstanceService {
             try {
                 listener.worldInstanceDeleted(event);
             } catch (Exception e) {
-                log.error("Error notifying listener {} about instance deletion: {}",
-                        listener.getClass().getSimpleName(), e.getMessage(), e);
+                log.error(
+                        "Error notifying listener {} about instance deletion: {}",
+                        listener.getClass().getSimpleName(),
+                        e.getMessage(),
+                        e);
             }
         }
-        log.debug("Notified {} listeners about instance deletion: instanceId={}",
-                listeners.size(), instance.getInstanceId());
+        log.debug(
+                "Notified {} listeners about instance deletion: instanceId={}",
+                listeners.size(),
+                instance.getInstanceId());
     }
 }

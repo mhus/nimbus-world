@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * Per-chat session with a background thread loop and message queue.
@@ -37,9 +36,14 @@ public class WChatSession implements Runnable {
     private long lastRedisRefresh;
     private long lastMessageTime;
 
-    public WChatSession(String chatKey, String worldId, String chatId,
-                        WChatService chatService, WChatExecutorService executorService,
-                        StringRedisTemplate redis, String localUrl) {
+    public WChatSession(
+            String chatKey,
+            String worldId,
+            String chatId,
+            WChatService chatService,
+            WChatExecutorService executorService,
+            StringRedisTemplate redis,
+            String localUrl) {
         this.chatKey = chatKey;
         this.worldId = worldId;
         this.chatId = chatId;
@@ -99,8 +103,7 @@ public class WChatSession implements Runnable {
                     if (agent != null) {
                         try {
                             var idleResult = agent.onIdle(
-                                    de.mhus.nimbus.shared.types.WorldId.unchecked(worldId),
-                                    chatId, sessionQueue);
+                                    de.mhus.nimbus.shared.types.WorldId.unchecked(worldId), chatId, sessionQueue);
                             if (idleResult == WChatAgent.IdleResult.BUSY) {
                                 updateRedisStatus("BUSY");
                                 lastMessageTime = System.currentTimeMillis();
@@ -217,8 +220,8 @@ public class WChatSession implements Runnable {
 
     private boolean isChatDeactivated() {
         try {
-            var chatOpt = chatService.findByWorldIdAndChatId(
-                    de.mhus.nimbus.shared.types.WorldId.unchecked(worldId), chatId);
+            var chatOpt =
+                    chatService.findByWorldIdAndChatId(de.mhus.nimbus.shared.types.WorldId.unchecked(worldId), chatId);
             return chatOpt.map(WChat::isArchived).orElse(true);
         } catch (Exception e) {
             log.warn("Error checking chat status: chatKey={}", chatKey, e);

@@ -3,15 +3,13 @@ package de.mhus.nimbus.world.control.job;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-
 import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Job executor for repairing resources across all worlds.
@@ -123,14 +121,15 @@ public class ResourceRepairAllWorldsJobExecutor implements JobExecutor {
                     }
 
                     // Add summary for this world
-                    resultMessage.append(String.format("World %s: %d/%d repairs succeeded\n",
-                            worldId, successCount, worldResults.size()));
+                    resultMessage.append(String.format(
+                            "World %s: %d/%d repairs succeeded\n", worldId, successCount, worldResults.size()));
 
                     // Add details if any failed
                     if (successCount < worldResults.size()) {
                         for (ResourceRepairService.ProcessResult result : worldResults) {
                             if (!result.success()) {
-                                resultMessage.append("  - ")
+                                resultMessage
+                                        .append("  - ")
                                         .append(result.serviceName())
                                         .append(": FAILED - ")
                                         .append(result.message())
@@ -142,13 +141,13 @@ public class ResourceRepairAllWorldsJobExecutor implements JobExecutor {
                 } catch (Exception e) {
                     failedWorlds++;
                     log.error("Failed to repair world {}: {}", worldIdStr, e.getMessage(), e);
-                    resultMessage.append(String.format("World %s: FAILED - %s\n",
-                            worldIdStr, e.getMessage()));
+                    resultMessage.append(String.format("World %s: FAILED - %s\n", worldIdStr, e.getMessage()));
                 }
             }
 
             // Add final summary
-            resultMessage.append(String.format("\nSummary: %d/%d worlds repaired successfully, %d failed\n",
+            resultMessage.append(String.format(
+                    "\nSummary: %d/%d worlds repaired successfully, %d failed\n",
                     successfulWorlds, totalWorlds, failedWorlds));
 
             String finalMessage = resultMessage.toString();

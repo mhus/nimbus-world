@@ -1,23 +1,22 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.commands.CommandService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles client command messages.
@@ -69,8 +68,7 @@ public class ClientCommandHandler implements MessageHandler {
     // Static prefix mapping for command routing
     private static final Map<String, String> PREFIX_ROUTING = Map.of(
             "life.", "world-life",
-            "control.", "world-control"
-    );
+            "control.", "world-control");
 
     @Override
     public String getMessageType() {
@@ -80,7 +78,8 @@ public class ClientCommandHandler implements MessageHandler {
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
         if (!session.isAuthenticated()) {
-            log.warn("Command from unauthenticated session: {}",
+            log.warn(
+                    "Command from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -88,8 +87,10 @@ public class ClientCommandHandler implements MessageHandler {
         // Client commands are only allowed for EDITOR actors.
         // PLAYER actors have no legitimate use case for sending commands via WebSocket.
         if (!session.isEditActor()) {
-            log.warn("Command rejected: PLAYER actor not allowed to send commands. session={}, user={}",
-                    session.getWebSocketSession().getId(), session.getTitle());
+            log.warn(
+                    "Command rejected: PLAYER actor not allowed to send commands. session={}, user={}",
+                    session.getWebSocketSession().getId(),
+                    session.getTitle());
             String requestId = message.getI();
             if (requestId != null) {
                 sendErrorResponse(session, requestId, -2, "Commands not allowed for player sessions");
@@ -155,11 +156,7 @@ public class ClientCommandHandler implements MessageHandler {
      * Handle local command execution.
      */
     private void handleLocalCommand(
-            PlayerSession session,
-            String requestId,
-            String commandName,
-            List<String> args,
-            boolean oneway) {
+            PlayerSession session, String requestId, String commandName, List<String> args, boolean oneway) {
 
         // Build context from session
         CommandContext context = CommandContext.builder()
@@ -184,8 +181,11 @@ public class ClientCommandHandler implements MessageHandler {
             sendResponse(session, requestId, result.getReturnCode(), result.getMessage());
         }
 
-        log.debug("Local command executed: cmd={}, rc={}, user={}",
-                commandName, result.getReturnCode(), session.getTitle());
+        log.debug(
+                "Local command executed: cmd={}, rc={}, user={}",
+                commandName,
+                result.getReturnCode(),
+                session.getTitle());
     }
 
     /**
@@ -210,8 +210,12 @@ public class ClientCommandHandler implements MessageHandler {
                 .title(session.getTitle())
                 .build();
 
-        log.debug("Routing command to {}: cmd={}, actualCmd={}, user={}",
-                targetServer, commandName, actualCommandName, session.getTitle());
+        log.debug(
+                "Routing command to {}: cmd={}, actualCmd={}, user={}",
+                targetServer,
+                commandName,
+                actualCommandName,
+                session.getTitle());
 
         // Route to appropriate server
         java.util.concurrent.CompletableFuture<WorldClientService.CommandResponse> future;
@@ -245,31 +249,31 @@ public class ClientCommandHandler implements MessageHandler {
         // Handle async response
         if (!oneway && requestId != null) {
             future.thenAccept(response -> {
-                // Send streaming messages if any
-                if (response.streamMessages() != null) {
-                    for (String streamMessage : response.streamMessages()) {
-                        sendStreamingMessage(session, requestId, streamMessage);
-                    }
-                }
+                        // Send streaming messages if any
+                        if (response.streamMessages() != null) {
+                            for (String streamMessage : response.streamMessages()) {
+                                sendStreamingMessage(session, requestId, streamMessage);
+                            }
+                        }
 
-                // Send final response
-                sendResponse(session, requestId, response.rc(), response.message());
+                        // Send final response
+                        sendResponse(session, requestId, response.rc(), response.message());
 
-                log.debug("Remote command completed: cmd={}, rc={}, target={}",
-                        commandName, response.rc(), targetServer);
-
-            }).exceptionally(throwable -> {
-                log.error("Remote command failed: cmd={}, target={}",
-                        commandName, targetServer, throwable);
-                sendErrorResponse(session, requestId, -4,
-                        "Remote command failed: " + throwable.getMessage());
-                return null;
-            });
+                        log.debug(
+                                "Remote command completed: cmd={}, rc={}, target={}",
+                                commandName,
+                                response.rc(),
+                                targetServer);
+                    })
+                    .exceptionally(throwable -> {
+                        log.error("Remote command failed: cmd={}, target={}", commandName, targetServer, throwable);
+                        sendErrorResponse(session, requestId, -4, "Remote command failed: " + throwable.getMessage());
+                        return null;
+                    });
         } else if (oneway) {
             // Fire and forget
             future.exceptionally(throwable -> {
-                log.error("Remote command failed (oneway): cmd={}, target={}",
-                        commandName, targetServer, throwable);
+                log.error("Remote command failed (oneway): cmd={}, target={}", commandName, targetServer, throwable);
                 return null;
             });
         }
@@ -294,11 +298,8 @@ public class ClientCommandHandler implements MessageHandler {
             ObjectNode data = objectMapper.createObjectNode();
             data.put("message", message);
 
-            NetworkMessage response = NetworkMessage.builder()
-                    .r(requestId)
-                    .t("cmd.msg")
-                    .d(data)
-                    .build();
+            NetworkMessage response =
+                    NetworkMessage.builder().r(requestId).t("cmd.msg").d(data).build();
 
             String json = objectMapper.writeValueAsString(response);
             session.sendMessage(new TextMessage(json));
@@ -321,11 +322,8 @@ public class ClientCommandHandler implements MessageHandler {
                 data.put("message", message);
             }
 
-            NetworkMessage response = NetworkMessage.builder()
-                    .r(requestId)
-                    .t("cmd.rs")
-                    .d(data)
-                    .build();
+            NetworkMessage response =
+                    NetworkMessage.builder().r(requestId).t("cmd.rs").d(data).build();
 
             String json = objectMapper.writeValueAsString(response);
             session.sendMessage(new TextMessage(json));
@@ -343,5 +341,4 @@ public class ClientCommandHandler implements MessageHandler {
     private void sendErrorResponse(PlayerSession session, String requestId, int errorCode, String errorMessage) {
         sendResponse(session, requestId, errorCode, errorMessage);
     }
-
 }

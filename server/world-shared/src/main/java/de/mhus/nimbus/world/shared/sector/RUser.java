@@ -1,16 +1,5 @@
 package de.mhus.nimbus.world.shared.sector;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import de.mhus.nimbus.generated.configs.Settings;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
@@ -18,18 +7,24 @@ import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.PlayerUser;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.RegionRoles;
 import de.mhus.nimbus.shared.user.SectorRoles;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import de.mhus.nimbus.shared.user.RegionRoles;
 
 @Document(collection = "r_users")
 @ActualSchemaVersion("1.0.1")
@@ -53,6 +48,7 @@ public class RUser implements Identifiable {
 
     @CreatedDate
     private Instant createdAt;
+
     private Instant modifiedAt;
 
     @TypeScript(import_ = "PlayerUser", importPath = "./PlayerUser")
@@ -64,11 +60,12 @@ public class RUser implements Identifiable {
     @Field("roles") // liest alte Property 'roles' weiterhin ein
     @TypeScript(import_ = "SectorRoles", importPath = "./SectorRoles")
     private Set<SectorRoles> sectorRoles; // null oder leer -> keine Rollen
+
     @TypeScript(import_ = "RegionRoles", importPath = "./RegionRoles")
     private Map<String, RegionRoles> regionRoles; // regionId -> role
 
     // Charakter-Limits pro Region: regionId -> maxCount
-    private Map<String,Integer> characterLimits;
+    private Map<String, Integer> characterLimits;
 
     // User Settings per ClientType: clientType (as String) -> Settings
     @TypeScript(import_ = "Settings", importPath = "../../configs")
@@ -79,33 +76,71 @@ public class RUser implements Identifiable {
 
     private String language;
 
-    private Map<String,String> attributes; // Zusätzliche Attribute
+    private Map<String, String> attributes; // Zusätzliche Attribute
 
-    public RUser() { this.enabled = true; }
+    public RUser() {
+        this.enabled = true;
+    }
 
-    public boolean isEnabled() { return enabled == null || enabled; }
-    public Boolean getEnabledRaw() { return enabled; }
-    public void enable() { this.enabled = true; }
-    public void disable() { this.enabled = false; }
+    public boolean isEnabled() {
+        return enabled == null || enabled;
+    }
+
+    public Boolean getEnabledRaw() {
+        return enabled;
+    }
+
+    public void enable() {
+        this.enabled = true;
+    }
+
+    public void disable() {
+        this.enabled = false;
+    }
 
     // ServerRoles API
-    public Set<SectorRoles> getSectorRoles() { return sectorRoles == null ? Collections.emptySet() : Collections.unmodifiableSet(sectorRoles); }
-    public void setSectorRoles(Set<SectorRoles> roles) { this.sectorRoles = (roles == null || roles.isEmpty()) ? null : new HashSet<>(new LinkedHashSet<>(roles)); }
-    public boolean addSectorRole(SectorRoles role) {
-        if (role == null) return false; if (sectorRoles == null) sectorRoles = new HashSet<>(); if (sectorRoles.contains(role)) return false; sectorRoles.add(role); return true;
+    public Set<SectorRoles> getSectorRoles() {
+        return sectorRoles == null ? Collections.emptySet() : Collections.unmodifiableSet(sectorRoles);
     }
-    public boolean removeSectorRole(SectorRoles role) {
-        if (role == null || sectorRoles == null) return false; return sectorRoles.remove(role);
-    }
-    public boolean hasSectorRole(SectorRoles role) { return role != null && sectorRoles != null && sectorRoles.contains(role); }
 
-    public String getSectorRolesRaw() { return sectorRoles == null ? "" : sectorRoles.stream().map(Enum::name).collect(Collectors.joining(",")); }
+    public void setSectorRoles(Set<SectorRoles> roles) {
+        this.sectorRoles = (roles == null || roles.isEmpty()) ? null : new HashSet<>(new LinkedHashSet<>(roles));
+    }
+
+    public boolean addSectorRole(SectorRoles role) {
+        if (role == null) return false;
+        if (sectorRoles == null) sectorRoles = new HashSet<>();
+        if (sectorRoles.contains(role)) return false;
+        sectorRoles.add(role);
+        return true;
+    }
+
+    public boolean removeSectorRole(SectorRoles role) {
+        if (role == null || sectorRoles == null) return false;
+        return sectorRoles.remove(role);
+    }
+
+    public boolean hasSectorRole(SectorRoles role) {
+        return role != null && sectorRoles != null && sectorRoles.contains(role);
+    }
+
+    public String getSectorRolesRaw() {
+        return sectorRoles == null ? "" : sectorRoles.stream().map(Enum::name).collect(Collectors.joining(","));
+    }
+
     public void setSectorRolesRaw(String raw) {
-        if (raw == null || raw.isBlank()) { sectorRoles = null; return; }
+        if (raw == null || raw.isBlank()) {
+            sectorRoles = null;
+            return;
+        }
         Set<SectorRoles> list = new HashSet<>();
         for (String part : raw.split(",")) {
-            String p = part.trim(); if (p.isEmpty()) continue;
-            try { list.add(SectorRoles.valueOf(p)); } catch (IllegalArgumentException ignored) { }
+            String p = part.trim();
+            if (p.isEmpty()) continue;
+            try {
+                list.add(SectorRoles.valueOf(p));
+            } catch (IllegalArgumentException ignored) {
+            }
         }
         setSectorRoles(list);
     }
@@ -194,15 +229,39 @@ public class RUser implements Identifiable {
     }
 
     // Charakter-Limits API
-    public java.util.Map<String,Integer> getCharacterLimits() { return characterLimits == null ? java.util.Map.of() : java.util.Map.copyOf(characterLimits); }
-    public void setCharacterLimits(java.util.Map<String,Integer> limits) { this.characterLimits = (limits == null || limits.isEmpty()) ? null : new java.util.HashMap<>(limits); }
-    public Integer getCharacterLimitForRegion(String regionId) { if (characterLimits == null) return null; return characterLimits.get(regionId); }
-    public void setCharacterLimitForRegion(String regionId, Integer limit) { if (characterLimits == null) characterLimits = new java.util.HashMap<>(); if (limit == null) characterLimits.remove(regionId); else characterLimits.put(regionId, limit); }
+    public java.util.Map<String, Integer> getCharacterLimits() {
+        return characterLimits == null ? java.util.Map.of() : java.util.Map.copyOf(characterLimits);
+    }
+
+    public void setCharacterLimits(java.util.Map<String, Integer> limits) {
+        this.characterLimits = (limits == null || limits.isEmpty()) ? null : new java.util.HashMap<>(limits);
+    }
+
+    public Integer getCharacterLimitForRegion(String regionId) {
+        if (characterLimits == null) return null;
+        return characterLimits.get(regionId);
+    }
+
+    public void setCharacterLimitForRegion(String regionId, Integer limit) {
+        if (characterLimits == null) characterLimits = new java.util.HashMap<>();
+        if (limit == null) characterLimits.remove(regionId);
+        else characterLimits.put(regionId, limit);
+    }
 
     // UserSettings API
-    public Map<String, Settings> getUserSettings() { return userSettings == null ? Collections.emptyMap() : Collections.unmodifiableMap(userSettings); }
-    public void setUserSettings(Map<String, Settings> settings) { this.userSettings = (settings == null || settings.isEmpty()) ? null : new java.util.HashMap<>(settings); }
-    public Settings getSettingsForClientType(String clientType) { if (clientType == null || userSettings == null) return null; return userSettings.get(clientType); }
+    public Map<String, Settings> getUserSettings() {
+        return userSettings == null ? Collections.emptyMap() : Collections.unmodifiableMap(userSettings);
+    }
+
+    public void setUserSettings(Map<String, Settings> settings) {
+        this.userSettings = (settings == null || settings.isEmpty()) ? null : new java.util.HashMap<>(settings);
+    }
+
+    public Settings getSettingsForClientType(String clientType) {
+        if (clientType == null || userSettings == null) return null;
+        return userSettings.get(clientType);
+    }
+
     public void setSettingsForClientType(String clientType, Settings settings) {
         if (clientType == null) return;
         if (settings == null) {
@@ -213,7 +272,10 @@ public class RUser implements Identifiable {
             userSettings.put(clientType, settings);
         }
     }
-    public boolean hasSettingsForClientType(String clientType) { return clientType != null && userSettings != null && userSettings.containsKey(clientType); }
+
+    public boolean hasSettingsForClientType(String clientType) {
+        return clientType != null && userSettings != null && userSettings.containsKey(clientType);
+    }
 
     public boolean isSectorAdmin() {
         return hasSectorRole(SectorRoles.ADMIN);
@@ -236,9 +298,7 @@ public class RUser implements Identifiable {
      * Update modification timestamp.
      */
     public void touchUpdate() {
-        if (publicData != null)
-            publicData.setName(getName());
+        if (publicData != null) publicData.setName(getName());
         modifiedAt = Instant.now();
     }
-
 }

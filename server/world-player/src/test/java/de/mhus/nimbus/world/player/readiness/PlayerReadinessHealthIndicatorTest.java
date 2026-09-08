@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.player.readiness;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.support.GenericApplicationContext;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class PlayerReadinessHealthIndicatorTest {
 
@@ -43,4 +43,3 @@ class PlayerReadinessHealthIndicatorTest {
         assertEquals("DOWN", indicator.health().getStatus().getCode());
     }
 }
-

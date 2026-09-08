@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Backdrop;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-
 /**
  * MongoDB Entity for Backdrop configurations.
  * Wraps generated Backdrop DTO in 'publicData' field.
@@ -24,7 +23,7 @@ import java.time.Instant;
 @Document(collection = "w_backdrops")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_backdropId_idx", def = "{ 'worldId': 1, 'backdropId': 1 }", unique = true)
+    @CompoundIndex(name = "world_backdropId_idx", def = "{ 'worldId': 1, 'backdropId': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -85,10 +84,9 @@ public class WBackdrop implements Identifiable {
         return this;
     }
 
-    public  WBackdrop removeWorldPrefix() {
+    public WBackdrop removeWorldPrefix() {
         if (publicData == null) return this;
         publicData.setId(WorldCollection.removePrefix(publicData.getId()));
         return this;
     }
-
 }

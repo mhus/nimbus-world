@@ -1,7 +1,5 @@
 package de.mhus.nimbus.tools.generatej2ts.ts;
 
-import org.apache.maven.plugin.logging.Log;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.apache.maven.plugin.logging.Log;
 
 /**
  * Schreibt ein TypeScriptModel als einzelne .ts Dateien auf die Platte.
@@ -53,7 +52,8 @@ public class TypeScriptModelWriter {
             writeTypeFile(type, out);
             count++;
         }
-        if (log != null) log.info("TypeScriptModelWriter: Dateien geschrieben: " + count + " in " + outputDir.getAbsolutePath());
+        if (log != null)
+            log.info("TypeScriptModelWriter: Dateien geschrieben: " + count + " in " + outputDir.getAbsolutePath());
     }
 
     private void writeTypeFile(TypeScriptType type, File out) throws IOException {

@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Cube Outline Block Manipulator - creates a hollow rectangular cuboid (only edges/frame).
@@ -47,9 +47,9 @@ public class CubeOutlineBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a hollow rectangular cuboid (only faces, no fill). " +
-                "Parameters: position {x,y,z}, width, height, depth, blockType (optional). " +
-                "Example: {\"cube-outline\": {\"transform\": \"position\", \"width\": 10, \"height\": 5, \"depth\": 10}}";
+        return "Creates a hollow rectangular cuboid (only faces, no fill). "
+                + "Parameters: position {x,y,z}, width, height, depth, blockType (optional). "
+                + "Example: {\"cube-outline\": {\"transform\": \"position\", \"width\": 10, \"height\": 5, \"depth\": 10}}";
     }
 
     @Override
@@ -107,8 +107,15 @@ public class CubeOutlineBlockManipulator implements BlockManipulator {
         }
 
         // Generate cube outline
-        log.info("Generating cube outline: pos=({},{},{}), size={}x{}x{}, blockType={}",
-                x, y, z, width, height, depth, blockType);
+        log.info(
+                "Generating cube outline: pos=({},{},{}), size={}x{}x{}, blockType={}",
+                x,
+                y,
+                z,
+                width,
+                height,
+                depth,
+                blockType);
 
         painter.cubeOutline(x, y, z, width, height, depth);
 
@@ -116,7 +123,8 @@ public class CubeOutlineBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated cube outline: %d blocks (%dx%dx%d) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated cube outline: %d blocks (%dx%dx%d) at (%d,%d,%d)",
                 blockCount, width, height, depth, x, y, z);
 
         log.info(message);

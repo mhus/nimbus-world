@@ -32,12 +32,7 @@ public class WLayerTerrainStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrat
     @Override
     public String migrate(String entityJson) throws Exception {
 
-        if (!Strings.CS.containsAny(
-                entityJson,
-                "rotationX"
-                ,"rotationY"
-                ,"textures"
-        )) return entityJson;
+        if (!Strings.CS.containsAny(entityJson, "rotationX", "rotationY", "textures")) return entityJson;
 
         var json = mapper.readTree(entityJson);
 

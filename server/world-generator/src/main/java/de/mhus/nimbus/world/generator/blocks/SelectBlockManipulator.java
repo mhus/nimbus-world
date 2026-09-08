@@ -1,18 +1,17 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.WEditCache;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Select Block Manipulator.
@@ -56,9 +55,9 @@ public class SelectBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Selects existing blocks in a defined region. " +
-                "Parameters: position {x,y,z}, width (default 1), height (default 1), depth (default 1), color (optional). " +
-                "Example: {\"select\": {\"transform\": \"position\", \"width\": 5, \"height\": 3, \"depth\": 5}}";
+        return "Selects existing blocks in a defined region. "
+                + "Parameters: position {x,y,z}, width (default 1), height (default 1), depth (default 1), color (optional). "
+                + "Example: {\"select\": {\"transform\": \"position\", \"width\": 5, \"height\": 3, \"depth\": 5}}";
     }
 
     @Override
@@ -103,8 +102,15 @@ public class SelectBlockManipulator implements BlockManipulator {
             return ManipulatorResult.error("LayerDataId required for select-block operation");
         }
 
-        log.info("Selecting blocks in region: pos=({},{},{}), width={}, height={}, depth={}, layer={}",
-                startX, startY, startZ, width, height, depth, layerDataId);
+        log.info(
+                "Selecting blocks in region: pos=({},{},{}), width={}, height={}, depth={}, layer={}",
+                startX,
+                startY,
+                startZ,
+                width,
+                height,
+                depth,
+                layerDataId);
 
         // Load all cached blocks for the layer
         List<WEditCache> cachedBlocks = editCacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
@@ -116,9 +122,9 @@ public class SelectBlockManipulator implements BlockManipulator {
             if (layerBlock != null && layerBlock.getBlock() != null) {
                 Block block = layerBlock.getBlock();
                 if (block.getPosition() != null) {
-                    String key = block.getPosition().getX() + "," +
-                               block.getPosition().getY() + "," +
-                               block.getPosition().getZ();
+                    String key = block.getPosition().getX() + ","
+                            + block.getPosition().getY()
+                            + "," + block.getPosition().getZ();
                     blockMap.put(key, cache);
                 }
             }
@@ -128,9 +134,7 @@ public class SelectBlockManipulator implements BlockManipulator {
 
         // Create ModelSelector for selected blocks
         String layerName = context.getLayerName();
-        String autoSelectName = layerName != null && !layerName.isBlank()
-                ? layerDataId + ":" + layerName
-                : layerDataId;
+        String autoSelectName = layerName != null && !layerName.isBlank() ? layerDataId + ":" + layerName : layerDataId;
 
         ModelSelector modelSelector = ModelSelector.builder()
                 .defaultColor(color)
@@ -168,16 +172,18 @@ public class SelectBlockManipulator implements BlockManipulator {
         // Build result message
         String message;
         if (selectedCount == 0) {
-            message = String.format("No blocks found in region (%dx%dx%d) at (%d,%d,%d)",
-                    width, height, depth, startX, startY, startZ);
+            message = String.format(
+                    "No blocks found in region (%dx%dx%d) at (%d,%d,%d)", width, height, depth, startX, startY, startZ);
             log.info(message);
             return ManipulatorResult.error(message);
         } else if (missingCount > 0) {
-            message = String.format("Selected %d blocks (%d not found) in region (%dx%dx%d) at (%d,%d,%d)",
+            message = String.format(
+                    "Selected %d blocks (%d not found) in region (%dx%dx%d) at (%d,%d,%d)",
                     selectedCount, missingCount, width, height, depth, startX, startY, startZ);
             log.info(message);
         } else {
-            message = String.format("Selected %d blocks in region (%dx%dx%d) at (%d,%d,%d)",
+            message = String.format(
+                    "Selected %d blocks in region (%dx%dx%d) at (%d,%d,%d)",
                     selectedCount, width, height, depth, startX, startY, startZ);
             log.info(message);
         }

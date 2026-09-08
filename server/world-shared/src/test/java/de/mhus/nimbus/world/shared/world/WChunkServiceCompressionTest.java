@@ -1,16 +1,27 @@
 package de.mhus.nimbus.world.shared.world;
 
-import tools.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
-import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,21 +30,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class WChunkServiceCompressionTest {
@@ -67,18 +64,14 @@ class WChunkServiceCompressionTest {
         WWorld world = WWorld.builder()
                 .id("test-region:test-world")
                 .regionId("test-region")
-                .publicData(
-                        WorldInfo.builder()
-                                .title("Test World")
-                                .hexGridSize(400)
-                                .chunkSize(32)
-                                .build()
-                )
+                .publicData(WorldInfo.builder()
+                        .title("Test World")
+                        .hexGridSize(400)
+                        .chunkSize(32)
+                        .build())
                 .build();
-        lenient().when(worldService.getByWorldId("test-region:test-world"))
-                .thenReturn(Optional.of(world));
-        lenient().when(worldService.getByWorldId(any(WorldId.class)))
-                .thenReturn(Optional.of(world));
+        lenient().when(worldService.getByWorldId("test-region:test-world")).thenReturn(Optional.of(world));
+        lenient().when(worldService.getByWorldId(any(WorldId.class))).thenReturn(Optional.of(world));
     }
 
     @Test
@@ -104,8 +97,13 @@ class WChunkServiceCompressionTest {
                 .thenAnswer(invocation -> {
                     InputStream inputStream = invocation.getArgument(4);
                     inputStream.transferTo(capturedStream);
-                    return new StorageService.StorageInfo("storage-123", capturedStream.size(),
-                            new Date(), "test-world", "chunk/0:0", "WChunkStorage",
+                    return new StorageService.StorageInfo(
+                            "storage-123",
+                            capturedStream.size(),
+                            new Date(),
+                            "test-world",
+                            "chunk/0:0",
+                            "WChunkStorage",
                             SchemaVersion.create("1.0.1"));
                 });
 
@@ -154,8 +152,13 @@ class WChunkServiceCompressionTest {
                 .thenAnswer(invocation -> {
                     InputStream inputStream = invocation.getArgument(4);
                     inputStream.transferTo(capturedStream);
-                    return new StorageService.StorageInfo("storage-456", capturedStream.size(),
-                            new Date(), "test-world", "chunk/1:1", "WChunkStorage",
+                    return new StorageService.StorageInfo(
+                            "storage-456",
+                            capturedStream.size(),
+                            new Date(),
+                            "test-world",
+                            "chunk/1:1",
+                            "WChunkStorage",
                             SchemaVersion.create("1.0.1"));
                 });
 
@@ -186,14 +189,19 @@ class WChunkServiceCompressionTest {
         // Mock repository
         when(repository.save(any(WChunk.class))).thenAnswer(invocation -> {
             WChunk chunk = invocation.getArgument(0);
-            assertThat(chunk.isCompressed()).isTrue();  // Should be set during save
+            assertThat(chunk.isCompressed()).isTrue(); // Should be set during save
             return chunk;
         });
 
         // Mock storage service
         when(storageService.store(anyString(), any(), anyString(), anyString(), any(InputStream.class)))
-                .thenReturn(new StorageService.StorageInfo("storage-789", 1000,
-                        new Date(), "test-world", "chunk/2:2", "WChunkStorage",
+                .thenReturn(new StorageService.StorageInfo(
+                        "storage-789",
+                        1000,
+                        new Date(),
+                        "test-world",
+                        "chunk/2:2",
+                        "WChunkStorage",
                         SchemaVersion.create("1.0.1")));
 
         // When: Save chunk
@@ -214,7 +222,7 @@ class WChunkServiceCompressionTest {
                 .worldId(worldId.getId())
                 .chunk(chunkKey)
                 .storageId("storage-old")
-                .compressed(false)  // Old chunk
+                .compressed(false) // Old chunk
                 .build();
 
         // Mock repository (getStream resolves the newest chunk across epochs)
@@ -224,8 +232,7 @@ class WChunkServiceCompressionTest {
         // Mock storage service - return uncompressed JSON
         String json = objectMapper.writeValueAsString(chunkData);
         ByteArrayInputStream jsonStream = new ByteArrayInputStream(json.getBytes("UTF-8"));
-        when(storageService.load(eq("storage-old")))
-                .thenReturn(jsonStream);
+        when(storageService.load(eq("storage-old"))).thenReturn(jsonStream);
 
         // When: Load chunk via getStream
         InputStream stream = chunkService.getStream(worldId, chunkKey);
@@ -260,8 +267,13 @@ class WChunkServiceCompressionTest {
                 .thenAnswer(invocation -> {
                     InputStream inputStream = invocation.getArgument(4);
                     inputStream.transferTo(capturedStream);
-                    return new StorageService.StorageInfo("storage-big", capturedStream.size(),
-                            new Date(), "test-world", "chunk/4:4", "WChunkStorage",
+                    return new StorageService.StorageInfo(
+                            "storage-big",
+                            capturedStream.size(),
+                            new Date(),
+                            "test-world",
+                            "chunk/4:4",
+                            "WChunkStorage",
                             SchemaVersion.create("1.0.1"));
                 });
 
@@ -274,7 +286,7 @@ class WChunkServiceCompressionTest {
         int compressedSize = capturedStream.size();
 
         double compressionRatio = (double) compressedSize / originalSize;
-        assertThat(compressionRatio).isLessThan(0.5);  // At least 50% reduction
+        assertThat(compressionRatio).isLessThan(0.5); // At least 50% reduction
     }
 
     @Test
@@ -348,7 +360,7 @@ class WChunkServiceCompressionTest {
             int worldX = cx * 32 + localX;
             int worldZ = cz * 32 + localZ;
             String key = worldX + "," + worldZ;
-            heightData.put(key, new int[]{5, -1}); // [groundLevel, waterLevel (-1=none)]
+            heightData.put(key, new int[] {5, -1}); // [groundLevel, waterLevel (-1=none)]
         }
         chunkData.setHeightData(heightData);
 

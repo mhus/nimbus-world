@@ -7,14 +7,13 @@ import de.mhus.nimbus.world.shared.session.EditState;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import dev.langchain4j.agent.tool.Tool;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * AI Tool Service for layer management.
@@ -38,13 +37,14 @@ public class LayerToolService {
     private final WDirtyChunkService dirtyChunkService;
     private final WChunkService chunkService;
 
-    public LayerToolService(WLayerService layerService,
-                            WSessionService sessionService,
-                            WEditCacheService editCacheService,
-                            WEditCacheDirtyService editCacheDirtyService,
-                            WJobService jobService,
-                            WDirtyChunkService dirtyChunkService,
-                            WChunkService chunkService) {
+    public LayerToolService(
+            WLayerService layerService,
+            WSessionService sessionService,
+            WEditCacheService editCacheService,
+            WEditCacheDirtyService editCacheDirtyService,
+            WJobService jobService,
+            WDirtyChunkService dirtyChunkService,
+            WChunkService chunkService) {
         this.layerService = layerService;
         this.sessionService = sessionService;
         this.editCacheService = editCacheService;
@@ -74,9 +74,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
             List<WLayer> layers = layerService.findByWorldId(lookupWorldId);
 
@@ -130,9 +129,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
 
@@ -153,7 +151,8 @@ public class LayerToolService {
                 result.append(String.format("Groups: %s\n", layer.getGroups()));
             }
             if (!layer.isAllChunks() && layer.getAffectedChunks() != null) {
-                result.append(String.format("Affected Chunks: %d\n", layer.getAffectedChunks().size()));
+                result.append(String.format(
+                        "Affected Chunks: %d\n", layer.getAffectedChunks().size()));
             }
 
             log.info("AI Tool: findLayer - layer found");
@@ -186,9 +185,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
 
@@ -198,7 +196,8 @@ public class LayerToolService {
 
             WLayer layer = layerOpt.get();
             if (layer.getLayerType() != LayerType.MODEL) {
-                return String.format("ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
+                return String.format(
+                        "ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
             }
 
             List<WLayerModel> models = layerService.findModelsByLayerDataId(layer.getLayerDataId());
@@ -215,13 +214,15 @@ public class LayerToolService {
                 if (model.getTitle() != null) {
                     result.append(String.format("Title: %s\n", model.getTitle()));
                 }
-                result.append(String.format("Mount Position: (%d, %d, %d)\n", model.getMountX(), model.getMountY(), model.getMountZ()));
+                result.append(String.format(
+                        "Mount Position: (%d, %d, %d)\n", model.getMountX(), model.getMountY(), model.getMountZ()));
                 result.append(String.format("Order: %d\n", model.getOrder()));
                 if (model.getGroups() != null && !model.getGroups().isEmpty()) {
                     result.append(String.format("Groups: %s\n", model.getGroups()));
                 }
                 if (model.getContent() != null) {
-                    result.append(String.format("Blocks: %d\n", model.getContent().size()));
+                    result.append(
+                            String.format("Blocks: %d\n", model.getContent().size()));
                 }
                 result.append("---\n\n");
             }
@@ -260,9 +261,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Check if layer already exists
@@ -279,11 +279,11 @@ public class LayerToolService {
                     order != null ? order : 0,
                     allChunks != null ? allChunks : true,
                     null,
-                    false
-            );
+                    false);
 
             log.info("AI Tool: createGroundLayer - created layer: name={}, type=GROUND", layerName);
-            return String.format("SUCCESS: GROUND layer '%s' created successfully\nLayer Data ID: %s\nOrder: %d\nAll Chunks: %s",
+            return String.format(
+                    "SUCCESS: GROUND layer '%s' created successfully\nLayer Data ID: %s\nOrder: %d\nAll Chunks: %s",
                     layerName, layer.getLayerDataId(), layer.getOrder(), layer.isAllChunks());
 
         } catch (Exception e) {
@@ -315,9 +315,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Check if layer already exists
@@ -334,11 +333,11 @@ public class LayerToolService {
                     order != null ? order : 0,
                     allChunks != null ? allChunks : true,
                     null,
-                    false
-            );
+                    false);
 
             log.info("AI Tool: createModelLayer - created layer: name={}, type=MODEL", layerName);
-            return String.format("SUCCESS: MODEL layer '%s' created successfully\nLayer Data ID: %s\nOrder: %d\nAll Chunks: %s",
+            return String.format(
+                    "SUCCESS: MODEL layer '%s' created successfully\nLayer Data ID: %s\nOrder: %d\nAll Chunks: %s",
                     layerName, layer.getLayerDataId(), layer.getOrder(), layer.isAllChunks());
 
         } catch (Exception e) {
@@ -361,8 +360,8 @@ public class LayerToolService {
      * @return Success message with model details or error message
      */
     @Tool("Create layer model - creates a new model in a MODEL layer with specified mount point.")
-    public String createLayerModel(String worldId, String layerName, String modelName,
-                                   int mountX, int mountY, int mountZ, String title) {
+    public String createLayerModel(
+            String worldId, String layerName, String modelName, int mountX, int mountY, int mountZ, String title) {
         log.info("AI Tool: createLayerModel - worldId={}, layerName={}, modelName={}", worldId, layerName, modelName);
 
         if (Strings.isBlank(worldId)) {
@@ -378,9 +377,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Find layer
@@ -391,11 +389,13 @@ public class LayerToolService {
 
             WLayer layer = layerOpt.get();
             if (layer.getLayerType() != LayerType.MODEL) {
-                return String.format("ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
+                return String.format(
+                        "ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
             }
 
             // Check if model with same name already exists in this layer
-            Optional<WLayerModel> existing = layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
+            Optional<WLayerModel> existing =
+                    layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
             if (existing.isPresent()) {
                 return String.format("ERROR: Model with name '%s' already exists in layer '%s'", modelName, layerName);
             }
@@ -417,7 +417,8 @@ public class LayerToolService {
             WLayerModel saved = layerService.saveModel(model);
 
             log.info("AI Tool: createLayerModel - created model: name={} in layer={}", modelName, layerName);
-            return String.format("SUCCESS: Model '%s' created successfully in layer '%s'\nMount Point: (%d, %d, %d)\nModel ID: %s",
+            return String.format(
+                    "SUCCESS: Model '%s' created successfully in layer '%s'\nMount Point: (%d, %d, %d)\nModel ID: %s",
                     modelName, layerName, mountX, mountY, mountZ, saved.getId());
 
         } catch (Exception e) {
@@ -437,7 +438,8 @@ public class LayerToolService {
      * @param layerName The layer name (required)
      * @return Success message with regeneration details or error message
      */
-    @Tool("Regenerate layer - triggers complete regeneration of layer data. For MODEL layers creates job, for GROUND layers marks chunks dirty.")
+    @Tool(
+            "Regenerate layer - triggers complete regeneration of layer data. For MODEL layers creates job, for GROUND layers marks chunks dirty.")
     public String regenerateLayer(String worldId, String layerName) {
         log.info("AI Tool: regenerateLayer - worldId={}, layerName={}", worldId, layerName);
 
@@ -450,9 +452,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -469,24 +470,21 @@ public class LayerToolService {
                         "recreate-model-based-layer",
                         "Regenerate Layer: " + layerName,
                         "layer-regeneration",
-                        Map.of(
-                                "layerDataId", layer.getLayerDataId(),
-                                "markChunksDirty", "true"
-                        ),
-                        8,  // High priority
-                        3   // Max retries
-                );
+                        Map.of("layerDataId", layer.getLayerDataId(), "markChunksDirty", "true"),
+                        8, // High priority
+                        3 // Max retries
+                        );
 
                 log.info("AI Tool: regenerateLayer - created regeneration job for MODEL layer: jobId={}", job.getId());
-                return String.format("SUCCESS: Regeneration job created for MODEL layer '%s'\nJob ID: %s\nLayer Type: MODEL",
+                return String.format(
+                        "SUCCESS: Regeneration job created for MODEL layer '%s'\nJob ID: %s\nLayer Type: MODEL",
                         layerName, job.getId());
 
             } else {
                 // For GROUND layers: Mark chunks as dirty
                 List<String> affectedChunks;
                 if (layer.isAllChunks()) {
-                    affectedChunks = chunkService.findChunksByWorldId(lookupWorldId)
-                            .stream()
+                    affectedChunks = chunkService.findChunksByWorldId(lookupWorldId).stream()
                             .map(chunk -> chunk.getChunk())
                             .collect(Collectors.toList());
                 } else {
@@ -500,7 +498,8 @@ public class LayerToolService {
                 dirtyChunkService.markChunksDirty(lookupWorldId, affectedChunks, "layer_regeneration");
 
                 log.info("AI Tool: regenerateLayer - marked {} chunks dirty for GROUND layer", affectedChunks.size());
-                return String.format("SUCCESS: Marked %d chunks for regeneration in GROUND layer '%s'\nLayer Type: GROUND",
+                return String.format(
+                        "SUCCESS: Marked %d chunks for regeneration in GROUND layer '%s'\nLayer Type: GROUND",
                         affectedChunks.size(), layerName);
             }
 
@@ -523,7 +522,11 @@ public class LayerToolService {
      */
     @Tool("Select layer for editing - sets the selected layer in the session's edit state.")
     public String selectLayerForEditing(String worldId, String sessionId, String layerName) {
-        log.info("AI Tool: selectLayerForEditing - worldId={}, sessionId={}, layerName={}", worldId, sessionId, layerName);
+        log.info(
+                "AI Tool: selectLayerForEditing - worldId={}, sessionId={}, layerName={}",
+                worldId,
+                sessionId,
+                layerName);
 
         if (Strings.isBlank(worldId)) {
             return "ERROR: worldId parameter is required";
@@ -538,9 +541,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Verify layer exists
@@ -553,18 +555,20 @@ public class LayerToolService {
 
             // Update edit state
             Optional<EditState> stateOpt = sessionService.getEditState(sessionId);
-            EditState state = stateOpt.orElse(EditState.builder()
-                    .worldId(lookupWorldId)
-                    .editMode(false)
-                    .build());
+            EditState state = stateOpt.orElse(
+                    EditState.builder().worldId(lookupWorldId).editMode(false).build());
 
             state.setSelectedLayer(layerName);
             state.setLayerDataId(layer.getLayerDataId());
 
             sessionService.updateEditState(sessionId, state);
 
-            log.info("AI Tool: selectLayerForEditing - selected layer: name={}, type={}", layerName, layer.getLayerType());
-            return String.format("SUCCESS: Layer '%s' selected for editing\nLayer Type: %s\nLayer Data ID: %s",
+            log.info(
+                    "AI Tool: selectLayerForEditing - selected layer: name={}, type={}",
+                    layerName,
+                    layer.getLayerType());
+            return String.format(
+                    "SUCCESS: Layer '%s' selected for editing\nLayer Type: %s\nLayer Data ID: %s",
                     layerName, layer.getLayerType(), layer.getLayerDataId());
 
         } catch (Exception e) {
@@ -594,9 +598,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -623,7 +626,8 @@ public class LayerToolService {
             editCacheDirtyService.applyChanges(lookupWorldId, layerDataId);
 
             log.info("AI Tool: commitLayerChanges - committed {} changes for layer: name={}", cachedBlocks, layerName);
-            return String.format("SUCCESS: Committed %d changes to layer '%s'\nLayer Type: %s",
+            return String.format(
+                    "SUCCESS: Committed %d changes to layer '%s'\nLayer Type: %s",
                     cachedBlocks, layerName, layer.getLayerType());
 
         } catch (Exception e) {
@@ -653,9 +657,8 @@ public class LayerToolService {
         }
 
         try {
-            WorldId wid = WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId wid =
+                    WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
             String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -682,7 +685,8 @@ public class LayerToolService {
             }
 
             log.info("AI Tool: discardLayerChanges - discarded {} changes for layer: name={}", deleted, layerName);
-            return String.format("SUCCESS: Discarded %d changes from layer '%s'\nLayer Type: %s\nCache cleared: %d blocks",
+            return String.format(
+                    "SUCCESS: Discarded %d changes from layer '%s'\nLayer Type: %s\nCache cleared: %d blocks",
                     cachedBlocks, layerName, layer.getLayerType(), deleted);
 
         } catch (Exception e) {
@@ -715,16 +719,12 @@ public class LayerToolService {
         }
 
         try {
-            WorldId.of(worldId).orElseThrow(
-                    () -> new IllegalArgumentException("Invalid worldId: " + worldId)
-            );
+            WorldId.of(worldId).orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Store marker position in edit state
             Optional<EditState> stateOpt = sessionService.getEditState(sessionId);
-            EditState state = stateOpt.orElse(EditState.builder()
-                    .worldId(worldId)
-                    .editMode(false)
-                    .build());
+            EditState state = stateOpt.orElse(
+                    EditState.builder().worldId(worldId).editMode(false).build());
 
             // Store marker coordinates (implementation depends on EditState structure)
             // For now, just acknowledge the marker was set

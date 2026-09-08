@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-
 import java.util.HashMap;
 import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 public class EffectAction implements GameplayAction {
 
@@ -19,7 +18,18 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (shortcutKey != null) {
             // 'use' on block - no effects on blocks
             return false;
@@ -30,7 +40,13 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (shortcutKey != null) {
             // 'use' on entity → apply item effects to entity
             String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
@@ -56,7 +72,13 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         // Only 'use' on player (interact on player goes through separate method, not GameplayAction)
         String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
         if (itemId == null) return false;

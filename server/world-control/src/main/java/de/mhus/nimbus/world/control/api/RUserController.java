@@ -1,17 +1,15 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.sector.RUser;
 import de.mhus.nimbus.world.shared.sector.RUserService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import de.mhus.nimbus.shared.user.SectorRoles;
-import de.mhus.nimbus.world.shared.access.RequireSectorRole;
-
-import java.util.List;
 
 /**
  * REST Controller for managing RUser entities.
@@ -44,7 +42,8 @@ public class RUserController extends BaseEditorController {
         var error = validateId(username, "username");
         if (error != null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 
-        return userService.getByUsername(username)
+        return userService
+                .getByUsername(username)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
@@ -54,9 +53,7 @@ public class RUserController extends BaseEditorController {
      * PUT /control/user/{username}
      */
     @PutMapping("/{username}")
-    public ResponseEntity<RUser> update(
-            @PathVariable String username,
-            @RequestBody RUser user) {
+    public ResponseEntity<RUser> update(@PathVariable String username, @RequestBody RUser user) {
 
         var error = validateId(username, "username");
         if (error != null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -85,5 +82,4 @@ public class RUserController extends BaseEditorController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-
 }

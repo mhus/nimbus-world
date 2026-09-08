@@ -13,8 +13,8 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class BlockUtil {
 
-    public final static String AIR_BLOCK_TYPE = "n:0"; // Standard AIR block type identifier
-    public final static String DEFAULT_STATUS = "default"; // Default block status
+    public static final String AIR_BLOCK_TYPE = "n:0"; // Standard AIR block type identifier
+    public static final String DEFAULT_STATUS = "default"; // Default block status
 
     /**
      * Check if block type represents AIR (empty space).
@@ -27,7 +27,10 @@ public class BlockUtil {
         if (blockTypeId == null || blockTypeId.isEmpty()) {
             return true;
         }
-        return "n:0".equals(blockTypeId) || "0".equals(blockTypeId) || "w:0".equals(blockTypeId) || "w/0".equals(blockTypeId);
+        return "n:0".equals(blockTypeId)
+                || "0".equals(blockTypeId)
+                || "w:0".equals(blockTypeId)
+                || "w/0".equals(blockTypeId);
     }
 
     /**
@@ -47,7 +50,7 @@ public class BlockUtil {
      */
     public static String extractCollectionFromBlockId(String blockId) {
         if (blockId == null || !blockId.contains(":")) {
-            return "r";  // default collection
+            return "r"; // default collection
         }
         String[] parts = blockId.split(":", 2);
         String group = parts[0].toLowerCase();
@@ -70,7 +73,7 @@ public class BlockUtil {
         if (originalBlock == null) {
             return null;
         }
-       // TDOO also cloen modifiers ?
+        // TDOO also cloen modifiers ?
         return Block.builder()
                 .blockTypeId(originalBlock.getBlockTypeId())
                 .offsets(originalBlock.getOffsets())
@@ -96,16 +99,10 @@ public class BlockUtil {
         return chunkX + ":" + xhunkZ;
     }
 
-
     public static Block createAirBlock(int x, int y, int z) {
-        return Block.builder().blockTypeId("0")
-                .position(
-                        Vector3Int.builder()
-                                .x(x)
-                                .y(y)
-                                .z(z)
-                                .build()
-                )
+        return Block.builder()
+                .blockTypeId("0")
+                .position(Vector3Int.builder().x(x).y(y).z(z).build())
                 .build();
     }
 
@@ -119,6 +116,9 @@ public class BlockUtil {
     }
 
     public static boolean isStatusDefault(String status) {
-        return status == null || status.isEmpty() || DEFAULT_STATUS.equals(status) || "0".equals(status); // legacy support for "0" as default status
+        return status == null
+                || status.isEmpty()
+                || DEFAULT_STATUS.equals(status)
+                || "0".equals(status); // legacy support for "0" as default status
     }
 }

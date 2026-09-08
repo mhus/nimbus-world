@@ -2,15 +2,14 @@ package de.mhus.nimbus.world.generator.flora;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.mhus.nimbus.world.generator.modelbuilder.FloraConstraints;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
 
 /**
  * Definition of a single plant within a flora type.
@@ -31,10 +30,13 @@ public class FloraPlantDefinition {
 
     @Builder.Default
     private boolean land = false;
+
     @Builder.Default
     private boolean water = false;
+
     @Builder.Default
     private boolean sea = false;
+
     @Builder.Default
     private boolean emerse = false;
 
@@ -48,7 +50,9 @@ public class FloraPlantDefinition {
 
     @Builder.Default
     private double weight = 1.0;
+
     private Integer clusterCount;
+
     @Builder.Default
     private int clusterSpread = 2;
 
@@ -66,7 +70,6 @@ public class FloraPlantDefinition {
                 land,
                 water,
                 sea,
-                emerse
-        );
+                emerse);
     }
 }

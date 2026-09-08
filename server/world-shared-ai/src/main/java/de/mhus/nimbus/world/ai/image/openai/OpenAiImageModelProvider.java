@@ -7,12 +7,11 @@ import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
 import de.mhus.nimbus.world.ai.model.openai.OpenAiSettings;
 import dev.langchain4j.model.image.ImageModel;
 import dev.langchain4j.model.openai.OpenAiImageModel;
+import java.time.Duration;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.Optional;
 
 /**
  * OpenAI DALL-E implementation of LangchainImageModel.

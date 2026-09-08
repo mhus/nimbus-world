@@ -4,7 +4,6 @@ import de.mhus.nimbus.tools.generatets.java.JavaKind;
 import de.mhus.nimbus.tools.generatets.java.JavaModel;
 import de.mhus.nimbus.tools.generatets.java.JavaProperty;
 import de.mhus.nimbus.tools.generatets.java.JavaType;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -125,11 +124,21 @@ public class JavaModelWriter {
         if (tsKind == null || tsKind.isBlank()) {
             // Fallback to JavaKind mapping
             switch (t.getKind()) {
-                case ENUM: tsKind = "enum"; break;
-                case INTERFACE: tsKind = "interface"; break;
-                case CLASS: tsKind = "class"; break;
-                case TYPE_ALIAS: tsKind = "type"; break;
-                default: tsKind = "type"; break;
+                case ENUM:
+                    tsKind = "enum";
+                    break;
+                case INTERFACE:
+                    tsKind = "interface";
+                    break;
+                case CLASS:
+                    tsKind = "class";
+                    break;
+                case TYPE_ALIAS:
+                    tsKind = "type";
+                    break;
+                default:
+                    tsKind = "type";
+                    break;
             }
         }
         String tsDecl = tsKind + " " + nullToEmpty(t.getName());
@@ -139,7 +148,9 @@ public class JavaModelWriter {
         // Note unresolved TS extends (for interfaces converted to classes)
         List<String> unresolved = t.getUnresolvedTsExtends();
         if (unresolved != null && !unresolved.isEmpty()) {
-            sb.append(" * NOTE: Unresolved TS extends: ").append(String.join(", ", unresolved)).append("\n");
+            sb.append(" * NOTE: Unresolved TS extends: ")
+                    .append(String.join(", ", unresolved))
+                    .append("\n");
             sb.append(" *       Consider mapping them via configuration 'interfaceExtendsMappings'.\n");
         }
         sb.append(" */\n");
@@ -162,7 +173,8 @@ public class JavaModelWriter {
             sb.append(" {\n");
 
             // Use enumValuesWithAssignments if available, otherwise fall back to enumValues
-            java.util.List<de.mhus.nimbus.tools.generatets.ts.TsDeclarations.TsEnumValue> valuesWithAssignments = t.getEnumValuesWithAssignments();
+            java.util.List<de.mhus.nimbus.tools.generatets.ts.TsDeclarations.TsEnumValue> valuesWithAssignments =
+                    t.getEnumValuesWithAssignments();
             java.util.List<String> vals = t.getEnumValues();
 
             if (valuesWithAssignments != null && !valuesWithAssignments.isEmpty()) {
@@ -188,7 +200,8 @@ public class JavaModelWriter {
 
                 // Generate enum constants
                 for (int i = 0; i < valuesWithAssignments.size(); i++) {
-                    de.mhus.nimbus.tools.generatets.ts.TsDeclarations.TsEnumValue enumValue = valuesWithAssignments.get(i);
+                    de.mhus.nimbus.tools.generatets.ts.TsDeclarations.TsEnumValue enumValue =
+                            valuesWithAssignments.get(i);
                     String enumName = enumValue.name;
                     String enumVal = enumValue.value;
                     if (!isValidJavaIdentifier(enumName)) continue;
@@ -204,7 +217,9 @@ public class JavaModelWriter {
                             sb.append(enumVal.trim());
                         } catch (NumberFormatException e) {
                             // Fallback to string if parsing fails
-                            sb.append("\"").append(enumVal.replace("\"", "\\\"")).append("\"");
+                            sb.append("\"")
+                                    .append(enumVal.replace("\"", "\\\""))
+                                    .append("\"");
                             useStringType = true;
                         }
                     }
@@ -219,7 +234,10 @@ public class JavaModelWriter {
                 } else {
                     sb.append("    private final int tsIndex;\n");
                     sb.append("    private final String tsString;\n");
-                    sb.append("    ").append(name).append("(int tsIndex) { this.tsIndex = tsIndex; this.tsString = String.valueOf(tsIndex); }\n");
+                    sb.append("    ")
+                            .append(name)
+                            .append(
+                                    "(int tsIndex) { this.tsIndex = tsIndex; this.tsString = String.valueOf(tsIndex); }\n");
                     sb.append("    public String tsString() { return this.tsString; }\n");
                 }
             } else if (vals != null && !vals.isEmpty()) {
@@ -234,7 +252,9 @@ public class JavaModelWriter {
                 sb.append("    @lombok.Getter\n");
                 sb.append("    private final int tsIndex;\n");
                 sb.append("    private final String tsString;\n");
-                sb.append("    ").append(name).append("(int tsIndex) { this.tsIndex = tsIndex; this.tsString = String.valueOf(tsIndex); }\n");
+                sb.append("    ")
+                        .append(name)
+                        .append("(int tsIndex) { this.tsIndex = tsIndex; this.tsString = String.valueOf(tsIndex); }\n");
                 sb.append("    public String tsString() { return this.tsString; }\n");
             }
             sb.append("}\n");
@@ -252,9 +272,15 @@ public class JavaModelWriter {
                     if (p == null || p.getName() == null) continue;
                     if (!seen.add(p.getName())) continue;
                     String methodName = "get" + capitalize(p.getName());
-                    String type = p.getType() == null || p.getType().isBlank() ? "Object" : qualifyType(p.getType(), currentPkg);
+                    String type = p.getType() == null || p.getType().isBlank()
+                            ? "Object"
+                            : qualifyType(p.getType(), currentPkg);
                     if (isValidJavaIdentifier(methodName)) {
-                        sb.append("    ").append(type).append(' ').append(methodName).append("();\n");
+                        sb.append("    ")
+                                .append(type)
+                                .append(' ')
+                                .append(methodName)
+                                .append("();\n");
                     }
                 }
             }
@@ -268,9 +294,12 @@ public class JavaModelWriter {
             sb.append("@lombok.experimental.SuperBuilder\n");
             // Always provide a no-args constructor
             sb.append("@lombok.NoArgsConstructor\n");
-            // Add protected all-args constructor only if the class declares at least one field to avoid duplicate no-arg constructors
-            boolean hasAnyField = (t.getProperties() != null && !t.getProperties().isEmpty())
-                    || (t.getAliasTargetName() != null && !t.getAliasTargetName().isBlank());
+            // Add protected all-args constructor only if the class declares at least one field to avoid duplicate
+            // no-arg constructors
+            boolean hasAnyField =
+                    (t.getProperties() != null && !t.getProperties().isEmpty())
+                            || (t.getAliasTargetName() != null
+                                    && !t.getAliasTargetName().isBlank());
             if (hasAnyField) {
                 sb.append("@lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)\n");
             }
@@ -291,14 +320,20 @@ public class JavaModelWriter {
                     String type = resolveFieldTypeConsideringNested(p.getType(), currentPkg, name);
                     // Emit configured annotations for fields
                     emitFieldAnnotations(sb, p.isOptional(), p.getName());
-                    sb.append("    private ").append(type).append(' ').append(p.getName()).append(";\n");
+                    sb.append("    private ")
+                            .append(type)
+                            .append(' ')
+                            .append(p.getName())
+                            .append(";\n");
                     emittedAnyField = true;
                 }
             }
             // If this CLASS actually comes from a TS type alias (no properties) then emit a single 'value' field
-            if (!emittedAnyField && t.getAliasTargetName() != null && !t.getAliasTargetName().isBlank()) {
+            if (!emittedAnyField
+                    && t.getAliasTargetName() != null
+                    && !t.getAliasTargetName().isBlank()) {
                 String qualified = qualifyType(t.getAliasTargetName(), currentPkg);
-                emitFieldAnnotations(sb, /*optional=*/false);
+                emitFieldAnnotations(sb, /*optional=*/ false);
                 sb.append("    private ")
                         .append(qualified == null || qualified.isBlank() ? "Object" : qualified)
                         .append(" value;\n");
@@ -306,8 +341,9 @@ public class JavaModelWriter {
             // Fallback: If this CLASS originates from a TS type alias but aliasTargetName couldn't be parsed,
             // still generate a value field so the alias is usable. Default to String as the most common alias target.
             if (!emittedAnyField && ("type".equalsIgnoreCase(t.getOriginalTsKind()))) {
-                String qualified = t.getAliasTargetName() == null ? "String" : qualifyType(t.getAliasTargetName(), currentPkg);
-                emitFieldAnnotations(sb, /*optional=*/false);
+                String qualified =
+                        t.getAliasTargetName() == null ? "String" : qualifyType(t.getAliasTargetName(), currentPkg);
+                emitFieldAnnotations(sb, /*optional=*/ false);
                 sb.append("    private ")
                         .append(qualified == null || qualified.isBlank() ? "String" : qualified)
                         .append(" value;\n");
@@ -326,7 +362,9 @@ public class JavaModelWriter {
             }
             sb.append("}\n");
         } else if (t.getKind() == JavaKind.TYPE_ALIAS) {
-            sb.append("/** Type alias for: ").append(nullToEmpty(t.getAliasTargetName())).append(" */\n");
+            sb.append("/** Type alias for: ")
+                    .append(nullToEmpty(t.getAliasTargetName()))
+                    .append(" */\n");
             // Additional configured annotations for classes (non-enum)
             emitAdditionalAnnotations(sb);
             sb.append("@lombok.Data\n");
@@ -338,8 +376,10 @@ public class JavaModelWriter {
             String aliasTarget = t.getAliasTargetName();
             String qualified = qualifyType(aliasTarget, currentPkg);
             // Apply configured field annotations; treat alias value as required (non-optional)
-            emitFieldAnnotations(sb, /*optional=*/false);
-            sb.append("    private ").append(qualified == null || qualified.isBlank() ? "Object" : qualified).append(" value;\n");
+            emitFieldAnnotations(sb, /*optional=*/ false);
+            sb.append("    private ")
+                    .append(qualified == null || qualified.isBlank() ? "Object" : qualified)
+                    .append(" value;\n");
             sb.append("}\n");
         } else {
             sb.append("public class ").append(name).append(" {\n}\n");
@@ -373,8 +413,12 @@ public class JavaModelWriter {
                 if (p == null || p.getName() == null) continue;
                 if (!isValidJavaIdentifier(p.getName())) continue;
                 String type = resolveFieldTypeConsideringNested(p.getType(), currentPkg, helper.getName());
-                emitFieldAnnotations(sb, /*optional=*/p.isOptional());
-                sb.append("        private ").append(type).append(' ').append(p.getName()).append(";\n");
+                emitFieldAnnotations(sb, /*optional=*/ p.isOptional());
+                sb.append("        private ")
+                        .append(type)
+                        .append(' ')
+                        .append(p.getName())
+                        .append(";\n");
             }
         }
         sb.append("    }\n");
@@ -429,7 +473,9 @@ public class JavaModelWriter {
     private void emitFieldAnnotations(StringBuilder sb, boolean optional, String fieldName) {
         // Add @JsonProperty for fields with problematic naming (camelCase with uppercase letters)
         if (fieldName != null && needsJsonPropertyAnnotation(fieldName)) {
-            sb.append("    @com.fasterxml.jackson.annotation.JsonProperty(\"").append(fieldName).append("\")\n");
+            sb.append("    @com.fasterxml.jackson.annotation.JsonProperty(\"")
+                    .append(fieldName)
+                    .append("\")\n");
         }
 
         if (configuration == null) return;
@@ -554,17 +600,59 @@ public class JavaModelWriter {
     private boolean isJavaKeyword(String s) {
         // Java keywords and literals that cannot be used as identifiers
         switch (s) {
-            case "abstract": case "assert": case "boolean": case "break": case "byte":
-            case "case": case "catch": case "char": case "class": case "const":
-            case "continue": case "default": case "do": case "double": case "else":
-            case "enum": case "extends": case "final": case "finally": case "float":
-            case "for": case "goto": case "if": case "implements": case "import":
-            case "instanceof": case "int": case "interface": case "long": case "native":
-            case "new": case "package": case "private": case "protected": case "public":
-            case "return": case "short": case "static": case "strictfp": case "super":
-            case "switch": case "synchronized": case "this": case "throw": case "throws":
-            case "transient": case "try": case "void": case "volatile": case "while":
-            case "true": case "false": case "null":
+            case "abstract":
+            case "assert":
+            case "boolean":
+            case "break":
+            case "byte":
+            case "case":
+            case "catch":
+            case "char":
+            case "class":
+            case "const":
+            case "continue":
+            case "default":
+            case "do":
+            case "double":
+            case "else":
+            case "enum":
+            case "extends":
+            case "final":
+            case "finally":
+            case "float":
+            case "for":
+            case "goto":
+            case "if":
+            case "implements":
+            case "import":
+            case "instanceof":
+            case "int":
+            case "interface":
+            case "long":
+            case "native":
+            case "new":
+            case "package":
+            case "private":
+            case "protected":
+            case "public":
+            case "return":
+            case "short":
+            case "static":
+            case "strictfp":
+            case "super":
+            case "switch":
+            case "synchronized":
+            case "this":
+            case "throw":
+            case "throws":
+            case "transient":
+            case "try":
+            case "void":
+            case "volatile":
+            case "while":
+            case "true":
+            case "false":
+            case "null":
                 return true;
             default:
                 return false;
@@ -576,7 +664,9 @@ public class JavaModelWriter {
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
-    private String nullToEmpty(String s) { return s == null ? "" : s; }
+    private String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
 
     private String qualifyType(String type, String currentPkg) {
         if (type == null || type.isBlank()) return "Object";
@@ -607,8 +697,16 @@ public class JavaModelWriter {
         }
         // java.lang common types
         switch (n) {
-            case "String": case "Integer": case "Long": case "Double": case "Float":
-            case "Short": case "Byte": case "Character": case "Boolean": case "Object":
+            case "String":
+            case "Integer":
+            case "Long":
+            case "Double":
+            case "Float":
+            case "Short":
+            case "Byte":
+            case "Character":
+            case "Boolean":
+            case "Object":
                 return n;
         }
         // java.util common raw types

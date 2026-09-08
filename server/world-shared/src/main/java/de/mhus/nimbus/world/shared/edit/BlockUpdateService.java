@@ -38,7 +38,8 @@ public class BlockUpdateService {
      * @param meta      Block metadata (optional, currently unused)
      * @return true if broadcast was sent successfully
      */
-    public boolean sendBlockUpdateWithSource(String worldId, String sessionId, Block block, String source, String meta) {
+    public boolean sendBlockUpdateWithSource(
+            String worldId, String sessionId, Block block, String source, String meta) {
         // Set source field on block for legacy compatibility
         if (source != null && !source.isBlank()) {
             block.setSource(source);
@@ -62,10 +63,15 @@ public class BlockUpdateService {
         // Serialize block to JSON
         try {
             String blockJson = objectMapper.writeValueAsString(block);
-            return sendBlockUpdate(worldId, sessionId,
+            return sendBlockUpdate(
+                    worldId,
+                    sessionId,
                     block.getPosition().getX(),
                     block.getPosition().getY(),
-                    block.getPosition().getZ(), blockJson, source, meta);
+                    block.getPosition().getZ(),
+                    blockJson,
+                    source,
+                    meta);
         } catch (Exception e) {
             log.error("Failed to serialize block for update: session={} pos=({})", sessionId, block.getPosition(), e);
             return false;
@@ -86,10 +92,12 @@ public class BlockUpdateService {
      * @param meta      Block metadata (optional, currently unused)
      * @return true if broadcast was published successfully
      */
-    private boolean sendBlockUpdate(String worldId, String sessionId, int x, int y, int z, String blockJson, String source, String meta) {
+    private boolean sendBlockUpdate(
+            String worldId, String sessionId, int x, int y, int z, String blockJson, String source, String meta) {
         try {
             // Get world to read chunk size
-            WWorld world = worldService.getByWorldId(worldId)
+            WWorld world = worldService
+                    .getByWorldId(worldId)
                     .orElseThrow(() -> new IllegalStateException("World not found: " + worldId));
 
             // Read chunk size from world configuration (no default hardcoded value!)
@@ -111,19 +119,34 @@ public class BlockUpdateService {
                     .build();
 
             // Serialize and publish to Redis
-            // Publish on base worldId channel (subscribers listen on base), but message contains full worldId for epoch filtering
+            // Publish on base worldId channel (subscribers listen on base), but message contains full worldId for epoch
+            // filtering
             String baseWorldId = WorldId.unchecked(worldId).toBaseWorldId().getId();
             String messageJson = objectMapper.writeValueAsString(broadcast);
             redisMessaging.publish(baseWorldId, "b.u", messageJson);
 
-            log.debug("Broadcast block update via Redis: world={} chunkSize={} chunk=({},{}) pos=({},{},{}) origin={}",
-                    worldId, chunkSize, cx, cz, x, y, z, sessionId);
+            log.debug(
+                    "Broadcast block update via Redis: world={} chunkSize={} chunk=({},{}) pos=({},{},{}) origin={}",
+                    worldId,
+                    chunkSize,
+                    cx,
+                    cz,
+                    x,
+                    y,
+                    z,
+                    sessionId);
 
             return true;
 
         } catch (Exception e) {
-            log.error("Failed to broadcast block update: world={} session={} pos=({},{},{})",
-                    worldId, sessionId, x, y, z, e);
+            log.error(
+                    "Failed to broadcast block update: world={} session={} pos=({},{},{})",
+                    worldId,
+                    sessionId,
+                    x,
+                    y,
+                    z,
+                    e);
             return false;
         }
     }

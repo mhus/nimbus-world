@@ -1,12 +1,11 @@
 package de.mhus.nimbus.shared.utils;
 
-import lombok.Getter;
+import static org.apache.logging.log4j.util.Strings.isBlank;
+import static org.apache.logging.log4j.util.Strings.isEmpty;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import static org.apache.logging.log4j.util.Strings.isBlank;
-import static org.apache.logging.log4j.util.Strings.isEmpty;
 
 /*
  * Service to determine server location details such as IP address and port.
@@ -27,7 +26,6 @@ public class LocationService {
         UNIVERSE,
         MINISTRY
     }
-
 
     @Value("${server.port:4092}")
     private int applicationServerPort;
@@ -133,7 +131,8 @@ public class LocationService {
             }
 
             // Try to find non-loopback network interface
-            java.util.Enumeration<java.net.NetworkInterface> interfaces = java.net.NetworkInterface.getNetworkInterfaces();
+            java.util.Enumeration<java.net.NetworkInterface> interfaces =
+                    java.net.NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 java.net.NetworkInterface networkInterface = interfaces.nextElement();
 
@@ -147,8 +146,9 @@ public class LocationService {
                     java.net.InetAddress address = addresses.nextElement();
 
                     // Skip loopback, link-local, and IPv6 addresses
-                    if (address.isLoopbackAddress() || address.isLinkLocalAddress() ||
-                            address instanceof java.net.Inet6Address) {
+                    if (address.isLoopbackAddress()
+                            || address.isLinkLocalAddress()
+                            || address instanceof java.net.Inet6Address) {
                         continue;
                     }
 
@@ -246,5 +246,4 @@ public class LocationService {
     public boolean isMinistry() {
         return getMeServer() == SERVER.MINISTRY;
     }
-
 }

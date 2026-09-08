@@ -4,15 +4,14 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Stage D6 — materialize the plan's building/logic rules as {@code WLogicRule}s (region-scoped by the
@@ -61,7 +60,10 @@ public class RealityRuleMaterializer {
                 result.addError("rule '" + name + "': " + ex.getMessage());
             }
         }
-        log.info("RealityRuleMaterializer: {} rules, {} errors", result.getCreated(), result.getErrors().size());
+        log.info(
+                "RealityRuleMaterializer: {} rules, {} errors",
+                result.getCreated(),
+                result.getErrors().size());
         return result;
     }
 
@@ -70,7 +72,10 @@ public class RealityRuleMaterializer {
         if (effects != null) {
             for (String e : effects) {
                 if (!Strings.isBlank(e)) {
-                    out.add(LogicEffect.builder().type("reality").parameters(Map.of("effect", e)).build());
+                    out.add(LogicEffect.builder()
+                            .type("reality")
+                            .parameters(Map.of("effect", e))
+                            .build());
                 }
             }
         }

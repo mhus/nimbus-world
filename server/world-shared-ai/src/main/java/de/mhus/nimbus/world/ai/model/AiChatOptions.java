@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.ai.model;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Configuration options for AI chat instances.

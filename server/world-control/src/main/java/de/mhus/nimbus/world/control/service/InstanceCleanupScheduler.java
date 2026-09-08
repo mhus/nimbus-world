@@ -4,15 +4,14 @@ import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.control.config.InstanceCleanupProperties;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 /**
  * Scheduled service for automatic cleanup of unused world instances.
@@ -24,7 +23,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(prefix = "nimbus.instance.cleanup", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "nimbus.instance.cleanup",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class InstanceCleanupScheduler {
 
     private final WWorldInstanceService instanceService;
@@ -49,8 +52,10 @@ public class InstanceCleanupScheduler {
             return;
         }
 
-        log.info("Starting automatic instance cleanup (maxAge={}h, dryRun={})",
-                properties.getMaxAgeHours(), properties.isDryRun());
+        log.info(
+                "Starting automatic instance cleanup (maxAge={}h, dryRun={})",
+                properties.getMaxAgeHours(),
+                properties.isDryRun());
 
         try {
             // Calculate cutoff time
@@ -66,7 +71,9 @@ public class InstanceCleanupScheduler {
             for (WWorldInstance instance : oldInstances) {
                 // Stop if we reached the max deletes limit
                 if (deletedCount >= properties.getMaxDeletesPerRun()) {
-                    log.warn("Reached max deletes per run limit ({}), stopping cleanup", properties.getMaxDeletesPerRun());
+                    log.warn(
+                            "Reached max deletes per run limit ({}), stopping cleanup",
+                            properties.getMaxDeletesPerRun());
                     break;
                 }
 
@@ -78,7 +85,8 @@ public class InstanceCleanupScheduler {
 
                 {
                     if (properties.isDryRun()) {
-                        log.info("DRY-RUN: Would delete instance: instanceId={}, updatedAt={}, age={}h, activePlayers={}",
+                        log.info(
+                                "DRY-RUN: Would delete instance: instanceId={}, updatedAt={}, age={}h, activePlayers={}",
                                 instance.getInstanceId(),
                                 instance.getUpdatedAt(),
                                 calculateAgeHours(instance.getUpdatedAt()),
@@ -86,7 +94,8 @@ public class InstanceCleanupScheduler {
                         deletedCount++;
                     } else {
                         try {
-                            log.info("Deleting unused instance: instanceId={}, updatedAt={}, age={}h, activePlayers={}",
+                            log.info(
+                                    "Deleting unused instance: instanceId={}, updatedAt={}, age={}h, activePlayers={}",
                                     instance.getInstanceId(),
                                     instance.getUpdatedAt(),
                                     calculateAgeHours(instance.getUpdatedAt()),
@@ -98,7 +107,9 @@ public class InstanceCleanupScheduler {
                                 deletedCount++;
                                 log.info("Instance deleted successfully: instanceId={}", instance.getInstanceId());
                             } else {
-                                log.warn("Failed to delete instance (not found): instanceId={}", instance.getInstanceId());
+                                log.warn(
+                                        "Failed to delete instance (not found): instanceId={}",
+                                        instance.getInstanceId());
                                 skippedCount++;
                             }
                         } catch (Exception e) {
@@ -109,8 +120,12 @@ public class InstanceCleanupScheduler {
                 }
             }
 
-            log.info("Instance cleanup completed: deleted={}, skipped={}, candidates={}, dryRun={}",
-                    deletedCount, skippedCount, oldInstances.size(), properties.isDryRun());
+            log.info(
+                    "Instance cleanup completed: deleted={}, skipped={}, candidates={}, dryRun={}",
+                    deletedCount,
+                    skippedCount,
+                    oldInstances.size(),
+                    properties.isDryRun());
 
         } catch (Exception e) {
             log.error("Instance cleanup failed: {}", e.getMessage(), e);

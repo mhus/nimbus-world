@@ -5,14 +5,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.filler.FillerType;
-import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.WallConfigPart;
-import lombok.*;
-
 import java.util.*;
+import lombok.*;
 
 /**
  * Lightweight configuration object storing HexGrid information within a Feature.
@@ -205,9 +204,7 @@ public class FeatureHexGrid {
      */
     public List<FlowSegment> getFlowSegmentsByType(FlowType type) {
         if (flowSegments == null) return new ArrayList<>();
-        return flowSegments.stream()
-            .filter(s -> s.getFlowType() == type)
-            .toList();
+        return flowSegments.stream().filter(s -> s.getFlowType() == type).toList();
     }
 
     /**

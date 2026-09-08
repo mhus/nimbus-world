@@ -18,13 +18,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for player backpack shortcut operations.
@@ -51,9 +50,9 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     @GetMapping("/backpack")
     @Operation(summary = "Get backpack items with texture and name info")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Backpack items returned"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Backpack items returned"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
     public ResponseEntity<?> getBackpack(HttpServletRequest request) {
 
@@ -127,8 +126,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
 
         return ResponseEntity.ok(Map.of(
                 "worldId", worldId,
-                "items", items
-        ));
+                "items", items));
     }
 
     /**
@@ -137,9 +135,9 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get player shortcuts")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcuts found"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Shortcuts found"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
     public ResponseEntity<?> getShortcuts(HttpServletRequest request) {
 
@@ -161,9 +159,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         PlayerInfo playerInfo = character.getPublicData();
         Map<String, ShortcutDefinition> shortcuts = playerInfo != null ? playerInfo.getShortcuts() : null;
 
-        return ResponseEntity.ok(Map.of(
-                "shortcuts", shortcuts != null ? shortcuts : Map.of()
-        ));
+        return ResponseEntity.ok(Map.of("shortcuts", shortcuts != null ? shortcuts : Map.of()));
     }
 
     /**
@@ -173,20 +169,23 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     @PostMapping("/assign")
     @Operation(summary = "Assign backpack item to shortcut slot")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcut assigned"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character or item not found")
+        @ApiResponse(responseCode = "200", description = "Shortcut assigned"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Character or item not found")
     })
-    public ResponseEntity<?> assignShortcut(
-            @RequestBody AssignShortcutRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> assignShortcut(@RequestBody AssignShortcutRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("POST assign shortcut: worldId={}, userId={}, characterId={}, slotKey={}, itemId={}",
-                worldId, userId, characterId, body != null ? body.slotKey() : null, body != null ? body.itemId() : null);
+        log.debug(
+                "POST assign shortcut: worldId={}, userId={}, characterId={}, slotKey={}, itemId={}",
+                worldId,
+                userId,
+                characterId,
+                body != null ? body.slotKey() : null,
+                body != null ? body.itemId() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
@@ -255,7 +254,12 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
             return bad("Failed to assign shortcut (concurrent modification)");
         }
 
-        log.info("Assigned shortcut: userId={}, characterId={}, slot={}, itemId={}", userId, characterId, body.slotKey(), body.itemId());
+        log.info(
+                "Assigned shortcut: userId={}, characterId={}, slot={}, itemId={}",
+                userId,
+                characterId,
+                body.slotKey(),
+                body.itemId());
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
@@ -266,20 +270,22 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     @PostMapping("/clear")
     @Operation(summary = "Clear a shortcut slot")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcut cleared"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Shortcut cleared"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
-    public ResponseEntity<?> clearShortcut(
-            @RequestBody ClearShortcutRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> clearShortcut(@RequestBody ClearShortcutRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("POST clear shortcut: worldId={}, userId={}, characterId={}, slotKey={}",
-                worldId, userId, characterId, body != null ? body.slotKey() : null);
+        log.debug(
+                "POST clear shortcut: worldId={}, userId={}, characterId={}, slotKey={}",
+                worldId,
+                userId,
+                characterId,
+                body != null ? body.slotKey() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
@@ -316,7 +322,8 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
             log.warn("No player URL available for session {}, cannot notify player of shortcut change", sessionId);
             return;
         }
-        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "ShortcutModified", List.of(), null);
+        worldClientService.sendPlayerCommand(
+                worldId, sessionId, wSession.get().getPlayerUrl(), "ShortcutModified", List.of(), null);
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
@@ -335,20 +342,23 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     @PostMapping("/assign-action")
     @Operation(summary = "Assign a special action to a shortcut slot")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Action shortcut assigned"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Action shortcut assigned"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
-    public ResponseEntity<?> assignActionShortcut(
-            @RequestBody AssignActionRequest body,
-            HttpServletRequest request) {
+    public ResponseEntity<?> assignActionShortcut(@RequestBody AssignActionRequest body, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("POST assign action shortcut: worldId={}, userId={}, characterId={}, slotKey={}, type={}",
-                worldId, userId, characterId, body != null ? body.slotKey() : null, body != null ? body.type() : null);
+        log.debug(
+                "POST assign action shortcut: worldId={}, userId={}, characterId={}, slotKey={}, type={}",
+                worldId,
+                userId,
+                characterId,
+                body != null ? body.slotKey() : null,
+                body != null ? body.type() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
@@ -375,12 +385,19 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
             return bad("Failed to assign action shortcut (concurrent modification)");
         }
 
-        log.info("Assigned action shortcut: userId={}, characterId={}, slot={}, type={}", userId, characterId, body.slotKey(), body.type());
+        log.info(
+                "Assigned action shortcut: userId={}, characterId={}, slot={}, type={}",
+                userId,
+                characterId,
+                body.slotKey(),
+                body.type());
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     record AssignShortcutRequest(String slotKey, String itemId) {}
+
     record AssignActionRequest(String slotKey, String type, String name, String iconPath) {}
+
     record ClearShortcutRequest(String slotKey) {}
 }

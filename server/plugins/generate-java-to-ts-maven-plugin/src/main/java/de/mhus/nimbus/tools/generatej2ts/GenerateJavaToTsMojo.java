@@ -1,19 +1,16 @@
 package de.mhus.nimbus.tools.generatej2ts;
 
+import de.mhus.nimbus.tools.generatej2ts.collector.JavaCollector;
+import de.mhus.nimbus.tools.generatej2ts.model.JavaClassModel;
+import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptModel;
+import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptModelWriter;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import de.mhus.nimbus.tools.generatej2ts.collector.JavaCollector;
-import de.mhus.nimbus.tools.generatej2ts.model.JavaClassModel;
-import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptModel;
-import de.mhus.nimbus.tools.generatej2ts.TypeScriptGenerator;
-import de.mhus.nimbus.tools.generatej2ts.ts.TypeScriptModelWriter;
 
 @Mojo(name = "generate")
 public class GenerateJavaToTsMojo extends AbstractMojo {
@@ -45,7 +42,8 @@ public class GenerateJavaToTsMojo extends AbstractMojo {
 
         // Verzeichnisse prüfen/anlegen
         if (inputDirectory == null || !inputDirectory.isDirectory()) {
-            throw new MojoExecutionException("inputDirectory existiert nicht oder ist kein Verzeichnis: " + inputDirectory);
+            throw new MojoExecutionException(
+                    "inputDirectory existiert nicht oder ist kein Verzeichnis: " + inputDirectory);
         }
 
         if (outputDirectory != null && !outputDirectory.exists()) {
@@ -75,7 +73,8 @@ public class GenerateJavaToTsMojo extends AbstractMojo {
             // TypeScriptModel erzeugen
             TypeScriptGenerator generator = new TypeScriptGenerator(getLog(), configuration);
             TypeScriptModel tsModel = generator.generate(classes);
-            getLog().info("TypeScriptModel: Typen erzeugt: " + (tsModel == null ? 0 : tsModel.getTypes().size()));
+            getLog().info("TypeScriptModel: Typen erzeugt: "
+                    + (tsModel == null ? 0 : tsModel.getTypes().size()));
 
             // TypeScriptModel in Dateien schreiben
             if (tsModel != null) {

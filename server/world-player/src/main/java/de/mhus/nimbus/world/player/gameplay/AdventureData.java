@@ -2,15 +2,12 @@ package de.mhus.nimbus.world.player.gameplay;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
-import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
-import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.world.WItem;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.util.Map;
 
 /**
  * Adventure gameplay state container.
@@ -77,7 +74,7 @@ public class AdventureData extends EntityCombatData {
         getVital("mana").setOrder(4);
 
         // Adventure-specific vitals
-        var hunger = VitalValue.of("hunger",  100, 0.1,  "#CC8800", "Hunger", 1, 0.5);
+        var hunger = VitalValue.of("hunger", 100, 0.1, "#CC8800", "Hunger", 1, 0.5);
         hunger.setCurrent(0);
         hunger.setOptions("p");
         getVitals().put("hunger", hunger);
@@ -88,23 +85,54 @@ public class AdventureData extends EntityCombatData {
         getVitals().put("thirst", thirst);
 
         getVitals().put("adrenaline", VitalValue.of("adrenaline", 100, 0, "#FF8800", "Adrenaline", 5, 0.1));
-        getVitals().put("air",        VitalValue.of("air",        100, 0, "#88CCFF", "Air",        6));
+        getVitals().put("air", VitalValue.of("air", 100, 0, "#88CCFF", "Air", 6));
     }
 
     // --- Convenience accessors for backward compatibility ---
 
-    public double getHealth() { return getVitalCurrent("health"); }
-    public double getHunger() { return getVitalCurrent("hunger"); }
-    public double getThirst() { return getVitalCurrent("thirst"); }
-    public double getStamina() { return getVitalCurrent("stamina"); }
-    public double getMana() { return getVitalCurrent("mana"); }
-    public double getAdrenaline() { return getVitalCurrent("adrenaline"); }
+    public double getHealth() {
+        return getVitalCurrent("health");
+    }
 
-    public double getMaxHealth() { return getVitalEffectiveMax("health"); }
-    public double getMaxHunger() { return getVitalEffectiveMax("hunger"); }
-    public double getMaxThirst() { return getVitalEffectiveMax("thirst"); }
-    public double getMaxStamina() { return getVitalEffectiveMax("stamina"); }
-    public double getMaxMana() { return getVitalEffectiveMax("mana"); }
+    public double getHunger() {
+        return getVitalCurrent("hunger");
+    }
+
+    public double getThirst() {
+        return getVitalCurrent("thirst");
+    }
+
+    public double getStamina() {
+        return getVitalCurrent("stamina");
+    }
+
+    public double getMana() {
+        return getVitalCurrent("mana");
+    }
+
+    public double getAdrenaline() {
+        return getVitalCurrent("adrenaline");
+    }
+
+    public double getMaxHealth() {
+        return getVitalEffectiveMax("health");
+    }
+
+    public double getMaxHunger() {
+        return getVitalEffectiveMax("hunger");
+    }
+
+    public double getMaxThirst() {
+        return getVitalEffectiveMax("thirst");
+    }
+
+    public double getMaxStamina() {
+        return getVitalEffectiveMax("stamina");
+    }
+
+    public double getMaxMana() {
+        return getVitalEffectiveMax("mana");
+    }
 
     private double getVitalCurrent(String type) {
         var v = getVitals().get(type);
@@ -125,5 +153,4 @@ public class AdventureData extends EntityCombatData {
     public boolean isSprinting() {
         return "SPRINT".equals(movementState);
     }
-
 }

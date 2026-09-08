@@ -6,6 +6,9 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -14,10 +17,6 @@ import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * C2 — AI balance judge. Assesses a {@link RealityPlan} for balance (price ↔ tier/rarity ↔ utility,
@@ -101,8 +100,10 @@ public class RealityJudge {
             if (verdict == null) {
                 return JudgeVerdict.failure("Judge returned null verdict");
             }
-            log.info("Balance verdict: acceptable={}, score={}, findings={} (major={})",
-                    verdict.isAcceptable(), verdict.getScore(),
+            log.info(
+                    "Balance verdict: acceptable={}, score={}, findings={} (major={})",
+                    verdict.isAcceptable(),
+                    verdict.getScore(),
                     verdict.getFindings() == null ? 0 : verdict.getFindings().size(),
                     verdict.majorFindings().size());
             return verdict;

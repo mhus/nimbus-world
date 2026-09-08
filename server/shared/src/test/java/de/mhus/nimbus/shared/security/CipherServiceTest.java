@@ -1,14 +1,13 @@
 package de.mhus.nimbus.shared.security;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+
+import java.util.Optional;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class CipherServiceTest {
 
@@ -33,4 +32,3 @@ class CipherServiceTest {
         assertThrows(CipherService.CipherException.class, () -> cipherService.decryptAes("abc:def", KeyType.UNIVERSE));
     }
 }
-

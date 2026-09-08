@@ -1,19 +1,6 @@
 package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import org.springframework.context.annotation.Lazy;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -26,6 +13,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for managing WChat instances, WChatMessage, and WChatAgent in the world.
@@ -57,15 +55,16 @@ public class WChatService {
     /**
      * Constructor with dependency injection.
      */
-    public WChatService(WChatRepository repository,
-                       WChatMessageRepository messageRepository,
-                       List<WChatAgentProvider> agentProviders,
-                       List<WChatMessageProcessor> messageProcessors,
-                       tools.jackson.databind.ObjectMapper objectMapper,
-                       de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
-                       StringRedisTemplate redis,
-                       @Lazy WChatExecutorService chatExecutorService,
-                       MongoTemplate mongoTemplate) {
+    public WChatService(
+            WChatRepository repository,
+            WChatMessageRepository messageRepository,
+            List<WChatAgentProvider> agentProviders,
+            List<WChatMessageProcessor> messageProcessors,
+            tools.jackson.databind.ObjectMapper objectMapper,
+            de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
+            StringRedisTemplate redis,
+            @Lazy WChatExecutorService chatExecutorService,
+            MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.messageRepository = messageRepository;
         this.agentProviders = agentProviders;
@@ -76,8 +75,10 @@ public class WChatService {
         this.chatExecutorService = chatExecutorService;
         this.mongoTemplate = mongoTemplate;
 
-        log.info("WChatService initialized with {} agent providers, {} message processors",
-                agentProviders.size(), messageProcessors.size());
+        log.info(
+                "WChatService initialized with {} agent providers, {} message processors",
+                agentProviders.size(),
+                messageProcessors.size());
     }
 
     /**
@@ -124,8 +125,11 @@ public class WChatService {
             }
         }
 
-        log.info("Agent map initialized with {} agents from {} providers: {}",
-                agentMap.size(), agentProviders.size(), agentMap.keySet());
+        log.info(
+                "Agent map initialized with {} agents from {} providers: {}",
+                agentMap.size(),
+                agentProviders.size(),
+                agentMap.keySet());
         return agentMap;
     }
 
@@ -210,8 +214,13 @@ public class WChatService {
 
         var lookupWorld = worldId.toBaseWorldId();
 
-        log.debug("getChatsForOwner: worldId={}, lookupWorldId={}, type={}, ownerId={}, archived={}",
-                worldId.getId(), lookupWorld.getId(), type, ownerId, archived);
+        log.debug(
+                "getChatsForOwner: worldId={}, lookupWorldId={}, type={}, ownerId={}, archived={}",
+                worldId.getId(),
+                lookupWorld.getId(),
+                type,
+                ownerId,
+                archived);
 
         // If type is provided, filter by all criteria (excluding internal chats)
         if (!Strings.isBlank(type)) {
@@ -222,8 +231,8 @@ public class WChatService {
         }
 
         // If no type provided, filter only by ownerId and archived (excluding internal chats)
-        List<WChat> result = repository.findByWorldIdAndOwnerIdAndArchivedAndInternal(
-                lookupWorld.getId(), ownerId, archived, false);
+        List<WChat> result =
+                repository.findByWorldIdAndOwnerIdAndArchivedAndInternal(lookupWorld.getId(), ownerId, archived, false);
         log.debug("Found {} chats without type filter", result.size());
 
         return result;
@@ -250,20 +259,22 @@ public class WChatService {
 
         var lookupWorld = worldId.toBaseWorldId();
 
-        WChat chat = repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).orElseGet(() -> {
-            WChat neu = WChat.builder()
-                    .worldId(lookupWorld.getId())
-                    .chatId(chatId)
-                    .name(name)
-                    .type(type)
-                    .ownerId(ownerId)
-                    .hint(hint)
-                    .archived(false)
-                    .build();
-            neu.touchCreate();
-            log.debug("Creating new WChat: world={}, chatId={}, type={}", lookupWorld, chatId, type);
-            return neu;
-        });
+        WChat chat = repository
+                .findByWorldIdAndChatId(lookupWorld.getId(), chatId)
+                .orElseGet(() -> {
+                    WChat neu = WChat.builder()
+                            .worldId(lookupWorld.getId())
+                            .chatId(chatId)
+                            .name(name)
+                            .type(type)
+                            .ownerId(ownerId)
+                            .hint(hint)
+                            .archived(false)
+                            .build();
+                    neu.touchCreate();
+                    log.debug("Creating new WChat: world={}, chatId={}, type={}", lookupWorld, chatId, type);
+                    return neu;
+                });
 
         chat.setName(name);
         chat.setType(type);
@@ -324,7 +335,8 @@ public class WChatService {
      */
     @Transactional
     public boolean unarchive(WorldId worldId, String chatId) {
-        boolean result = update(worldId, chatId, chat -> chat.setArchived(false)).isPresent();
+        boolean result =
+                update(worldId, chatId, chat -> chat.setArchived(false)).isPresent();
         if (result) {
             unarchiveChildren(worldId, chatId);
         }
@@ -338,16 +350,19 @@ public class WChatService {
     public boolean delete(WorldId worldId, String chatId) {
         var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).map(chat -> {
-            // Delete children first
-            deleteChildren(worldId, chatId);
-            // Delete messages of this chat
-            messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), chatId);
-            // Delete the chat itself
-            repository.delete(chat);
-            log.debug("Deleted WChat with children: world={}, chatId={}", lookupWorld, chatId);
-            return true;
-        }).orElse(false);
+        return repository
+                .findByWorldIdAndChatId(lookupWorld.getId(), chatId)
+                .map(chat -> {
+                    // Delete children first
+                    deleteChildren(worldId, chatId);
+                    // Delete messages of this chat
+                    messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), chatId);
+                    // Delete the chat itself
+                    repository.delete(chat);
+                    log.debug("Deleted WChat with children: world={}, chatId={}", lookupWorld, chatId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -364,7 +379,8 @@ public class WChatService {
      * Internal chats are not visible in the UI and are cascaded on archive/delete.
      */
     @Transactional
-    public WChat createInternalChat(WorldId worldId, String parentChatId, String name, String type, String ownerId, String hint) {
+    public WChat createInternalChat(
+            WorldId worldId, String parentChatId, String name, String type, String ownerId, String hint) {
         var lookupWorld = worldId.toBaseWorldId();
         String chatId = UUID.randomUUID().toString();
 
@@ -382,8 +398,12 @@ public class WChatService {
         chat.touchCreate();
 
         WChat saved = repository.save(chat);
-        log.debug("Created internal WChat: world={}, chatId={}, parentChatId={}, type={}",
-                lookupWorld, chatId, parentChatId, type);
+        log.debug(
+                "Created internal WChat: world={}, chatId={}, parentChatId={}, type={}",
+                lookupWorld,
+                chatId,
+                parentChatId,
+                type);
         return saved;
     }
 
@@ -414,7 +434,11 @@ public class WChatService {
             deleteChildren(worldId, child.getChatId());
             messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), child.getChatId());
             repository.delete(child);
-            log.debug("Deleted child WChat: world={}, chatId={}, parentChatId={}", lookupWorld, child.getChatId(), parentChatId);
+            log.debug(
+                    "Deleted child WChat: world={}, chatId={}, parentChatId={}",
+                    lookupWorld,
+                    child.getChatId(),
+                    parentChatId);
         }
     }
 
@@ -443,10 +467,10 @@ public class WChatService {
                     String name = chat.getName();
                     String type = chat.getType();
                     String ownerId = chat.getOwnerId();
-                    return (chatId != null && chatId.toLowerCase().contains(lowerQuery)) ||
-                            (name != null && name.toLowerCase().contains(lowerQuery)) ||
-                            (type != null && type.toLowerCase().contains(lowerQuery)) ||
-                            (ownerId != null && ownerId.toLowerCase().contains(lowerQuery));
+                    return (chatId != null && chatId.toLowerCase().contains(lowerQuery))
+                            || (name != null && name.toLowerCase().contains(lowerQuery))
+                            || (type != null && type.toLowerCase().contains(lowerQuery))
+                            || (ownerId != null && ownerId.toLowerCase().contains(lowerQuery));
                 })
                 .toList();
     }
@@ -458,7 +482,8 @@ public class WChatService {
      * Filters out instances - messages are stored per world.
      */
     @Transactional
-    public WChatMessage sendMessage(WorldId worldId, String chatId, String messageId, String senderId, String message, String type) {
+    public WChatMessage sendMessage(
+            WorldId worldId, String chatId, String messageId, String senderId, String message, String type) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -504,11 +529,16 @@ public class WChatService {
             message.touchCreate();
         }
         WChatMessage saved = messageRepository.save(message);
-        log.debug("Saved message: world={}, chatId={}, messageId={}", message.getWorldId(), message.getChatId(), message.getMessageId());
+        log.debug(
+                "Saved message: world={}, chatId={}, messageId={}",
+                message.getWorldId(),
+                message.getChatId(),
+                message.getMessageId());
         return saved;
     }
 
-    public void saveMessages(WorldId worldId, String chatId, String sessionId, boolean process, List<WChatMessage> messages) {
+    public void saveMessages(
+            WorldId worldId, String chatId, String sessionId, boolean process, List<WChatMessage> messages) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
@@ -584,7 +614,8 @@ public class WChatService {
      * Filters out instances.
      */
     @Transactional(readOnly = true)
-    public Optional<WChatMessage> findMessageByWorldIdAndChatIdAndMessageId(WorldId worldId, String chatId, String messageId) {
+    public Optional<WChatMessage> findMessageByWorldIdAndChatIdAndMessageId(
+            WorldId worldId, String chatId, String messageId) {
         var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId);
     }
@@ -608,8 +639,8 @@ public class WChatService {
         Pageable pageable = PageRequest.of(0, limit);
 
         // Fetch newest messages first (DESC)
-        List<WChatMessage> messages = messageRepository.findByWorldIdAndChatIdOrderByCreatedAtDesc(
-                lookupWorld.getId(), chatId, pageable);
+        List<WChatMessage> messages =
+                messageRepository.findByWorldIdAndChatIdOrderByCreatedAtDesc(lookupWorld.getId(), chatId, pageable);
 
         // Reverse to get chronological order (ASC)
         java.util.Collections.reverse(messages);
@@ -622,7 +653,8 @@ public class WChatService {
      * Filters out instances.
      */
     @Transactional(readOnly = true)
-    public List<WChatMessage> findMessagesByWorldIdAndChatIdNewestFirst(WorldId worldId, String chatId, int page, int size) {
+    public List<WChatMessage> findMessagesByWorldIdAndChatIdNewestFirst(
+            WorldId worldId, String chatId, int page, int size) {
         var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findByWorldIdAndChatIdOrderByCreatedAtDesc(lookupWorld.getId(), chatId, pageable);
@@ -633,7 +665,8 @@ public class WChatService {
      * Filters out instances.
      */
     @Transactional(readOnly = true)
-    public List<WChatMessage> findMessagesByWorldIdAndChatIdOldestFirst(WorldId worldId, String chatId, int page, int size) {
+    public List<WChatMessage> findMessagesByWorldIdAndChatIdOldestFirst(
+            WorldId worldId, String chatId, int page, int size) {
         var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findByWorldIdAndChatIdOrderByCreatedAtAsc(lookupWorld.getId(), chatId, pageable);
@@ -697,11 +730,14 @@ public class WChatService {
     public boolean deleteMessage(WorldId worldId, String chatId, String messageId) {
         var lookupWorld = worldId.toBaseWorldId();
 
-        return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId).map(message -> {
-            messageRepository.delete(message);
-            log.debug("Deleted message: world={}, chatId={}, messageId={}", lookupWorld, chatId, messageId);
-            return true;
-        }).orElse(false);
+        return messageRepository
+                .findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId)
+                .map(message -> {
+                    messageRepository.delete(message);
+                    log.debug("Deleted message: world={}, chatId={}, messageId={}", lookupWorld, chatId, messageId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -730,8 +766,11 @@ public class WChatService {
         var messages = mongoTemplate.remove(query, WChatMessage.class);
         var chats = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WChat.class);
 
-        log.info("Deleted chat for world {}: {} messages, {} channels",
-                worldId, messages.getDeletedCount(), chats.getDeletedCount());
+        log.info(
+                "Deleted chat for world {}: {} messages, {} channels",
+                worldId,
+                messages.getDeletedCount(),
+                chats.getDeletedCount());
         return (int) (messages.getDeletedCount() + chats.getDeletedCount());
     }
 
@@ -789,9 +828,8 @@ public class WChatService {
      * Chat with an agent and save the messages.
      */
     @Transactional
-    public List<WChatMessage> chatWithAgent(WorldId worldId, String chatId, String agentName,
-                                           String playerId, String playerMessageId,
-                                           String message) {
+    public List<WChatMessage> chatWithAgent(
+            WorldId worldId, String chatId, String agentName, String playerId, String playerMessageId, String message) {
         return chatWithAgent(worldId, chatId, agentName, playerId, playerMessageId, message, null);
     }
 
@@ -800,9 +838,14 @@ public class WChatService {
      * Saves player message, gets agent responses, and saves them.
      */
     @Transactional
-    public List<WChatMessage> chatWithAgent(WorldId worldId, String chatId, String agentName,
-                                           String playerId, String playerMessageId,
-                                           String message, String sessionId) {
+    public List<WChatMessage> chatWithAgent(
+            WorldId worldId,
+            String chatId,
+            String agentName,
+            String playerId,
+            String playerMessageId,
+            String message,
+            String sessionId) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -817,8 +860,8 @@ public class WChatService {
         }
 
         // Get the agent
-        WChatAgent agent = getAgent(agentName)
-                .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
+        WChatAgent agent =
+                getAgent(agentName).orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
         var lookupWorld = worldId.toBaseWorldId();
 
@@ -836,10 +879,8 @@ public class WChatService {
         log.debug("Saved player message: world={}, chatId={}, playerId={}", lookupWorld, chatId, playerId);
 
         // Build context with full worldId and call agent
-        WChatContext context = WChatContext.builder()
-                .fullWorldId(worldId)
-                .sessionId(sessionId)
-                .build();
+        WChatContext context =
+                WChatContext.builder().fullWorldId(worldId).sessionId(sessionId).build();
         List<WChatMessage> responses;
         if (sessionId != null && !sessionId.isBlank()) {
             responses = agent.chatWithSession(lookupWorld, chatId, playerId, message, sessionId, context);
@@ -850,8 +891,13 @@ public class WChatService {
         // Save agent responses and handle model-selector commands
         saveMessages(worldId, chatId, sessionId, true, responses);
 
-        log.debug("Agent {} generated {} responses for chat: world={}, chatId={}, sessionId={}",
-                agentName, responses.size(), lookupWorld, chatId, sessionId);
+        log.debug(
+                "Agent {} generated {} responses for chat: world={}, chatId={}, sessionId={}",
+                agentName,
+                responses.size(),
+                lookupWorld,
+                chatId,
+                sessionId);
 
         return responses;
     }
@@ -863,8 +909,12 @@ public class WChatService {
                     processor.process(worldId, sessionId, response);
                 }
             } catch (Exception e) {
-                log.error("Message processor {} failed for message type={}: {}",
-                        processor.getClass().getSimpleName(), response.getType(), e.getMessage(), e);
+                log.error(
+                        "Message processor {} failed for message type={}: {}",
+                        processor.getClass().getSimpleName(),
+                        response.getType(),
+                        e.getMessage(),
+                        e);
             }
         }
     }
@@ -873,9 +923,13 @@ public class WChatService {
      * Execute a command on an agent and save the responses.
      */
     @Transactional
-    public List<WChatMessage> executeAgentCommand(WorldId worldId, String chatId, String agentName,
-                                                 String playerId, String command,
-                                                 Map<String, Object> params) {
+    public List<WChatMessage> executeAgentCommand(
+            WorldId worldId,
+            String chatId,
+            String agentName,
+            String playerId,
+            String command,
+            Map<String, Object> params) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -899,8 +953,8 @@ public class WChatService {
         }
 
         // Get the agent
-        WChatAgent agent = getAgent(agentName)
-                .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
+        WChatAgent agent =
+                getAgent(agentName).orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
         var lookupWorld = worldId.toBaseWorldId();
 
@@ -917,20 +971,26 @@ public class WChatService {
             messageRepository.save(response);
         }
 
-        log.debug("Agent {} executed command {} with {} responses for chat: world={}, chatId={}",
-                agentName, command, responses.size(), lookupWorld, chatId);
+        log.debug(
+                "Agent {} executed command {} with {} responses for chat: world={}, chatId={}",
+                agentName,
+                command,
+                responses.size(),
+                lookupWorld,
+                chatId);
 
         return responses;
     }
 
     @Transactional
-    public List<WChatMessage> getChatMessagesAfterMessageId(WorldId worldId, String chatId, String messageId, int limit) {
+    public List<WChatMessage> getChatMessagesAfterMessageId(
+            WorldId worldId, String chatId, String messageId, int limit) {
         var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(0, limit);
 
         // Find the reference message to get its createdAt timestamp
-        Optional<WChatMessage> referenceMessageOpt = messageRepository.findByWorldIdAndChatIdAndMessageId(
-                lookupWorld.getId(), chatId, messageId);
+        Optional<WChatMessage> referenceMessageOpt =
+                messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId);
 
         if (referenceMessageOpt.isEmpty()) {
             log.warn("Reference message not found: world={}, chatId={}, messageId={}", lookupWorld, chatId, messageId);
@@ -958,9 +1018,14 @@ public class WChatService {
      * Saves the player message to DB immediately, then enqueues for agent processing.
      * If the session is active on a remote pod, routes the message there.
      */
-    public WChatMessage enqueuePlayerMessage(WorldId worldId, String chatId, String agentName,
-                                              String playerId, String playerMessageId,
-                                              String message, String sessionId) {
+    public WChatMessage enqueuePlayerMessage(
+            WorldId worldId,
+            String chatId,
+            String agentName,
+            String playerId,
+            String playerMessageId,
+            String message,
+            String sessionId) {
         var lookupWorld = worldId.toBaseWorldId();
 
         // Save player message to DB immediately
@@ -999,9 +1064,14 @@ public class WChatService {
      * Enqueue a player command for async processing.
      * If the session is active on a remote pod, routes the command there.
      */
-    public void enqueuePlayerCommand(WorldId worldId, String chatId, String agentName,
-                                     String playerId, String command,
-                                     Map<String, Object> params, String sessionId) {
+    public void enqueuePlayerCommand(
+            WorldId worldId,
+            String chatId,
+            String agentName,
+            String playerId,
+            String command,
+            Map<String, Object> params,
+            String sessionId) {
         var lookupWorld = worldId.toBaseWorldId();
 
         WChatSessionMessage sessionMsg = WChatSessionMessage.builder()
@@ -1049,15 +1119,16 @@ public class WChatService {
         WorldId worldId = WorldId.unchecked(msg.getWorldId());
 
         // Build request context with full worldId (includes instance suffix, e.g. "ymir:Mist::x0")
-        String fullWorldIdStr = msg.getFullWorldId() != null && !msg.getFullWorldId().isBlank()
-                ? msg.getFullWorldId() : msg.getWorldId();
+        String fullWorldIdStr =
+                msg.getFullWorldId() != null && !msg.getFullWorldId().isBlank()
+                        ? msg.getFullWorldId()
+                        : msg.getWorldId();
         WChatContext context = WChatContext.builder()
                 .fullWorldId(WorldId.unchecked(fullWorldIdStr))
                 .sessionId(msg.getSessionId())
                 .build();
 
-        WChatAgent agent = getAgent(msg.getAgentName())
-                .orElse(null);
+        WChatAgent agent = getAgent(msg.getAgentName()).orElse(null);
         if (agent == null) {
             log.error("Agent not found for async chat: agentName={}", msg.getAgentName());
             return;
@@ -1066,20 +1137,28 @@ public class WChatService {
         try {
             List<WChatMessage> responses;
             if (agent.supportsQueue() && sessionQueue != null) {
-                responses = agent.chatWithQueue(worldId, msg.getChatId(), msg.getPlayerId(),
-                        msg.getMessage(), msg.getSessionId(), sessionQueue, context);
+                responses = agent.chatWithQueue(
+                        worldId,
+                        msg.getChatId(),
+                        msg.getPlayerId(),
+                        msg.getMessage(),
+                        msg.getSessionId(),
+                        sessionQueue,
+                        context);
             } else if (msg.getSessionId() != null && !msg.getSessionId().isBlank()) {
-                responses = agent.chatWithSession(worldId, msg.getChatId(), msg.getPlayerId(),
-                        msg.getMessage(), msg.getSessionId(), context);
+                responses = agent.chatWithSession(
+                        worldId, msg.getChatId(), msg.getPlayerId(), msg.getMessage(), msg.getSessionId(), context);
             } else {
-                responses = agent.chat(worldId, msg.getChatId(), msg.getPlayerId(),
-                        msg.getMessage(), context);
+                responses = agent.chat(worldId, msg.getChatId(), msg.getPlayerId(), msg.getMessage(), context);
             }
 
             saveMessages(worldId, msg.getChatId(), msg.getSessionId(), true, responses);
 
-            log.debug("Async agent {} generated {} responses: chatId={}",
-                    msg.getAgentName(), responses.size(), msg.getChatId());
+            log.debug(
+                    "Async agent {} generated {} responses: chatId={}",
+                    msg.getAgentName(),
+                    responses.size(),
+                    msg.getChatId());
         } catch (Exception e) {
             log.error("Error in async agent chat: agentName={}, chatId={}", msg.getAgentName(), msg.getChatId(), e);
         }
@@ -1093,22 +1172,21 @@ public class WChatService {
         WorldId worldId = WorldId.unchecked(msg.getWorldId());
         var lookupWorld = worldId.toBaseWorldId();
 
-        WChatAgent agent = getAgent(msg.getAgentName())
-                .orElse(null);
+        WChatAgent agent = getAgent(msg.getAgentName()).orElse(null);
         if (agent == null) {
             log.error("Agent not found for async command: agentName={}", msg.getAgentName());
             return;
         }
 
         try {
-            Map<String, Object> params = msg.getCommandParams() != null
-                    ? new HashMap<>(msg.getCommandParams())
-                    : new HashMap<>();
+            Map<String, Object> params =
+                    msg.getCommandParams() != null ? new HashMap<>(msg.getCommandParams()) : new HashMap<>();
             if (msg.getSessionId() != null && !msg.getSessionId().isBlank()) {
                 params.put("sessionId", msg.getSessionId());
             }
 
-            List<WChatMessage> responses = agent.executeCommand(worldId, msg.getChatId(), msg.getPlayerId(), msg.getCommand(), params);
+            List<WChatMessage> responses =
+                    agent.executeCommand(worldId, msg.getChatId(), msg.getPlayerId(), msg.getCommand(), params);
 
             for (WChatMessage response : responses) {
                 response.setWorldId(lookupWorld.getId());
@@ -1119,11 +1197,19 @@ public class WChatService {
                 messageRepository.save(response);
             }
 
-            log.debug("Async agent {} executed command {} with {} responses: chatId={}",
-                    msg.getAgentName(), msg.getCommand(), responses.size(), msg.getChatId());
+            log.debug(
+                    "Async agent {} executed command {} with {} responses: chatId={}",
+                    msg.getAgentName(),
+                    msg.getCommand(),
+                    responses.size(),
+                    msg.getChatId());
         } catch (Exception e) {
-            log.error("Error in async agent command: agentName={}, command={}, chatId={}",
-                    msg.getAgentName(), msg.getCommand(), msg.getChatId(), e);
+            log.error(
+                    "Error in async agent command: agentName={}, command={}, chatId={}",
+                    msg.getAgentName(),
+                    msg.getCommand(),
+                    msg.getChatId(),
+                    e);
         }
     }
 
@@ -1141,12 +1227,7 @@ public class WChatService {
                             .originServer("world-control")
                             .build();
 
-            worldClientService.sendControlCommand(
-                    msg.getWorldId(),
-                    "chat-connector",
-                    List.of("enqueue", json),
-                    ctx
-            );
+            worldClientService.sendControlCommand(msg.getWorldId(), "chat-connector", List.of("enqueue", json), ctx);
 
             log.debug("Routed message to remote pod: url={}, chatId={}", remoteUrl, msg.getChatId());
         } catch (Exception e) {

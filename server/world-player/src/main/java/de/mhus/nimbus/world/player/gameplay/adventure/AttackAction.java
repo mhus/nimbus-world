@@ -1,21 +1,20 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
-import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
+import de.mhus.nimbus.world.player.gameplay.GameplayAction;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
-import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Attack action: publishes the attacker's combat stats via Redis.
@@ -36,13 +35,30 @@ public class AttackAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         // Blocks cannot be attacked
         return false;
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (entity == null) return false;
         String targetEntityId = entity.getName();
         if (targetEntityId == null) return false;
@@ -57,7 +73,13 @@ public class AttackAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         if (targetEntityId == null) return false;
         return performAttack(session, targetEntityId, shortcutKey, params);
     }
@@ -77,8 +99,11 @@ public class AttackAction implements GameplayAction {
         // Check stamina
         VitalValue stamina = data.getVital("stamina");
         if (stamina != null && stamina.getCurrent() < STAMINA_COST) {
-            log.debug("Player {} has insufficient stamina for attack ({} < {})",
-                    session.getEntityId(), stamina.getCurrent(), STAMINA_COST);
+            log.debug(
+                    "Player {} has insufficient stamina for attack ({} < {})",
+                    session.getEntityId(),
+                    stamina.getCurrent(),
+                    STAMINA_COST);
             return false;
         }
 
@@ -89,8 +114,10 @@ public class AttackAction implements GameplayAction {
         double cooldownMs = 1000.0 / attackSpeed;
         long now = System.currentTimeMillis();
         if (now < data.getNextAttackAllowed()) {
-            log.trace("Player {} attack on cooldown ({}ms remaining)",
-                    session.getEntityId(), data.getNextAttackAllowed() - now);
+            log.trace(
+                    "Player {} attack on cooldown ({}ms remaining)",
+                    session.getEntityId(),
+                    data.getNextAttackAllowed() - now);
             return false;
         }
         data.setNextAttackAllowed(now + (long) cooldownMs);
@@ -131,10 +158,19 @@ public class AttackAction implements GameplayAction {
         double critMult = getEffective(data, "critMultiplier");
 
         // Publish attack via Redis (include sessionId for position lookup and weaponItemId)
-        basic.getVitalDeltaPublisher().publishAttack(
-                worldId, targetEntityId, session.getEntityId(),
-                physDmg, physAcc, magDmg, magAcc, critChance, critMult,
-                session.getSessionId(), weaponItemId);
+        basic.getVitalDeltaPublisher()
+                .publishAttack(
+                        worldId,
+                        targetEntityId,
+                        session.getEntityId(),
+                        physDmg,
+                        physAcc,
+                        magDmg,
+                        magAcc,
+                        critChance,
+                        critMult,
+                        session.getSessionId(),
+                        weaponItemId);
 
         // Play attack sound (weapon-specific or default, random pick from comma-separated list)
         String attackSoundValue = getServerProp(weaponItem, "sound_attack", null);
@@ -151,9 +187,20 @@ public class AttackAction implements GameplayAction {
             basic.applyConstitutionWear(session, data, "weapon", itemWear, AdventureSkills.COMBAT_WEAPON_CARE);
         }
 
-        log.debug("Player {} attacked {} with {} {} [range={}, dmgType={}, phys={}/{}, mag={}/{}, crit={}/{}]",
-                session.getEntityId(), targetEntityId, weaponType, weaponItemId,
-                rangeType, damageType, physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+        log.debug(
+                "Player {} attacked {} with {} {} [range={}, dmgType={}, phys={}/{}, mag={}/{}, crit={}/{}]",
+                session.getEntityId(),
+                targetEntityId,
+                weaponType,
+                weaponItemId,
+                rangeType,
+                damageType,
+                physDmg,
+                physAcc,
+                magDmg,
+                magAcc,
+                critChance,
+                critMult);
         return true;
     }
 

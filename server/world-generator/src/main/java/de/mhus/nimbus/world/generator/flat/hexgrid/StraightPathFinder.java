@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * StraightPathFinder creates more realistic straight paths with probabilistic curves.
@@ -17,8 +16,8 @@ import java.util.Random;
 public class StraightPathFinder {
 
     private final int maxSlopePerBlock;
-    private final double straightness;  // 0.0 = very curvy, 1.0 = perfectly straight
-    private final int maxLateralOffset;  // Maximum pixels of lateral deviation
+    private final double straightness; // 0.0 = very curvy, 1.0 = perfectly straight
+    private final int maxLateralOffset; // Maximum pixels of lateral deviation
     private final Random random;
 
     /**
@@ -45,8 +44,8 @@ public class StraightPathFinder {
      * @param endLevel Required end elevation
      * @return List of PathPoints
      */
-    public List<TerrainPathFinder.PathPoint> findPath(int startX, int startZ, int startLevel,
-                                                        int endX, int endZ, int endLevel) {
+    public List<TerrainPathFinder.PathPoint> findPath(
+            int startX, int startZ, int startLevel, int endX, int endZ, int endLevel) {
         List<TerrainPathFinder.PathPoint> path = new ArrayList<>();
 
         // Calculate direct distance and direction
@@ -60,7 +59,7 @@ public class StraightPathFinder {
 
         // Track cumulative lateral offset for smooth curves
         double cumulativeOffset = 0.0;
-        double offsetVelocity = 0.0;  // Rate of change of offset
+        double offsetVelocity = 0.0; // Rate of change of offset
 
         for (int step = 0; step <= steps; step++) {
             double t = steps > 0 ? (double) step / steps : 0.0;
@@ -71,11 +70,11 @@ public class StraightPathFinder {
 
             // Update lateral offset with probabilistic movement
             // Random walk with tendency toward center
-            double randomPush = (random.nextDouble() - 0.5) * 2.0;  // -1.0 to 1.0
-            double centeringForce = -cumulativeOffset * 0.1;  // Pull toward center
+            double randomPush = (random.nextDouble() - 0.5) * 2.0; // -1.0 to 1.0
+            double centeringForce = -cumulativeOffset * 0.1; // Pull toward center
 
             offsetVelocity += randomPush * (1.0 - straightness) + centeringForce;
-            offsetVelocity *= 0.8;  // Damping for smoother curves
+            offsetVelocity *= 0.8; // Damping for smoother curves
 
             cumulativeOffset += offsetVelocity;
 
@@ -122,8 +121,8 @@ public class StraightPathFinder {
         // Perpendicular vector is (-dz, dx)
         double length = Math.sqrt(dx * dx + dz * dz);
         if (length == 0) {
-            return new double[]{0, 0};
+            return new double[] {0, 0};
         }
-        return new double[]{-dz / length, dx / length};
+        return new double[] {-dz / length, dx / length};
     }
 }

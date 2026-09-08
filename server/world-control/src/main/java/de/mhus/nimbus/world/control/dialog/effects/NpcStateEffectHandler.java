@@ -4,12 +4,11 @@ import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -19,7 +18,9 @@ public class NpcStateEffectHandler implements DialogEffectHandler {
     private final WProgressService progressService;
 
     @Override
-    public String getEffectType() { return "setNpcState"; }
+    public String getEffectType() {
+        return "setNpcState";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {

@@ -3,6 +3,9 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,10 +17,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * MongoDB Entity for Item positions in the world.
  * Stores ItemBlockRef data for items placed in chunks.
@@ -26,9 +25,11 @@ import java.util.List;
 @Document(collection = "w_item_positions")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1 }"),
-        @CompoundIndex(name = "world_chunk_enabled_epoches_idx", def = "{ 'worldId': 1, 'chunk': 1, 'enabled': 1, 'epoches': 1 }")
+    @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true),
+    @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1 }"),
+    @CompoundIndex(
+            name = "world_chunk_enabled_epoches_idx",
+            def = "{ 'worldId': 1, 'chunk': 1, 'enabled': 1, 'epoches': 1 }")
 })
 @Data
 @Builder

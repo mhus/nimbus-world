@@ -5,16 +5,15 @@ import de.mhus.nimbus.world.generator.npc.NpcGeneratorService.ScheduleEntry;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Job executor for NPC generation.
@@ -40,7 +39,9 @@ import tools.jackson.databind.DeserializationFeature;
 public class NpcGeneratorJobExecutor implements JobExecutor {
 
     public static final String EXECUTOR_NAME = "npc-generator";
-    private static final ObjectMapper MAPPER = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     private final NpcGeneratorService npcGeneratorService;
 
@@ -72,8 +73,7 @@ public class NpcGeneratorJobExecutor implements JobExecutor {
                     params.get("aiModel"),
                     parseIntList(params.get("epoches")),
                     parseSchedule(params.get("schedule")),
-                    parseLoreContext(params.get("loreContext"), npcDocumentName)
-            );
+                    parseLoreContext(params.get("loreContext"), npcDocumentName));
 
             log.info("Generating NPC '{}' in world {}", entityId, job.getWorldId());
 

@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.player.ws;
 
-import tools.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Base network message structure for WebSocket communication.

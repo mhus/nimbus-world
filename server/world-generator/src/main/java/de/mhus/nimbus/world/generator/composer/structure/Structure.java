@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @SuperBuilder
@@ -142,10 +141,10 @@ public abstract class Structure extends Area {
             return null;
         }
         return structureComposed.getHexGrids().stream()
-            .filter(grid -> grid.getCoordinate() != null &&
-                          grid.getCoordinate().getQ() == q &&
-                          grid.getCoordinate().getR() == r)
-            .findFirst()
-            .orElse(null);
+                .filter(grid -> grid.getCoordinate() != null
+                        && grid.getCoordinate().getQ() == q
+                        && grid.getCoordinate().getR() == r)
+                .findFirst()
+                .orElse(null);
     }
 }

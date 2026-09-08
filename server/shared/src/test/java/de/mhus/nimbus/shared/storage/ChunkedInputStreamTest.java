@@ -1,19 +1,18 @@
 package de.mhus.nimbus.shared.storage;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.util.Date;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.util.Date;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for ChunkedInputStream.
@@ -229,7 +228,7 @@ class ChunkedInputStreamTest {
                 .uuid(TEST_UUID)
                 .index(0)
                 .data(data)
-                .isFinal(false)  // Not final, so stream expects more chunks
+                .isFinal(false) // Not final, so stream expects more chunks
                 .createdAt(new Date())
                 .build();
 
@@ -288,9 +287,7 @@ class ChunkedInputStreamTest {
         ChunkedInputStream stream = new ChunkedInputStream(repository, TEST_UUID);
         stream.close();
 
-        assertThatThrownBy(() -> stream.read())
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining("closed");
+        assertThatThrownBy(() -> stream.read()).isInstanceOf(IOException.class).hasMessageContaining("closed");
     }
 
     @Test
@@ -309,8 +306,7 @@ class ChunkedInputStreamTest {
 
         ChunkedInputStream stream = new ChunkedInputStream(repository, TEST_UUID);
 
-        assertThatThrownBy(() -> stream.read(null, 0, 10))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> stream.read(null, 0, 10)).isInstanceOf(NullPointerException.class);
 
         stream.close();
     }
@@ -333,14 +329,11 @@ class ChunkedInputStreamTest {
 
         byte[] buffer = new byte[10];
 
-        assertThatThrownBy(() -> stream.read(buffer, -1, 5))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.read(buffer, -1, 5)).isInstanceOf(IndexOutOfBoundsException.class);
 
-        assertThatThrownBy(() -> stream.read(buffer, 0, -1))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.read(buffer, 0, -1)).isInstanceOf(IndexOutOfBoundsException.class);
 
-        assertThatThrownBy(() -> stream.read(buffer, 0, 20))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.read(buffer, 0, 20)).isInstanceOf(IndexOutOfBoundsException.class);
 
         stream.close();
     }

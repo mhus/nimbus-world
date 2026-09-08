@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Multi-Flat EdgeBlender manipulator builder.
@@ -63,8 +62,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Side flats for multi-blending: {}, width={}, allSides={}",
-                sideFlats, width,  blendAllSides);
+        log.debug("Side flats for multi-blending: {}, width={}, allSides={}", sideFlats, width, blendAllSides);
 
         // Check if flatService is available
         if (context.getFlatService() == null) {
@@ -80,7 +78,8 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             log.debug("Processing all sides: {}", sidesToProcess);
         } else {
             // Only process EAST sides (NORTH_EAST, EAST, SOUTH_EAST)
-            for (WHexGrid.EDGE side : new WHexGrid.EDGE[]{WHexGrid.EDGE.NORTH_EAST, WHexGrid.EDGE.EAST, WHexGrid.EDGE.SOUTH_EAST}) {
+            for (WHexGrid.EDGE side :
+                    new WHexGrid.EDGE[] {WHexGrid.EDGE.NORTH_EAST, WHexGrid.EDGE.EAST, WHexGrid.EDGE.SOUTH_EAST}) {
                 if (sideFlats.containsKey(side)) {
                     sidesToProcess.add(side);
                 }
@@ -98,14 +97,16 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
         for (WHexGrid.EDGE side : sidesToProcess) {
             String neighborFlatId = sideFlats.get(side);
             if (neighborFlatId != null) {
-                WFlat neighborFlat = context.getFlatService().findByWorldAndFlatId(
-                        context.getWorld().getWorldId(), neighborFlatId);
+                WFlat neighborFlat = context.getFlatService()
+                        .findByWorldAndFlatId(context.getWorld().getWorldId(), neighborFlatId);
                 if (neighborFlat != null) {
                     loadedNeighbors.put(side, neighborFlat);
                     log.debug("Loaded neighbor flat for side {}: {}", side, neighborFlatId);
                 } else {
                     log.debug("Neighbor flat not found: {} for side {}, trying chunk data", neighborFlatId, side);
-                    var worldIdObj = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+                    var worldIdObj = de.mhus.nimbus.shared.types.WorldId.of(
+                                    context.getWorld().getWorldId())
+                            .orElse(null);
                     if (worldIdObj != null && context.getChunkService() != null) {
                         WFlat chunkFlat = HexFlatUtil.createChunkBackedFlat(
                                 centerFlat, side, context.getChunkService(), worldIdObj, context.getWorld());
@@ -127,8 +128,8 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
         // We only write inside the hexagon, so no need to disable protection
 
         // Blend all sides simultaneously using multi-flat blender
-        HexGridMultiEdgeBlender multiEdgeBlender = new HexGridMultiEdgeBlender(
-                centerFlat, loadedNeighbors, width, range, context);
+        HexGridMultiEdgeBlender multiEdgeBlender =
+                new HexGridMultiEdgeBlender(centerFlat, loadedNeighbors, width, range, context);
         multiEdgeBlender.blendAllEdges();
 
         // Save all modified neighbor flats (but NOT the center flat and NOT chunk-backed flats)
@@ -147,12 +148,12 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 0;  // MultiEdgeBlender doesn't use land offset
+        return 0; // MultiEdgeBlender doesn't use land offset
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 0;  // MultiEdgeBlender doesn't use land level
+        return 0; // MultiEdgeBlender doesn't use land level
     }
 
     @Override

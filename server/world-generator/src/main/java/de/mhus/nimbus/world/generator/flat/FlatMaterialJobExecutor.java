@@ -5,12 +5,11 @@ import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Job executor for managing WFlat material definitions.
@@ -72,8 +71,9 @@ public class FlatMaterialJobExecutor implements JobExecutor {
                 case JOB_TYPE_SET_MATERIAL -> executeSetMaterial(job);
                 case JOB_TYPE_SET_MATERIALS -> executeSetMaterials(job);
                 case JOB_TYPE_SET_PALETTE -> executeSetPalette(job);
-                default -> throw new JobExecutionException("Unknown job type: " + jobType +
-                        ". Valid types: set-material, set-materials, set-palette");
+                default ->
+                    throw new JobExecutionException(
+                            "Unknown job type: " + jobType + ". Valid types: set-material, set-materials, set-palette");
             };
 
         } catch (JobExecutionException e) {
@@ -116,7 +116,8 @@ public class FlatMaterialJobExecutor implements JobExecutor {
         boolean hasOcean = parts.length > 2 && Boolean.parseBoolean(parts[2]);
 
         // Set material definition (using database ID)
-        WFlat updated = flatMaterialService.setMaterialDefinition(flat.getId(), materialId, blockDef, nextBlockDef, hasOcean);
+        WFlat updated =
+                flatMaterialService.setMaterialDefinition(flat.getId(), materialId, blockDef, nextBlockDef, hasOcean);
 
         log.info("Set material definition: flatId={}, materialId={}", flatId, materialId);
         return JobResult.success("Material definition set successfully: materialId=" + materialId);
@@ -182,16 +183,17 @@ public class FlatMaterialJobExecutor implements JobExecutor {
 
         if (layerDataId != null && !layerDataId.isBlank()) {
             // Use compound lookup with worldId, layerDataId, and flatId
-            return flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
-                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                            ", layerDataId=" + layerDataId + ", flatId=" + flatId));
+            return flatService
+                    .findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
+                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId + ", layerDataId="
+                            + layerDataId + ", flatId=" + flatId));
         } else {
             // Search for flat with matching flatId in this world
             return flatService.findByWorldId(worldId).stream()
                     .filter(f -> flatId.equals(f.getFlatId()))
                     .findFirst()
-                    .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
-                            ", flatId=" + flatId));
+                    .orElseThrow(() ->
+                            new JobExecutionException("Flat not found: worldId=" + worldId + ", flatId=" + flatId));
         }
     }
 

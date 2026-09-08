@@ -5,11 +5,10 @@ import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.gameplay.CombatStrategy;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.world.WEntity;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Internal simulation state for each entity.
@@ -215,7 +214,9 @@ public class SimulationState {
      * Update pathway end time based on waypoints.
      */
     public void updatePathwayEndTime() {
-        if (currentPathway == null || currentPathway.getWaypoints() == null || currentPathway.getWaypoints().isEmpty()) {
+        if (currentPathway == null
+                || currentPathway.getWaypoints() == null
+                || currentPathway.getWaypoints().isEmpty()) {
             pathwayEndTime = 0;
             return;
         }

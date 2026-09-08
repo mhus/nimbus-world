@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Crater manipulator.
@@ -50,8 +49,7 @@ public class CraterManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting crater manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -86,8 +84,8 @@ public class CraterManipulator implements FlatManipulator {
         int baseLevel = flat.getLevel(absoluteCenterX, absoluteCenterZ);
 
         // Draw main crater
-        drawCrater(painter, flat, absoluteCenterX, absoluteCenterZ,
-                  outerRadius, innerRadius, rimHeight, depth, baseLevel);
+        drawCrater(
+                painter, flat, absoluteCenterX, absoluteCenterZ, outerRadius, innerRadius, rimHeight, depth, baseLevel);
 
         // Draw small craters inside
         for (int i = 0; i < smallCraters; i++) {
@@ -101,15 +99,19 @@ public class CraterManipulator implements FlatManipulator {
             int smallRadius = 2 + random.nextInt(6);
 
             // Draw small crater with reduced height and depth
-            drawCrater(painter, flat, smallX, smallZ,
-                      smallRadius + 1, smallRadius, 3, 5, baseLevel);
+            drawCrater(painter, flat, smallX, smallZ, smallRadius + 1, smallRadius, 3, 5, baseLevel);
         }
 
         // Smooth edges for natural appearance
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.2);
 
-        log.info("Crater manipulation completed: outerRadius={}, innerRadius={}, rimHeight={}, depth={}, smallCraters={}",
-                outerRadius, innerRadius, rimHeight, depth, smallCraters);
+        log.info(
+                "Crater manipulation completed: outerRadius={}, innerRadius={}, rimHeight={}, depth={}, smallCraters={}",
+                outerRadius,
+                innerRadius,
+                rimHeight,
+                depth,
+                smallCraters);
     }
 
     /**
@@ -125,9 +127,16 @@ public class CraterManipulator implements FlatManipulator {
      * @param depth Depth of depression below base
      * @param baseLevel Base height level
      */
-    private void drawCrater(FlatPainter painter, WFlat flat,
-                           int centerX, int centerZ, int outerRadius, int innerRadius,
-                           int rimHeight, int depth, int baseLevel) {
+    private void drawCrater(
+            FlatPainter painter,
+            WFlat flat,
+            int centerX,
+            int centerZ,
+            int outerRadius,
+            int innerRadius,
+            int rimHeight,
+            int depth,
+            int baseLevel) {
         // Draw crater in two zones: rim (elevated) and inner (depressed)
         for (int dz = -outerRadius; dz <= outerRadius; dz++) {
             for (int dx = -outerRadius; dx <= outerRadius; dx++) {
@@ -171,8 +180,7 @@ public class CraterManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -184,8 +192,7 @@ public class CraterManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

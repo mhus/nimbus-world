@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.HashMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.HashMap;
 
 /**
  * Desert biome with sandy, arid terrain and sparse vegetation.
@@ -53,10 +52,10 @@ public class DesertBiome extends Biome {
      * Desert terrain presets with elevation and material parameters.
      */
     public enum DesertTerrain {
-        FLAT(5, 30, 0.5, 0.05, 0.1, 0.2),      // Flat desert plains
-        DUNES(15, 30, 0.7, 0.05, 0.3, 0.3),     // Rolling sand dunes [Default]
-        ROCKY(18, 35, 0.8, 0.1, 0.5, 0.2),      // Rocky desert
-        BADLANDS(20, 35, 0.9, 0.15, 0.7, 0.1);  // Eroded badlands
+        FLAT(5, 30, 0.5, 0.05, 0.1, 0.2), // Flat desert plains
+        DUNES(15, 30, 0.7, 0.05, 0.3, 0.3), // Rolling sand dunes [Default]
+        ROCKY(18, 35, 0.8, 0.1, 0.5, 0.2), // Rocky desert
+        BADLANDS(20, 35, 0.9, 0.15, 0.7, 0.1); // Eroded badlands
 
         private final int landOffset;
         private final int aboveSeaLevel;
@@ -65,7 +64,13 @@ public class DesertBiome extends Biome {
         private final double stoneRatio;
         private final double cactusDensity;
 
-        DesertTerrain(int landOffset, int aboveSeaLevel, double frequency, double dirtRatio, double stoneRatio, double cactusDensity) {
+        DesertTerrain(
+                int landOffset,
+                int aboveSeaLevel,
+                double frequency,
+                double dirtRatio,
+                double stoneRatio,
+                double cactusDensity) {
             this.landOffset = landOffset;
             this.aboveSeaLevel = aboveSeaLevel;
             this.frequency = frequency;
@@ -126,7 +131,13 @@ public class DesertBiome extends Biome {
         getParameters().put("stoneRatio", String.valueOf(terrain.getStoneRatio()));
         getParameters().put("gf_density", String.valueOf(terrain.getCactusDensity()));
 
-        log.debug("Applied DesertBiome defaults for '{}': terrain={}, landOffset={}, landLevel={}, stoneRatio={}, cactusDensity={}",
-            getName(), terrain, terrain.getLandOffset(), terrain.getAboveSeaLevel(), terrain.getStoneRatio(), terrain.getCactusDensity());
+        log.debug(
+                "Applied DesertBiome defaults for '{}': terrain={}, landOffset={}, landLevel={}, stoneRatio={}, cactusDensity={}",
+                getName(),
+                terrain,
+                terrain.getLandOffset(),
+                terrain.getAboveSeaLevel(),
+                terrain.getStoneRatio(),
+                terrain.getCactusDensity());
     }
 }

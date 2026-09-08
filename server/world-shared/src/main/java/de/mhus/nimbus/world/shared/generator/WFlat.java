@@ -3,6 +3,10 @@ package de.mhus.nimbus.world.shared.generator;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,11 +21,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * MongoDB Entity for flat terrain data used in world generation.
  * Stores height maps, column definitions, and extra blocks for world layers.
@@ -29,7 +28,10 @@ import java.util.Set;
 @Document(collection = "w_flats")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_layerDataId_flatId_idx", def = "{ 'worldId': 1, 'layerDataId': 1, 'flatId': 1 }", unique = true)
+    @CompoundIndex(
+            name = "worldId_layerDataId_flatId_idx",
+            def = "{ 'worldId': 1, 'layerDataId': 1, 'flatId': 1 }",
+            unique = true)
 })
 @Builder
 @NoArgsConstructor
@@ -57,39 +59,52 @@ public class WFlat implements Identifiable {
     @Getter
     private String flatId;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private String title;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private String description;
 
     @Getter
     private int mountX;
+
     @Getter
     private int mountZ;
+
     @Getter
     private int seaLevel;
-    @Getter @Setter
+
+    @Getter
+    @Setter
     private String seaBlockId;
     /**
      * If true, unknown/not set columns are protected from modification
      * Set this after initial setting up block you want to modify. Leave others untouched at 0.
      */
     @Builder.Default
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean unknownProtected = false;
+
     @Builder.Default
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean borderProtected = true;
 
     @Getter
     private int sizeX;
+
     @Getter
     private int sizeZ;
+
     @Getter
     private byte[] levels;
+
     @Getter
     private byte[] columns;
+
     @Builder.Default
     private HashMap<String, String> extraBlocks = new HashMap<>(); // for water and ocean ...
 
@@ -107,8 +122,7 @@ public class WFlat implements Identifiable {
     public void initWithSize(int sizeX, int sizeZ) {
         if (sizeX <= 0 || sizeZ <= 0 || sizeX > MAX_SIZE || sizeZ > MAX_SIZE)
             throw new IllegalArgumentException("Size out of range");
-        if (this.sizeX != 0)
-            throw  new IllegalStateException("Already initialized");
+        if (this.sizeX != 0) throw new IllegalStateException("Already initialized");
         this.sizeX = sizeX;
         this.sizeZ = sizeZ;
         this.levels = new byte[sizeX * sizeZ];
@@ -116,65 +130,54 @@ public class WFlat implements Identifiable {
     }
 
     public boolean setLevel(int x, int z, int level) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            throw new IllegalArgumentException("Coordinates out of range");
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) throw new IllegalArgumentException("Coordinates out of range");
         if (level < 0) level = 0;
         if (level > 255) level = 255;
         if (borderProtected) {
-            if (x == 0 || z == 0 || x == sizeX - 1 || z == sizeZ - 1)
-                return false;
+            if (x == 0 || z == 0 || x == sizeX - 1 || z == sizeZ - 1) return false;
         }
         if (unknownProtected && !isColumnSet(x, z)) {
             return false;
         }
-        levels[x + z * sizeX] = (byte)level;
+        levels[x + z * sizeX] = (byte) level;
         return true;
     }
 
     public int getLevel(int x, int z) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            throw new IllegalArgumentException("Coordinates out of range");
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) throw new IllegalArgumentException("Coordinates out of range");
         return Byte.toUnsignedInt(levels[x + z * sizeX]);
     }
 
     public int getLevelRobust(int x, int z) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            return -1;
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) return -1;
         return Byte.toUnsignedInt(levels[x + z * sizeX]);
     }
 
     public boolean setColumn(int x, int z, int definition) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            throw new IllegalArgumentException("Coordinates out of range");
-        if (definition < 0 || definition > 255)
-            throw new IllegalArgumentException("Size out of range");
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) throw new IllegalArgumentException("Coordinates out of range");
+        if (definition < 0 || definition > 255) throw new IllegalArgumentException("Size out of range");
         if (borderProtected) {
-            if (x == 0 || z == 0 || x == sizeX - 1 || z == sizeZ - 1)
-                return false;
+            if (x == 0 || z == 0 || x == sizeX - 1 || z == sizeZ - 1) return false;
         }
         if (unknownProtected && !isColumnSet(x, z)) {
             return false;
         }
-        columns[x + z * sizeX] = (byte)definition;
+        columns[x + z * sizeX] = (byte) definition;
         return true;
     }
 
     public int getColumn(int x, int z) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            throw new IllegalArgumentException("Coordinates out of range");
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) throw new IllegalArgumentException("Coordinates out of range");
         return Byte.toUnsignedInt(columns[x + z * sizeX]);
     }
 
     public int getColumnRobust(int x, int z) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            return MATERIAL_OUT_OF_BOUND;
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) return MATERIAL_OUT_OF_BOUND;
         return Byte.toUnsignedInt(columns[x + z * sizeX]);
     }
 
-
     public boolean isColumnSet(int x, int z) {
-        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            throw new IllegalArgumentException("Coordinates out of range");
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) throw new IllegalArgumentException("Coordinates out of range");
         return columns[x + z * sizeX] == MATERIAL_NOT_SET ? false : true;
     }
 
@@ -185,10 +188,8 @@ public class WFlat implements Identifiable {
 
     public void setExtraBlock(int x, int y, int z, String blockId) {
         String name = x + "/" + z + "/" + y; // use local coordinates format
-        if (blockId == null)
-            extraBlocks.remove(name);
-        else
-            extraBlocks.put(name, blockId);
+        if (blockId == null) extraBlocks.remove(name);
+        else extraBlocks.put(name, blockId);
     }
 
     public String getExtraBlock(int x, int y, int z) {
@@ -203,8 +204,7 @@ public class WFlat implements Identifiable {
             if (key.startsWith(prefix)) {
                 String yStr = key.substring(prefix.length());
                 int y = Integer.parseInt(yStr);
-                if (y >= 0 && y < 256)
-                    res[y] = extraBlocks.get(key);
+                if (y >= 0 && y < 256) res[y] = extraBlocks.get(key);
             }
         }
         return res;
@@ -212,18 +212,15 @@ public class WFlat implements Identifiable {
 
     public void setMaterial(int id, MaterialDefinition definition) {
         if (id < 1 || id > 254) // 0 = UNKNOWN_PROTECTED, 255 = UNKNOWN_NOT_PROTECTED
-            throw new IllegalArgumentException("Definition id out of range");
-        if (id == MATERIAL_NOT_SET)
-            return;
-        materials.put((byte)id, definition);
+        throw new IllegalArgumentException("Definition id out of range");
+        if (id == MATERIAL_NOT_SET) return;
+        materials.put((byte) id, definition);
     }
 
     public MaterialDefinition getMaterial(int id) {
-        if (id < 0 || id > 255)
-            throw new IllegalArgumentException("Definition id out of range");
-        if (id == MATERIAL_NOT_SET)
-            return null;
-        return materials.get((byte)id);
+        if (id < 0 || id > 255) throw new IllegalArgumentException("Definition id out of range");
+        if (id == MATERIAL_NOT_SET) return null;
+        return materials.get((byte) id);
     }
 
     public HashMap<Byte, MaterialDefinition> getMaterials() {
@@ -235,18 +232,14 @@ public class WFlat implements Identifiable {
     }
 
     public void setLevels(byte[] levels) {
-        if (levels == null)
-            throw new IllegalArgumentException("Levels cannot be null");
-        if (levels.length != sizeX * sizeZ)
-            throw new IllegalArgumentException("Levels array size mismatch");
+        if (levels == null) throw new IllegalArgumentException("Levels cannot be null");
+        if (levels.length != sizeX * sizeZ) throw new IllegalArgumentException("Levels array size mismatch");
         this.levels = levels;
     }
 
     public void setColumns(byte[] columns) {
-        if (columns == null)
-            throw new IllegalArgumentException("Columns cannot be null");
-        if (columns.length != sizeX * sizeZ)
-            throw new IllegalArgumentException("Columns array size mismatch");
+        if (columns == null) throw new IllegalArgumentException("Columns cannot be null");
+        if (columns.length != sizeX * sizeZ) throw new IllegalArgumentException("Columns array size mismatch");
         this.columns = columns;
     }
 
@@ -297,15 +290,20 @@ public class WFlat implements Identifiable {
         private String blockDef; // id + "@s:" + state e.g. n:s@s:100, n:s@s:101 - siehe BlockDef
         private String nextBlockDef; // id + "@" + state
         private boolean hasOcean;
+
         @Builder.Default
         private boolean isBlockMapDelta = true;
+
         @Builder.Default
         private Map<Integer, String> blockAtLevels = new HashMap<>(); // y -> block id
 
         @Builder.Default
-        private OffsetDefinition higherOffsets = new OffsetDefinition(0.2, 0.8, 0.4, 1.0); // offset modifiers for higher neighbors
+        private OffsetDefinition higherOffsets =
+                new OffsetDefinition(0.2, 0.8, 0.4, 1.0); // offset modifiers for higher neighbors
+
         @Builder.Default
-        private OffsetDefinition lowerOffsets = new OffsetDefinition(-0.1, -0.2, -0.3, -0.4); // offset modifiers for lower neighbors
+        private OffsetDefinition lowerOffsets =
+                new OffsetDefinition(-0.1, -0.2, -0.3, -0.4); // offset modifiers for lower neighbors
 
         /**
          * Returns the blockId for the y - starts at level
@@ -314,30 +312,24 @@ public class WFlat implements Identifiable {
          * @return null or block id
          */
         public String getBlockAt(WFlat flat, int level, int y, String[] extraBlocks) {
-            if (y < 0 || y > 255)
-                return null;
+            if (y < 0 || y > 255) return null;
             // first: my own block
-            if (y == level)
-                return blockDef;
+            if (y == level) return blockDef;
             // second: extra block
-            if (extraBlocks != null && extraBlocks[y] != null)
-                return extraBlocks[y];
+            if (extraBlocks != null && extraBlocks[y] != null) return extraBlocks[y];
             // third: next block (fill below level - no ocean check here!)
             if (y < level) {
                 if (isBlockMapDelta) {
-                    String blockDefAtLevel = blockAtLevels.get(level-y);
-                    if (blockDefAtLevel != null)
-                        return blockDefAtLevel;
+                    String blockDefAtLevel = blockAtLevels.get(level - y);
+                    if (blockDefAtLevel != null) return blockDefAtLevel;
                 } else {
-                    String blockDefAtLevel = blockAtLevels.get(level-y);
-                    if (blockDefAtLevel != null)
-                        return blockDefAtLevel;
+                    String blockDefAtLevel = blockAtLevels.get(level - y);
+                    if (blockDefAtLevel != null) return blockDefAtLevel;
                 }
                 return nextBlockDef != null ? nextBlockDef : blockDef;
             }
             // finally: ocean block (only above terrain level!)
-            if (hasOcean && y > level && y == flat.getSeaLevel())
-                return flat.getSeaBlockId();
+            if (hasOcean && y > level && y == flat.getSeaLevel()) return flat.getSeaBlockId();
             // or air
             return null;
         }
@@ -349,17 +341,13 @@ public class WFlat implements Identifiable {
          * @return null or block id
          */
         public boolean isExtraBlock(WFlat flat, int level, int y, String[] extraBlocks) {
-            if (y < 0 || y > 255)
-                return false;
+            if (y < 0 || y > 255) return false;
             // first: my own block
-            if (y == level)
-                return false;
+            if (y == level) return false;
             // second: extra block
-            if (extraBlocks != null && extraBlocks[y] != null)
-                return extraBlocks[y] != null;
+            if (extraBlocks != null && extraBlocks[y] != null) return extraBlocks[y] != null;
             return false;
         }
-
     }
 
     public void setGroup(int x, int z, String groupId) {
@@ -375,8 +363,7 @@ public class WFlat implements Identifiable {
     public String getGroup(int x, int z) {
         String localId = x + "/" + z;
         for (Map.Entry<String, Set<String>> entry : groups.entrySet()) {
-            if (entry.getValue().contains(localId))
-                return entry.getKey();
+            if (entry.getValue().contains(localId)) return entry.getKey();
         }
         return null;
     }
@@ -384,8 +371,7 @@ public class WFlat implements Identifiable {
     public String getGroup(int x, int y, int z) {
         String localId = x + "/" + y + "/" + z;
         for (Map.Entry<String, Set<String>> entry : groups.entrySet()) {
-            if (entry.getValue().contains(localId))
-                return entry.getKey();
+            if (entry.getValue().contains(localId)) return entry.getKey();
         }
         return null;
     }
@@ -413,6 +399,4 @@ public class WFlat implements Identifiable {
         }
         groups.computeIfAbsent(groupId, k -> new java.util.HashSet<>()).add(localId);
     }
-
-
 }

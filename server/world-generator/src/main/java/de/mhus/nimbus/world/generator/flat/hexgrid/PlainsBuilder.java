@@ -5,9 +5,8 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Plains scenario builder.
@@ -43,10 +42,16 @@ public class PlainsBuilder extends HexGridBuilder {
         int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
-        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.5"), 0.5d);
+        double frequency =
+                CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "0.5"), 0.5d);
 
-        log.debug("Plains terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
-                baseHeight, hillHeight, seaLevel, seed, frequency);
+        log.debug(
+                "Plains terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                seed,
+                frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
@@ -56,13 +61,9 @@ public class PlainsBuilder extends HexGridBuilder {
         hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base plains terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        context.getManipulatorService()
+                .executeManipulator(
+                        HillyTerrainManipulator.NAME, flat, 0, 0, flat.getSizeX(), flat.getSizeZ(), hillyParams);
 
         // Set materials based on height
         setPlainsMaterials(flat, seaLevel);
@@ -74,8 +75,12 @@ public class PlainsBuilder extends HexGridBuilder {
             fillEnclosedValleys(flat, seaLevel, lakeDepth);
         }
 
-        log.debug("Plains scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}, lakes={}",
-                baseHeight, hillHeight, seaLevel, enableLakes);
+        log.debug(
+                "Plains scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}, lakes={}",
+                baseHeight,
+                hillHeight,
+                seaLevel,
+                enableLakes);
     }
 
     /**
@@ -107,10 +112,19 @@ public class PlainsBuilder extends HexGridBuilder {
         int grassToStoneThreshold = oceanLevel + stoneOffset;
         int snowThreshold = oceanLevel + snowOffset;
 
-        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
-                grassToStoneThreshold, snowThreshold, oceanLevel);
-        log.debug("Materials: sand={}, grass={}, dirt={}, stone={}, snow={}, dirtRatio={}",
-                sandMaterial, grassMaterial, dirtMaterial, stoneMaterial, snowMaterial, dirtRatio);
+        log.debug(
+                "Material thresholds: stone={}, snow={} (oceanLevel={})",
+                grassToStoneThreshold,
+                snowThreshold,
+                oceanLevel);
+        log.debug(
+                "Materials: sand={}, grass={}, dirt={}, stone={}, snow={}, dirtRatio={}",
+                sandMaterial,
+                grassMaterial,
+                dirtMaterial,
+                stoneMaterial,
+                snowMaterial,
+                dirtRatio);
 
         // Use seed-based random for consistent dirt/grass distribution
         long seed = context.getWorld().getNoiseSeed();
@@ -170,8 +184,8 @@ public class PlainsBuilder extends HexGridBuilder {
 
                 // Skip if material is UNKNOWN
                 int material = flat.getColumn(x, z);
-                if (material == FlatMaterialService.UNKNOWN_PROTECTED ||
-                    material == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
+                if (material == FlatMaterialService.UNKNOWN_PROTECTED
+                        || material == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
                     continue;
                 }
 
@@ -180,8 +194,13 @@ public class PlainsBuilder extends HexGridBuilder {
 
                 if (valley != null && valley.isEnclosed) {
                     valleysFound++;
-                    log.debug("Found enclosed valley at ({}, {}): minLevel={}, maxLevel={}, size={}",
-                            x, z, valley.minLevel, valley.maxLevel, valley.positions.size());
+                    log.debug(
+                            "Found enclosed valley at ({}, {}): minLevel={}, maxLevel={}, size={}",
+                            x,
+                            z,
+                            valley.minLevel,
+                            valley.maxLevel,
+                            valley.positions.size());
 
                     // Fill valley with water if conditions are met
                     if (valley.minLevel > seaLevel && valley.positions.size() >= 10) {
@@ -213,7 +232,7 @@ public class PlainsBuilder extends HexGridBuilder {
         valley.minLevel = startLevel;
         valley.maxLevel = startLevel;
 
-        queue.add(new int[]{startX, startZ});
+        queue.add(new int[] {startX, startZ});
         visited[startX][startZ] = true;
 
         // Flood-fill to find all connected positions at similar height
@@ -223,7 +242,7 @@ public class PlainsBuilder extends HexGridBuilder {
             int z = pos[1];
 
             int level = flat.getLevel(x, z);
-            valley.positions.add(new int[]{x, z, level});
+            valley.positions.add(new int[] {x, z, level});
             processed[x][z] = true;
 
             valley.minLevel = Math.min(valley.minLevel, level);
@@ -248,8 +267,8 @@ public class PlainsBuilder extends HexGridBuilder {
                 int neighborMaterial = flat.getColumn(nx, nz);
 
                 // If neighbor is UNKNOWN material, valley is not properly enclosed
-                if (neighborMaterial == FlatMaterialService.UNKNOWN_PROTECTED ||
-                    neighborMaterial == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
+                if (neighborMaterial == FlatMaterialService.UNKNOWN_PROTECTED
+                        || neighborMaterial == FlatMaterialService.UNKNOWN_NOT_PROTECTED) {
                     valley.isEnclosed = false;
                     continue;
                 }
@@ -257,7 +276,7 @@ public class PlainsBuilder extends HexGridBuilder {
                 // If neighbor is at similar or lower height, include it in the valley
                 if (neighborLevel <= startLevel + 3) {
                     visited[nx][nz] = true;
-                    queue.add(new int[]{nx, nz});
+                    queue.add(new int[] {nx, nz});
                 }
             }
         }
@@ -274,8 +293,12 @@ public class PlainsBuilder extends HexGridBuilder {
      * Fill a valley with water using ExtraBlocks to create a lake.
      */
     private void fillValleyWithWater(WFlat flat, ValleyInfo valley, int lakeDepth, int seaLevel) {
-        log.debug("Creating lake: minLevel={}, maxLevel={}, depth={}, positions={}",
-                valley.minLevel, valley.maxLevel, lakeDepth, valley.positions.size());
+        log.debug(
+                "Creating lake: minLevel={}, maxLevel={}, depth={}, positions={}",
+                valley.minLevel,
+                valley.maxLevel,
+                lakeDepth,
+                valley.positions.size());
 
         // Determine water level (top of the lake)
         int waterLevel = Math.min(valley.minLevel + lakeDepth, valley.maxLevel);
@@ -323,12 +346,12 @@ public class PlainsBuilder extends HexGridBuilder {
 
     @Override
     protected int getDefaultOffset() {
-        return 5;  // PLAINS: very gentle rolling hills
+        return 5; // PLAINS: very gentle rolling hills
     }
 
     @Override
     protected int getDefaultAsl() {
-        return 15;  // PLAINS: low to moderate elevation
+        return 15; // PLAINS: low to moderate elevation
     }
 
     @Override
@@ -433,7 +456,7 @@ public class PlainsBuilder extends HexGridBuilder {
      * Information about a valley.
      */
     private static class ValleyInfo {
-        List<int[]> positions;  // [x, z, level]
+        List<int[]> positions; // [x, z, level]
         int minLevel;
         int maxLevel;
         boolean isEnclosed;
@@ -455,7 +478,7 @@ public class PlainsBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

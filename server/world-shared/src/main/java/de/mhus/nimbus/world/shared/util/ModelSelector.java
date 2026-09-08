@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.util;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Model selector for storing selected blocks in a build operation.
@@ -84,8 +83,8 @@ public class ModelSelector {
         List<String> result = new ArrayList<>();
 
         // Add config line
-        String configLine = (defaultColor != null ? defaultColor : "") + "," +
-                (autoSelectName != null ? autoSelectName : "");
+        String configLine =
+                (defaultColor != null ? defaultColor : "") + "," + (autoSelectName != null ? autoSelectName : "");
         result.add(configLine);
 
         // Add block entries

@@ -1,6 +1,12 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.world.shared.redis.BlockStatusPublisher;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -11,13 +17,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for managing WProgress entities.
@@ -84,7 +83,8 @@ public class WProgressService {
      * Find a specific progress entry by world, player, type, and quest.
      */
     @Transactional(readOnly = true)
-    public Optional<WProgress> findByWorldIdAndPlayerIdAndTypeAndQuest(String worldId, String playerId, String type, String quest) {
+    public Optional<WProgress> findByWorldIdAndPlayerIdAndTypeAndQuest(
+            String worldId, String playerId, String type, String quest) {
         return repository.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest);
     }
 
@@ -110,7 +110,8 @@ public class WProgressService {
      * Otherwise a new entry is created.
      */
     @Transactional
-    public WProgress save(String worldId, String playerId, String type, String quest, Map<String, Object> progressData) {
+    public WProgress save(
+            String worldId, String playerId, String type, String quest, Map<String, Object> progressData) {
         return save(worldId, playerId, type, quest, null, progressData);
     }
 
@@ -120,7 +121,13 @@ public class WProgressService {
      * Otherwise a new entry is created.
      */
     @Transactional
-    public WProgress save(String worldId, String playerId, String type, String quest, String title, Map<String, Object> progressData) {
+    public WProgress save(
+            String worldId,
+            String playerId,
+            String type,
+            String quest,
+            String title,
+            Map<String, Object> progressData) {
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId is required");
         }
@@ -131,7 +138,8 @@ public class WProgressService {
             throw new IllegalArgumentException("type is required");
         }
 
-        Optional<WProgress> existing = repository.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest);
+        Optional<WProgress> existing =
+                repository.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest);
         if (existing.isPresent()) {
             WProgress progress = existing.get();
             if (title != null) {
@@ -169,9 +177,7 @@ public class WProgressService {
      */
     public boolean setProgressDataValue(String progressId, String key, Object value) {
         Query query = new Query(Criteria.where("progressId").is(progressId));
-        Update update = new Update()
-                .set("progressData." + key, value)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("progressData." + key, value).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         if (result.getModifiedCount() > 0) {
@@ -191,8 +197,7 @@ public class WProgressService {
      */
     public boolean setProgressDataValues(String progressId, Map<String, Object> values) {
         Query query = new Query(Criteria.where("progressId").is(progressId));
-        Update update = new Update()
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("updatedAt", Instant.now());
 
         for (var entry : values.entrySet()) {
             update.set("progressData." + entry.getKey(), entry.getValue());
@@ -214,11 +219,11 @@ public class WProgressService {
      * @return true if the update was applied
      */
     public boolean removeProgressDataValue(String progressId, String key) {
-        Query query = new Query(Criteria.where("progressId").is(progressId)
-                .and("progressData." + key).exists(true));
-        Update update = new Update()
-                .unset("progressData." + key)
-                .set("updatedAt", Instant.now());
+        Query query = new Query(Criteria.where("progressId")
+                .is(progressId)
+                .and("progressData." + key)
+                .exists(true));
+        Update update = new Update().unset("progressData." + key).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         if (result.getModifiedCount() > 0) {
@@ -238,9 +243,7 @@ public class WProgressService {
      */
     public boolean incProgressDataValue(String progressId, String key, int delta) {
         Query query = new Query(Criteria.where("progressId").is(progressId));
-        Update update = new Update()
-                .inc("progressData." + key, delta)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().inc("progressData." + key, delta).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         if (result.getModifiedCount() > 0) {
@@ -259,9 +262,7 @@ public class WProgressService {
      */
     public boolean replaceProgressData(String progressId, Map<String, Object> progressData) {
         Query query = new Query(Criteria.where("progressId").is(progressId));
-        Update update = new Update()
-                .set("progressData", progressData)
-                .set("updatedAt", Instant.now());
+        Update update = new Update().set("progressData", progressData).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         if (result.getModifiedCount() > 0) {
@@ -300,10 +301,14 @@ public class WProgressService {
      * Shared documents carry {@link #BLOCK_STATUS_PLAYER} as playerId and the chunk key as quest.
      */
     private Criteria chunkCriteria(String worldId, String chunkKey, String type) {
-        return Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(type)
-                .and("quest").is(chunkKey);
+        return Criteria.where("worldId")
+                .is(worldId)
+                .and("playerId")
+                .is(BLOCK_STATUS_PLAYER)
+                .and("type")
+                .is(type)
+                .and("quest")
+                .is(chunkKey);
     }
 
     /**
@@ -331,8 +336,11 @@ public class WProgressService {
         try {
             mongoTemplate.upsert(query, update, WProgress.class);
         } catch (DuplicateKeyException e) {
-            log.debug("Chunk document inserted concurrently, retrying as update: worldId={}, chunk={}, type={}",
-                    worldId, chunkKey, type);
+            log.debug(
+                    "Chunk document inserted concurrently, retrying as update: worldId={}, chunk={}, type={}",
+                    worldId,
+                    chunkKey,
+                    type);
             mongoTemplate.upsert(query, update, WProgress.class);
         }
     }
@@ -353,25 +361,33 @@ public class WProgressService {
         // Ensure the chunk document exists, so the conditional claim below can never insert one:
         // an upsert always inserts when its condition doesn't match and would hand the claim to
         // every caller at once.
-        upsertChunkDocument(worldId, chunkKey, BLOCK_STATUS_TYPE,
+        upsertChunkDocument(
+                worldId,
+                chunkKey,
+                BLOCK_STATUS_TYPE,
                 chunkDocumentInsert(worldId, chunkKey, BLOCK_STATUS_TYPE).setOnInsert("updatedAt", Instant.now()));
 
         // "ne" also matches a missing key, so the first claimer wins and later ones fail
         Query claimQuery = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
-                .and("progressData." + blockKey).ne(status));
-        Update claimUpdate = new Update()
-                .set("progressData." + blockKey, status)
-                .set("updatedAt", Instant.now());
+                .and("progressData." + blockKey)
+                .ne(status));
+        Update claimUpdate =
+                new Update().set("progressData." + blockKey, status).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(claimQuery, claimUpdate, WProgress.class);
         if (result.getModifiedCount() == 0) {
-            log.debug("Block status already claimed: worldId={}, chunk={}, block={}, status={}",
-                    worldId, chunkKey, blockKey, status);
+            log.debug(
+                    "Block status already claimed: worldId={}, chunk={}, block={}, status={}",
+                    worldId,
+                    chunkKey,
+                    blockKey,
+                    status);
             return false;
         }
 
         blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, status);
-        log.debug("Claimed block status: worldId={}, chunk={}, block={}, status={}", worldId, chunkKey, blockKey, status);
+        log.debug(
+                "Claimed block status: worldId={}, chunk={}, block={}, status={}", worldId, chunkKey, blockKey, status);
         return true;
     }
 
@@ -385,10 +401,9 @@ public class WProgressService {
      */
     public void removeBlockStatus(String worldId, String chunkKey, String blockKey) {
         Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
-                .and("progressData." + blockKey).exists(true));
-        Update update = new Update()
-                .unset("progressData." + blockKey)
-                .set("updatedAt", Instant.now());
+                .and("progressData." + blockKey)
+                .exists(true));
+        Update update = new Update().unset("progressData." + blockKey).set("updatedAt", Instant.now());
 
         mongoTemplate.updateFirst(query, update, WProgress.class);
         blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, null);
@@ -408,15 +423,18 @@ public class WProgressService {
      */
     public boolean claimRemoveBlockStatus(String worldId, String chunkKey, String blockKey, String expectedStatus) {
         Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_STATUS_TYPE)
-                .and("progressData." + blockKey).is(expectedStatus));
-        Update update = new Update()
-                .unset("progressData." + blockKey)
-                .set("updatedAt", Instant.now());
+                .and("progressData." + blockKey)
+                .is(expectedStatus));
+        Update update = new Update().unset("progressData." + blockKey).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         if (result.getModifiedCount() == 0) {
-            log.debug("Block status changed before the reset, keeping it: worldId={}, chunk={}, block={}, expected={}",
-                    worldId, chunkKey, blockKey, expectedStatus);
+            log.debug(
+                    "Block status changed before the reset, keeping it: worldId={}, chunk={}, block={}, expected={}",
+                    worldId,
+                    chunkKey,
+                    blockKey,
+                    expectedStatus);
             return false;
         }
 
@@ -463,8 +481,13 @@ public class WProgressService {
                 .set("updatedAt", Instant.now());
 
         upsertChunkDocument(worldId, chunkKey, BLOCK_COOLDOWN_TYPE, update);
-        log.debug("Set block cooldown: worldId={}, chunk={}, block={}, expiresAt={}, status={}",
-                worldId, chunkKey, blockKey, expiresAt, status);
+        log.debug(
+                "Set block cooldown: worldId={}, chunk={}, block={}, expiresAt={}, status={}",
+                worldId,
+                chunkKey,
+                blockKey,
+                expiresAt,
+                status);
     }
 
     /**
@@ -477,10 +500,9 @@ public class WProgressService {
      */
     public void removeBlockCooldown(String worldId, String chunkKey, String blockKey) {
         Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_COOLDOWN_TYPE)
-                .and("progressData." + blockKey).exists(true));
-        Update update = new Update()
-                .unset("progressData." + blockKey)
-                .set("updatedAt", Instant.now());
+                .and("progressData." + blockKey)
+                .exists(true));
+        Update update = new Update().unset("progressData." + blockKey).set("updatedAt", Instant.now());
 
         mongoTemplate.updateFirst(query, update, WProgress.class);
         log.debug("Removed block cooldown: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
@@ -498,7 +520,8 @@ public class WProgressService {
      */
     @Transactional(readOnly = true)
     public List<WBlockCooldown> findExpiredBlockCooldowns(String worldId, long now) {
-        List<WProgress> entries = repository.findByWorldIdAndPlayerIdAndType(worldId, BLOCK_STATUS_PLAYER, BLOCK_COOLDOWN_TYPE);
+        List<WProgress> entries =
+                repository.findByWorldIdAndPlayerIdAndType(worldId, BLOCK_STATUS_PLAYER, BLOCK_COOLDOWN_TYPE);
         List<WBlockCooldown> expired = new ArrayList<>();
         for (WProgress entry : entries) {
             if (entry.getProgressData() == null) continue;
@@ -523,8 +546,11 @@ public class WProgressService {
         if (value instanceof Number number) {
             return new WBlockCooldown(chunkKey, blockKey, number.longValue(), null);
         }
-        log.warn("Unreadable block cooldown value, treating it as expired: chunk={}, block={}, value={}",
-                chunkKey, blockKey, value);
+        log.warn(
+                "Unreadable block cooldown value, treating it as expired: chunk={}, block={}, value={}",
+                chunkKey,
+                blockKey,
+                value);
         return new WBlockCooldown(chunkKey, blockKey, 0L, null);
     }
 
@@ -544,12 +570,12 @@ public class WProgressService {
     public boolean claimExpiredBlockCooldown(String worldId, String chunkKey, String blockKey, long expiresAt) {
         // The second branch matches entries written before the status was stored alongside the expiry
         Query query = new Query(chunkCriteria(worldId, chunkKey, BLOCK_COOLDOWN_TYPE)
-                .andOperator(new Criteria().orOperator(
-                        Criteria.where("progressData." + blockKey + "." + COOLDOWN_EXPIRES_AT).is(expiresAt),
-                        Criteria.where("progressData." + blockKey).is(expiresAt))));
-        Update update = new Update()
-                .unset("progressData." + blockKey)
-                .set("updatedAt", Instant.now());
+                .andOperator(new Criteria()
+                        .orOperator(
+                                Criteria.where("progressData." + blockKey + "." + COOLDOWN_EXPIRES_AT)
+                                        .is(expiresAt),
+                                Criteria.where("progressData." + blockKey).is(expiresAt))));
+        Update update = new Update().unset("progressData." + blockKey).set("updatedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, WProgress.class);
         return result.getModifiedCount() > 0;
@@ -570,10 +596,14 @@ public class WProgressService {
      * and block cooldowns leave an empty document behind once their last entry was removed.
      */
     private int deleteEmptyChunkDocuments(String worldId, String type) {
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("playerId").is(BLOCK_STATUS_PLAYER)
-                .and("type").is(type)
-                .and("progressData").is(new Document()));
+        Query query = new Query(Criteria.where("worldId")
+                .is(worldId)
+                .and("playerId")
+                .is(BLOCK_STATUS_PLAYER)
+                .and("type")
+                .is(type)
+                .and("progressData")
+                .is(new Document()));
 
         var result = mongoTemplate.remove(query, WProgress.class);
         return (int) result.getDeletedCount();
@@ -584,11 +614,14 @@ public class WProgressService {
      */
     @Transactional
     public boolean delete(String id) {
-        return repository.findById(id).map(progress -> {
-            repository.delete(progress);
-            log.debug("Deleted progress: id={}", id);
-            return true;
-        }).orElse(false);
+        return repository
+                .findById(id)
+                .map(progress -> {
+                    repository.delete(progress);
+                    log.debug("Deleted progress: id={}", id);
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -618,10 +651,7 @@ public class WProgressService {
      */
     @Transactional
     public int deleteAllByWorldId(String worldId) {
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WProgress.class
-        );
+        var result = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WProgress.class);
         long deleted = result.getDeletedCount();
         log.info("Deleted {} progress entries for worldId={}", deleted, worldId);
         return (int) deleted;

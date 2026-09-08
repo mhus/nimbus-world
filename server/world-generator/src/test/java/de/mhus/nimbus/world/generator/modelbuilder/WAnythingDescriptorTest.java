@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 class WAnythingDescriptorTest {
 
@@ -34,9 +33,8 @@ class WAnythingDescriptorTest {
         assertThat(result).isInstanceOf(WAnythingDescriptor.ModelRef.class);
         var modelRef = (WAnythingDescriptor.ModelRef) result;
         assertThat(modelRef.name()).isEqualTo("tree");
-        assertThat(modelRef.parameters()).containsExactlyInAnyOrderEntriesOf(
-                Map.of("log", "m:birch_log", "leaves", "m:birch_leaves")
-        );
+        assertThat(modelRef.parameters())
+                .containsExactlyInAnyOrderEntriesOf(Map.of("log", "m:birch_log", "leaves", "m:birch_leaves"));
     }
 
     @Test

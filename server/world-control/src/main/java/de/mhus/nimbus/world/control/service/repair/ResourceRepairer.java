@@ -27,5 +27,4 @@ public interface ResourceRepairer {
      * @return Repair result with details
      */
     ResourceRepairService.ProcessResult repair(WorldId worldId);
-
 }

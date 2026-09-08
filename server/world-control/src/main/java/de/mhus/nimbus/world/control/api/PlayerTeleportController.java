@@ -20,6 +20,8 @@ import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for teleportation login.
@@ -68,8 +67,7 @@ public class PlayerTeleportController {
             String sessionId = (String) request.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
             if (sessionId == null || sessionId.isBlank()) {
                 log.warn("No sessionId in request attributes for teleport-login");
-                return ResponseEntity.status(400)
-                        .body(Map.of("error", "No session found"));
+                return ResponseEntity.status(400).body(Map.of("error", "No session found"));
             }
 
             log.debug("Teleport-login for sessionId: {}", sessionId);
@@ -78,8 +76,7 @@ public class PlayerTeleportController {
             Optional<WSession> wSessionOpt = sessionService.get(sessionId);
             if (wSessionOpt.isEmpty()) {
                 log.warn("WSession not found for sessionId: {}", sessionId);
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "Session not found"));
+                return ResponseEntity.status(404).body(Map.of("error", "Session not found"));
             }
 
             WSession wSession = wSessionOpt.get();
@@ -88,35 +85,39 @@ public class PlayerTeleportController {
             String teleportation = wSession.getTeleportation();
             if (teleportation == null || teleportation.isBlank()) {
                 log.warn("No teleportation target set in session: {}", sessionId);
-                return ResponseEntity.status(400)
-                        .body(Map.of("error", "No teleportation target set"));
+                return ResponseEntity.status(400).body(Map.of("error", "No teleportation target set"));
             }
 
             log.info("Teleportation found in WSession: sessionId={}, target={}", sessionId, teleportation);
 
             // Parse teleportation target
             WorldId currentWorldId = WorldId.of(wSession.getWorldId())
-                    .orElseThrow(() -> new IllegalStateException("Invalid worldId in WSession: " + wSession.getWorldId()));
+                    .orElseThrow(
+                            () -> new IllegalStateException("Invalid worldId in WSession: " + wSession.getWorldId()));
             TeleportTarget target = parseTeleportTarget(teleportation, currentWorldId);
             if (target == null) {
                 log.warn("Failed to parse teleportation target: {}", teleportation);
-                return ResponseEntity.status(400)
-                        .body(Map.of("error", "Invalid teleportation target format"));
+                return ResponseEntity.status(400).body(Map.of("error", "Invalid teleportation target format"));
             }
 
             // Get player info from WSession
             PlayerId playerId = PlayerId.of(wSession.getPlayerId())
-                    .orElseThrow(() -> new IllegalStateException("Invalid playerId in WSession: " + wSession.getPlayerId()));
+                    .orElseThrow(
+                            () -> new IllegalStateException("Invalid playerId in WSession: " + wSession.getPlayerId()));
 
             // Get actor from WSession
             String actor = wSession.getActor() != null ? wSession.getActor() : "PLAYER";
 
             // Validate target world exists
-            WWorld targetWorld = worldService.getByWorldId(target.worldId)
+            WWorld targetWorld = worldService
+                    .getByWorldId(target.worldId)
                     .orElseThrow(() -> new IllegalArgumentException("Target world not found: " + target.worldId));
 
-            log.info("Creating new session for teleport: playerId={}, targetWorld={}, entryPoint={}",
-                    playerId.getId(), target.worldId, target.entryPoint);
+            log.info(
+                    "Creating new session for teleport: playerId={}, targetWorld={}, entryPoint={}",
+                    playerId.getId(),
+                    target.worldId,
+                    target.entryPoint);
 
             // Determine effective worldId (might include an instanceId)
             String effectiveWorldId = target.worldId;
@@ -125,22 +126,24 @@ public class PlayerTeleportController {
             if (targetWorld.getInstanceType() != null
                     && targetWorld.getInstanceType() != de.mhus.nimbus.world.shared.world.WorldInstanceType.NONE
                     && "PLAYER".equals(actor)) {
-                RCharacter character = characterService.getCharacter(
-                        playerId.getUserId(),
-                        targetWorld.getRegionId(),
-                        playerId.getCharacterId()
-                ).orElseThrow(() -> new IllegalArgumentException("Character not found"));
+                RCharacter character = characterService
+                        .getCharacter(playerId.getUserId(), targetWorld.getRegionId(), playerId.getCharacterId())
+                        .orElseThrow(() -> new IllegalArgumentException("Character not found"));
 
                 WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
                         target.worldId,
-                        targetWorld.getPublicData() == null ? "" : targetWorld.getPublicData().getTitle(),
+                        targetWorld.getPublicData() == null
+                                ? ""
+                                : targetWorld.getPublicData().getTitle(),
                         playerId.getId(),
-                        character.getPublicData().getTitle()
-                );
+                        character.getPublicData().getTitle());
 
                 effectiveWorldId = instance.getWorldWithInstanceId();
-                log.info("Auto-created world instance for teleport: instanceId={}, worldId={}, playerId={}",
-                        instance.getInstanceId(), target.worldId, playerId.getId());
+                log.info(
+                        "Auto-created world instance for teleport: instanceId={}, worldId={}, playerId={}",
+                        instance.getInstanceId(),
+                        target.worldId,
+                        playerId.getId());
             }
 
             // Check if this is a teleportation to a different world or within the same world
@@ -153,22 +156,23 @@ public class PlayerTeleportController {
             Rotation previousRotation = null;
 
             if (isCrossWorldTeleport) {
-                Optional<WPlayerSession> oldPlayerSessionOpt = playerSessionService.loadSession(
-                        sourceWorldId,
-                        playerId.getId()
-                );
+                Optional<WPlayerSession> oldPlayerSessionOpt =
+                        playerSessionService.loadSession(sourceWorldId, playerId.getId());
 
                 if (oldPlayerSessionOpt.isPresent()) {
                     WPlayerSession oldPlayerSession = oldPlayerSessionOpt.get();
                     previousWorldId = oldPlayerSession.getWorldId();
                     previousPosition = oldPlayerSession.getPosition();
                     previousRotation = oldPlayerSession.getRotation();
-                    log.debug("Loaded old player session for cross-world teleport: previousWorldId={}, previousPosition={}",
-                            previousWorldId, previousPosition);
+                    log.debug(
+                            "Loaded old player session for cross-world teleport: previousWorldId={}, previousPosition={}",
+                            previousWorldId,
+                            previousPosition);
                 } else {
                     // First teleport - use source worldId as previousWorldId (the world we're leaving)
                     previousWorldId = sourceWorldId;
-                    log.debug("No previous player session found for cross-world teleport - using source worldId as previous: {}",
+                    log.debug(
+                            "No previous player session found for cross-world teleport - using source worldId as previous: {}",
                             previousWorldId);
                 }
 
@@ -184,23 +188,25 @@ public class PlayerTeleportController {
             // Set entry point if provided
             if (target.entryPoint != null && !target.entryPoint.isBlank()) {
                 sessionService.updateEntryPoint(newSession.getId(), target.entryPoint);
-                log.debug("Entry point set for teleport session: sessionId={}, entryPoint={}",
-                        newSession.getId(), target.entryPoint);
+                log.debug(
+                        "Entry point set for teleport session: sessionId={}, entryPoint={}",
+                        newSession.getId(),
+                        target.entryPoint);
             }
 
             // Create/update WPlayerSession
             if (isCrossWorldTeleport) {
                 // Cross-world teleportation: Create new player session with previous data
-                Optional<WPlayerSession> oldPlayerSessionOpt = playerSessionService.loadSession(
-                        sourceWorldId,
-                        playerId.getId()
-                );
+                Optional<WPlayerSession> oldPlayerSessionOpt =
+                        playerSessionService.loadSession(sourceWorldId, playerId.getId());
 
                 // Determine entry position - use world entry point or fallback to world start or default
                 Vector3 position;
                 var targetPublicData = targetWorld.getPublicData();
                 var entryPoint = targetPublicData == null ? null : targetPublicData.getEntryPoint();
-                if (entryPoint != null && entryPoint.getArea() != null && entryPoint.getArea().getPosition() != null) {
+                if (entryPoint != null
+                        && entryPoint.getArea() != null
+                        && entryPoint.getArea().getPosition() != null) {
                     // Use configured entry point
                     var entryPosition = entryPoint.getArea().getPosition();
                     position = Vector3.builder()
@@ -216,10 +222,12 @@ public class PlayerTeleportController {
                 } else {
                     // Fallback to default spawn position
                     position = Vector3.builder().x(0).y(64).z(0).build();
-                    log.warn("No entry point or start position configured for world {}, using default: {}",
-                            effectiveWorldId, position);
+                    log.warn(
+                            "No entry point or start position configured for world {}, using default: {}",
+                            effectiveWorldId,
+                            position);
                 }
-                var rotation  = Rotation.builder().y(0).p(0).build();
+                var rotation = Rotation.builder().y(0).p(0).build();
 
                 WPlayerSession newPlayerSession = playerSessionService.createTeleportSession(
                         effectiveWorldId,
@@ -230,8 +238,7 @@ public class PlayerTeleportController {
                         rotation,
                         previousWorldId,
                         previousPosition,
-                        previousRotation
-                );
+                        previousRotation);
 
                 // Merge player status data from old session to new session
                 if (oldPlayerSessionOpt.isPresent()) {
@@ -241,8 +248,10 @@ public class PlayerTeleportController {
                     log.debug("No old player session found, skipping merge");
                 }
 
-                log.info("Created player session for cross-world teleport: newWorldId={}, previousWorldId={}",
-                        effectiveWorldId, previousWorldId);
+                log.info(
+                        "Created player session for cross-world teleport: newWorldId={}, previousWorldId={}",
+                        effectiveWorldId,
+                        previousWorldId);
             } else {
                 // Same-world teleportation: Just update entry point, player session will be updated when player enters
                 log.debug("Skipping player session creation for same-world teleport - will be updated on entry");
@@ -257,8 +266,7 @@ public class PlayerTeleportController {
                     effectiveWorldId,
                     playerId.getCharacterId(),
                     actor,
-                    newSession.getId()
-            );
+                    newSession.getId());
 
             // Build response with URLs
             String jumpUrl = buildJumpUrl(
@@ -266,8 +274,7 @@ public class PlayerTeleportController {
                     effectiveWorldId,
                     newSession.getId(),
                     playerId.getUserId(),
-                    playerId.getCharacterId()
-            );
+                    playerId.getCharacterId());
 
             DevLoginResponse response = DevLoginResponse.builder()
                     .accessToken(token)
@@ -277,20 +284,22 @@ public class PlayerTeleportController {
                     .playerId(playerId.getId())
                     .build();
 
-            log.info("Teleport login successful: sessionId={}, newSessionId={}, targetWorld={}, playerId={}",
-                    sessionId, newSession.getId(), target.worldId, playerId.getId());
+            log.info(
+                    "Teleport login successful: sessionId={}, newSessionId={}, targetWorld={}, playerId={}",
+                    sessionId,
+                    newSession.getId(),
+                    target.worldId,
+                    playerId.getId());
 
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
             log.warn("Teleport login validation failed: {}", e.getMessage());
-            return ResponseEntity.status(400)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
             log.error("Teleport login failed unexpectedly", e);
-            return ResponseEntity.status(500)
-                    .body(Map.of("error", "Internal error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Internal error: " + e.getMessage()));
         }
     }
 
@@ -318,7 +327,8 @@ public class PlayerTeleportController {
 
             // Empty worldId part means use current world
             if (worldIdPart.isBlank()) {
-                worldIdPart = currentWorldId != null ? currentWorldId.toBaseWorldId().getId() : null;
+                worldIdPart =
+                        currentWorldId != null ? currentWorldId.toBaseWorldId().getId() : null;
             }
         } else {
             // Format: worldId only (use default entry point)
@@ -353,9 +363,7 @@ public class PlayerTeleportController {
      * Build jump URL for teleport.
      */
     private String buildJumpUrl(ActorRoles actor, String worldId, String sessionId, String userId, String characterId) {
-        String url = actor == ActorRoles.EDITOR
-                ? accessSettings.getJumpUrlEditor()
-                : accessSettings.getJumpUrlViewer();
+        String url = actor == ActorRoles.EDITOR ? accessSettings.getJumpUrlEditor() : accessSettings.getJumpUrlViewer();
 
         url = url.replace("{worldId}", worldId);
         url = url.replace("{session}", sessionId);
@@ -368,6 +376,5 @@ public class PlayerTeleportController {
     /**
      * Teleportation target record.
      */
-    private record TeleportTarget(String worldId, String entryPoint) {
-    }
+    private record TeleportTarget(String worldId, String entryPoint) {}
 }

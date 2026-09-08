@@ -2,13 +2,12 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -21,8 +20,10 @@ import java.util.List;
 public class TownStreetDefinition {
 
     private List<HexVector2> path;
+
     @Builder.Default
     private int width = 3;
+
     private String streetType;
     private String id;
 }

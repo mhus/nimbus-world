@@ -6,12 +6,11 @@ import de.mhus.nimbus.world.ai.model.LangchainModel;
 import de.mhus.nimbus.world.ai.model.openai.OpenAiChat;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.time.Duration;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.Optional;
 
 /**
  * cortecs.ai implementation of {@link LangchainModel}. Uses the OpenAI protocol against the cortecs

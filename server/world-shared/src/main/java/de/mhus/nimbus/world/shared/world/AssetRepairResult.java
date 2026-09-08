@@ -25,6 +25,4 @@ public record AssetRepairResult(
         int duplicatesFound,
         int duplicatesRemoved,
         int orphanedStorageFound,
-        int orphanedStorageRemoved
-) {
-}
+        int orphanedStorageRemoved) {}

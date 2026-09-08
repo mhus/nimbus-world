@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.life.scheduled;
 
 import de.mhus.nimbus.world.life.service.EntityOwnershipService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Scheduled task to detect and claim orphaned entities.
@@ -39,7 +38,8 @@ public class OrphanDetectionTask {
 
                 // Log sample orphaned entity IDs (max 5 for readability)
                 int sampleSize = Math.min(orphans.size(), 5);
-                log.debug("Sample orphaned entities: {}{}",
+                log.debug(
+                        "Sample orphaned entities: {}{}",
                         orphans.subList(0, sampleSize),
                         orphans.size() > sampleSize ? " ..." : "");
             }

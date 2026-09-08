@@ -17,6 +17,7 @@ public class JudgeFinding {
     private String ref;
     /** "minor" | "major" — only major findings should block acceptance. */
     private String severity;
+
     private String issue;
     private String suggestion;
 }

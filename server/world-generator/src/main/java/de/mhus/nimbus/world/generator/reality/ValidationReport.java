@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Result of the mechanical validation (C1) of a {@link RealityPlan}. Collects {@link ValidationIssue}s.
@@ -47,7 +46,10 @@ public class ValidationReport {
     /** Compact multi-line summary for logs / the reality manifest. */
     public String summary() {
         StringBuilder sb = new StringBuilder();
-        sb.append(errors().size()).append(" error(s), ").append(warnings().size()).append(" warning(s)");
+        sb.append(errors().size())
+                .append(" error(s), ")
+                .append(warnings().size())
+                .append(" warning(s)");
         for (ValidationIssue i : issues) {
             sb.append("\n  [").append(i.getSeverity()).append("] ").append(i.getCode());
             if (i.getRef() != null) {

@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityStatusUpdate;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Listens for entity status updates from all world-player and world-life pods.
@@ -68,8 +67,9 @@ public class EntityStatusBroadcastListener {
 
             JsonNode statusUpdatesNode = data.get("statusUpdates");
             JsonNode affectedChunksNode = data.get("affectedChunks");
-            String originatingSessionId = data.has("originatingSessionId") ?
-                data.get("originatingSessionId").asText(null) : null;
+            String originatingSessionId = data.has("originatingSessionId")
+                    ? data.get("originatingSessionId").asText(null)
+                    : null;
 
             if (statusUpdatesNode == null || !statusUpdatesNode.isArray()) {
                 log.warn("Invalid entity status update: missing statusUpdates array");
@@ -94,30 +94,38 @@ public class EntityStatusBroadcastListener {
                     int cz = chunkNode.has("cz") ? chunkNode.get("cz").asInt() : 0;
 
                     int sentCount = broadcastService.broadcastToWorld(
-                        worldId,              // worldId from topic
-                        "e.s.u",              // messageType
-                        updatesArray,         // data (status updates ARRAY)
-                        originatingSessionId, // originatingSessionId - will be filtered out!
-                        cx,                   // chunk X
-                        cz                    // chunk Z
-                    );
+                            worldId, // worldId from topic
+                            "e.s.u", // messageType
+                            updatesArray, // data (status updates ARRAY)
+                            originatingSessionId, // originatingSessionId - will be filtered out!
+                            cx, // chunk X
+                            cz // chunk Z
+                            );
 
-                    log.trace("Broadcasted {} entity status updates to {} sessions for chunk ({}, {}) [origin={}]",
-                        statusUpdates.size(), sentCount, cx, cz, originatingSessionId);
+                    log.trace(
+                            "Broadcasted {} entity status updates to {} sessions for chunk ({}, {}) [origin={}]",
+                            statusUpdates.size(),
+                            sentCount,
+                            cx,
+                            cz,
+                            originatingSessionId);
                 }
             } else {
                 // Broadcast to all sessions in world (no chunk filtering)
                 int sentCount = broadcastService.broadcastToWorld(
-                    worldId,              // worldId from topic
-                    "e.s.u",              // messageType
-                    updatesArray,         // data (status updates ARRAY)
-                    originatingSessionId, // originatingSessionId - will be filtered out!
-                    null,                 // no chunk filtering
-                    null
-                );
+                        worldId, // worldId from topic
+                        "e.s.u", // messageType
+                        updatesArray, // data (status updates ARRAY)
+                        originatingSessionId, // originatingSessionId - will be filtered out!
+                        null, // no chunk filtering
+                        null);
 
-                log.trace("Broadcasted {} entity status updates to {} sessions in world {} [origin={}]",
-                    statusUpdates.size(), sentCount, worldId, originatingSessionId);
+                log.trace(
+                        "Broadcasted {} entity status updates to {} sessions in world {} [origin={}]",
+                        statusUpdates.size(),
+                        sentCount,
+                        worldId,
+                        originatingSessionId);
             }
 
             log.trace("Handled entity status update: {} updates", statusUpdates.size());

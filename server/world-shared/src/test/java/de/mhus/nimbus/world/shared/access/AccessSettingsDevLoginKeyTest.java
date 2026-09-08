@@ -1,10 +1,5 @@
 package de.mhus.nimbus.world.shared.access;
 
-import de.mhus.nimbus.shared.service.SSettingsService;
-import de.mhus.nimbus.shared.settings.SettingString;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -12,6 +7,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.shared.service.SSettingsService;
+import de.mhus.nimbus.shared.settings.SettingString;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Precedence of the dev-login access key: explicit configuration (property/env, then setting) wins
@@ -33,7 +33,8 @@ class AccessSettingsDevLoginKeyTest {
 
         SettingString keySetting = mock(SettingString.class);
         when(keySetting.get()).thenReturn(settingValue);
-        when(settingsService.getString(eq("access.devLoginAccessKey"), anyString())).thenReturn(keySetting);
+        when(settingsService.getString(eq("access.devLoginAccessKey"), anyString()))
+                .thenReturn(keySetting);
 
         AccessSettings accessSettings = new AccessSettings(settingsService);
         ReflectionTestUtils.setField(accessSettings, "devLoginEnvEnabled", devLoginEnabled);
@@ -65,6 +66,7 @@ class AccessSettingsDevLoginKeyTest {
      */
     @Test
     void noKeyWhenDevLoginIsDisabled() {
-        assertThat(settings(false, FROM_PROPERTY, FROM_SETTING).getDevLoginAccessKey()).isNull();
+        assertThat(settings(false, FROM_PROPERTY, FROM_SETTING).getDevLoginAccessKey())
+                .isNull();
     }
 }

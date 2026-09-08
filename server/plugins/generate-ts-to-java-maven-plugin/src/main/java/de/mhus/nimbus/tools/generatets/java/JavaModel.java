@@ -1,7 +1,6 @@
 package de.mhus.nimbus.tools.generatets.java;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

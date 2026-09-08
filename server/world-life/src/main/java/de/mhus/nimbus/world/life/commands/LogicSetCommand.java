@@ -4,10 +4,9 @@ import de.mhus.nimbus.world.life.logic.LogicEvent;
 import de.mhus.nimbus.world.life.logic.LogicMachineService;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Set logic state values via SpEL assignment.
@@ -70,13 +69,12 @@ public class LogicSetCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "Set logic state values via SpEL assignment\n" +
-                "Usage: /logic-set <spelAssignment>\n" +
-                "Assignment must be fully qualified: state.pkg.key = value\n" +
-                "Multiple assignments separated by semicolon.\n" +
-                "Triggers rule cascade after state changes.\n" +
-                "Examples:\n" +
-                "  /logic-set state.puzzle.hasKey = true\n" +
-                "  /logic-set state.puzzle.counter = state.puzzle.counter + 1";
+        return "Set logic state values via SpEL assignment\n" + "Usage: /logic-set <spelAssignment>\n"
+                + "Assignment must be fully qualified: state.pkg.key = value\n"
+                + "Multiple assignments separated by semicolon.\n"
+                + "Triggers rule cascade after state changes.\n"
+                + "Examples:\n"
+                + "  /logic-set state.puzzle.hasKey = true\n"
+                + "  /logic-set state.puzzle.counter = state.puzzle.counter + 1";
     }
 }

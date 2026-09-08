@@ -1,11 +1,11 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Spiral Block Manipulator - creates a spiral staircase around a center point.
@@ -47,9 +47,9 @@ public class SpiralBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Creates a spiral staircase around a center point. " +
-                "Parameters: position {x,y,z}, radius, height, rotations (optional), blockType (optional). " +
-                "Example: {\"spiral\": {\"transform\": \"position\", \"radius\": 5, \"height\": 20, \"rotations\": 2.5}}";
+        return "Creates a spiral staircase around a center point. "
+                + "Parameters: position {x,y,z}, radius, height, rotations (optional), blockType (optional). "
+                + "Example: {\"spiral\": {\"transform\": \"position\", \"radius\": 5, \"height\": 20, \"rotations\": 2.5}}";
     }
 
     @Override
@@ -111,8 +111,15 @@ public class SpiralBlockManipulator implements BlockManipulator {
         }
 
         // Generate spiral
-        log.info("Generating spiral: pos=({},{},{}), radius={}, height={}, rotations={}, blockType={}",
-                x, y, z, radius, height, rotations, blockType);
+        log.info(
+                "Generating spiral: pos=({},{},{}), radius={}, height={}, rotations={}, blockType={}",
+                x,
+                y,
+                z,
+                radius,
+                height,
+                rotations,
+                blockType);
 
         painter.spiral(x, y, z, radius, height, rotations);
 
@@ -120,7 +127,8 @@ public class SpiralBlockManipulator implements BlockManipulator {
         ModelSelector modelSelector = context.getModelSelector();
 
         int blockCount = modelSelector.getBlockCount();
-        String message = String.format("Generated spiral: %d blocks (radius %d, height %d, %.1f rotations) at (%d,%d,%d)",
+        String message = String.format(
+                "Generated spiral: %d blocks (radius %d, height %d, %.1f rotations) at (%d,%d,%d)",
                 blockCount, radius, height, rotations, x, y, z);
 
         log.info(message);

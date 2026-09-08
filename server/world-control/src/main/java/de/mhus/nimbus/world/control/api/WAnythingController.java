@@ -4,25 +4,24 @@ import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
-import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST Controller for WAnythingEntity CRUD operations.
@@ -58,9 +57,7 @@ public class WAnythingController extends BaseEditorController {
             Object data,
             boolean enabled,
             Instant createdAt,
-            Instant updatedAt
-    ) {
-    }
+            Instant updatedAt) {}
 
     public record CreateAnythingRequest(
             String worldId,
@@ -69,18 +66,9 @@ public class WAnythingController extends BaseEditorController {
             String title,
             String description,
             String type,
-            Object data
-    ) {
-    }
+            Object data) {}
 
-    public record UpdateAnythingRequest(
-            String title,
-            String description,
-            String type,
-            Object data,
-            Boolean enabled
-    ) {
-    }
+    public record UpdateAnythingRequest(String title, String description, String type, Object data, Boolean enabled) {}
 
     /**
      * Get single entity by worldId, collection, and name.
@@ -89,9 +77,9 @@ public class WAnythingController extends BaseEditorController {
     @GetMapping("/by-world")
     @Operation(summary = "Get entity by world, collection, and name")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity found"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> getByWorld(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
@@ -123,8 +111,8 @@ public class WAnythingController extends BaseEditorController {
     @GetMapping("/collections")
     @Operation(summary = "Get distinct collection names")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> getCollections(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
@@ -138,10 +126,7 @@ public class WAnythingController extends BaseEditorController {
 
         List<String> collections = anythingService.findDistinctCollections(worldId);
 
-        return ResponseEntity.ok(Map.of(
-                "collections", collections,
-                "count", collections.size()
-        ));
+        return ResponseEntity.ok(Map.of("collections", collections, "count", collections.size()));
     }
 
     /**
@@ -151,8 +136,8 @@ public class WAnythingController extends BaseEditorController {
     @GetMapping("/list")
     @Operation(summary = "List entities with flexible filtering")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
@@ -163,8 +148,14 @@ public class WAnythingController extends BaseEditorController {
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit,
             HttpServletRequest request) {
 
-        log.debug("LIST anything: worldId={}, collection={}, type={}, enabledOnly={}, offset={}, limit={}",
-                worldId, collection, type, enabledOnly, offset, limit);
+        log.debug(
+                "LIST anything: worldId={}, collection={}, type={}, enabledOnly={}, offset={}, limit={}",
+                worldId,
+                collection,
+                type,
+                enabledOnly,
+                offset,
+                limit);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
         if (!accessValidator.hasEditorAccess(request, worldId))
@@ -186,11 +177,8 @@ public class WAnythingController extends BaseEditorController {
 
         int totalCount = all.size();
 
-        List<AnythingDto> entityList = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        List<AnythingDto> entityList =
+                all.stream().skip(offset).limit(limit).map(this::toDto).collect(Collectors.toList());
 
         log.debug("Returning {} entities (total: {})", entityList.size(), totalCount);
 
@@ -198,8 +186,7 @@ public class WAnythingController extends BaseEditorController {
                 "entities", entityList,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -209,14 +196,17 @@ public class WAnythingController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create new entity")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Entity created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Entity already exists")
+        @ApiResponse(responseCode = "201", description = "Entity created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "409", description = "Entity already exists")
     })
     public ResponseEntity<?> create(@RequestBody CreateAnythingRequest request, HttpServletRequest httpRequest) {
 
-        log.debug("CREATE anything: worldId={}, collection={}, name={}",
-                request.worldId(), request.collection(), request.name());
+        log.debug(
+                "CREATE anything: worldId={}, collection={}, name={}",
+                request.worldId(),
+                request.collection(),
+                request.name());
 
         if (Strings.isBlank(request.worldId())) return bad("worldId required");
         if (!accessValidator.hasEditorAccess(httpRequest, request.worldId()))
@@ -226,11 +216,19 @@ public class WAnythingController extends BaseEditorController {
 
         try {
             WAnything saved = anythingService.create(
-                    request.worldId(), request.collection(),
-                    request.name(), request.title(), request.description(), request.type(), request.data());
+                    request.worldId(),
+                    request.collection(),
+                    request.name(),
+                    request.title(),
+                    request.description(),
+                    request.type(),
+                    request.data());
 
-            log.info("Created entity: worldId={}, collection={}, name={}",
-                    request.worldId(), request.collection(), request.name());
+            log.info(
+                    "Created entity: worldId={}, collection={}, name={}",
+                    request.worldId(),
+                    request.collection(),
+                    request.name());
             return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
 
         } catch (IllegalStateException e) {
@@ -250,9 +248,9 @@ public class WAnythingController extends BaseEditorController {
     @PutMapping("/{id}")
     @Operation(summary = "Update entity by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
+        @ApiResponse(responseCode = "200", description = "Entity updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> update(
             @Parameter(description = "Entity ID") @PathVariable String id,
@@ -265,11 +263,15 @@ public class WAnythingController extends BaseEditorController {
 
         // Check access via entity's worldId
         Optional<WAnything> existing = anythingService.findById(id);
-        if (existing.isPresent() && !accessValidator.hasEditorAccess(httpRequest, existing.get().getWorldId()))
+        if (existing.isPresent()
+                && !accessValidator.hasEditorAccess(httpRequest, existing.get().getWorldId()))
             return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
-        if (request.title() == null && request.description() == null && request.type() == null &&
-                request.data() == null && request.enabled() == null) {
+        if (request.title() == null
+                && request.description() == null
+                && request.type() == null
+                && request.data() == null
+                && request.enabled() == null) {
             return bad("at least one field required for update");
         }
 
@@ -307,8 +309,8 @@ public class WAnythingController extends BaseEditorController {
     @DeleteMapping("/by-world")
     @Operation(summary = "Delete entity by world, collection, and name")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Entity deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "204", description = "Entity deleted"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> deleteByWorld(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
@@ -343,7 +345,6 @@ public class WAnythingController extends BaseEditorController {
                 entity.getData(),
                 entity.isEnabled(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

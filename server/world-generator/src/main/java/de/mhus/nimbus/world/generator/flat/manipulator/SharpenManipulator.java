@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Sharpen manipulator.
@@ -48,8 +47,7 @@ public class SharpenManipulator implements FlatManipulator {
 
         painter.sharpen(x, z, x2, z2, factor);
 
-        log.info("Terrain sharpened: region=({},{},{},{}), factor={}",
-                x, z, sizeX, sizeZ, factor);
+        log.info("Terrain sharpened: region=({},{},{},{}), factor={}", x, z, sizeX, sizeZ, factor);
     }
 
     private double parseDoubleParameter(Map<String, String> parameters, String name, double defaultValue) {

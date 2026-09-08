@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * MongoDB Repository for WChatMessage entities.
@@ -36,5 +35,6 @@ public interface WChatMessageRepository extends MongoRepository<WChatMessage, St
 
     void deleteByWorldIdAndChatIdAndMessageId(String worldId, String chatId, String messageId);
 
-    List<WChatMessage> findByWorldIdAndChatIdAndCreatedAtAfterOrderByCreatedAtAsc(String id, String chatId, Instant referenceTimestamp, Pageable pageable);
+    List<WChatMessage> findByWorldIdAndChatIdAndCreatedAtAfterOrderByCreatedAtAsc(
+            String id, String chatId, Instant referenceTimestamp, Pageable pageable);
 }

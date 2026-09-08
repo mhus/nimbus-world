@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.api;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
@@ -13,16 +12,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * REST Controller for Chunk viewing and management.
@@ -47,8 +46,8 @@ public class EChunkController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "List all Chunks")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -58,9 +57,7 @@ public class EChunkController extends BaseEditorController {
 
         log.debug("LIST chunks: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
@@ -78,11 +75,8 @@ public class EChunkController extends BaseEditorController {
         int totalCount = all.size();
 
         // Apply pagination and convert to simple DTOs
-        List<Map<String, Object>> chunkDtos = all.stream()
-                .skip(offset)
-                .limit(limit)
-                .map(this::toSimpleDto)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> chunkDtos =
+                all.stream().skip(offset).limit(limit).map(this::toSimpleDto).collect(Collectors.toList());
 
         log.debug("Returning {} chunks (total: {})", chunkDtos.size(), totalCount);
 
@@ -90,8 +84,7 @@ public class EChunkController extends BaseEditorController {
                 "chunks", chunkDtos,
                 "count", totalCount,
                 "limit", limit,
-                "offset", offset
-        ));
+                "offset", offset));
     }
 
     /**
@@ -101,8 +94,8 @@ public class EChunkController extends BaseEditorController {
     @GetMapping("/{chunkKey}")
     @Operation(summary = "Get Chunk metadata by key")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chunk found"),
-            @ApiResponse(responseCode = "404", description = "Chunk not found")
+        @ApiResponse(responseCode = "200", description = "Chunk found"),
+        @ApiResponse(responseCode = "404", description = "Chunk not found")
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -110,9 +103,7 @@ public class EChunkController extends BaseEditorController {
 
         log.debug("GET chunk: worldId={}, chunkKey={}", worldId, chunkKey);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
@@ -132,8 +123,8 @@ public class EChunkController extends BaseEditorController {
     @GetMapping("/{chunkKey}/data")
     @Operation(summary = "Get Chunk data (blocks, heightData)")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chunk data retrieved"),
-            @ApiResponse(responseCode = "404", description = "Chunk not found")
+        @ApiResponse(responseCode = "200", description = "Chunk data retrieved"),
+        @ApiResponse(responseCode = "404", description = "Chunk not found")
     })
     public ResponseEntity<?> getData(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -141,9 +132,7 @@ public class EChunkController extends BaseEditorController {
 
         log.debug("GET chunk data: worldId={}, chunkKey={}", worldId, chunkKey);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
@@ -163,11 +152,13 @@ public class EChunkController extends BaseEditorController {
                     "cx", chunkData.getCx(),
                     "cz", chunkData.getCz(),
                     "size", chunkData.getSize(),
-                    "blockCount", chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0,
+                    "blockCount",
+                            chunkData.getBlocks() != null
+                                    ? chunkData.getBlocks().size()
+                                    : 0,
                     "blocks", chunkData.getBlocks() != null ? chunkData.getBlocks() : List.of(),
                     "heightData", chunkData.getHeightData() != null ? chunkData.getHeightData() : Map.of(),
-                    "deny", chunkData.getDeny() != null ? chunkData.getDeny() : false
-            ));
+                    "deny", chunkData.getDeny() != null ? chunkData.getDeny() : false));
         } catch (Exception e) {
             log.error("Failed to load chunk data: worldId={}, chunkKey={}", lookupWorldId, chunkKey, e);
             return ResponseEntity.internalServerError()
@@ -182,8 +173,8 @@ public class EChunkController extends BaseEditorController {
     @PostMapping("/{chunkKey}/dirty")
     @Operation(summary = "Mark chunk as dirty")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chunk marked as dirty"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+        @ApiResponse(responseCode = "200", description = "Chunk marked as dirty"),
+        @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> markDirty(
             @Parameter(description = "World identifier") @PathVariable String worldId,
@@ -191,9 +182,7 @@ public class EChunkController extends BaseEditorController {
 
         log.debug("MARK DIRTY chunk: worldId={}, chunkKey={}", worldId, chunkKey);
 
-        var wid = WorldId.of(worldId).orElseThrow(
-                () -> new IllegalStateException("Invalid worldId: " + worldId)
-        );
+        var wid = WorldId.of(worldId).orElseThrow(() -> new IllegalStateException("Invalid worldId: " + worldId));
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 

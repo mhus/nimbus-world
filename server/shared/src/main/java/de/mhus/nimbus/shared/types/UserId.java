@@ -1,8 +1,7 @@
 package de.mhus.nimbus.shared.types;
 
-import lombok.Getter;
-
 import java.util.Optional;
+import lombok.Getter;
 
 /**
  * UserId represents a unique identifier for a user in the format "userId".

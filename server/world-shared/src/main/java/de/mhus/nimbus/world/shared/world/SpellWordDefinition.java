@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.world;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 /**
  * DTO for spell word definitions stored in WAnything collection "spellWords".
@@ -32,5 +31,4 @@ public class SpellWordDefinition {
      * Values are scaled with the player's word level during crafting.
      */
     private Map<String, Object> properties;
-
 }

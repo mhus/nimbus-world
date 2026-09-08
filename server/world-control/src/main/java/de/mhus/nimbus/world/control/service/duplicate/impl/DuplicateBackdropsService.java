@@ -25,7 +25,6 @@ public class DuplicateBackdropsService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating backdrops from world {} to {}", sourceWorldId, targetWorldId);
         int duplicatedCount = backdropService.duplicateToWorld(sourceWorldId, targetWorldId);
-        log.info("Duplicated {} backdrops from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} backdrops from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

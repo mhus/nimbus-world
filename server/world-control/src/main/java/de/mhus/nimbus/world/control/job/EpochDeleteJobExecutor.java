@@ -58,8 +58,11 @@ public class EpochDeleteJobExecutor implements JobExecutor {
             var results = resourceEpochService.delete(worldId, epoch);
 
             StringBuilder report = new StringBuilder();
-            report.append("Epoch deletion for world ").append(worldId)
-                    .append(" (epoch=").append(epoch).append("):\n");
+            report.append("Epoch deletion for world ")
+                    .append(worldId)
+                    .append(" (epoch=")
+                    .append(epoch)
+                    .append("):\n");
 
             boolean allSuccess = true;
             for (var r : results) {

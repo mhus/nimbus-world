@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.life.service;
 
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Tracks timestamps for chunks to implement TTL (Time-To-Live) mechanism.

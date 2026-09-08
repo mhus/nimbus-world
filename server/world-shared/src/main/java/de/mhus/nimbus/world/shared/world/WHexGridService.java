@@ -4,6 +4,11 @@ import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -13,12 +18,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * Service for managing WHexGrid entities.
@@ -129,7 +128,8 @@ public class WHexGridService {
         }
         var lookupWorld = parsedWorldId.toBaseWorldId();
 
-        List<String> keys = positions.stream().map(TypeUtil::toStringHexCoord).distinct().toList();
+        List<String> keys =
+                positions.stream().map(TypeUtil::toStringHexCoord).distinct().toList();
         Map<String, WHexGrid> result = new HashMap<>();
         for (WHexGrid grid : repository.findAllByWorldIdAndPositionIn(lookupWorld.getId(), keys)) {
             result.putIfAbsent(grid.getPosition(), grid); // first epoch variant per position
@@ -252,7 +252,11 @@ public class WHexGridService {
         }
 
         WHexGrid saved = repository.save(entity);
-        log.debug("Saved WHexGrid: worldId={}, position={}, epoches={}", saved.getWorldId(), saved.getPosition(), saved.getEpoches());
+        log.debug(
+                "Saved WHexGrid: worldId={}, position={}, epoches={}",
+                saved.getWorldId(),
+                saved.getPosition(),
+                saved.getEpoches());
         return saved;
     }
 
@@ -273,8 +277,12 @@ public class WHexGridService {
      * @throws EpochOverwriteException if another document would become fully obsolete
      */
     @Transactional
-    public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> parameters,
-                           Map<String, Map<String, String>> areas, List<Integer> epoches) {
+    public WHexGrid create(
+            String worldId,
+            HexGrid publicData,
+            Map<String, String> parameters,
+            Map<String, Map<String, String>> areas,
+            List<Integer> epoches) {
         if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -305,7 +313,11 @@ public class WHexGridService {
         entity.touchCreate();
 
         WHexGrid saved = repository.save(entity);
-        log.info("Created WHexGrid: worldId={}, position={}, epoches={}", parsedWorldId.getId(), positionKey, saved.getEpoches());
+        log.info(
+                "Created WHexGrid: worldId={}, position={}, epoches={}",
+                parsedWorldId.getId(),
+                positionKey,
+                saved.getEpoches());
         return saved;
     }
 
@@ -313,8 +325,11 @@ public class WHexGridService {
      * Creates a new hex grid (backward compatible, no explicit epoches → empty list = all epochs).
      */
     @Transactional
-    public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> parameters,
-                           Map<String, Map<String, String>> areas) {
+    public WHexGrid create(
+            String worldId,
+            HexGrid publicData,
+            Map<String, String> parameters,
+            Map<String, Map<String, String>> areas) {
         return create(worldId, publicData, parameters, areas, null);
     }
 
@@ -384,7 +399,11 @@ public class WHexGridService {
         pullConflictingEpochs(entity, true);
 
         WHexGrid saved = repository.save(entity);
-        log.debug("Updated WHexGrid: worldId={}, position={}, epoches={}", parsedWorldId.getId(), positionKey, saved.getEpoches());
+        log.debug(
+                "Updated WHexGrid: worldId={}, position={}, epoches={}",
+                parsedWorldId.getId(),
+                positionKey,
+                saved.getEpoches());
         return Optional.of(saved);
     }
 
@@ -413,12 +432,19 @@ public class WHexGridService {
             throw new IllegalArgumentException("id required");
         }
 
-        return repository.findById(id).map(entity -> {
-            repository.delete(entity);
-            log.info("Deleted WHexGrid: id={}, worldId={}, position={}, epoches={}",
-                    id, entity.getWorldId(), entity.getPosition(), entity.getEpoches());
-            return true;
-        }).orElse(false);
+        return repository
+                .findById(id)
+                .map(entity -> {
+                    repository.delete(entity);
+                    log.info(
+                            "Deleted WHexGrid: id={}, worldId={}, position={}, epoches={}",
+                            id,
+                            entity.getWorldId(),
+                            entity.getPosition(),
+                            entity.getEpoches());
+                    return true;
+                })
+                .orElse(false);
     }
 
     /**
@@ -471,7 +497,11 @@ public class WHexGridService {
         String positionKey = TypeUtil.toStringHexCoord(hexPos);
         List<WHexGrid> all = repository.findAllByWorldIdAndPosition(parsedWorldId.getId(), positionKey);
         repository.deleteAll(all);
-        log.info("Deleted {} WHexGrid variants at worldId={}, position={}", all.size(), parsedWorldId.getId(), positionKey);
+        log.info(
+                "Deleted {} WHexGrid variants at worldId={}, position={}",
+                all.size(),
+                parsedWorldId.getId(),
+                positionKey);
         return all.size();
     }
 
@@ -528,8 +558,7 @@ public class WHexGridService {
             repository.save(targetHexGrid);
             duplicatedCount++;
         }
-        log.info("Duplicated {} hex grids from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} hex grids from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
 
@@ -590,26 +619,32 @@ public class WHexGridService {
                         "WHexGrid",
                         entity.getWorldId() + "/" + entity.getPosition(),
                         other.getId(),
-                        "Saving WHexGrid at position=" + entity.getPosition() +
-                        " with epoches=" + entity.getEpoches() +
-                        " would make existing document id=" + other.getId() +
-                        " (epoches=" + other.getEpoches() + ") fully obsolete. " +
-                        "Use force/update to allow this overwrite."
-                );
+                        "Saving WHexGrid at position=" + entity.getPosition() + " with epoches="
+                                + entity.getEpoches() + " would make existing document id="
+                                + other.getId() + " (epoches="
+                                + other.getEpoches() + ") fully obsolete. "
+                                + "Use force/update to allow this overwrite.");
             }
 
             if (remaining.isEmpty()) {
                 // Document becomes obsolete → delete
                 repository.delete(other);
-                log.info("Epoch pull: deleted obsolete WHexGrid id={} at position={} (had epoches={})",
-                        other.getId(), other.getPosition(), other.getEpoches());
+                log.info(
+                        "Epoch pull: deleted obsolete WHexGrid id={} at position={} (had epoches={})",
+                        other.getId(),
+                        other.getPosition(),
+                        other.getEpoches());
             } else {
                 // Pull conflicting epochs
                 other.setEpoches(new java.util.ArrayList<>(remaining));
                 other.touchUpdate();
                 repository.save(other);
-                log.info("Epoch pull: removed epoches {} from WHexGrid id={} at position={}, remaining={}",
-                        overlapping, other.getId(), other.getPosition(), remaining);
+                log.info(
+                        "Epoch pull: removed epoches {} from WHexGrid id={} at position={}, remaining={}",
+                        overlapping,
+                        other.getId(),
+                        other.getPosition(),
+                        remaining);
             }
         }
     }
@@ -646,13 +681,10 @@ public class WHexGridService {
      * @return neutral repair result with duplicate counts
      */
     public DuplicateRepairResult repairDuplicates(String worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, WHexGrid.class, "hexgrid", worldId,
-                doc -> {
-                    String position = doc.getString("position");
-                    return position != null ? doc.getString("worldId") + "|" + position : null;
-                }
-        );
+        return DuplicateRepairHelper.repairDuplicates(mongoTemplate, WHexGrid.class, "hexgrid", worldId, doc -> {
+            String position = doc.getString("position");
+            return position != null ? doc.getString("worldId") + "|" + position : null;
+        });
     }
 
     // ==================== SYNC DOCUMENT FACADE ====================
@@ -678,7 +710,8 @@ public class WHexGridService {
     @Transactional(readOnly = true)
     public Optional<Document> findDocumentByWorldIdAndPosition(String worldId, String position) {
         String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
-        Query query = new Query(Criteria.where("worldId").is(worldId).and("position").is(position));
+        Query query =
+                new Query(Criteria.where("worldId").is(worldId).and("position").is(position));
         return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
     }
 
@@ -690,8 +723,10 @@ public class WHexGridService {
     @Transactional
     public Document upsertDocument(Document doc) {
         String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
-        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
-                .and("position").is(doc.getString("position")));
+        Query query = new Query(Criteria.where("worldId")
+                .is(doc.getString("worldId"))
+                .and("position")
+                .is(doc.getString("position")));
         Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
         doc.remove("_id");
         if (existing != null) {
@@ -706,6 +741,7 @@ public class WHexGridService {
     @Transactional
     public void deleteByWorldIdAndPosition(String worldId, String position) {
         String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
-        mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId).and("position").is(position)), collectionName);
+        mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId).and("position").is(position)), collectionName);
     }
 }

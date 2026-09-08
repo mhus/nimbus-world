@@ -1,16 +1,16 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 /**
  * Handles chunk query messages from clients.
@@ -57,8 +57,12 @@ public class ChunkQueryHandler implements MessageHandler {
             if (chunkOpt.isPresent()) {
                 // Convert stored chunk to transfer object (uses compressed storage if available)
                 dto = chunkService.toTransferObject(session.getWorldId(), chunkOpt.get());
-                log.trace("Loaded chunk: cx={}, cz={}, worldId={}, compressed={}",
-                        cx, cz, session.getWorldId(), chunkOpt.get().isCompressed());
+                log.trace(
+                        "Loaded chunk: cx={}, cz={}, worldId={}, compressed={}",
+                        cx,
+                        cz,
+                        session.getWorldId(),
+                        chunkOpt.get().isCompressed());
             } else {
                 // Generate default chunk on-the-fly without saving to DB
                 var chunkData = chunkService.loadChunkData(session.getWorldId(), chunkKey, true, session.getEpoch());
@@ -67,8 +71,7 @@ public class ChunkQueryHandler implements MessageHandler {
                     continue;
                 }
                 dto = chunkService.chunkDataToTransferObject(session.getWorldId(), chunkData.get());
-                log.trace("Generated default chunk on-the-fly: cx={}, cz={}, worldId={}",
-                        cx, cz, session.getWorldId());
+                log.trace("Generated default chunk on-the-fly: cx={}, cz={}, worldId={}", cx, cz, session.getWorldId());
             }
 
             if (dto != null) {
@@ -79,14 +82,16 @@ public class ChunkQueryHandler implements MessageHandler {
         // Send chunk update response
         if (responseChunks.size() > 0) {
             NetworkMessage response = NetworkMessage.builder()
-                    .t("c.u")  // Chunk update message type
+                    .t("c.u") // Chunk update message type
                     .d(responseChunks)
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
             session.sendMessage(new TextMessage(json));
 
-            log.debug("Sent {} chunks to session={}", responseChunks.size(),
+            log.debug(
+                    "Sent {} chunks to session={}",
+                    responseChunks.size(),
                     session.getWebSocketSession().getId());
         }
     }

@@ -6,12 +6,11 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.util.ModelSelectorUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Delete Selected Blocks Manipulator.
@@ -48,8 +47,8 @@ public class DeleteSelectedBlockManipulator implements BlockManipulator {
 
     @Override
     public String getDescription() {
-        return "Deletes all blocks that are currently selected in the ModelSelector. No parameters required. " +
-                "Example: {\"delete-selected\": {}}";
+        return "Deletes all blocks that are currently selected in the ModelSelector. No parameters required. "
+                + "Example: {\"delete-selected\": {}}";
     }
 
     @Override

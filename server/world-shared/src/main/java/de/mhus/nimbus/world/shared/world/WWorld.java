@@ -7,18 +7,17 @@ import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.UserId;
 import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.shared.user.WorldRoles;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @Builder
@@ -44,7 +43,7 @@ public class WWorld implements Identifiable {
      * Public data containing the generated WorldInfo DTO.
      * This is what gets serialized and sent to clients.
      */
-    @TypeScript(type="WorldInfo")
+    @TypeScript(type = "WorldInfo")
     private WorldInfo publicData; // eingebettete Struktur aus generated Modul
 
     private Instant createdAt;
@@ -56,10 +55,13 @@ public class WWorld implements Identifiable {
     // Zugriff / Berechtigungen
     @Builder.Default
     private Set<String> owner = Set.of(); // liste von userIds
+
     @Builder.Default
     private Set<String> editor = Set.of(); // liste von userIds
+
     @Builder.Default
     private Set<String> supporter = Set.of(); // liste von userIds
+
     @Builder.Default
     private Set<String> player = Set.of(); // liste von userIds
 
@@ -132,7 +134,6 @@ public class WWorld implements Identifiable {
      */
     private String gameplay; // Name des game handlings
 
-
     /**
      * History of era durations in minutes.
      * Each entry represents the duration of a completed era.
@@ -158,8 +159,7 @@ public class WWorld implements Identifiable {
 
     public void touchForUpdate() {
         updatedAt = Instant.now();
-        if (publicData != null)
-            publicData.setWorldId(getWorldId());
+        if (publicData != null) publicData.setWorldId(getWorldId());
     }
 
     public int getChunkX(double worldX) {
@@ -247,12 +247,11 @@ public class WWorld implements Identifiable {
 
     public List<WorldRoles> getRolesForUser(UserId userId) {
         if (userId == null) return List.of();
-        if (isOwnerAllowed(userId)) return List.of(WorldRoles.OWNER, WorldRoles.SUPPORT, WorldRoles.EDITOR, WorldRoles.PLAYER);
+        if (isOwnerAllowed(userId))
+            return List.of(WorldRoles.OWNER, WorldRoles.SUPPORT, WorldRoles.EDITOR, WorldRoles.PLAYER);
         if (isEditorAllowed(userId)) {
-            if (isSupporterAllowed(userId))
-                return List.of(WorldRoles.SUPPORT, WorldRoles.EDITOR, WorldRoles.PLAYER);
-            else
-                return List.of(WorldRoles.EDITOR, WorldRoles.PLAYER);
+            if (isSupporterAllowed(userId)) return List.of(WorldRoles.SUPPORT, WorldRoles.EDITOR, WorldRoles.PLAYER);
+            else return List.of(WorldRoles.EDITOR, WorldRoles.PLAYER);
         }
         if (isPlayerAllowed(userId)) return List.of(WorldRoles.PLAYER);
         return List.of();
@@ -262,13 +261,10 @@ public class WWorld implements Identifiable {
         if (userId == null) return List.of();
         if (isOwnerAllowed(userId)) return List.of(ActorRoles.SUPPORT, ActorRoles.EDITOR, ActorRoles.PLAYER);
         if (isEditorAllowed(userId)) {
-            if (isSupporterAllowed(userId))
-                return List.of(ActorRoles.SUPPORT, ActorRoles.EDITOR, ActorRoles.PLAYER);
-            else
-                return List.of(ActorRoles.EDITOR, ActorRoles.PLAYER);
+            if (isSupporterAllowed(userId)) return List.of(ActorRoles.SUPPORT, ActorRoles.EDITOR, ActorRoles.PLAYER);
+            else return List.of(ActorRoles.EDITOR, ActorRoles.PLAYER);
         }
         if (isPlayerAllowed(userId)) return List.of(ActorRoles.PLAYER);
         return List.of();
     }
-
 }

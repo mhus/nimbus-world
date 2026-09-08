@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.session.SessionCommandService;
 import de.mhus.nimbus.world.shared.session.SessionCommandTarget;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Send commands or notifications to connected player sessions via Redis broadcast.
@@ -45,7 +44,8 @@ public class SessionCommandCommand implements Command {
     @Override
     public CommandResult execute(CommandContext context, List<String> args) {
         if (args.isEmpty()) {
-            return CommandResult.error(-3, "Usage: SessionCommand <notify|cmd> <targetType> [target] <args...>\n" + getHelp());
+            return CommandResult.error(
+                    -3, "Usage: SessionCommand <notify|cmd> <targetType> [target] <args...>\n" + getHelp());
         }
 
         String subCommand = args.get(0);
@@ -60,7 +60,8 @@ public class SessionCommandCommand implements Command {
     private CommandResult handleNotify(List<String> args) {
         // notify <targetType> [target] <source> <title> <text>
         if (args.size() < 4) {
-            return CommandResult.error(-3, "Usage: SessionCommand notify <targetType> [target] <source> <title> <text>");
+            return CommandResult.error(
+                    -3, "Usage: SessionCommand notify <targetType> [target] <source> <title> <text>");
         }
 
         SessionCommandTarget targetType;
@@ -80,7 +81,8 @@ public class SessionCommandCommand implements Command {
         }
 
         if (args.size() < idx + 3) {
-            return CommandResult.error(-3, "Usage: SessionCommand notify <targetType> [target] <source> <title> <text>");
+            return CommandResult.error(
+                    -3, "Usage: SessionCommand notify <targetType> [target] <source> <title> <text>");
         }
 
         int source;
@@ -128,7 +130,8 @@ public class SessionCommandCommand implements Command {
 
         sessionCommandService.sendCommand(targetType, target, cmd, cmdArgs);
         log.info("Session command sent: targetType={}, target={}, cmd={}", targetType, target, cmd);
-        return CommandResult.success("Command '" + cmd + "' sent to " + targetType + (target != null ? " " + target : ""));
+        return CommandResult.success(
+                "Command '" + cmd + "' sent to " + targetType + (target != null ? " " + target : ""));
     }
 
     @Override

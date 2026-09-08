@@ -62,15 +62,22 @@ public class EpochCreateJobExecutor implements JobExecutor {
                         "Invalid epoch parameters: sourceEpoch=" + sourceEpochStr + ", newEpoch=" + newEpochStr);
             }
 
-            log.info("Starting epoch creation for world {}: sourceEpoch={}, newEpoch={}",
-                    worldId, sourceEpoch, newEpoch);
+            log.info(
+                    "Starting epoch creation for world {}: sourceEpoch={}, newEpoch={}",
+                    worldId,
+                    sourceEpoch,
+                    newEpoch);
 
             var results = resourceEpochService.create(worldId, sourceEpoch, newEpoch);
 
             StringBuilder report = new StringBuilder();
-            report.append("Epoch creation for world ").append(worldId)
-                    .append(" (source=").append(sourceEpoch)
-                    .append(", new=").append(newEpoch).append("):\n");
+            report.append("Epoch creation for world ")
+                    .append(worldId)
+                    .append(" (source=")
+                    .append(sourceEpoch)
+                    .append(", new=")
+                    .append(newEpoch)
+                    .append("):\n");
 
             boolean allSuccess = true;
             for (var r : results) {

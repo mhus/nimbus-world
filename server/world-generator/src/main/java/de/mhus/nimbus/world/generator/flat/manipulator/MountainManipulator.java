@@ -3,11 +3,10 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Mountain manipulator.
@@ -50,8 +49,7 @@ public class MountainManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting mountain manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -106,14 +104,18 @@ public class MountainManipulator implements FlatManipulator {
         }
 
         // Recursive fractal mountain generation
-        doMountain(painter, startX, startZ, endX, endZ,
-                  baseHeight, peakHeight, branches, roughness, 0);
+        doMountain(painter, startX, startZ, endX, endZ, baseHeight, peakHeight, branches, roughness, 0);
 
         // Apply smoothing to blend with existing terrain
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
-        log.info("Mountain manipulation completed: peakHeight={}, baseHeight={}, branches={}, roughness={}, direction={}",
-                peakHeight, baseHeight, branches, roughness, direction);
+        log.info(
+                "Mountain manipulation completed: peakHeight={}, baseHeight={}, branches={}, roughness={}, direction={}",
+                peakHeight,
+                baseHeight,
+                branches,
+                roughness,
+                direction);
     }
 
     /**
@@ -131,9 +133,17 @@ public class MountainManipulator implements FlatManipulator {
      * @param roughness Variation factor for randomness
      * @param depth Current recursion depth
      */
-    private void doMountain(FlatPainter painter, int x1, int z1, int x2, int z2,
-                           int baseHeight, int height, int childBranches,
-                           double roughness, int depth) {
+    private void doMountain(
+            FlatPainter painter,
+            int x1,
+            int z1,
+            int x2,
+            int z2,
+            int baseHeight,
+            int height,
+            int childBranches,
+            double roughness,
+            int depth) {
         // Termination conditions
         if (depth > MAX_RECURSION_DEPTH || height < MIN_HEIGHT) {
             return;
@@ -164,17 +174,22 @@ public class MountainManipulator implements FlatManipulator {
             int branchZ = midZ + angleVariation;
 
             // Recursive call with reduced height and fewer branches
-            doMountain(painter, midX, midZ, branchX, branchZ,
-                      midHeight, height / 2,
-                      Math.max(1, childBranches - 1),
-                      roughness, depth + 1);
+            doMountain(
+                    painter,
+                    midX,
+                    midZ,
+                    branchX,
+                    branchZ,
+                    midHeight,
+                    height / 2,
+                    Math.max(1, childBranches - 1),
+                    roughness,
+                    depth + 1);
         }
 
         // Continue main ridge if we haven't reached the end
         if (x1 != x2 || z1 != z2) {
-            doMountain(painter, midX, midZ, x2, z2,
-                      midHeight, height / 2,
-                      childBranches, roughness, depth + 1);
+            doMountain(painter, midX, midZ, x2, z2, midHeight, height / 2, childBranches, roughness, depth + 1);
         }
     }
 
@@ -187,8 +202,7 @@ public class MountainManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -200,8 +214,7 @@ public class MountainManipulator implements FlatManipulator {
         try {
             return Double.parseDouble(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid double parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -213,8 +226,7 @@ public class MountainManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

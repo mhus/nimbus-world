@@ -59,12 +59,12 @@ public enum EdgeSide {
      */
     public int[] getAxialDirection() {
         return switch (this) {
-            case N -> new int[]{0, -1};   // North: r decreases
-            case NE -> new int[]{1, -1};  // Northeast: q increases, r decreases
-            case SE -> new int[]{1, 0};   // Southeast: q increases
-            case S -> new int[]{0, 1};    // South: r increases
-            case SW -> new int[]{-1, 1};  // Southwest: q decreases, r increases
-            case NW -> new int[]{-1, 0};  // Northwest: q decreases
+            case N -> new int[] {0, -1}; // North: r decreases
+            case NE -> new int[] {1, -1}; // Northeast: q increases, r decreases
+            case SE -> new int[] {1, 0}; // Southeast: q increases
+            case S -> new int[] {0, 1}; // South: r increases
+            case SW -> new int[] {-1, 1}; // Southwest: q decreases, r increases
+            case NW -> new int[] {-1, 0}; // Northwest: q decreases
         };
     }
 }

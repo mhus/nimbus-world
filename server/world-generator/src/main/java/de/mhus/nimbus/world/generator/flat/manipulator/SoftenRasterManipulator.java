@@ -2,10 +2,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Soften raster manipulator.
@@ -34,8 +33,7 @@ public class SoftenRasterManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting soften raster manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -98,8 +96,7 @@ public class SoftenRasterManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Soften raster manipulation completed: passes={}, factor={}",
-                passes, factor);
+        log.info("Soften raster manipulation completed: passes={}, factor={}", passes, factor);
     }
 
     // Parameter parsing helper methods
@@ -111,8 +108,7 @@ public class SoftenRasterManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -124,8 +120,7 @@ public class SoftenRasterManipulator implements FlatManipulator {
         try {
             return Double.parseDouble(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid double parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

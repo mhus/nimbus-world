@@ -3,13 +3,12 @@ package de.mhus.nimbus.world.control.service.delete.impl;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Deletes jobs and workflow journal records for a world.
@@ -36,8 +35,7 @@ public class DeleteJobsService implements DeleteWorldResources {
         int jobs = jobService.deleteByWorldId(worldId);
         int records = workflowJournalService.deleteByWorldId(worldId);
 
-        log.info("Deleted for world {}: {} jobs, {} workflow records",
-                worldId, jobs, records);
+        log.info("Deleted for world {}: {} jobs, {} workflow records", worldId, jobs, records);
     }
 
     @Override

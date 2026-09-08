@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.awt.*;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Helper class for adding debug overlays to composite images for village slots.
@@ -21,7 +20,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class TownDebugOverlayHelper {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     /**
      * Adds debug overlays for village slots to the composite image creator.
@@ -31,16 +32,17 @@ public class TownDebugOverlayHelper {
      *
      * @param creator The HexGridCompositeImageCreator to add overlays to
      */
-    public static void addVillageSlotOverlays(HexGridCompositeImageCreator creator,
-                                               Map<de.mhus.nimbus.generated.types.HexVector2,
-                                                   de.mhus.nimbus.world.shared.generator.WFlat> flats) {
+    public static void addVillageSlotOverlays(
+            HexGridCompositeImageCreator creator,
+            Map<de.mhus.nimbus.generated.types.HexVector2, de.mhus.nimbus.world.shared.generator.WFlat> flats) {
         if (creator == null || flats == null) {
             return;
         }
 
         int addedOverlays = 0;
 
-        for (Map.Entry<de.mhus.nimbus.generated.types.HexVector2, de.mhus.nimbus.world.shared.generator.WFlat> entry : flats.entrySet()) {
+        for (Map.Entry<de.mhus.nimbus.generated.types.HexVector2, de.mhus.nimbus.world.shared.generator.WFlat> entry :
+                flats.entrySet()) {
             de.mhus.nimbus.generated.types.HexVector2 coord = entry.getKey();
 
             // Get g_village parameter from flat
@@ -65,9 +67,7 @@ public class TownDebugOverlayHelper {
      * @param hexGridSize Height of the hex grid in pixels (radius=hexGridSize/2, hexGridWidth=HexMathUtil.getGridWidth(hexGridSize))
      */
     public static void addVillageSlotOverlaysFromHexGrids(
-            HexGridCompositeImageCreator creator,
-            Map<HexVector2, WHexGrid> hexGrids,
-            int hexGridSize) {
+            HexGridCompositeImageCreator creator, Map<HexVector2, WHexGrid> hexGrids, int hexGridSize) {
 
         if (creator == null || hexGrids == null) {
             return;
@@ -80,8 +80,8 @@ public class TownDebugOverlayHelper {
             HexVector2 coord = entry.getKey();
             WHexGrid hexGrid = entry.getValue();
 
-            String villageParam = hexGrid.getParameters() != null ?
-                    hexGrid.getParameters().get("g_village") : null;
+            String villageParam =
+                    hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_village") : null;
 
             if (villageParam == null || villageParam.isBlank()) {
                 continue;
@@ -108,7 +108,8 @@ public class TownDebugOverlayHelper {
 
                     String slotName = place.getName();
                     if (slotName != null && !slotName.isEmpty()) {
-                        TextOverlay textOverlay = new TextOverlay(slotName, (int) worldX, (int) worldZ + 20, Color.YELLOW, 2);
+                        TextOverlay textOverlay =
+                                new TextOverlay(slotName, (int) worldX, (int) worldZ + 20, Color.YELLOW, 2);
                         int textWidth = textOverlay.getTextWidth();
                         textOverlay.setX((int) worldX - textWidth / 2);
                         creator.addOverlay(textOverlay);
@@ -117,14 +118,19 @@ public class TownDebugOverlayHelper {
                     addedOverlays += 2;
                 }
 
-                log.debug("Added {} overlays for village district '{}' at [{},{}]",
+                log.debug(
+                        "Added {} overlays for village district '{}' at [{},{}]",
                         config.getPlaces().size() * 2,
                         config.getDistrictName(),
-                        coord.getQ(), coord.getR());
+                        coord.getQ(),
+                        coord.getR());
 
             } catch (Exception e) {
-                log.warn("Failed to parse g_village parameter for grid [{},{}]: {}",
-                        coord.getQ(), coord.getR(), e.getMessage());
+                log.warn(
+                        "Failed to parse g_village parameter for grid [{},{}]: {}",
+                        coord.getQ(),
+                        coord.getR(),
+                        e.getMessage());
             }
         }
 

@@ -1,24 +1,23 @@
 package de.mhus.nimbus.world.control.service.sync.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.layer.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Import/export implementation for model layers.
@@ -44,7 +43,8 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ExportResult export(Path dataPath, WorldId worldId, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path modelsDir = dataPath.resolve("models");
         Files.createDirectories(modelsDir);
 
@@ -113,7 +113,9 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
     }
 
     @Override
-    public ResourceSyncType.ImportResult importData(Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken) throws IOException {
+    public ResourceSyncType.ImportResult importData(
+            Path dataPath, WorldId worldId, ExternalResourceDTO definition, boolean force, boolean removeOvertaken)
+            throws IOException {
         Path modelsDir = dataPath.resolve("models");
         if (!Files.exists(modelsDir)) {
             log.info("No models directory found");
@@ -157,7 +159,9 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedLayerDoc.getString("worldId");
                     String targetName = migratedLayerDoc.getString("title");
 
-                    Document existingLayer = layerService.findLayerDocumentByWorldIdAndName(targetWorldId, targetName).orElse(null);
+                    Document existingLayer = layerService
+                            .findLayerDocumentByWorldIdAndName(targetWorldId, targetName)
+                            .orElse(null);
 
                     // Check if should import
                     if (!force && existingLayer != null) {
@@ -177,7 +181,10 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
 
                     // Import models
                     try (Stream<Path> modelFiles = Files.list(layerDir)) {
-                        for (Path modelFile : modelFiles.filter(f -> f.toString().endsWith(".yaml") && !f.getFileName().toString().equals("_info.yaml")).toList()) {
+                        for (Path modelFile : modelFiles
+                                .filter(f -> f.toString().endsWith(".yaml")
+                                        && !f.getFileName().toString().equals("_info.yaml"))
+                                .toList()) {
                             try {
                                 Document modelDoc = yamlMapper.readValue(modelFile.toFile(), Document.class);
                                 String modelName = modelDoc.getString("title");
@@ -199,9 +206,10 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                                 String modelLayerDataId = migratedModelDoc.getString("layerDataId");
                                 String modelTargetName = migratedModelDoc.getString("title");
 
-                                Document existingModel = layerService.findModelDocumentByWorldIdAndLayerDataIdAndName(
-                                        modelTargetWorldId, modelLayerDataId, modelTargetName
-                                ).orElse(null);
+                                Document existingModel = layerService
+                                        .findModelDocumentByWorldIdAndLayerDataIdAndName(
+                                                modelTargetWorldId, modelLayerDataId, modelTargetName)
+                                        .orElse(null);
 
                                 // Check if should import
                                 if (!force && existingModel != null) {

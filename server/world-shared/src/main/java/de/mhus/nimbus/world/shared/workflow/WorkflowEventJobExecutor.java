@@ -3,19 +3,14 @@ package de.mhus.nimbus.world.shared.workflow;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(
-        value = "nimbus.services.workflows",
-        havingValue = "true",
-        matchIfMissing = false
-)
+@ConditionalOnProperty(value = "nimbus.services.workflows", havingValue = "true", matchIfMissing = false)
 public class WorkflowEventJobExecutor implements JobExecutor {
 
     public static final String NAME = "workflow-event-job-executor";
@@ -39,11 +34,7 @@ public class WorkflowEventJobExecutor implements JobExecutor {
         String status = null;
         if (event.equals(WorkflowEvent.START)) {
             // Start workflow
-            status = workflowService.startWorkflow(
-                    job.getWorldId(),
-                    workflowName,
-                    workflowId
-            );
+            status = workflowService.startWorkflow(job.getWorldId(), workflowName, workflowId);
         } else {
             if (!workflowService.existsWorkflow(job.getWorldId(), workflowId)) {
                 throw new JobExecutionException("Workflow does not exist: " + workflowId);
@@ -52,16 +43,9 @@ public class WorkflowEventJobExecutor implements JobExecutor {
                     .eventName(event)
                     .data(job.getParameters() != null ? job.getParameters() : Map.of())
                     .build();
-            status = workflowService.processEvent(
-                    job.getWorldId(),
-                    workflowName,
-                    workflowId,
-                    eventObject
-            );
+            status = workflowService.processEvent(job.getWorldId(), workflowName, workflowId, eventObject);
         }
-        if (status == null || StatusRecord.FAILED.equals(status))
-            return JobResult.failure(status);
+        if (status == null || StatusRecord.FAILED.equals(status)) return JobResult.failure(status);
         return JobResult.success(status);
     }
-
 }

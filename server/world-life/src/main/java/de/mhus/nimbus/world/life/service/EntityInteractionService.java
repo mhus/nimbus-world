@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.life.service;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.behavior.BehaviorRegistry;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;
@@ -9,8 +8,7 @@ import de.mhus.nimbus.world.life.redis.PathwayPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Service for processing entity interactions from players.
@@ -50,8 +48,12 @@ public class EntityInteractionService {
             return;
         }
 
-        log.info("World {}: Processing entity interaction: entityId={}, action={}, user={}",
-                worldId, entityId, action, displayName);
+        log.info(
+                "World {}: Processing entity interaction: entityId={}, action={}, user={}",
+                worldId,
+                entityId,
+                action,
+                displayName);
 
         // Handle dialog pause/resume
         if ("dialog_start".equals(action)) {
@@ -90,6 +92,11 @@ public class EntityInteractionService {
         }
 
         boolean nowEmpty = state.dialogEnd(playerId);
-        log.info("World {}: Entity {} dialog_end by player {} (resumeMovement={})", worldId, entityId, playerId, nowEmpty);
+        log.info(
+                "World {}: Entity {} dialog_end by player {} (resumeMovement={})",
+                worldId,
+                entityId,
+                playerId,
+                nowEmpty);
     }
 }

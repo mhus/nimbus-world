@@ -1,20 +1,19 @@
 package de.mhus.nimbus.shared.storage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for ChunkedOutputStream.
@@ -223,20 +222,16 @@ class ChunkedOutputStreamTest {
 
         byte[] data = new byte[10];
 
-        assertThatThrownBy(() -> stream.write(data, -1, 5))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.write(data, -1, 5)).isInstanceOf(IndexOutOfBoundsException.class);
 
-        assertThatThrownBy(() -> stream.write(data, 0, -1))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.write(data, 0, -1)).isInstanceOf(IndexOutOfBoundsException.class);
 
-        assertThatThrownBy(() -> stream.write(data, 0, 20))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> stream.write(data, 0, 20)).isInstanceOf(IndexOutOfBoundsException.class);
     }
 
     @Test
     void testRepositoryException() {
-        when(repository.save(any(StorageData.class)))
-                .thenThrow(new RuntimeException("MongoDB error"));
+        when(repository.save(any(StorageData.class))).thenThrow(new RuntimeException("MongoDB error"));
 
         ChunkedOutputStream stream = new ChunkedOutputStream(
                 repository, TEST_UUID, TEST_SCHEMA, TEST_SCHEMA_VERSION, TEST_WORLD, TEST_PATH, CHUNK_SIZE, testDate);
@@ -244,10 +239,11 @@ class ChunkedOutputStreamTest {
         byte[] data = "test".getBytes();
 
         assertThatThrownBy(() -> {
-            stream.write(data);
-            stream.close();
-        }).isInstanceOf(IOException.class)
-          .hasMessageContaining("Failed to save chunk");
+                    stream.write(data);
+                    stream.close();
+                })
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("Failed to save chunk");
     }
 
     @Test

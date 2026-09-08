@@ -3,14 +3,13 @@ package de.mhus.nimbus.world.generator.mcp;
 import de.mhus.nimbus.world.shared.job.JobStatus;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Helper service for synchronous MCP job execution.
@@ -144,14 +143,13 @@ public class McpJobExecutor {
      * Result record containing job execution details.
      */
     public record JobExecutionResult(
-        String jobId,
-        ExecutionStatus status,
-        String result,
-        String error,
-        Long durationMs,
-        Instant startedAt,
-        Instant completedAt
-    ) {}
+            String jobId,
+            ExecutionStatus status,
+            String result,
+            String error,
+            Long durationMs,
+            Instant startedAt,
+            Instant completedAt) {}
 
     /**
      * Execution status enum.
@@ -174,9 +172,8 @@ public class McpJobExecutor {
         }
 
         // Use provided title or generate one
-        String jobTitle = config.title != null && !config.title.isBlank()
-            ? config.title
-            : "MCP Job: " + config.executor;
+        String jobTitle =
+                config.title != null && !config.title.isBlank() ? config.title : "MCP Job: " + config.executor;
 
         // Job type: explicit type, or from parameters._type, or empty
         String jobType = config.type != null ? config.type : jobParams.getOrDefault("_type", "");
@@ -187,18 +184,18 @@ public class McpJobExecutor {
         jobParams.remove("_location");
 
         return jobService.createJob(
-            config.worldId,
-            config.executor,
-            jobTitle,
-            jobType,
-            jobParams,
-            location,
-            null,  // parent
-            5,     // priority
-            0,     // maxRetries
-            null,  // onSuccess
-            null   // onError
-        );
+                config.worldId,
+                config.executor,
+                jobTitle,
+                jobType,
+                jobParams,
+                location,
+                null, // parent
+                5, // priority
+                0, // maxRetries
+                null, // onSuccess
+                null // onError
+                );
     }
 
     /**
@@ -221,13 +218,11 @@ public class McpJobExecutor {
 
                 // Check timeout
                 if (elapsed > config.timeoutMs) {
-                    log.warn("MCP Job timeout: id={} elapsed={}ms timeout={}ms",
-                        jobId, elapsed, config.timeoutMs);
+                    log.warn("MCP Job timeout: id={} elapsed={}ms timeout={}ms", jobId, elapsed, config.timeoutMs);
 
                     throw new McpJobTimeoutException(
-                        String.format("Job exceeded timeout of %dms (elapsed: %dms)",
-                            config.timeoutMs, elapsed),
-                        jobId);
+                            String.format("Job exceeded timeout of %dms (elapsed: %dms)", config.timeoutMs, elapsed),
+                            jobId);
                 }
 
                 // Poll job status
@@ -246,28 +241,26 @@ public class McpJobExecutor {
                         log.info("MCP Job completed: id={} duration={}ms", jobId, duration);
 
                         return new JobExecutionResult(
-                            jobId,
-                            ExecutionStatus.SUCCESS,
-                            currentJob.getResult(),
-                            null,
-                            duration,
-                            currentJob.getStartedAt(),
-                            currentJob.getCompletedAt()
-                        );
+                                jobId,
+                                ExecutionStatus.SUCCESS,
+                                currentJob.getResult(),
+                                null,
+                                duration,
+                                currentJob.getStartedAt(),
+                                currentJob.getCompletedAt());
                     }
                     case FAILED -> {
                         Long duration = calculateDuration(currentJob);
                         log.error("MCP Job failed: id={} error={}", jobId, currentJob.getErrorMessage());
 
                         return new JobExecutionResult(
-                            jobId,
-                            ExecutionStatus.FAILURE,
-                            null,
-                            currentJob.getErrorMessage(),
-                            duration,
-                            currentJob.getStartedAt(),
-                            currentJob.getCompletedAt()
-                        );
+                                jobId,
+                                ExecutionStatus.FAILURE,
+                                null,
+                                currentJob.getErrorMessage(),
+                                duration,
+                                currentJob.getStartedAt(),
+                                currentJob.getCompletedAt());
                     }
                     case PENDING, RUNNING -> {
                         // Continue polling

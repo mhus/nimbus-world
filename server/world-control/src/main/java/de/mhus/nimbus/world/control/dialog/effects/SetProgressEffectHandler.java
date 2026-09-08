@@ -16,13 +16,14 @@ public class SetProgressEffectHandler implements DialogEffectHandler {
     private final WLeaseService leaseService;
 
     @Override
-    public String getEffectType() { return "setProgress"; }
+    public String getEffectType() {
+        return "setProgress";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
         if (ctx.getDialogLease() == null) return;
-        leaseService.setLeaseDataValue(
-                ctx.getDialogLease().getLeaseId(), effect.key(), effect.value());
+        leaseService.setLeaseDataValue(ctx.getDialogLease().getLeaseId(), effect.key(), effect.value());
         log.debug("Set dialog lease data {} = {}", effect.key(), effect.value());
     }
 }

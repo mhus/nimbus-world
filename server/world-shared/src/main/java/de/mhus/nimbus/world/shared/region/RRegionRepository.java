@@ -9,14 +9,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RRegionRepository extends MongoRepository<RRegion, String> {
     Optional<RRegion> findByName(String name);
-//    Optional<RRegion> findByApiUrl(String apiUrl);
+    //    Optional<RRegion> findByApiUrl(String apiUrl);
     boolean existsByName(String name);
 
     @Query(value = "{}", fields = "{ '_id': 1 }")
     List<String> findAllIds();
 
-//    Optional<String> getRegionNameById(String regionId);
+    //    Optional<String> getRegionNameById(String regionId);
 
     Optional<String> getRegionNameByIdAndEnabled(String regionId, boolean enabled);
-
 }

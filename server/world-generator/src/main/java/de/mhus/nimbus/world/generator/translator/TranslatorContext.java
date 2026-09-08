@@ -30,9 +30,11 @@ public class TranslatorContext {
         }
 
         sb.append("## Available Flora & Fauna Options\n\n");
-        sb.append("**IMPORTANT: You MUST set `gf_flora` and `gf_fauna` in the `parameters` of EVERY biome feature.**\n");
+        sb.append(
+                "**IMPORTANT: You MUST set `gf_flora` and `gf_fauna` in the `parameters` of EVERY biome feature.**\n");
         sb.append("Choose the most appropriate option from the tables below. ");
-        sb.append("The biome prefix must match the biome type (e.g., use `forest_mixed` or `forest_dense` for a FOREST biome, ");
+        sb.append(
+                "The biome prefix must match the biome type (e.g., use `forest_mixed` or `forest_dense` for a FOREST biome, ");
         sb.append("`plains_flower` or `plains_grass` for a PLAINS biome).\n");
         sb.append("Also set `gf_density` (0.0-1.0) to control vegetation density.\n");
         sb.append("For SWAMP/MARSH biomes, additionally set `gf_water_flora` and `gf_water_density`.\n");

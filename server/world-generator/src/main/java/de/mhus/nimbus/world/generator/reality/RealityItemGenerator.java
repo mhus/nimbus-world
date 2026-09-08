@@ -9,15 +9,14 @@ import de.mhus.nimbus.world.shared.world.ItemTier;
 import de.mhus.nimbus.world.shared.world.RarityCategory;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 /**
  * Phase 4 of the Reality Workflow: create the item entities of a region from a parsed
@@ -69,8 +68,10 @@ public class RealityItemGenerator {
         int count = 0;
         for (RealityPlan.ItemSpec spec : specs) {
             if (count >= limit) {
-                log.info("RealityItemGenerator: reached maxItems limit {} - skipping remaining {} items",
-                        limit, specs.size() - count);
+                log.info(
+                        "RealityItemGenerator: reached maxItems limit {} - skipping remaining {} items",
+                        limit,
+                        specs.size() - count);
                 break;
             }
             count++;
@@ -101,14 +102,21 @@ public class RealityItemGenerator {
             }
         }
 
-        log.info("RealityItemGenerator: created {} items, generated {} icons, {} errors",
-                result.getItemsCreated(), result.getIconsGenerated(), result.getErrors().size());
+        log.info(
+                "RealityItemGenerator: created {} items, generated {} icons, {} errors",
+                result.getItemsCreated(),
+                result.getIconsGenerated(),
+                result.getErrors().size());
         return result;
     }
 
     /** Create/update the WItem and its trading fields. */
-    private void createItem(WorldId worldId, String itemId, String texturePath, RealityPlan.ItemSpec spec,
-                            Map<String, RealityPlan.ItemClass> classes) {
+    private void createItem(
+            WorldId worldId,
+            String itemId,
+            String texturePath,
+            RealityPlan.ItemSpec spec,
+            Map<String, RealityPlan.ItemClass> classes) {
         // Super-item / class metadata carried on the DTO parameters map.
         Map<String, String> params = new HashMap<>();
         putIfSet(params, "itemClass", spec.getItemClass());
@@ -186,8 +194,13 @@ public class RealityItemGenerator {
     }
 
     /** Generate the icon PNG at {@code texturePath} using the asset-image-generator executor. */
-    private boolean generateIcon(WorldId worldId, RealityPlan.StyleGuide style, String imageModel,
-                                 RealityPlan.ItemSpec spec, String texturePath) throws Exception {
+    private boolean generateIcon(
+            WorldId worldId,
+            RealityPlan.StyleGuide style,
+            String imageModel,
+            RealityPlan.ItemSpec spec,
+            String texturePath)
+            throws Exception {
         int size = DEFAULT_ICON_SIZE;
         boolean transparent = true;
         if (style != null) {

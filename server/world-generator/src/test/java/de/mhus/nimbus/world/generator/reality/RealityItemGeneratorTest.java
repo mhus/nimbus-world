@@ -1,5 +1,13 @@
 package de.mhus.nimbus.world.generator.reality;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.assets.AssetImageGeneratorExecutor;
@@ -9,19 +17,10 @@ import de.mhus.nimbus.world.shared.world.ItemTier;
 import de.mhus.nimbus.world.shared.world.RarityCategory;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for Phase 4 item generation. The AI image executor is mocked (no network). */
 class RealityItemGeneratorTest {
@@ -32,7 +31,8 @@ class RealityItemGeneratorTest {
 
     private final WorldId worldId = WorldId.of("earth616:westview").orElseThrow();
 
-    private RealityPlan.ItemSpec item(String name, String type, String tier, String rarity, String desc, Integer price) {
+    private RealityPlan.ItemSpec item(
+            String name, String type, String tier, String rarity, String desc, Integer price) {
         RealityPlan.ItemSpec s = new RealityPlan.ItemSpec();
         s.setName(name);
         s.setType(type);
@@ -64,7 +64,10 @@ class RealityItemGeneratorTest {
 
     private void stubHappyPath() throws Exception {
         when(itemService.save(any(), anyString(), any(), any())).thenAnswer(inv -> {
-            WItem item = WItem.builder().name(inv.getArgument(1)).publicData(inv.getArgument(2)).build();
+            WItem item = WItem.builder()
+                    .name(inv.getArgument(1))
+                    .publicData(inv.getArgument(2))
+                    .build();
             Consumer<WItem> customizer = inv.getArgument(3);
             if (customizer != null) {
                 customizer.accept(item);
@@ -77,10 +80,11 @@ class RealityItemGeneratorTest {
     @Test
     void createsItemsWithTexturePathAndTransparentIcon() throws Exception {
         stubHappyPath();
-        RealityPlan plan = planWith(List.of(
-                item("Peat Spade", "tool", "IRON", "COMMON", "a wide peat spade", 20),
-                item("Mistglass Shard", "material", null, "RARE", "a shimmering fae-glass shard", null)
-        ), null);
+        RealityPlan plan = planWith(
+                List.of(
+                        item("Peat Spade", "tool", "IRON", "COMMON", "a wide peat spade", 20),
+                        item("Mistglass Shard", "material", null, "RARE", "a shimmering fae-glass shard", null)),
+                null);
 
         RealityItemResult result = generator.generateItems(worldId, plan);
 
@@ -110,9 +114,9 @@ class RealityItemGeneratorTest {
         assertThat(spade.getBasePrice()).isEqualTo(20.0);
         WItem shard = WItem.builder().build();
         custCap.getAllValues().get(1).accept(shard);
-        assertThat(shard.getItemTier()).isEqualTo(ItemTier.NONE);            // null tier -> NONE
+        assertThat(shard.getItemTier()).isEqualTo(ItemTier.NONE); // null tier -> NONE
         assertThat(shard.getRarityCategory()).isEqualTo(RarityCategory.RARE);
-        assertThat(shard.getBasePrice()).isNull();                            // no priceHint
+        assertThat(shard.getBasePrice()).isNull(); // no priceHint
 
         // Image job asks for a transparent icon at the item's texture path.
         ArgumentCaptor<WJob> jobCap = ArgumentCaptor.forClass(WJob.class);
@@ -131,11 +135,12 @@ class RealityItemGeneratorTest {
     @Test
     void respectsMaxItemsLimit() throws Exception {
         stubHappyPath();
-        RealityPlan plan = planWith(List.of(
-                item("A", "material", null, null, "a", null),
-                item("B", "material", null, null, "b", null),
-                item("C", "material", null, null, "c", null)
-        ), 1);
+        RealityPlan plan = planWith(
+                List.of(
+                        item("A", "material", null, null, "a", null),
+                        item("B", "material", null, null, "b", null),
+                        item("C", "material", null, null, "c", null)),
+                1);
 
         RealityItemResult result = generator.generateItems(worldId, plan);
 
@@ -145,8 +150,11 @@ class RealityItemGeneratorTest {
 
     @Test
     void recordsIconFailureButKeepsItem() throws Exception {
-        when(itemService.save(any(), anyString(), any(), any())).thenAnswer(inv ->
-                WItem.builder().name(inv.getArgument(1)).publicData(inv.getArgument(2)).build());
+        when(itemService.save(any(), anyString(), any(), any()))
+                .thenAnswer(inv -> WItem.builder()
+                        .name(inv.getArgument(1))
+                        .publicData(inv.getArgument(2))
+                        .build());
         when(imageGenerator.execute(any())).thenReturn(JobExecutor.JobResult.failure("boom"));
 
         RealityPlan plan = planWith(List.of(item("Peat Brick", "material", null, "COMMON", "fuel", null)), null);
@@ -171,7 +179,8 @@ class RealityItemGeneratorTest {
         RealityPlan.ItemSpec sword = item("Iron Sword", "weapon", null, "UNCOMMON", "a sturdy iron sword", 30);
         sword.setItemClass("iron"); // no explicit tier -> resolved from class
 
-        RealityPlan.ItemSpec oneUpForever = item("One-Up Forever", "super", null, "MYTHIC", "a glowing eternal heart", null);
+        RealityPlan.ItemSpec oneUpForever =
+                item("One-Up Forever", "super", null, "MYTHIC", "a glowing eternal heart", null);
         oneUpForever.setConsumable(false);
         oneUpForever.setPersistent(true);
         oneUpForever.setEffect("extra_life");

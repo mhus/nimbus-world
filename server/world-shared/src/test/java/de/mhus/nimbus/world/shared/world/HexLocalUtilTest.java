@@ -1,14 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
+import static org.assertj.core.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
-import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
-import de.mhus.nimbus.world.shared.world.HexLocalPosition;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.*;
 
 class HexLocalUtilTest {
 
@@ -30,8 +27,9 @@ class HexLocalUtilTest {
     @Test
     void testParseHexLocalEdgeVector_invalid() {
         assertThatThrownBy(() -> HexLocalUtil.parseHexLocalEdgeVector("<INVALID2/4>"))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> HexLocalUtil.parseHexLocalEdgeVector("<NE2/>")).isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> HexLocalUtil.parseHexLocalEdgeVector("<NE2/>"))
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> HexLocalUtil.parseHexLocalEdgeVector(null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -50,7 +48,8 @@ class HexLocalUtilTest {
     @Test
     void testParseHexLocalPosition_invalid() {
         HexLocalUtil util = new HexLocalUtil();
-        assertThatThrownBy(() -> util.parseHexLocalPosition("<10;INVALID/5>", 100)).isInstanceOf(NumberFormatException.class);
+        assertThatThrownBy(() -> util.parseHexLocalPosition("<10;INVALID/5>", 100))
+                .isInstanceOf(NumberFormatException.class);
         assertThatThrownBy(() -> util.parseHexLocalPosition(null, 100)).isInstanceOf(NullPointerException.class);
     }
 
@@ -90,4 +89,3 @@ class HexLocalUtilTest {
         assertThat(posCenter.getZ()).isBetween(-100, 100);
     }
 }
-

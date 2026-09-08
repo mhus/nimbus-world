@@ -1,5 +1,10 @@
 package de.mhus.nimbus.world.control.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import de.mhus.nimbus.shared.security.JwtService;
 import de.mhus.nimbus.shared.service.MetricService;
 import de.mhus.nimbus.shared.service.SSettingsService;
@@ -10,11 +15,6 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 /** Unit tests for the dev-only Bearer authentication of {@link ControlAccessFilter}. */
 class ControlAccessFilterTest {
 
@@ -22,8 +22,12 @@ class ControlAccessFilterTest {
 
     private ControlAccessFilter filter(boolean devLoginEnvEnabled) {
         return new ControlAccessFilter(
-                mock(JwtService.class), mock(WSessionService.class), settings,
-                mock(RegionSettings.class), mock(SSettingsService.class), mock(MetricService.class),
+                mock(JwtService.class),
+                mock(WSessionService.class),
+                settings,
+                mock(RegionSettings.class),
+                mock(SSettingsService.class),
+                mock(MetricService.class),
                 devLoginEnvEnabled);
     }
 
@@ -51,19 +55,22 @@ class ControlAccessFilterTest {
         when(settings.isDevLoginEnabled()).thenReturn(true);
         when(settings.getDevLoginAccessKey()).thenReturn("SECRET-KEY");
 
-        assertThat(filter(true).validateDevLoginBearer(request("Bearer WRONG-KEY"))).isFalse();
+        assertThat(filter(true).validateDevLoginBearer(request("Bearer WRONG-KEY")))
+                .isFalse();
     }
 
     @Test
     void rejectsWhenDevLoginDisabledByEnvFlag() {
         // nimbus.devlogin.enabled=false (default) -> off regardless of key / DB toggle
-        assertThat(filter(false).validateDevLoginBearer(request("Bearer SECRET-KEY"))).isFalse();
+        assertThat(filter(false).validateDevLoginBearer(request("Bearer SECRET-KEY")))
+                .isFalse();
     }
 
     @Test
     void rejectsWhenDevLoginDisabledByDbToggle() {
         when(settings.isDevLoginEnabled()).thenReturn(false);
-        assertThat(filter(true).validateDevLoginBearer(request("Bearer SECRET-KEY"))).isFalse();
+        assertThat(filter(true).validateDevLoginBearer(request("Bearer SECRET-KEY")))
+                .isFalse();
     }
 
     @Test

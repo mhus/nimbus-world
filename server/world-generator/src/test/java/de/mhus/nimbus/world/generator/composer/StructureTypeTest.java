@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.structure.StructureType;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for StructureType Rich Enum pattern
@@ -32,5 +32,4 @@ class StructureTypeTest {
         assertEquals("true", defaults.get("has_wall"));
         assertEquals("true", defaults.get("has_districts"));
     }
-
 }

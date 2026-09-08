@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.generator.structures;
 
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.town.BuildingDefinition;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
@@ -12,12 +10,13 @@ import de.mhus.nimbus.world.shared.layer.WLayerModel;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -66,13 +65,16 @@ public class StructurePlacer {
         String worldId = world.getWorldId();
 
         // Parse g_village parameter
-        String villageJson = hexGrid.getParameters() != null
-                ? hexGrid.getParameters().get(G_VILLAGE_PARAM) : null;
+        String villageJson =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get(G_VILLAGE_PARAM) : null;
 
         if (villageJson == null || villageJson.isBlank()) {
             log.debug("No g_village parameter found in hexGrid {}", hexGrid.getPosition());
             return StructurePlacerResult.builder()
-                    .placed(placed).errors(errors).skipped(0).build();
+                    .placed(placed)
+                    .errors(errors)
+                    .skipped(0)
+                    .build();
         }
 
         TownGridConfig config;
@@ -86,13 +88,19 @@ public class StructurePlacer {
             log.error("Failed to parse g_village JSON for hexGrid {}", hexGrid.getPosition(), e);
             errors.add("Failed to parse g_village: " + e.getMessage());
             return StructurePlacerResult.builder()
-                    .placed(placed).errors(errors).skipped(0).build();
+                    .placed(placed)
+                    .errors(errors)
+                    .skipped(0)
+                    .build();
         }
 
         if (config.getPlaces() == null || config.getPlaces().isEmpty()) {
             log.debug("No places in g_village for hexGrid {}", hexGrid.getPosition());
             return StructurePlacerResult.builder()
-                    .placed(placed).errors(errors).skipped(0).build();
+                    .placed(placed)
+                    .errors(errors)
+                    .skipped(0)
+                    .build();
         }
 
         // Ensure 'structures' layer exists in the world
@@ -100,7 +108,10 @@ public class StructurePlacer {
         if (layerDataId == null) {
             errors.add("Failed to create/find structures layer for worldId=" + worldId);
             return StructurePlacerResult.builder()
-                    .placed(placed).errors(errors).skipped(0).build();
+                    .placed(placed)
+                    .errors(errors)
+                    .skipped(0)
+                    .build();
         }
 
         // Resolve region collection worldId for referenceModelId
@@ -111,7 +122,10 @@ public class StructurePlacer {
         if (regionWorldId == null) {
             errors.add("Cannot resolve region collection for worldId=" + worldId);
             return StructurePlacerResult.builder()
-                    .placed(placed).errors(errors).skipped(0).build();
+                    .placed(placed)
+                    .errors(errors)
+                    .skipped(0)
+                    .build();
         }
 
         // Process each building place
@@ -139,8 +153,11 @@ public class StructurePlacer {
                 int worldX = flat.getMountX() + place.getLocalX();
                 int worldZ = flat.getMountZ() + place.getLocalZ();
                 int worldY = place.getLevel();
-                if (worldY == 0 && place.getLocalX() >= 0 && place.getLocalZ() >= 0
-                        && place.getLocalX() < flat.getSizeX() && place.getLocalZ() < flat.getSizeZ()) {
+                if (worldY == 0
+                        && place.getLocalX() >= 0
+                        && place.getLocalZ() >= 0
+                        && place.getLocalX() < flat.getSizeX()
+                        && place.getLocalZ() < flat.getSizeZ()) {
                     worldY = flat.getLevel(place.getLocalX(), place.getLocalZ());
                 }
 
@@ -148,8 +165,8 @@ public class StructurePlacer {
                 String referenceModelId = regionWorldId + "/" + buildingId;
 
                 // Create unique model name for this placement
-                String modelName = buildingId + "-" + hexGrid.getPosition()
-                        + "-" + place.getHexQ() + "_" + place.getHexR();
+                String modelName =
+                        buildingId + "-" + hexGrid.getPosition() + "-" + place.getHexQ() + "_" + place.getHexR();
 
                 // Create WLayerModel referencing the region model
                 WLayerModel model = WLayerModel.builder()
@@ -173,19 +190,29 @@ public class StructurePlacer {
                 layerService.saveModel(model);
 
                 placed.add(modelName);
-                log.debug("Placed structure '{}' at ({},{},{}) rotation={} ref={}",
-                        modelName, worldX, worldY, worldZ, place.getRotation(), referenceModelId);
+                log.debug(
+                        "Placed structure '{}' at ({},{},{}) rotation={} ref={}",
+                        modelName,
+                        worldX,
+                        worldY,
+                        worldZ,
+                        place.getRotation(),
+                        referenceModelId);
 
             } catch (Exception e) {
-                String error = "Failed to place building '" + place.getBuildingId()
-                        + "' at place '" + place.getName() + "': " + e.getMessage();
+                String error = "Failed to place building '" + place.getBuildingId() + "' at place '" + place.getName()
+                        + "': " + e.getMessage();
                 errors.add(error);
                 log.error(error, e);
             }
         }
 
-        log.info("StructurePlacer for hexGrid {}: placed={}, skipped={}, errors={}",
-                hexGrid.getPosition(), placed.size(), skipped, errors.size());
+        log.info(
+                "StructurePlacer for hexGrid {}: placed={}, skipped={}, errors={}",
+                hexGrid.getPosition(),
+                placed.size(),
+                skipped,
+                errors.size());
 
         return StructurePlacerResult.builder()
                 .placed(placed)
@@ -235,15 +262,8 @@ public class StructurePlacer {
         }
 
         try {
-            WLayer created = layerService.createLayer(
-                    worldId,
-                    STRUCTURES_LAYER_NAME,
-                    LayerType.MODEL,
-                    200,
-                    false,
-                    null,
-                    false
-            );
+            WLayer created =
+                    layerService.createLayer(worldId, STRUCTURES_LAYER_NAME, LayerType.MODEL, 200, false, null, false);
             log.info("Created 'structures' layer for worldId={}: layerDataId={}", worldId, created.getLayerDataId());
             return created.getLayerDataId();
         } catch (Exception e) {

@@ -13,13 +13,12 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.world.WorldTime;
 import de.mhus.nimbus.world.shared.world.WorldTimeService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Behavior for entities with a daily schedule (timetable).
@@ -137,8 +136,8 @@ public class ScheduledBehavior implements EntityBehavior {
         return null;
     }
 
-    private void onPhaseChange(WEntity entity, SimulationState state,
-                                EntitySchedulePhase newPhase, WorldId worldId, WorldInfo worldInfo) {
+    private void onPhaseChange(
+            WEntity entity, SimulationState state, EntitySchedulePhase newPhase, WorldId worldId, WorldInfo worldInfo) {
         String entityId = entity.getName();
         String phaseName = newPhase != null ? newPhase.getName() : "none";
 
@@ -181,8 +180,12 @@ public class ScheduledBehavior implements EntityBehavior {
                 entity.setMiddlePoint(newPosition);
                 state.setCurrentPathway(null);
                 state.setPathwayEndTime(0);
-                log.info("World {}: Entity {} relocated to {} (phase: {})",
-                        worldId, entityId, newPhase.getPoint(), phaseName);
+                log.info(
+                        "World {}: Entity {} relocated to {} (phase: {})",
+                        worldId,
+                        entityId,
+                        newPhase.getPoint(),
+                        phaseName);
             }
         }
     }
@@ -196,16 +199,18 @@ public class ScheduledBehavior implements EntityBehavior {
         }
     }
 
-    private EntityPathway delegateToBehavior(String behaviorName, WEntity entity,
-                                              SimulationState state, long currentTime,
-                                              WorldId worldId, int epoch) {
+    private EntityPathway delegateToBehavior(
+            String behaviorName, WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         if (behaviorName == null || behaviorName.isBlank()) {
             return null;
         }
         EntityBehavior subBehavior = behaviorRegistry.getBehavior(behaviorName);
         if (subBehavior == null) {
-            log.warn("World {}: Sub-behavior '{}' not found for scheduled entity {}",
-                    worldId, behaviorName, entity.getName());
+            log.warn(
+                    "World {}: Sub-behavior '{}' not found for scheduled entity {}",
+                    worldId,
+                    behaviorName,
+                    entity.getName());
             return null;
         }
         return subBehavior.update(entity, state, currentTime, worldId, epoch);

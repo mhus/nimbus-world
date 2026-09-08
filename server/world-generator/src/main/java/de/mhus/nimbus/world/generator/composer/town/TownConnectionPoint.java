@@ -85,8 +85,12 @@ public class TownConnectionPoint extends EdgePoint {
 
     @Override
     public String toString() {
-        return String.format("VillageConnectionPoint[village=%s internal=%s direction=%s grid=[%s] placed=%b]",
-                villageId, internalConnectionPointName, externalDirection,
-                neighborGridCoordinate, placedInNeighborGrid);
+        return String.format(
+                "VillageConnectionPoint[village=%s internal=%s direction=%s grid=[%s] placed=%b]",
+                villageId,
+                internalConnectionPointName,
+                externalDirection,
+                neighborGridCoordinate,
+                placedInNeighborGrid);
     }
 }

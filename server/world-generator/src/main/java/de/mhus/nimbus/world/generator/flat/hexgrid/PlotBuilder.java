@@ -1,16 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.List;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * PlotBuilder manipulator builder.
@@ -39,7 +38,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class PlotBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     @Override
     public void buildFlat() {
@@ -49,7 +50,8 @@ public class PlotBuilder extends HexGridBuilder {
         log.info("Building plots for flat: {}", flat.getFlatId());
 
         // Get plot parameter from hex grid
-        String plotParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_plot") : null;
+        String plotParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_plot") : null;
         if (plotParam == null || plotParam.isBlank()) {
             log.debug("No plot parameter found, skipping");
             return;
@@ -106,7 +108,8 @@ public class PlotBuilder extends HexGridBuilder {
                 // Common parameters
                 plot.setLevel(plotNode.get("level").asInt());
                 plot.setMaterial(plotNode.get("material").asInt());
-                plot.setGroupId(plotNode.has("groupId") ? plotNode.get("groupId").asText() : null);
+                plot.setGroupId(
+                        plotNode.has("groupId") ? plotNode.get("groupId").asText() : null);
 
                 plots.add(plot);
             }
@@ -119,8 +122,12 @@ public class PlotBuilder extends HexGridBuilder {
      * Build a rectangular plot.
      */
     private void buildRectangularPlot(WFlat flat, PlotDefinition plot) {
-        log.debug("Building rectangular plot at ({}, {}) with size {}x{}",
-                plot.getLx(), plot.getLz(), plot.getSizeX(), plot.getSizeZ());
+        log.debug(
+                "Building rectangular plot at ({}, {}) with size {}x{}",
+                plot.getLx(),
+                plot.getLz(),
+                plot.getSizeX(),
+                plot.getSizeZ());
 
         int startX = plot.getLx();
         int startZ = plot.getLz();
@@ -152,8 +159,7 @@ public class PlotBuilder extends HexGridBuilder {
      * Build a circular plot.
      */
     private void buildCircularPlot(WFlat flat, PlotDefinition plot) {
-        log.debug("Building circular plot at ({}, {}) with size {}",
-                plot.getLx(), plot.getLz(), plot.getSize());
+        log.debug("Building circular plot at ({}, {}) with size {}", plot.getLx(), plot.getLz(), plot.getSize());
 
         int centerX = plot.getLx();
         int centerZ = plot.getLz();

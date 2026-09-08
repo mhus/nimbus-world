@@ -1,12 +1,5 @@
 package de.mhus.nimbus.world.generator.reality;
 
-import de.mhus.nimbus.world.ai.model.AiChat;
-import de.mhus.nimbus.world.ai.model.AiModelService;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,6 +9,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiModelService;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
 /**
  * Offline tests for the B2 refine loop. Validator + parser are real (deterministic); the AI judge and
@@ -66,7 +65,8 @@ class RealityRefinerTest {
         when(judge.judge(any(), any())).thenReturn(acceptable());
         stubReviseReturns(CLEAN_PLAN_JSON);
 
-        RefineResult result = refiner.refine(brokenPlan(), RefineOptions.builder().maxIterations(3).build());
+        RefineResult result = refiner.refine(
+                brokenPlan(), RefineOptions.builder().maxIterations(3).build());
 
         assertThat(result.isConverged()).isTrue();
         assertThat(result.getIterations()).isEqualTo(1);
@@ -100,7 +100,8 @@ class RealityRefinerTest {
         when(judge.judge(any(), any())).thenReturn(acceptable());
         stubReviseReturns(stillBrokenJson);
 
-        RefineResult result = refiner.refine(brokenPlan(), RefineOptions.builder().maxIterations(2).build());
+        RefineResult result = refiner.refine(
+                brokenPlan(), RefineOptions.builder().maxIterations(2).build());
 
         assertThat(result.isConverged()).isFalse();
         assertThat(result.getIterations()).isEqualTo(2);
@@ -116,7 +117,7 @@ class RealityRefinerTest {
         refiner.refine(brokenPlan(), RefineOptions.withModel(model));
 
         verify(judge, atLeastOnce()).judge(any(), eq(model)); // judge used the selected provider
-        verify(aiModelService).createChat(eq(model), any());  // revise used the selected provider
+        verify(aiModelService).createChat(eq(model), any()); // revise used the selected provider
     }
 
     @Test
@@ -137,9 +138,10 @@ class RealityRefinerTest {
         stubReviseReturns(new tools.jackson.databind.json.JsonMapper()
                 .writeValueAsString(plan)); // revise returns same (still rejected)
 
-        RefineResult result = refiner.refine(plan, RefineOptions.builder().maxIterations(2).build());
+        RefineResult result =
+                refiner.refine(plan, RefineOptions.builder().maxIterations(2).build());
 
-        assertThat(result.isConverged()).isFalse();          // balance never accepted
+        assertThat(result.isConverged()).isFalse(); // balance never accepted
         assertThat(result.getIterations()).isEqualTo(2);
         assertThat(result.getFinalReport().isValid()).isTrue(); // structurally fine though
     }

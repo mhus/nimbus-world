@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import java.time.Instant;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.Map;
-
 /**
  * MongoDB Entity for chat instances in the world.
  * Supports different chat types: builder, global, team, private.
@@ -23,9 +22,9 @@ import java.util.Map;
 @Document(collection = "w_chats")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_chatId_idx", def = "{ 'worldId': 1, 'chatId': 1 }", unique = true),
-        @CompoundIndex(name = "worldId_ownerId_archived_idx", def = "{ 'worldId': 1, 'ownerId': 1, 'archived': 1 }"),
-        @CompoundIndex(name = "worldId_parentChatId_idx", def = "{ 'worldId': 1, 'parentChatId': 1 }")
+    @CompoundIndex(name = "worldId_chatId_idx", def = "{ 'worldId': 1, 'chatId': 1 }", unique = true),
+    @CompoundIndex(name = "worldId_ownerId_archived_idx", def = "{ 'worldId': 1, 'ownerId': 1, 'archived': 1 }"),
+    @CompoundIndex(name = "worldId_parentChatId_idx", def = "{ 'worldId': 1, 'parentChatId': 1 }")
 })
 @Data
 @Builder

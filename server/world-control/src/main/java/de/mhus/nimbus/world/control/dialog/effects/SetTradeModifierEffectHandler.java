@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Sets the individual trade modifier for the current player-NPC relationship.
@@ -27,7 +26,9 @@ public class SetTradeModifierEffectHandler implements DialogEffectHandler {
     private final WProgressService progressService;
 
     @Override
-    public String getEffectType() { return "setTradeModifier"; }
+    public String getEffectType() {
+        return "setTradeModifier";
+    }
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
@@ -59,10 +60,8 @@ public class SetTradeModifierEffectHandler implements DialogEffectHandler {
                 INDIVIDUAL_MODIFIER_TYPE,
                 entityId,
                 "Trade Modifier",
-                Map.of("modifier", modifier)
-        );
+                Map.of("modifier", modifier));
 
-        log.debug("Set trade individual modifier {} for trader={}, player={}",
-                modifier, entityId, ctx.getPlayerId());
+        log.debug("Set trade individual modifier {} for trader={}, player={}", modifier, entityId, ctx.getPlayerId());
     }
 }

@@ -9,15 +9,14 @@ import de.mhus.nimbus.world.shared.team.WTeam;
 import de.mhus.nimbus.world.shared.team.WTeamService;
 import de.mhus.nimbus.world.shared.team.WTeamStatus;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST Controller for player team self-service operations.
@@ -45,19 +44,11 @@ public class PlayerTeamController extends BaseEditorController {
             List<String> members,
             List<String> invitation,
             String status,
-            Map<String, String> parameters
-    ) {}
+            Map<String, String> parameters) {}
 
-    public record InviteResponse(
-            String teamId,
-            String title,
-            String worldId
-    ) {}
+    public record InviteResponse(String teamId, String title, String worldId) {}
 
-    public record MyTeamResponse(
-            TeamResponse team,
-            List<InviteResponse> invitations
-    ) {}
+    public record MyTeamResponse(TeamResponse team, List<InviteResponse> invitations) {}
 
     public record CreateTeamRequest(String title) {}
 
@@ -90,8 +81,7 @@ public class PlayerTeamController extends BaseEditorController {
                 memberNames,
                 invitationNames,
                 team.getStatus() != null ? team.getStatus().name() : WTeamStatus.LOBBY.name(),
-                team.getParameters() != null ? team.getParameters() : Map.of()
-        );
+                team.getParameters() != null ? team.getParameters() : Map.of());
     }
 
     private InviteResponse toInviteResponse(WTeam team) {
@@ -139,10 +129,11 @@ public class PlayerTeamController extends BaseEditorController {
             TeamResponse teamResponse = teamOpt.map(this::toTeamResponse).orElse(null);
 
             // Find invitations for this player (check both exact worldId and main instance)
-            List<InviteResponse> invitations = teamService.findInvitationsForPlayer(worldIdStr, mainInstanceId, playerName).stream()
-                    .filter(t -> !t.getMembers().contains(playerName))
-                    .map(this::toInviteResponse)
-                    .toList();
+            List<InviteResponse> invitations =
+                    teamService.findInvitationsForPlayer(worldIdStr, mainInstanceId, playerName).stream()
+                            .filter(t -> !t.getMembers().contains(playerName))
+                            .map(this::toInviteResponse)
+                            .toList();
 
             return ResponseEntity.ok(new MyTeamResponse(teamResponse, invitations));
         } catch (Exception e) {
@@ -250,7 +241,8 @@ public class PlayerTeamController extends BaseEditorController {
             boolean added = teamService.addMemberAtomic(teamId, playerName);
             if (!added) return bad("Failed to join team");
 
-            return teamService.findByTeamId(teamId)
+            return teamService
+                    .findByTeamId(teamId)
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))
                     .orElseGet(() -> notFound("Team not found"));
         } catch (Exception e) {
@@ -374,7 +366,8 @@ public class PlayerTeamController extends BaseEditorController {
             boolean removed = teamService.removeInvitationAtomic(teamOpt.get().getTeamId(), targetPlayer);
             if (!removed) return bad("No invitation found for this player");
 
-            return teamService.findByTeamId(teamOpt.get().getTeamId())
+            return teamService
+                    .findByTeamId(teamOpt.get().getTeamId())
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))
                     .orElseGet(() -> notFound("Team not found"));
         } catch (Exception e) {
@@ -422,7 +415,8 @@ public class PlayerTeamController extends BaseEditorController {
 
             teamService.removeMemberAtomic(team.getTeamId(), targetPlayer);
 
-            return teamService.findByTeamId(team.getTeamId())
+            return teamService
+                    .findByTeamId(team.getTeamId())
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))
                     .orElseGet(() -> notFound("Team not found"));
         } catch (Exception e) {

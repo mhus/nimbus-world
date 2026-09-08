@@ -2,24 +2,22 @@ package de.mhus.nimbus.tools.generatets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import de.mhus.nimbus.tools.generatets.ts.TsModel;
-import de.mhus.nimbus.tools.generatets.ts.TsParser;
+import de.mhus.nimbus.tools.generatets.java.JavaKind;
 import de.mhus.nimbus.tools.generatets.java.JavaModel;
 import de.mhus.nimbus.tools.generatets.java.JavaType;
-import de.mhus.nimbus.tools.generatets.java.JavaKind;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.yaml.snakeyaml.Yaml;
-
+import de.mhus.nimbus.tools.generatets.ts.TsModel;
+import de.mhus.nimbus.tools.generatets.ts.TsParser;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.yaml.snakeyaml.Yaml;
 
 @Mojo(name = "generate")
 public class GenerateTsToJavaMojo extends AbstractMojo {
@@ -33,7 +31,9 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
     /**
      * Output directory where generated sources would be placed in the future.
      */
-    @Parameter(defaultValue = "${project.build.directory}/generated-sources/generate-ts-to-java", property = "outputDir")
+    @Parameter(
+            defaultValue = "${project.build.directory}/generated-sources/generate-ts-to-java",
+            property = "outputDir")
     private File outputDir;
 
     /**
@@ -51,7 +51,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
             // Load configuration first
             Configuration configuration = loadConfiguration();
             int ignored = configuration.ignoreTsItems == null ? 0 : configuration.ignoreTsItems.size();
-            getLog().info("Loaded configuration from " + (configFile == null ? "<none>" : configFile.getPath()) + ": ignoreTsItems=" + ignored);
+            getLog().info("Loaded configuration from " + (configFile == null ? "<none>" : configFile.getPath())
+                    + ": ignoreTsItems=" + ignored);
 
             TsModel tsModel = parseTs();
             if (tsModel == null) return;
@@ -65,7 +66,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
 
             JavaGenerator generator = new JavaGenerator(configuration);
             JavaModel javaModel = generator.generate(tsModel);
-            getLog().info("Java model created: types=" + (javaModel == null ? 0 : javaModel.getTypes().size()));
+            getLog().info("Java model created: types="
+                    + (javaModel == null ? 0 : javaModel.getTypes().size()));
 
             // Resolve package for each type based on TS source relative directory and config rules
             if (javaModel != null) {
@@ -74,8 +76,9 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                     if (t == null) continue;
                     String resolved = resolvePackageFor(t, roots, configuration);
                     if (resolved != null && !resolved.isBlank()) {
-//                        getLog().info("--- Resolved package for " + t.getName() + ": " + resolved);
-//                        getLog().info("    Path: " + t.getSourcePath());
+                        //                        getLog().info("--- Resolved package for " + t.getName() + ": " +
+                        // resolved);
+                        //                        getLog().info("    Path: " + t.getSourcePath());
                         t.setPackageName(resolved);
                     }
                 }
@@ -128,7 +131,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                             if (t.getProperties() != null && !t.getProperties().isEmpty()) {
                                 for (de.mhus.nimbus.tools.generatets.java.JavaProperty p : t.getProperties()) {
                                     if (p == null || p.getName() == null) continue;
-                                    String override = resolveFieldTypeOverride(configuration, t.getPackageName(), t.getName(), p.getName());
+                                    String override = resolveFieldTypeOverride(
+                                            configuration, t.getPackageName(), t.getName(), p.getName());
                                     if (override != null && !override.isBlank()) {
                                         p.setType(override.trim());
                                     }
@@ -155,7 +159,9 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                                 }
                                 if (!keep) {
                                     // Check configured replacement for unknown base
-                                    String repl = configuration.interfaceExtendsMappings != null ? configuration.interfaceExtendsMappings.get(base) : null;
+                                    String repl = configuration.interfaceExtendsMappings != null
+                                            ? configuration.interfaceExtendsMappings.get(base)
+                                            : null;
                                     if (repl != null && !repl.isBlank()) {
                                         t.setExtendsName(repl.trim());
                                         keep = true;
@@ -171,8 +177,10 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                         }
                         // Apply default base if still none
                         if (t.getKind() == de.mhus.nimbus.tools.generatets.java.JavaKind.CLASS
-                                && (t.getExtendsName() == null || t.getExtendsName().isBlank())
-                                && configuration.defaultBaseClass != null && !configuration.defaultBaseClass.isBlank()) {
+                                && (t.getExtendsName() == null
+                                        || t.getExtendsName().isBlank())
+                                && configuration.defaultBaseClass != null
+                                && !configuration.defaultBaseClass.isBlank()) {
                             t.setExtendsName(configuration.defaultBaseClass.trim());
                         }
                     }
@@ -186,9 +194,14 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         }
     }
 
-    private String resolveFieldTypeOverride(Configuration configuration, String pkg, String className, String fieldName) {
-        if (configuration == null || configuration.fieldTypeMappings == null || configuration.fieldTypeMappings.isEmpty()) return null;
-        String fq = (pkg == null || pkg.isBlank()) ? (className + "." + fieldName) : (pkg + "." + className + "." + fieldName);
+    private String resolveFieldTypeOverride(
+            Configuration configuration, String pkg, String className, String fieldName) {
+        if (configuration == null
+                || configuration.fieldTypeMappings == null
+                || configuration.fieldTypeMappings.isEmpty()) return null;
+        String fq = (pkg == null || pkg.isBlank())
+                ? (className + "." + fieldName)
+                : (pkg + "." + className + "." + fieldName);
         String simple = className + "." + fieldName;
 
         // 1) Exact FQ match
@@ -229,14 +242,16 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                 sb.append(mapped != null ? mapped : part);
             }
             String result = (mappedRaw != null ? mappedRaw : raw) + "<" + sb + ">";
-            if (!result.equals(input)) return result; else return null;
+            if (!result.equals(input)) return result;
+            else return null;
         }
         // Arrays like T[] -> map T and convert back
         if (s.endsWith("[]")) {
             String elem = s.substring(0, s.length() - 2).trim();
             String mappedElem = mapTypeString(elem, cfg);
             String result = (mappedElem != null ? mappedElem : elem) + "[]";
-            if (!result.equals(input)) return result; else return null;
+            if (!result.equals(input)) return result;
+            else return null;
         }
         // Simple
         String mapped = mapSimpleType(s, cfg);
@@ -278,7 +293,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         }
         java.nio.file.Path root = f.toPath();
         try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root)) {
-            java.util.List<java.nio.file.Path> list = walk.sorted(java.util.Comparator.reverseOrder()).collect(java.util.stream.Collectors.toList());
+            java.util.List<java.nio.file.Path> list =
+                    walk.sorted(java.util.Comparator.reverseOrder()).collect(java.util.stream.Collectors.toList());
             for (java.nio.file.Path p : list) {
                 java.io.File x = p.toFile();
                 if (!x.delete() && x.exists()) throw new IOException("Failed to delete: " + x);
@@ -298,7 +314,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         }
         ObjectMapper om = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         om.writeValue(modelFile, model);
-        getLog().info("Wrote TS model to: " + modelFile.getAbsolutePath() + " (files=" + model.getFiles().size() + ")");
+        getLog().info("Wrote TS model to: " + modelFile.getAbsolutePath() + " (files="
+                + model.getFiles().size() + ")");
     }
 
     private void filterExcludedDirs(TsModel model, Configuration cfg) {
@@ -307,9 +324,13 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         if (ex == null || ex.isEmpty()) return;
         List<File> roots = normalizeSourceDirs();
         File common = commonParent(roots);
-        java.util.Set<String> suffixes = ex.stream().filter(s -> s != null && !s.isBlank()).map(s -> s.replace('\\', '/')).collect(java.util.stream.Collectors.toSet());
+        java.util.Set<String> suffixes = ex.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.replace('\\', '/'))
+                .collect(java.util.stream.Collectors.toSet());
         int removed = 0;
-        java.util.Iterator<de.mhus.nimbus.tools.generatets.ts.TsSourceFile> it = model.getFiles().iterator();
+        java.util.Iterator<de.mhus.nimbus.tools.generatets.ts.TsSourceFile> it =
+                model.getFiles().iterator();
         while (it.hasNext()) {
             de.mhus.nimbus.tools.generatets.ts.TsSourceFile f = it.next();
             if (f == null || f.getPath() == null) continue;
@@ -322,16 +343,21 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                 for (File r : roots) {
                     if (r == null) continue;
                     String rAbs = r.getCanonicalPath();
-                    if (sAbs.startsWith(rAbs + File.separator) || sAbs.equals(rAbs)) { matchedRoot = r; break; }
+                    if (sAbs.startsWith(rAbs + File.separator) || sAbs.equals(rAbs)) {
+                        matchedRoot = r;
+                        break;
+                    }
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
             if (matchedRoot != null) {
                 try {
                     java.nio.file.Path root = matchedRoot.getCanonicalFile().toPath();
                     java.nio.file.Path srcPath = srcFile.getCanonicalFile().toPath();
                     java.nio.file.Path rel = root.relativize(srcPath).getParent();
                     if (rel != null) relDir = rel.toString().replace('\\', '/');
-                } catch (IOException ignored) {}
+                } catch (IOException ignored) {
+                }
             }
             String relCommon = null;
             if (common != null) {
@@ -340,20 +366,30 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                     java.nio.file.Path srcPath = srcFile.getCanonicalFile().toPath();
                     java.nio.file.Path rel = root.relativize(srcPath).getParent();
                     if (rel != null) relCommon = rel.toString().replace('\\', '/');
-                } catch (IOException ignored) {}
+                } catch (IOException ignored) {
+                }
             }
             boolean exclude = false;
             if (relDir != null && !relDir.isEmpty()) {
                 for (String suf : suffixes) {
-                    if (matchesDir(relDir, suf)) { exclude = true; break; }
+                    if (matchesDir(relDir, suf)) {
+                        exclude = true;
+                        break;
+                    }
                 }
             }
             if (!exclude && relCommon != null && !relCommon.isEmpty()) {
                 for (String suf : suffixes) {
-                    if (matchesDir(relCommon, suf)) { exclude = true; break; }
+                    if (matchesDir(relCommon, suf)) {
+                        exclude = true;
+                        break;
+                    }
                 }
             }
-            if (exclude) { it.remove(); removed++; }
+            if (exclude) {
+                it.remove();
+                removed++;
+            }
         }
         if (removed > 0) getLog().info("Excluded TS files by excludeDirSuffixes: " + removed);
     }
@@ -614,7 +650,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         }
         // Logging summary
         if (!result.isEmpty()) {
-            getLog().info("Parsing TS sources from: " + result.stream().map(File::getPath).collect(Collectors.joining(", ")));
+            getLog().info("Parsing TS sources from: "
+                    + result.stream().map(File::getPath).collect(Collectors.joining(", ")));
         }
         return result;
     }
@@ -661,7 +698,8 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         // Add interface to implements list if found
         if (interfaceName != null && !interfaceName.trim().isEmpty()) {
             enumType.getImplementsNames().add(interfaceName.trim());
-            getLog().info("DEBUG: Added interface " + interfaceName + " to enum " + enumName + ". Implements list size: " + enumType.getImplementsNames().size());
+            getLog().info("DEBUG: Added interface " + interfaceName + " to enum " + enumName
+                    + ". Implements list size: " + enumType.getImplementsNames().size());
         } else {
             getLog().info("DEBUG: No interface mapping found for enum " + enumName);
         }

@@ -1,15 +1,15 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
-import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Handles user movement update messages from clients.
@@ -51,11 +51,14 @@ public class UserMovementUpdateHandler implements MessageHandler {
 
     @Override
     public void handle(PlayerSession session, NetworkMessage message) throws Exception {
-        log.debug("Received user movement update: sessionId={}, authenticated={}",
-            session.getSessionId(), session.isAuthenticated());
+        log.debug(
+                "Received user movement update: sessionId={}, authenticated={}",
+                session.getSessionId(),
+                session.isAuthenticated());
 
         if (!session.isAuthenticated()) {
-            log.warn("User movement update from unauthenticated session: {}",
+            log.warn(
+                    "User movement update from unauthenticated session: {}",
                     session.getWebSocketSession().getId());
             return;
         }
@@ -98,8 +101,14 @@ public class UserMovementUpdateHandler implements MessageHandler {
         }
 
         // Store position and rotation in Redis (separate from WSession)
-        log.debug("Storing position in Redis: sessionId={}, x={}, y={}, z={}, cx={}, cz={}",
-            session.getSessionId(), x, y, z, cx, cz);
+        log.debug(
+                "Storing position in Redis: sessionId={}, x={}, y={}, z={}, cx={}, cz={}",
+                session.getSessionId(),
+                x,
+                y,
+                z,
+                cx,
+                cz);
         try {
             wSessionService.updatePosition(session.getSessionId(), x, y, z, cx, cz, yaw, pitch);
             log.debug("Position stored successfully in Redis for session {}", session.getSessionId());
@@ -110,7 +119,8 @@ public class UserMovementUpdateHandler implements MessageHandler {
         // Publish to Redis for multi-pod broadcasting
         publishToRedis(session, data, cx, cz);
 
-        log.trace("User movement update: session={}, pos=({}, {}, {}), chunk=({}, {})",
+        log.trace(
+                "User movement update: session={}, pos=({}, {}, {}), chunk=({}, {})",
                 session.getSessionId(),
                 x != null ? x : "null",
                 y != null ? y : "null",
@@ -145,8 +155,10 @@ public class UserMovementUpdateHandler implements MessageHandler {
             String json = objectMapper.writeValueAsString(enriched);
             redisMessaging.publish(session.getWorldId().getId(), "u.m", json);
 
-            log.trace("Published movement update to Redis: worldId={}, sessionId={}",
-                    session.getWorldId(), session.getSessionId());
+            log.trace(
+                    "Published movement update to Redis: worldId={}, sessionId={}",
+                    session.getWorldId(),
+                    session.getSessionId());
 
         } catch (Exception e) {
             log.error("Failed to publish movement update to Redis", e);

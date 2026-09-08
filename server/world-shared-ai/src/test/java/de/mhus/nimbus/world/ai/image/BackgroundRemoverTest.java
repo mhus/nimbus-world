@@ -1,14 +1,13 @@
 package de.mhus.nimbus.world.ai.image;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link BackgroundRemover}. Fully offline: builds a synthetic image and verifies
@@ -46,7 +45,9 @@ class BackgroundRemoverTest {
     void makesBorderConnectedBackgroundTransparent() {
         BufferedImage out = BackgroundRemover.removeBackground(sampleImage(), BackgroundRemover.DEFAULT_THRESHOLD);
 
-        assertThat(out.getColorModel().hasAlpha()).as("result has an alpha channel").isTrue();
+        assertThat(out.getColorModel().hasAlpha())
+                .as("result has an alpha channel")
+                .isTrue();
         // All four corners belong to the border-connected background -> fully transparent.
         assertThat(alpha(out, 0, 0)).isZero();
         assertThat(alpha(out, SIZE - 1, 0)).isZero();
@@ -69,7 +70,9 @@ class BackgroundRemoverTest {
 
         // The white pixel enclosed by the blue square is NOT border-connected, so it must remain
         // fully opaque even though it matches the background color (edge flood-fill, not color-key).
-        assertThat(alpha(out, 20, 20)).as("enclosed background-colored pixel must stay opaque").isEqualTo(255);
+        assertThat(alpha(out, 20, 20))
+                .as("enclosed background-colored pixel must stay opaque")
+                .isEqualTo(255);
     }
 
     @Test

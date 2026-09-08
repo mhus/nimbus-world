@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
-
 import java.util.List;
 
 /**
@@ -11,5 +10,4 @@ import java.util.List;
 public interface StorageProvider {
 
     List<String> findDistinctStorageIds(WorldId worldId);
-
 }

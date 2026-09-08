@@ -11,12 +11,11 @@ import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
 
 /**
  * Service to ensure ground layers have no holes.
@@ -94,7 +93,8 @@ public class GroundControlService {
         // Check if chunk has at least one GROUND block
         boolean hasGround = false;
         for (LayerBlock lb : chunkData.getBlocks()) {
-            if (lb.getBlock() != null && groundBlockTypeIds.contains(lb.getBlock().getBlockTypeId())) {
+            if (lb.getBlock() != null
+                    && groundBlockTypeIds.contains(lb.getBlock().getBlockTypeId())) {
                 hasGround = true;
                 break;
             }
@@ -129,7 +129,8 @@ public class GroundControlService {
         List<WLayer> groundLayersByEpochDesc = resolveGroundLayerFallbackChain(worldId, layer);
 
         // Load neighbor edge heights
-        Map<String, Integer> edgeHeights = loadEdgeHeights(worldId, layerDataId, cx, cz, chunkSize, sides, groundBlockTypeIds, groundLayersByEpochDesc);
+        Map<String, Integer> edgeHeights = loadEdgeHeights(
+                worldId, layerDataId, cx, cz, chunkSize, sides, groundBlockTypeIds, groundLayersByEpochDesc);
 
         // Determine target height for each x,z position in the chunk
         // First pass: collect all known heights (from existing blocks + edges)
@@ -289,7 +290,13 @@ public class GroundControlService {
             return 0;
         }
 
-        log.info("checkHexGridGround: worldId={} epoch={} hex=({},{}) chunks={}", worldId, epoch, q, r, chunkKeys.size());
+        log.info(
+                "checkHexGridGround: worldId={} epoch={} hex=({},{}) chunks={}",
+                worldId,
+                epoch,
+                q,
+                r,
+                chunkKeys.size());
 
         int modified = 0;
         for (String chunkKey : chunkKeys) {
@@ -302,7 +309,13 @@ public class GroundControlService {
             }
         }
 
-        log.info("checkHexGridGround completed: worldId={} hex=({},{}) modified={}/{}", worldId, q, r, modified, chunkKeys.size());
+        log.info(
+                "checkHexGridGround completed: worldId={} hex=({},{}) modified={}/{}",
+                worldId,
+                q,
+                r,
+                modified,
+                chunkKeys.size());
         return modified;
     }
 
@@ -336,8 +349,13 @@ public class GroundControlService {
             return 0;
         }
 
-        log.info("checkLayerGround: worldId={} layerDataId={} chunks={} sides={} cleanup={}",
-                worldId, layerDataId, chunkKeys.size(), sides, cleanupBlocks);
+        log.info(
+                "checkLayerGround: worldId={} layerDataId={} chunks={} sides={} cleanup={}",
+                worldId,
+                layerDataId,
+                chunkKeys.size(),
+                sides,
+                cleanupBlocks);
 
         int modified = 0;
         for (String chunkKey : chunkKeys) {
@@ -354,7 +372,12 @@ public class GroundControlService {
             }
         }
 
-        log.info("checkLayerGround completed: worldId={} layerDataId={} modified={}/{}", worldId, layerDataId, modified, chunkKeys.size());
+        log.info(
+                "checkLayerGround completed: worldId={} layerDataId={} modified={}/{}",
+                worldId,
+                layerDataId,
+                modified,
+                chunkKeys.size());
         return modified;
     }
 
@@ -379,8 +402,12 @@ public class GroundControlService {
             return 0;
         }
 
-        log.info("checkWorldGround: worldId={} groundLayers={} sides={} cleanup={}",
-                worldId, groundLayers.size(), sides, cleanupBlocks);
+        log.info(
+                "checkWorldGround: worldId={} groundLayers={} sides={} cleanup={}",
+                worldId,
+                groundLayers.size(),
+                sides,
+                cleanupBlocks);
 
         int totalModified = 0;
         for (WLayer layer : groundLayers) {
@@ -417,10 +444,15 @@ public class GroundControlService {
      *
      * @return map of "x,z" -> highest Y height for edge positions adjacent to the target chunk
      */
-    private Map<String, Integer> loadEdgeHeights(String worldId, String layerDataId,
-                                                  int cx, int cz, int chunkSize, int sides,
-                                                  Set<String> groundBlockTypeIds,
-                                                  List<WLayer> groundLayersByEpochDesc) {
+    private Map<String, Integer> loadEdgeHeights(
+            String worldId,
+            String layerDataId,
+            int cx,
+            int cz,
+            int chunkSize,
+            int sides,
+            Set<String> groundBlockTypeIds,
+            List<WLayer> groundLayersByEpochDesc) {
         Map<String, Integer> edgeHeights = new HashMap<>();
 
         int worldXStart = cx * chunkSize;
@@ -428,33 +460,69 @@ public class GroundControlService {
 
         // North neighbor (cz - 1): take the south edge (last row, z = worldZStart - 1)
         if ((sides & SIDE_NORTH) != 0) {
-            loadNeighborEdgeWithFallback(worldId, layerDataId, cx, cz - 1, chunkSize, groundBlockTypeIds, edgeHeights,
-                    worldXStart, worldXStart + chunkSize - 1,
-                    worldZStart - 1, worldZStart - 1,
+            loadNeighborEdgeWithFallback(
+                    worldId,
+                    layerDataId,
+                    cx,
+                    cz - 1,
+                    chunkSize,
+                    groundBlockTypeIds,
+                    edgeHeights,
+                    worldXStart,
+                    worldXStart + chunkSize - 1,
+                    worldZStart - 1,
+                    worldZStart - 1,
                     groundLayersByEpochDesc);
         }
 
         // South neighbor (cz + 1): take the north edge (first row, z = worldZStart + chunkSize)
         if ((sides & SIDE_SOUTH) != 0) {
-            loadNeighborEdgeWithFallback(worldId, layerDataId, cx, cz + 1, chunkSize, groundBlockTypeIds, edgeHeights,
-                    worldXStart, worldXStart + chunkSize - 1,
-                    worldZStart + chunkSize, worldZStart + chunkSize,
+            loadNeighborEdgeWithFallback(
+                    worldId,
+                    layerDataId,
+                    cx,
+                    cz + 1,
+                    chunkSize,
+                    groundBlockTypeIds,
+                    edgeHeights,
+                    worldXStart,
+                    worldXStart + chunkSize - 1,
+                    worldZStart + chunkSize,
+                    worldZStart + chunkSize,
                     groundLayersByEpochDesc);
         }
 
         // West neighbor (cx - 1): take the east edge (last column, x = worldXStart - 1)
         if ((sides & SIDE_WEST) != 0) {
-            loadNeighborEdgeWithFallback(worldId, layerDataId, cx - 1, cz, chunkSize, groundBlockTypeIds, edgeHeights,
-                    worldXStart - 1, worldXStart - 1,
-                    worldZStart, worldZStart + chunkSize - 1,
+            loadNeighborEdgeWithFallback(
+                    worldId,
+                    layerDataId,
+                    cx - 1,
+                    cz,
+                    chunkSize,
+                    groundBlockTypeIds,
+                    edgeHeights,
+                    worldXStart - 1,
+                    worldXStart - 1,
+                    worldZStart,
+                    worldZStart + chunkSize - 1,
                     groundLayersByEpochDesc);
         }
 
         // East neighbor (cx + 1): take the west edge (first column, x = worldXStart + chunkSize)
         if ((sides & SIDE_EAST) != 0) {
-            loadNeighborEdgeWithFallback(worldId, layerDataId, cx + 1, cz, chunkSize, groundBlockTypeIds, edgeHeights,
-                    worldXStart + chunkSize, worldXStart + chunkSize,
-                    worldZStart, worldZStart + chunkSize - 1,
+            loadNeighborEdgeWithFallback(
+                    worldId,
+                    layerDataId,
+                    cx + 1,
+                    cz,
+                    chunkSize,
+                    groundBlockTypeIds,
+                    edgeHeights,
+                    worldXStart + chunkSize,
+                    worldXStart + chunkSize,
+                    worldZStart,
+                    worldZStart + chunkSize - 1,
                     groundLayersByEpochDesc);
         }
 
@@ -469,9 +537,13 @@ public class GroundControlService {
      *
      * Also considers edge heights from neighboring chunks for boundary positions.
      */
-    private void extendColumnsToNeighbors(Map<String, Integer> targetMinY, Map<String, Integer> targetMaxY,
-                                           int worldXStart, int worldZStart, int chunkSize,
-                                           Map<String, Integer> edgeHeights) {
+    private void extendColumnsToNeighbors(
+            Map<String, Integer> targetMinY,
+            Map<String, Integer> targetMaxY,
+            int worldXStart,
+            int worldZStart,
+            int chunkSize,
+            Map<String, Integer> edgeHeights) {
         // Merge edge heights with targetMaxY for a combined reference
         Map<String, Integer> allHeights = new HashMap<>(edgeHeights);
         allHeights.putAll(targetMaxY);
@@ -510,28 +582,53 @@ public class GroundControlService {
      * Try to load neighbor edge from the current layer first, then fall back
      * to GROUND layers with lower epochs if not found.
      */
-    private void loadNeighborEdgeWithFallback(String worldId, String layerDataId,
-                                               int neighborCx, int neighborCz,
-                                               int chunkSize, Set<String> groundBlockTypeIds,
-                                               Map<String, Integer> edgeHeights,
-                                               int filterXMin, int filterXMax,
-                                               int filterZMin, int filterZMax,
-                                               List<WLayer> groundLayersByEpochDesc) {
+    private void loadNeighborEdgeWithFallback(
+            String worldId,
+            String layerDataId,
+            int neighborCx,
+            int neighborCz,
+            int chunkSize,
+            Set<String> groundBlockTypeIds,
+            Map<String, Integer> edgeHeights,
+            int filterXMin,
+            int filterXMax,
+            int filterZMin,
+            int filterZMax,
+            List<WLayer> groundLayersByEpochDesc) {
         String neighborKey = neighborCx + ":" + neighborCz;
 
         // Try current layer first
-        if (extractEdgeFromChunk(worldId, layerDataId, neighborKey, groundBlockTypeIds, edgeHeights,
-                filterXMin, filterXMax, filterZMin, filterZMax)) {
+        if (extractEdgeFromChunk(
+                worldId,
+                layerDataId,
+                neighborKey,
+                groundBlockTypeIds,
+                edgeHeights,
+                filterXMin,
+                filterXMax,
+                filterZMin,
+                filterZMax)) {
             return;
         }
 
         // Neighbor chunk not found in current layer – fall back through lower-epoch GROUND layers
         for (WLayer fallbackLayer : groundLayersByEpochDesc) {
             if (fallbackLayer.getLayerDataId().equals(layerDataId)) continue; // skip self
-            if (extractEdgeFromChunk(worldId, fallbackLayer.getLayerDataId(), neighborKey, groundBlockTypeIds, edgeHeights,
-                    filterXMin, filterXMax, filterZMin, filterZMax)) {
-                log.debug("Neighbor {} found in fallback layer {} (epoch {})", neighborKey,
-                        fallbackLayer.getName(), fallbackLayer.getEpoches());
+            if (extractEdgeFromChunk(
+                    worldId,
+                    fallbackLayer.getLayerDataId(),
+                    neighborKey,
+                    groundBlockTypeIds,
+                    edgeHeights,
+                    filterXMin,
+                    filterXMax,
+                    filterZMin,
+                    filterZMax)) {
+                log.debug(
+                        "Neighbor {} found in fallback layer {} (epoch {})",
+                        neighborKey,
+                        fallbackLayer.getName(),
+                        fallbackLayer.getEpoches());
                 return;
             }
         }
@@ -544,11 +641,16 @@ public class GroundControlService {
      *
      * @return true if the chunk was found (even if no matching edge blocks), false if chunk not found
      */
-    private boolean extractEdgeFromChunk(String worldId, String layerDataId, String chunkKey,
-                                          Set<String> groundBlockTypeIds,
-                                          Map<String, Integer> edgeHeights,
-                                          int filterXMin, int filterXMax,
-                                          int filterZMin, int filterZMax) {
+    private boolean extractEdgeFromChunk(
+            String worldId,
+            String layerDataId,
+            String chunkKey,
+            Set<String> groundBlockTypeIds,
+            Map<String, Integer> edgeHeights,
+            int filterXMin,
+            int filterXMax,
+            int filterZMin,
+            int filterZMax) {
         Optional<LayerChunkData> chunkOpt = layerService.loadTerrainChunk(worldId, layerDataId, chunkKey);
         if (chunkOpt.isEmpty()) return false;
 
@@ -581,7 +683,10 @@ public class GroundControlService {
      * Only includes layers whose max epoch is lower than the current layer's max epoch.
      */
     private List<WLayer> resolveGroundLayerFallbackChain(String worldId, WLayer currentLayer) {
-        int currentMaxEpoch = currentLayer.getEpoches().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int currentMaxEpoch = currentLayer.getEpoches().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
         if (currentMaxEpoch == 0) {
             return List.of(); // lowest epoch, no fallback needed
         }
@@ -592,12 +697,21 @@ public class GroundControlService {
                 .filter(l -> l.isEnabled())
                 .filter(l -> !l.getLayerDataId().equals(currentLayer.getLayerDataId()))
                 .filter(l -> {
-                    int maxEpoch = l.getEpoches().stream().mapToInt(Integer::intValue).max().orElse(0);
+                    int maxEpoch = l.getEpoches().stream()
+                            .mapToInt(Integer::intValue)
+                            .max()
+                            .orElse(0);
                     return maxEpoch < currentMaxEpoch;
                 })
                 .sorted((a, b) -> {
-                    int epochA = a.getEpoches().stream().mapToInt(Integer::intValue).max().orElse(0);
-                    int epochB = b.getEpoches().stream().mapToInt(Integer::intValue).max().orElse(0);
+                    int epochA = a.getEpoches().stream()
+                            .mapToInt(Integer::intValue)
+                            .max()
+                            .orElse(0);
+                    int epochB = b.getEpoches().stream()
+                            .mapToInt(Integer::intValue)
+                            .max()
+                            .orElse(0);
                     return Integer.compare(epochB, epochA); // descending
                 })
                 .toList();
@@ -607,9 +721,13 @@ public class GroundControlService {
      * Fill horizontal gaps in the height map by interpolating from neighbors and edge heights.
      * For positions without any GROUND blocks, estimate height from adjacent positions.
      */
-    private void fillHorizontalGaps(Map<String, Integer> targetMinY, Map<String, Integer> targetMaxY,
-                                     int worldXStart, int worldZStart, int chunkSize,
-                                     Map<String, Integer> edgeHeights) {
+    private void fillHorizontalGaps(
+            Map<String, Integer> targetMinY,
+            Map<String, Integer> targetMaxY,
+            int worldXStart,
+            int worldZStart,
+            int chunkSize,
+            Map<String, Integer> edgeHeights) {
 
         // Merge edge heights into a combined lookup for reference
         // Edge heights provide the reference Y for chunk boundary positions
@@ -644,7 +762,10 @@ public class GroundControlService {
 
                     if (!neighborYs.isEmpty()) {
                         // Use average of neighbors as fill height
-                        int avgY = (int) Math.round(neighborYs.stream().mapToInt(Integer::intValue).average().orElse(0));
+                        int avgY = (int) Math.round(neighborYs.stream()
+                                .mapToInt(Integer::intValue)
+                                .average()
+                                .orElse(0));
                         targetMinY.put(posKey, avgY);
                         targetMaxY.put(posKey, avgY);
                         referenceHeights.put(posKey, avgY);
@@ -683,7 +804,9 @@ public class GroundControlService {
         Set<String> ids = new HashSet<>();
         List<WBlockType> blockTypes = blockTypeService.lookupBlockTypes(worldId);
         for (WBlockType bt : blockTypes) {
-            if (bt.isEnabled() && bt.getPublicData() != null && bt.getPublicData().getType() == BlockTypeType.GROUND) {
+            if (bt.isEnabled()
+                    && bt.getPublicData() != null
+                    && bt.getPublicData().getType() == BlockTypeType.GROUND) {
                 ids.add(bt.getName());
             }
         }
@@ -698,9 +821,6 @@ public class GroundControlService {
                 .position(Vector3Int.builder().x(x).y(y).z(z).build())
                 .blockTypeId(blockTypeId)
                 .build();
-        return LayerBlock.builder()
-                .block(block)
-                .group(GROUP_GROUND_CONTROL)
-                .build();
+        return LayerBlock.builder().block(block).group(GROUP_GROUND_CONTROL).build();
     }
 }

@@ -1,5 +1,16 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
@@ -11,6 +22,8 @@ import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,20 +32,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Tests the exclusiveness and rollback behaviour of collecting from a block.
@@ -54,18 +53,25 @@ class CollectActionTest {
 
     @Mock
     private AdventureGameplay adventure;
+
     @Mock
     private WProgressService progressService;
+
     @Mock
     private GameplayService gameplayService;
+
     @Mock
     private ClientService clientService;
+
     @Mock
     private WWorldService worldService;
+
     @Mock
     private WItemService itemService;
+
     @Mock
     private WWorld world;
+
     @Mock
     private PlayerSession session;
 
@@ -121,8 +127,13 @@ class CollectActionTest {
 
         collectBlock(serverInfo("100:wood:1", "60"));
 
-        verify(progressService).setBlockCooldown(eq(WORLD_ID), eq(CHUNK), eq(BLOCK),
-                longThatIsBetween(before + 60_000, System.currentTimeMillis() + 60_000), eq("empty"));
+        verify(progressService)
+                .setBlockCooldown(
+                        eq(WORLD_ID),
+                        eq(CHUNK),
+                        eq(BLOCK),
+                        longThatIsBetween(before + 60_000, System.currentTimeMillis() + 60_000),
+                        eq("empty"));
     }
 
     /**
@@ -177,15 +188,17 @@ class CollectActionTest {
         assertThat(collectBlock(serverInfo("100:wood:1", "60"))).isTrue();
 
         verify(gameplayService, never()).putIntoBackpack(any(), anyString(), anyInt());
-        verify(progressService, never()).setBlockCooldown(anyString(), anyString(), anyString(), anyLong(), anyString());
-        verify(clientService).sendNotification(eq(session), anyInt(), anyString(),
-                eq("Hier gibt es nichts mehr zu ernten"), any());
+        verify(progressService, never())
+                .setBlockCooldown(anyString(), anyString(), anyString(), anyLong(), anyString());
+        verify(clientService)
+                .sendNotification(eq(session), anyInt(), anyString(), eq("Hier gibt es nichts mehr zu ernten"), any());
         assertThat(data.getNextCollectAllowed()).isGreaterThan(System.currentTimeMillis());
     }
 
     @Test
     void theCollectStatusCanBeOverriddenPerBlock() {
-        when(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, "harvested")).thenReturn(true);
+        when(progressService.claimBlockStatus(WORLD_ID, CHUNK, BLOCK, "harvested"))
+                .thenReturn(true);
         when(gameplayService.putIntoBackpack(session, "wood", 1)).thenReturn(true);
 
         collectBlock(Map.of("collectReward", "100:wood:1", "collectCooldown", "60", "collectStatus", "harvested"));
@@ -202,7 +215,8 @@ class CollectActionTest {
         collectBlock(serverInfo("100:wood:1", "0"));
 
         verify(progressService, never()).claimBlockStatus(anyString(), anyString(), anyString(), anyString());
-        verify(progressService, never()).setBlockCooldown(anyString(), anyString(), anyString(), anyLong(), anyString());
+        verify(progressService, never())
+                .setBlockCooldown(anyString(), anyString(), anyString(), anyLong(), anyString());
         assertThat(data.getNextCollectAllowed()).isGreaterThan(System.currentTimeMillis());
     }
 
@@ -213,7 +227,8 @@ class CollectActionTest {
         when(gameplayService.putIntoBackpack(session, "wood", 1)).thenReturn(true);
         long before = System.currentTimeMillis();
 
-        assertThat(action.handleEntityAction(session, entity, "interact", "collect", null, null)).isTrue();
+        assertThat(action.handleEntityAction(session, entity, "interact", "collect", null, null))
+                .isTrue();
 
         verify(progressService, never()).claimBlockStatus(anyString(), anyString(), anyString(), anyString());
         assertThat(data.getNextCollectAllowed()).isGreaterThanOrEqualTo(before + 60_000);

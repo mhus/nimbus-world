@@ -7,11 +7,10 @@ import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 /**
  * List all loaded entities for the current world with their status.
@@ -48,10 +47,13 @@ public class LifeListCommand implements Command {
         lines.add(String.format("%-20s %-12s %-8s %-10s %-8s", "EntityId", "Model", "State", "Combat", "Health"));
         lines.add("-".repeat(62));
 
-        for (var entry : states.entrySet().stream().sorted(java.util.Map.Entry.comparingByKey()).toList()) {
+        for (var entry : states.entrySet().stream()
+                .sorted(java.util.Map.Entry.comparingByKey())
+                .toList()) {
             SimulationState state = entry.getValue();
             String entityId = entry.getKey();
-            String modelId = state.getEntity().getModelId() != null ? state.getEntity().getModelId() : "-";
+            String modelId =
+                    state.getEntity().getModelId() != null ? state.getEntity().getModelId() : "-";
             String lifecycle = state.getLifecycleState().name();
             String combat = state.isInCombat() ? "COMBAT" : "-";
 
@@ -73,7 +75,7 @@ public class LifeListCommand implements Command {
 
     @Override
     public String getHelp() {
-        return "List all loaded entities in the current world\n" +
-                "Shows: entityId, model, lifecycle state, combat status, health";
+        return "List all loaded entities in the current world\n"
+                + "Shows: entityId, model, lifecycle state, combat status, health";
     }
 }

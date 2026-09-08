@@ -16,12 +16,11 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.session.WSessionPosition;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WEntity;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Generates combat pathways for entities in combat mode.
@@ -50,7 +49,8 @@ public class CombatBehaviorHandler {
      *
      * @return EntityPathway or null if no valid pathway could be generated
      */
-    public EntityPathway generateCombatPathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
+    public EntityPathway generateCombatPathway(
+            WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         CombatStrategy strategy = state.getCombatStrategy();
         if (strategy == null) strategy = CombatStrategy.FLEE;
 
@@ -69,24 +69,30 @@ public class CombatBehaviorHandler {
         double maxRange = EntityServerData.getDouble(entity, "combat_maxRange", 30.0);
         double distToAttacker = distance(entityPos, attackerPos);
         if (distToAttacker > maxRange) {
-            log.debug("World {}: Entity {} attacker too far (dist={}, max={}), exiting combat",
-                    worldId, entity.getName(), String.format("%.1f", distToAttacker), maxRange);
+            log.debug(
+                    "World {}: Entity {} attacker too far (dist={}, max={}), exiting combat",
+                    worldId,
+                    entity.getName(),
+                    String.format("%.1f", distToAttacker),
+                    maxRange);
             state.exitCombat();
             return null;
         }
 
         return switch (strategy) {
             case FLEE -> generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
-            case ATTACK_FLEE -> generateAttackFleePathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
-            case ATTACK_REPEAT -> generateAttackRepeatPathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
+            case ATTACK_FLEE ->
+                generateAttackFleePathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
+            case ATTACK_REPEAT ->
+                generateAttackRepeatPathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
         };
     }
 
     /**
      * FLEE: Generate pathway running away from attacker.
      */
-    private EntityPathway generateFleePathway(WEntity entity, Vector3 entityPos, Vector3 attackerPos,
-                                               long currentTime, WorldId worldId, int epoch) {
+    private EntityPathway generateFleePathway(
+            WEntity entity, Vector3 entityPos, Vector3 attackerPos, long currentTime, WorldId worldId, int epoch) {
         Vector3 fleeDirection = calculateFleeDirection(entityPos, attackerPos);
         double speed = (entity.getSpeed() != null ? entity.getSpeed() : 1.0) * FLEE_SPEED_MULTIPLIER;
 
@@ -110,9 +116,14 @@ public class CombatBehaviorHandler {
     /**
      * ATTACK_FLEE: Attack once, then flee.
      */
-    private EntityPathway generateAttackFleePathway(WEntity entity, SimulationState state,
-                                                     Vector3 entityPos, Vector3 attackerPos,
-                                                     long currentTime, WorldId worldId, int epoch) {
+    private EntityPathway generateAttackFleePathway(
+            WEntity entity,
+            SimulationState state,
+            Vector3 entityPos,
+            Vector3 attackerPos,
+            long currentTime,
+            WorldId worldId,
+            int epoch) {
         double attackRange = EntityServerData.getDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         if (state.getCombatAttackCount() == 0) {
             // First phase: move towards attacker and attack
@@ -122,7 +133,8 @@ public class CombatBehaviorHandler {
                 state.setCombatAttackCount(1);
                 return generateAttackInPlacePathway(entity, entityPos, attackerPos, currentTime);
             }
-            EntityPathway attackPathway = generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
+            EntityPathway attackPathway =
+                    generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
             return attackPathway;
         } else {
             // Second phase: flee
@@ -133,9 +145,14 @@ public class CombatBehaviorHandler {
     /**
      * ATTACK_REPEAT: Run towards attacker, attack, repeat.
      */
-    private EntityPathway generateAttackRepeatPathway(WEntity entity, SimulationState state,
-                                                       Vector3 entityPos, Vector3 attackerPos,
-                                                       long currentTime, WorldId worldId, int epoch) {
+    private EntityPathway generateAttackRepeatPathway(
+            WEntity entity,
+            SimulationState state,
+            Vector3 entityPos,
+            Vector3 attackerPos,
+            long currentTime,
+            WorldId worldId,
+            int epoch) {
         double attackRange = EntityServerData.getDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         double distance = distance(entityPos, attackerPos);
 
@@ -153,8 +170,8 @@ public class CombatBehaviorHandler {
     /**
      * Generate pathway approaching the attacker.
      */
-    private EntityPathway generateApproachPathway(WEntity entity, Vector3 entityPos, Vector3 attackerPos,
-                                                   long currentTime, WorldId worldId, int epoch) {
+    private EntityPathway generateApproachPathway(
+            WEntity entity, Vector3 entityPos, Vector3 attackerPos, long currentTime, WorldId worldId, int epoch) {
         Vector3 direction = calculateDirectionTowards(entityPos, attackerPos);
         double speed = entity.getSpeed() != null ? entity.getSpeed() : 1.0;
 
@@ -163,8 +180,8 @@ public class CombatBehaviorHandler {
         int waypointCount = Math.min(ATTACK_WAYPOINTS, (int) Math.ceil(distance / 2.5));
         if (waypointCount < 1) waypointCount = 1;
 
-        List<Waypoint> waypoints = blockMovement.generatePathway(
-                worldId, entityPos, direction, waypointCount, speed, currentTime, epoch);
+        List<Waypoint> waypoints =
+                blockMovement.generatePathway(worldId, entityPos, direction, waypointCount, speed, currentTime, epoch);
 
         if (waypoints.isEmpty()) return null;
 
@@ -183,14 +200,18 @@ public class CombatBehaviorHandler {
     /**
      * Generate short attack pathway (entity stays in place, faces attacker, plays attack pose).
      */
-    private EntityPathway generateAttackInPlacePathway(WEntity entity, Vector3 entityPos, Vector3 attackerPos,
-                                                        long currentTime) {
+    private EntityPathway generateAttackInPlacePathway(
+            WEntity entity, Vector3 entityPos, Vector3 attackerPos, long currentTime) {
         Rotation rotation = calculateRotationTowards(entityPos, attackerPos);
 
         // Attack animation waypoint (stay in place)
         Waypoint attackWp = Waypoint.builder()
                 .timestamp(currentTime + 500)
-                .target(Vector3.builder().x(entityPos.getX()).y(entityPos.getY()).z(entityPos.getZ()).build())
+                .target(Vector3.builder()
+                        .x(entityPos.getX())
+                        .y(entityPos.getY())
+                        .z(entityPos.getZ())
+                        .build())
                 .rotation(rotation)
                 .pose(ENTITY_POSES.ATTACK)
                 .build();
@@ -198,7 +219,11 @@ public class CombatBehaviorHandler {
         // Brief idle after attack
         Waypoint idleWp = Waypoint.builder()
                 .timestamp(currentTime + 1500)
-                .target(Vector3.builder().x(entityPos.getX()).y(entityPos.getY()).z(entityPos.getZ()).build())
+                .target(Vector3.builder()
+                        .x(entityPos.getX())
+                        .y(entityPos.getY())
+                        .z(entityPos.getZ())
+                        .build())
                 .rotation(rotation)
                 .pose(ENTITY_POSES.IDLE)
                 .build();
@@ -233,12 +258,27 @@ public class CombatBehaviorHandler {
         String weaponItemId = combatData.getWeaponItemId();
 
         vitalDeltaPublisher.publishAttack(
-                worldId.getId(), targetEntityId, entity.getName(),
-                physDmg, physAcc, magDmg, magAcc, critChance, critMult,
-                null, weaponItemId);
+                worldId.getId(),
+                targetEntityId,
+                entity.getName(),
+                physDmg,
+                physAcc,
+                magDmg,
+                magAcc,
+                critChance,
+                critMult,
+                null,
+                weaponItemId);
 
-        log.debug("Entity {} attacked player {} with weapon {} [phys={}/{}, mag={}/{}]",
-                entity.getName(), targetEntityId, weaponItemId, physDmg, physAcc, magDmg, magAcc);
+        log.debug(
+                "Entity {} attacked player {} with weapon {} [phys={}/{}, mag={}/{}]",
+                entity.getName(),
+                targetEntityId,
+                weaponItemId,
+                physDmg,
+                physAcc,
+                magDmg,
+                magAcc);
     }
 
     private double getEffective(EntityCombatData data, String statName) {
@@ -265,8 +305,8 @@ public class CombatBehaviorHandler {
             WSessionPosition pos = posOpt.get();
             if (pos.getX() == null || pos.getY() == null || pos.getZ() == null) continue;
 
-            double dist = distance(entityPos.getX(), entityPos.getY(), entityPos.getZ(),
-                    pos.getX(), pos.getY(), pos.getZ());
+            double dist =
+                    distance(entityPos.getX(), entityPos.getY(), entityPos.getZ(), pos.getX(), pos.getY(), pos.getZ());
 
             if (dist < nearestDist) {
                 nearestDist = dist;
@@ -295,12 +335,16 @@ public class CombatBehaviorHandler {
             WSessionPosition pos = posOpt.get();
             if (pos.getX() == null || pos.getY() == null || pos.getZ() == null) continue;
 
-            double dist = distance(entityPos.getX(), entityPos.getY(), entityPos.getZ(),
-                    pos.getX(), pos.getY(), pos.getZ());
+            double dist =
+                    distance(entityPos.getX(), entityPos.getY(), entityPos.getZ(), pos.getX(), pos.getY(), pos.getZ());
 
             if (dist < nearestDist) {
                 nearestDist = dist;
-                nearest = Vector3.builder().x(pos.getX()).y(pos.getY()).z(pos.getZ()).build();
+                nearest = Vector3.builder()
+                        .x(pos.getX())
+                        .y(pos.getY())
+                        .z(pos.getZ())
+                        .build();
             }
         }
 

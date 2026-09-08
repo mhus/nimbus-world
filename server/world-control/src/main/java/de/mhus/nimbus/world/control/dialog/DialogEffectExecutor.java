@@ -2,13 +2,12 @@ package de.mhus.nimbus.world.control.dialog;
 
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * Executes dialog effects by dispatching to registered {@link DialogEffectHandler} implementations.
@@ -27,11 +26,17 @@ public class DialogEffectExecutor {
         for (DialogEffectHandler handler : handlers) {
             String type = handler.getEffectType();
             if (handlerMap.containsKey(type)) {
-                log.warn("Duplicate DialogEffectHandler for type '{}': {} vs {}",
-                        type, handlerMap.get(type).getClass().getSimpleName(), handler.getClass().getSimpleName());
+                log.warn(
+                        "Duplicate DialogEffectHandler for type '{}': {} vs {}",
+                        type,
+                        handlerMap.get(type).getClass().getSimpleName(),
+                        handler.getClass().getSimpleName());
             }
             handlerMap.put(type, handler);
-            log.debug("Registered DialogEffectHandler: {} -> {}", type, handler.getClass().getSimpleName());
+            log.debug(
+                    "Registered DialogEffectHandler: {} -> {}",
+                    type,
+                    handler.getClass().getSimpleName());
         }
         log.info("Registered {} dialog effect handlers: {}", handlerMap.size(), handlerMap.keySet());
     }
@@ -45,8 +50,12 @@ public class DialogEffectExecutor {
             try {
                 execute(effect, ctx);
             } catch (Exception e) {
-                log.error("Failed to execute effect type={} in dialog playbook={}: {}",
-                        effect.type(), ctx.getPlaybookName(), e.getMessage(), e);
+                log.error(
+                        "Failed to execute effect type={} in dialog playbook={}: {}",
+                        effect.type(),
+                        ctx.getPlaybookName(),
+                        e.getMessage(),
+                        e);
             }
         }
     }

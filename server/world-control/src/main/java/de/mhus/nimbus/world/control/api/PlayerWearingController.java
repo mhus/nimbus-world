@@ -17,13 +17,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * REST Controller for player wearing operations.
@@ -45,9 +44,9 @@ public class PlayerWearingController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get backpack items and wearing items with enriched info")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Wearing data returned"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Wearing data returned"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
     public ResponseEntity<?> getWearingData(HttpServletRequest request) {
 
@@ -97,16 +96,15 @@ public class PlayerWearingController extends BaseEditorController {
         return ResponseEntity.ok(Map.of(
                 "worldId", worldId,
                 "backpackItems", backpackItems,
-                "wearingItems", wearingItems
-        ));
+                "wearingItems", wearingItems));
     }
 
     @PostMapping("/equip")
     @Operation(summary = "Equip an item from backpack to a wearing slot")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item equipped"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character or item not found")
+        @ApiResponse(responseCode = "200", description = "Item equipped"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Character or item not found")
     })
     public ResponseEntity<?> equip(@RequestBody EquipRequest body, HttpServletRequest request) {
 
@@ -114,8 +112,13 @@ public class PlayerWearingController extends BaseEditorController {
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("POST equip: worldId={}, userId={}, characterId={}, itemId={}, slot={}",
-                worldId, userId, characterId, body != null ? body.itemId() : null, body != null ? body.slot() : null);
+        log.debug(
+                "POST equip: worldId={}, userId={}, characterId={}, itemId={}, slot={}",
+                worldId,
+                userId,
+                characterId,
+                body != null ? body.itemId() : null,
+                body != null ? body.slot() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
@@ -165,7 +168,12 @@ public class PlayerWearingController extends BaseEditorController {
             return bad("Failed to equip item (concurrent modification or item not in backpack)");
         }
 
-        log.info("Equipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, body.itemId(), slot);
+        log.info(
+                "Equipped item: userId={}, characterId={}, itemId={}, slot={}",
+                userId,
+                characterId,
+                body.itemId(),
+                slot);
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
@@ -173,9 +181,9 @@ public class PlayerWearingController extends BaseEditorController {
     @PostMapping("/unequip")
     @Operation(summary = "Unequip an item from a wearing slot back to backpack")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item unequipped"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+        @ApiResponse(responseCode = "200", description = "Item unequipped"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Character not found")
     })
     public ResponseEntity<?> unequip(@RequestBody UnequipRequest body, HttpServletRequest request) {
 
@@ -183,8 +191,12 @@ public class PlayerWearingController extends BaseEditorController {
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("POST unequip: worldId={}, userId={}, characterId={}, slot={}",
-                worldId, userId, characterId, body != null ? body.slot() : null);
+        log.debug(
+                "POST unequip: worldId={}, userId={}, characterId={}, slot={}",
+                worldId,
+                userId,
+                characterId,
+                body != null ? body.slot() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
@@ -217,7 +229,12 @@ public class PlayerWearingController extends BaseEditorController {
             return bad("Failed to unequip item (concurrent modification or slot mismatch)");
         }
 
-        log.info("Unequipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, itemId, body.slot());
+        log.info(
+                "Unequipped item: userId={}, characterId={}, itemId={}, slot={}",
+                userId,
+                characterId,
+                itemId,
+                body.slot());
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
@@ -233,7 +250,8 @@ public class PlayerWearingController extends BaseEditorController {
             log.warn("No player URL available for session {}, cannot notify player of wearing change", sessionId);
             return;
         }
-        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "WearingModified", List.of(), null);
+        worldClientService.sendPlayerCommand(
+                worldId, sessionId, wSession.get().getPlayerUrl(), "WearingModified", List.of(), null);
     }
 
     @SuppressWarnings("unchecked")
@@ -307,5 +325,6 @@ public class PlayerWearingController extends BaseEditorController {
     }
 
     record EquipRequest(String itemId, WEARABLE_SLOT slot) {}
+
     record UnequipRequest(WEARABLE_SLOT slot) {}
 }

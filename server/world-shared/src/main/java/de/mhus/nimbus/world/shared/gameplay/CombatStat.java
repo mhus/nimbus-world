@@ -1,11 +1,10 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 /**
  * Represents a combat stat (physical.damage, physical.defense, magical.damage, etc.).
@@ -56,10 +55,7 @@ public class CombatStat {
      * Create a standard combat stat.
      */
     public static CombatStat of(String type, double base) {
-        var s = CombatStat.builder()
-                .type(type)
-                .base(base)
-                .build();
+        var s = CombatStat.builder().type(type).base(base).build();
         s.resetBuffs();
         s.recalculate();
         return s;
@@ -71,8 +67,7 @@ public class CombatStat {
     public Map<String, Object> toMap() {
         return Map.of(
                 "type", type,
-                "base", base
-        );
+                "base", base);
     }
 
     /**
@@ -95,7 +90,11 @@ public class CombatStat {
     private static double doubleVal(Object v, double def) {
         if (v instanceof Number n) return n.doubleValue();
         if (v instanceof String s2) {
-            try { return Double.parseDouble(s2); } catch (NumberFormatException e) { return def; }
+            try {
+                return Double.parseDouble(s2);
+            } catch (NumberFormatException e) {
+                return def;
+            }
         }
         return def;
     }

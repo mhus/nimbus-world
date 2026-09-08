@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -23,10 +26,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Read-only asset controller for players.
@@ -44,13 +43,12 @@ public class PlayerAssetController extends BaseEditorController {
     @GetMapping("/{*path}")
     @Operation(summary = "Get asset file content for player")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Asset found"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated or invalid request"),
-            @ApiResponse(responseCode = "404", description = "Asset not found")
+        @ApiResponse(responseCode = "200", description = "Asset found"),
+        @ApiResponse(responseCode = "400", description = "Not authenticated or invalid request"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     public ResponseEntity<?> getAssetFile(
-            @Parameter(description = "Asset path") @PathVariable String path,
-            HttpServletRequest request) {
+            @Parameter(description = "Asset path") @PathVariable String path, HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);

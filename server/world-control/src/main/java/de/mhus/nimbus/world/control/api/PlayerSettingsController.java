@@ -10,15 +10,14 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for player settings management.
@@ -42,8 +41,7 @@ public class PlayerSettingsController extends BaseEditorController {
     @GetMapping
     @Operation(summary = "Get player settings for client type")
     public ResponseEntity<?> getSettings(
-            @RequestParam(name = "client", defaultValue = "web") String clientType,
-            HttpServletRequest request) {
+            @RequestParam(name = "client", defaultValue = "web") String clientType, HttpServletRequest request) {
 
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         if (Strings.isBlank(userId)) {
@@ -66,9 +64,7 @@ public class PlayerSettingsController extends BaseEditorController {
             settings.setProperties(new HashMap<>());
         }
 
-        return ResponseEntity.ok(Map.of(
-                "settings", settings
-        ));
+        return ResponseEntity.ok(Map.of("settings", settings));
     }
 
     /**
@@ -90,7 +86,8 @@ public class PlayerSettingsController extends BaseEditorController {
             return bad("properties required");
         }
 
-        log.debug("PUT player settings: userId={}, clientType={}, properties={}", userId, clientType, body.properties());
+        log.debug(
+                "PUT player settings: userId={}, clientType={}, properties={}", userId, clientType, body.properties());
 
         RUser user = rUserService.getByUsername(userId).orElse(null);
         if (user == null) {
@@ -127,7 +124,8 @@ public class PlayerSettingsController extends BaseEditorController {
             log.warn("No player URL available for session {}, cannot notify player of settings change", sessionId);
             return;
         }
-        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "SettingsModified", List.of(), null);
+        worldClientService.sendPlayerCommand(
+                worldId, sessionId, wSession.get().getPlayerUrl(), "SettingsModified", List.of(), null);
     }
 
     record UpdatePropertiesRequest(Map<String, String> properties) {}

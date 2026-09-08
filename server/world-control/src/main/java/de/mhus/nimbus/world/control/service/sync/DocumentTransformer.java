@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.control.service.sync;
 
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Transforms MongoDB documents during import.
@@ -35,7 +34,8 @@ public class DocumentTransformer {
         }
 
         // Apply prefix mapping if configured
-        if (definition.getPrefixMapping() != null && !definition.getPrefixMapping().isEmpty()) {
+        if (definition.getPrefixMapping() != null
+                && !definition.getPrefixMapping().isEmpty()) {
             applyPrefixMapping(transformed, definition.getPrefixMapping());
         }
 
@@ -166,7 +166,6 @@ public class DocumentTransformer {
 
         return false;
     }
-
 
     /**
      * Apply prefix mapping to a path string.

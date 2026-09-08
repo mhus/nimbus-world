@@ -39,18 +39,28 @@ public class DebugBuilder extends HexGridBuilder {
 
         int hexGridSize = context.getHexGridSize();
         // Concentric hexagons as diameters for isPointInHex
-        int gridSize3 = hexGridSize - 6;   // innermost
-        int gridSize2 = hexGridSize - 4;   // middle
-        int gridSize1 = hexGridSize - 2;       // hex boundary
-        int gridSizeOut = hexGridSize;  // outer ring
+        int gridSize3 = hexGridSize - 6; // innermost
+        int gridSize2 = hexGridSize - 4; // middle
+        int gridSize1 = hexGridSize - 2; // hex boundary
+        int gridSizeOut = hexGridSize; // outer ring
 
         double centerX = sizeX / 2.0;
         double centerZ = sizeZ / 2.0;
 
-        log.debug("DebugBuilder: sizeX={}, sizeZ={}, level={}, hexGridSize={}, center=({}, {})",
-                sizeX, sizeZ, baseLevel, hexGridSize, centerX, centerZ);
-        log.debug("DebugBuilder materials: base={}, circle1={}, circle2={}, circle3={}",
-                baseMaterial, circle1Material, circle2Material, circle3Material);
+        log.debug(
+                "DebugBuilder: sizeX={}, sizeZ={}, level={}, hexGridSize={}, center=({}, {})",
+                sizeX,
+                sizeZ,
+                baseLevel,
+                hexGridSize,
+                centerX,
+                centerZ);
+        log.debug(
+                "DebugBuilder materials: base={}, circle1={}, circle2={}, circle3={}",
+                baseMaterial,
+                circle1Material,
+                circle2Material,
+                circle3Material);
 
         for (int z = 0; z < sizeZ; z++) {
             for (int x = 0; x < sizeX; x++) {

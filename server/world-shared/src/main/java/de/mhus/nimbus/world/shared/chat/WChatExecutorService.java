@@ -2,14 +2,13 @@ package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.utils.LocationService;
 import jakarta.annotation.PreDestroy;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Singleton service managing all active WChatSessions.
@@ -25,6 +24,7 @@ public class WChatExecutorService {
      */
     public sealed interface EnqueueResult {
         record Local() implements EnqueueResult {}
+
         record Remote(String url) implements EnqueueResult {}
     }
 
@@ -35,9 +35,8 @@ public class WChatExecutorService {
     private final WChatService chatService;
     private final LocationService locationService;
 
-    public WChatExecutorService(StringRedisTemplate redis,
-                                @Lazy WChatService chatService,
-                                LocationService locationService) {
+    public WChatExecutorService(
+            StringRedisTemplate redis, @Lazy WChatService chatService, LocationService locationService) {
         this.redis = redis;
         this.chatService = chatService;
         this.locationService = locationService;
@@ -90,9 +89,8 @@ public class WChatExecutorService {
         }
 
         String localUrl = locationService.getInternalServerUrl();
-        WChatSession session = new WChatSession(
-                chatKey, msg.getWorldId(), msg.getChatId(),
-                chatService, this, redis, localUrl);
+        WChatSession session =
+                new WChatSession(chatKey, msg.getWorldId(), msg.getChatId(), chatService, this, redis, localUrl);
 
         activeSessions.put(chatKey, session);
         session.enqueue(msg);

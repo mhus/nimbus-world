@@ -5,10 +5,9 @@ import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Hilly terrain manipulator with pronounced hills.
@@ -54,7 +53,7 @@ public class HillyTerrainManipulator implements FlatManipulator {
         int baseHeight = parseIntParameter(parameters, PARAM_BASE_HEIGHT, DEFAULT_BASE_HEIGHT);
         int hillHeight = parseIntParameter(parameters, PARAM_HILL_HEIGHT, DEFAULT_HILL_HEIGHT);
         long seed = parseLongParameter(parameters, PARAM_SEED, System.currentTimeMillis());
-        double frequency =  CastUtil.todouble(parameters.get(PARAM_FREQUENCY), 1.0);
+        double frequency = CastUtil.todouble(parameters.get(PARAM_FREQUENCY), 1.0);
 
         // Clamp values to valid ranges
         baseHeight = Math.max(0, Math.min(255, baseHeight));
@@ -64,7 +63,7 @@ public class HillyTerrainManipulator implements FlatManipulator {
 
         // Initialize noise generator
         FastNoiseLite noise = new FastNoiseLite((int) seed);
-        noise.SetFrequency((float)frequency);
+        noise.SetFrequency((float) frequency);
         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
 
         // Generate terrain with noise
@@ -84,19 +83,23 @@ public class HillyTerrainManipulator implements FlatManipulator {
                 flat.setLevel(flatX, flatZ, terrainHeight);
 
                 // Set column (material based on height vs water level)
-                int materialId = terrainHeight <= oceanLevel
-                        ? FlatMaterialService.SAND
-                        : FlatMaterialService.GRASS;
+                int materialId = terrainHeight <= oceanLevel ? FlatMaterialService.SAND : FlatMaterialService.GRASS;
                 flat.setColumn(flatX, flatZ, materialId);
             }
         }
 
-        log.debug("Hilly terrain manipulated: region=({},{},{},{}), base={}, hillHeight={}, seed={}",
-                x, z, sizeX, sizeZ, baseHeight, hillHeight, seed);
+        log.debug(
+                "Hilly terrain manipulated: region=({},{},{},{}), base={}, hillHeight={}, seed={}",
+                x,
+                z,
+                sizeX,
+                sizeZ,
+                baseHeight,
+                hillHeight,
+                seed);
     }
 
-    private int calculateTerrainHeight(FastNoiseLite noise, int worldX, int worldZ,
-                                       int baseHeight, int hillHeight) {
+    private int calculateTerrainHeight(FastNoiseLite noise, int worldX, int worldZ, int baseHeight, int hillHeight) {
         // Multi-octave noise for natural-looking hilly terrain
         // Larger scales (smaller frequency multipliers) create bigger, smoother hills
         double noise1 = noise.GetNoise((float) (worldX * SCALE_1), (float) (worldZ * SCALE_1));
@@ -147,5 +150,4 @@ public class HillyTerrainManipulator implements FlatManipulator {
             return defaultValue;
         }
     }
-
 }

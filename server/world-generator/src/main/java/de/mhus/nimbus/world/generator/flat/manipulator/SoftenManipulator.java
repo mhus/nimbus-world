@@ -3,10 +3,9 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * Soften manipulator.
@@ -52,8 +51,7 @@ public class SoftenManipulator implements FlatManipulator {
 
         painter.soften(x, z, x2, z2, radius, factor);
 
-        log.info("Terrain softened: region=({},{},{},{}), factor={}, radius={}",
-                x, z, sizeX, sizeZ, factor, radius);
+        log.info("Terrain softened: region=({},{},{},{}), factor={}, radius={}", x, z, sizeX, sizeZ, factor, radius);
     }
 
     private double parseDoubleParameter(Map<String, String> parameters, String name, double defaultValue) {
@@ -81,5 +79,4 @@ public class SoftenManipulator implements FlatManipulator {
             return defaultValue;
         }
     }
-
 }

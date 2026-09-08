@@ -1,17 +1,16 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.MountainFacePoint;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.SpiderPatternManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
-import tools.jackson.databind.json.JsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * SingleMountainFaceBuilder builds a steep mountain face from MountainFacePoint configuration.
@@ -23,7 +22,9 @@ import tools.jackson.databind.DeserializationFeature;
 @Slf4j
 public class SingleMountainFaceBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    private static final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
 
     @Override
     public void buildFlat() {
@@ -36,8 +37,8 @@ public class SingleMountainFaceBuilder extends HexGridBuilder {
         log.debug("Building mountain face for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get mountain face parameter from hex grid
-        String faceParam = hexGrid.getParameters() != null ?
-            hexGrid.getParameters().get("g_mountain_face") : null;
+        String faceParam =
+                hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_mountain_face") : null;
 
         if (faceParam == null || faceParam.isBlank()) {
             log.debug("No mountain face parameter found, skipping");
@@ -46,11 +47,15 @@ public class SingleMountainFaceBuilder extends HexGridBuilder {
 
         try {
             // Parse mountain face configuration
-            MountainFacePoint.MountainFaceConfig config = objectMapper.readValue(
-                faceParam, MountainFacePoint.MountainFaceConfig.class);
+            MountainFacePoint.MountainFaceConfig config =
+                    objectMapper.readValue(faceParam, MountainFacePoint.MountainFaceConfig.class);
 
-            log.debug("Parsed mountain face config for '{}': dimension={}, branches={}, height={}",
-                config.getFaceName(), config.getDimension(), config.getBranches(), config.getFaceHeight());
+            log.debug(
+                    "Parsed mountain face config for '{}': dimension={}, branches={}, height={}",
+                    config.getFaceName(),
+                    config.getDimension(),
+                    config.getBranches(),
+                    config.getFaceHeight());
 
             // Build the mountain face
             buildMountainFace(flat, config, hexGridSize);
@@ -79,8 +84,13 @@ public class SingleMountainFaceBuilder extends HexGridBuilder {
         int centerX = regionSizeX / 2;
         int centerZ = regionSizeZ / 2;
 
-        log.debug("Building mountain face at center ({}, {}) with branches={}, length={}, height={}",
-            centerX, centerZ, config.getBranches(), config.getBranchLength(), config.getFaceHeight());
+        log.debug(
+                "Building mountain face at center ({}, {}) with branches={}, length={}, height={}",
+                centerX,
+                centerZ,
+                config.getBranches(),
+                config.getBranchLength(),
+                config.getFaceHeight());
 
         // Create parameters map for SpiderPatternManipulator
         Map<String, String> manipulatorParams = new HashMap<>();
@@ -90,7 +100,8 @@ public class SingleMountainFaceBuilder extends HexGridBuilder {
         manipulatorParams.put(SpiderPatternManipulator.PARAM_LENGTH, String.valueOf(config.getBranchLength()));
         manipulatorParams.put(SpiderPatternManipulator.PARAM_HEIGHT_DELTA, String.valueOf(config.getFaceHeight()));
         manipulatorParams.put(SpiderPatternManipulator.PARAM_SUB_BRANCHES, String.valueOf(config.getSubBranches()));
-        manipulatorParams.put(SpiderPatternManipulator.PARAM_RECURSION_DEPTH, String.valueOf(config.getRecursionDepth()));
+        manipulatorParams.put(
+                SpiderPatternManipulator.PARAM_RECURSION_DEPTH, String.valueOf(config.getRecursionDepth()));
         manipulatorParams.put(SpiderPatternManipulator.PARAM_SEED, String.valueOf(config.getSeed()));
         manipulatorParams.put(SpiderPatternManipulator.PARAM_MATERIAL, String.valueOf(material));
 
@@ -98,9 +109,14 @@ public class SingleMountainFaceBuilder extends HexGridBuilder {
         SpiderPatternManipulator manipulator = new SpiderPatternManipulator();
         manipulator.manipulate(flat, regionX, regionZ, regionSizeX, regionSizeZ, manipulatorParams);
 
-        log.info("Mountain face built: name='{}', dimension={}, branches={}, length={}, height={}, material={}",
-            config.getFaceName(), config.getDimension(), config.getBranches(),
-            config.getBranchLength(), config.getFaceHeight(), config.getMaterial());
+        log.info(
+                "Mountain face built: name='{}', dimension={}, branches={}, length={}, height={}, material={}",
+                config.getFaceName(),
+                config.getDimension(),
+                config.getBranches(),
+                config.getBranchLength(),
+                config.getFaceHeight(),
+                config.getMaterial());
     }
 
     /**

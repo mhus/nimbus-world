@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.service;
 
-import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.MessageType;
 import de.mhus.nimbus.generated.types.TeamData;
 import de.mhus.nimbus.generated.types.TeamMember;
@@ -14,16 +13,16 @@ import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.team.WTeam;
 import de.mhus.nimbus.world.shared.team.WTeamService;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Manages team state on PlayerSessions.
@@ -62,7 +61,9 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
     @PostConstruct
     public void subscribeToTeamMembership() {
         redisMessaging.subscribeGlobal(REDIS_CHANNEL_TEAM_MEMBERSHIP, this::handleTeamMembershipEvent);
-        log.info("Subscribed to global team membership events (channel: world:global:{})", REDIS_CHANNEL_TEAM_MEMBERSHIP);
+        log.info(
+                "Subscribed to global team membership events (channel: world:global:{})",
+                REDIS_CHANNEL_TEAM_MEMBERSHIP);
     }
 
     // --- SessionAuthenticatedConsumer ---
@@ -106,8 +107,11 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
                 session.setCachedTeamId(team.getTeamId());
                 session.setCachedTeamMembers(new HashSet<>(team.getMembers()));
                 sendTeamDataToClient(session, team);
-                log.debug("Team loaded for session {}: teamId={}, members={}",
-                        session.getSessionId(), team.getTeamId(), team.getMembers().size());
+                log.debug(
+                        "Team loaded for session {}: teamId={}, members={}",
+                        session.getSessionId(),
+                        team.getTeamId(),
+                        team.getMembers().size());
             } else {
                 // No team - clear cache and send empty team
                 session.setCachedTeamId(null);
@@ -205,11 +209,8 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
 
     private void sendEmptyTeamToClient(PlayerSession session) {
         try {
-            TeamData teamData = TeamData.builder()
-                    .id("")
-                    .name("")
-                    .members(List.of())
-                    .build();
+            TeamData teamData =
+                    TeamData.builder().id("").name("").members(List.of()).build();
             sendMessage(session, MessageType.TEAM_DATA.tsString(), engineMapper.valueToTree(teamData));
         } catch (Exception e) {
             log.error("Failed to send empty team to session {}: {}", session.getSessionId(), e.getMessage(), e);
@@ -220,9 +221,10 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
         try {
             NetworkMessage networkMessage = NetworkMessage.builder()
                     .t(messageType)
-                    .d(data instanceof tools.jackson.databind.JsonNode ?
-                            (tools.jackson.databind.JsonNode) data :
-                            objectMapper.valueToTree(data))
+                    .d(
+                            data instanceof tools.jackson.databind.JsonNode
+                                    ? (tools.jackson.databind.JsonNode) data
+                                    : objectMapper.valueToTree(data))
                     .build();
             String json = objectMapper.writeValueAsString(networkMessage);
             session.sendMessage(new TextMessage(json));

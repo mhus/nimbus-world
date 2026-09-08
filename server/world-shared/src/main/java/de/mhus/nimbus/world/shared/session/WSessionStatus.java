@@ -5,4 +5,3 @@ public enum WSessionStatus {
     RUNNING,
     CLOSED
 }
-

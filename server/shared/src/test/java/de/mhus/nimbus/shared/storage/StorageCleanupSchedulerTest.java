@@ -1,18 +1,17 @@
 package de.mhus.nimbus.shared.storage;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for StorageCleanupScheduler.
@@ -119,8 +118,7 @@ class StorageCleanupSchedulerTest {
                 .thenReturn(Arrays.asList(delete1, delete2));
 
         // First deletion fails
-        when(storageDataRepository.countByUuid("uuid-1"))
-                .thenThrow(new RuntimeException("MongoDB connection failed"));
+        when(storageDataRepository.countByUuid("uuid-1")).thenThrow(new RuntimeException("MongoDB connection failed"));
 
         // Second deletion succeeds
         when(storageDataRepository.countByUuid("uuid-2")).thenReturn(2L);
@@ -154,8 +152,7 @@ class StorageCleanupSchedulerTest {
         // This test verifies the query logic (though it's in the repository)
         Date now = new Date();
 
-        when(storageDeleteRepository.findByDeletedAtLessThanEqual(now))
-                .thenReturn(Collections.emptyList());
+        when(storageDeleteRepository.findByDeletedAtLessThanEqual(now)).thenReturn(Collections.emptyList());
 
         scheduler.cleanupDeletedStorage();
 
@@ -233,8 +230,7 @@ class StorageCleanupSchedulerTest {
         when(storageDataRepository.countByUuid("uuid-1")).thenReturn(2L);
 
         // Second fails
-        when(storageDataRepository.countByUuid("uuid-2"))
-                .thenThrow(new RuntimeException("Error"));
+        when(storageDataRepository.countByUuid("uuid-2")).thenThrow(new RuntimeException("Error"));
 
         // Third succeeds
         when(storageDataRepository.countByUuid("uuid-3")).thenReturn(1L);

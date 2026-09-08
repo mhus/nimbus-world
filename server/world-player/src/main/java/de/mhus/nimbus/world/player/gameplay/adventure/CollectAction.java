@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
@@ -8,10 +7,10 @@ import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 /**
  * GameplayAction for collecting rewards from blocks and entities.
@@ -47,13 +46,30 @@ public class CollectAction implements GameplayAction {
     }
 
     @Override
-    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(
+            PlayerSession session,
+            int x,
+            int y,
+            int z,
+            String blockId,
+            String groupId,
+            String blockAction,
+            JsonNode params,
+            String userAction,
+            String shortcutKey,
+            Map<String, String> serverInfo) {
         if (shortcutKey != null) return false;
-        return collect(session, serverInfo, new int[]{x, y, z});
+        return collect(session, serverInfo, new int[] {x, y, z});
     }
 
     @Override
-    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(
+            PlayerSession session,
+            WEntity entity,
+            String userAction,
+            String entityAction,
+            String shortcutKey,
+            JsonNode params) {
         if (shortcutKey != null) return false;
         if (entity == null || entity.getServer() == null) return false;
         return collect(session, entity.getServer(), null);
@@ -66,7 +82,13 @@ public class CollectAction implements GameplayAction {
     }
 
     @Override
-    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(
+            PlayerSession session,
+            String targetEntityId,
+            String action,
+            String shortcutKey,
+            Long timestamp,
+            JsonNode params) {
         // Collect only via interact on blocks/entities
         return false;
     }
@@ -81,8 +103,10 @@ public class CollectAction implements GameplayAction {
 
         long now = System.currentTimeMillis();
         if (data.getNextCollectAllowed() > now) {
-            log.debug("Collect on cooldown for player {} ({}ms remaining)",
-                    session.getEntityId(), data.getNextCollectAllowed() - now);
+            log.debug(
+                    "Collect on cooldown for player {} ({}ms remaining)",
+                    session.getEntityId(),
+                    data.getNextCollectAllowed() - now);
             return false;
         }
 
@@ -120,20 +144,30 @@ public class CollectAction implements GameplayAction {
             if (!adventure.getProgressService().claimBlockStatus(worldId, chunkKey, blockKey, collectStatus)) {
                 // Element is in cooldown, throttle further attempts of this player
                 data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
-                adventure.getClientService().sendNotification(session, 3, "",
-                        "Hier gibt es nichts mehr zu ernten", null);
-                log.debug("Collect blocked, element exhausted: worldId={}, chunk={}, block={}",
-                        worldId, chunkKey, blockKey);
+                adventure
+                        .getClientService()
+                        .sendNotification(session, 3, "", "Hier gibt es nichts mehr zu ernten", null);
+                log.debug(
+                        "Collect blocked, element exhausted: worldId={}, chunk={}, block={}",
+                        worldId,
+                        chunkKey,
+                        blockKey);
                 return true;
             }
 
             // Store the cooldown before handing out any reward: from here on the block carries the
             // collect status, and without this entry world-life would never reset it again
-            adventure.getProgressService().setBlockCooldown(worldId, chunkKey, blockKey,
-                    now + cooldownSeconds * 1000L, collectStatus);
+            adventure
+                    .getProgressService()
+                    .setBlockCooldown(worldId, chunkKey, blockKey, now + cooldownSeconds * 1000L, collectStatus);
             data.setNextCollectAllowed(now + PLAYER_COLLECT_COOLDOWN_MS);
-            log.debug("Element exhausted for {}s: worldId={}, chunk={}, block={}, status={}",
-                    cooldownSeconds, worldId, chunkKey, blockKey, collectStatus);
+            log.debug(
+                    "Element exhausted for {}s: worldId={}, chunk={}, block={}, status={}",
+                    cooldownSeconds,
+                    worldId,
+                    chunkKey,
+                    blockKey,
+                    collectStatus);
         } else {
             // Entities have no block status, keep the cooldown on the player
             data.setNextCollectAllowed(now + Math.max(cooldownSeconds * 1000L, PLAYER_COLLECT_COOLDOWN_MS));
@@ -146,10 +180,9 @@ public class CollectAction implements GameplayAction {
         if (chunkKey != null && result.blockedByFullBackpack() && !result.granted()) {
             adventure.getProgressService().removeBlockCooldown(worldId, chunkKey, blockKey);
             adventure.getProgressService().claimRemoveBlockStatus(worldId, chunkKey, blockKey, collectStatus);
-            adventure.getClientService().sendNotification(session, 3, "",
-                    "Dein Rucksack ist voll", null);
-            log.debug("Collect rolled back, backpack full: worldId={}, chunk={}, block={}",
-                    worldId, chunkKey, blockKey);
+            adventure.getClientService().sendNotification(session, 3, "", "Dein Rucksack ist voll", null);
+            log.debug(
+                    "Collect rolled back, backpack full: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
         }
         return true;
     }
@@ -160,8 +193,7 @@ public class CollectAction implements GameplayAction {
      * @param granted               at least one reward reached the player
      * @param blockedByFullBackpack at least one rolled reward was lost because the backpack was full
      */
-    private record RewardResult(boolean granted, boolean blockedByFullBackpack) {
-    }
+    private record RewardResult(boolean granted, boolean blockedByFullBackpack) {}
 
     /**
      * Roll and hand out the configured rewards. Never throws - a reward that fails must not abort
@@ -190,23 +222,24 @@ public class CollectAction implements GameplayAction {
 
                 if (handleSyntheticReward(session, data, itemId, quantity)) {
                     granted = true;
-                    log.info("Player {} collected synthetic {} x{} (probability {}%)",
+                    log.info(
+                            "Player {} collected synthetic {} x{} (probability {}%)",
                             session.getEntityId(), itemId, quantity, probability);
                 } else if (adventure.getGameplayService().putIntoBackpack(session, itemId, quantity)) {
                     granted = true;
                     sendCollectNotification(session, itemId, quantity);
-                    log.info("Player {} collected {} x{} (probability {}%)",
+                    log.info(
+                            "Player {} collected {} x{} (probability {}%)",
                             session.getEntityId(), itemId, quantity, probability);
                 } else {
                     blockedByFullBackpack = true;
-                    log.debug("Player {} backpack full, could not add {} x{}",
-                            session.getEntityId(), itemId, quantity);
+                    log.debug("Player {} backpack full, could not add {} x{}", session.getEntityId(), itemId, quantity);
                 }
             } catch (NumberFormatException e) {
                 log.warn("Invalid number in collectReward entry '{}': {}", trimmed, e.getMessage());
             } catch (Exception e) {
-                log.error("Failed to hand out collectReward entry '{}' to player {}",
-                        trimmed, session.getEntityId(), e);
+                log.error(
+                        "Failed to hand out collectReward entry '{}' to player {}", trimmed, session.getEntityId(), e);
             }
         }
 
@@ -233,26 +266,32 @@ public class CollectAction implements GameplayAction {
                 var userOpt = adventure.getUserService().getByUsername(playerId.getUserId());
                 if (userOpt.isEmpty()) return false;
                 adventure.getUserService().changeGold(userOpt.get().getId(), quantity);
-                adventure.getClientService().sendNotification(session, 3, "",
-                        "+ " + quantity + " Gold", "n:textures/currencies/gold-coin.png");
+                adventure
+                        .getClientService()
+                        .sendNotification(
+                                session, 3, "", "+ " + quantity + " Gold", "n:textures/currencies/gold-coin.png");
                 return true;
             }
             case "_silver_" -> {
                 adventure.getCharacterService().changeSilver(docId, quantity);
-                adventure.getClientService().sendNotification(session, 3, "",
-                        "+ " + quantity + " Silver", "n:textures/currencies/silver-coin.png");
+                adventure
+                        .getClientService()
+                        .sendNotification(
+                                session, 3, "", "+ " + quantity + " Silver", "n:textures/currencies/silver-coin.png");
                 return true;
             }
             case "_exp_" -> {
                 adventure.getCharacterService().addSkillExperience(docId, quantity);
-                adventure.getClientService().sendNotification(session, 3, "",
-                        "+ " + quantity + " Exp", "n:textures/actions/exp.png");
+                adventure
+                        .getClientService()
+                        .sendNotification(session, 3, "", "+ " + quantity + " Exp", "n:textures/actions/exp.png");
                 return true;
             }
             case "_skill_" -> {
                 adventure.getCharacterService().addSkillPoints(docId, quantity);
-                adventure.getClientService().sendNotification(session, 3, "",
-                        "+ " + quantity + " Skill", "n:textures/actions/skill.png");
+                adventure
+                        .getClientService()
+                        .sendNotification(session, 3, "", "+ " + quantity + " Skill", "n:textures/actions/skill.png");
                 return true;
             }
             default -> {
@@ -261,11 +300,18 @@ public class CollectAction implements GameplayAction {
                     String wordName = itemId.substring("_spell_word_".length());
                     boolean learned = adventure.getCharacterService().learnSpellWord(docId, wordName);
                     if (learned) {
-                        adventure.getClientService().sendNotification(session, 3, "",
-                                "Neues Zauberwort: " + wordName, "r:textures/items/enchanted_book.png");
+                        adventure
+                                .getClientService()
+                                .sendNotification(
+                                        session,
+                                        3,
+                                        "",
+                                        "Neues Zauberwort: " + wordName,
+                                        "r:textures/items/enchanted_book.png");
                     } else {
-                        adventure.getClientService().sendNotification(session, 3, "",
-                                "Zauberwort bereits bekannt: " + wordName, null);
+                        adventure
+                                .getClientService()
+                                .sendNotification(session, 3, "", "Zauberwort bereits bekannt: " + wordName, null);
                     }
                     return true;
                 }
@@ -282,10 +328,17 @@ public class CollectAction implements GameplayAction {
                 item = data.getCachedItems().get(itemId);
             }
             if (item == null) {
-                item = adventure.getItemService().findByItemId(session.getWorldId(), itemId).orElse(null);
+                item = adventure
+                        .getItemService()
+                        .findByItemId(session.getWorldId(), itemId)
+                        .orElse(null);
             }
-            String title = item != null && item.getPublicData() != null ? item.getPublicData().getTitle() : itemId;
-            String texture = item != null && item.getPublicData() != null ? item.getPublicData().getTexture() : null;
+            String title = item != null && item.getPublicData() != null
+                    ? item.getPublicData().getTitle()
+                    : itemId;
+            String texture = item != null && item.getPublicData() != null
+                    ? item.getPublicData().getTexture()
+                    : null;
             adventure.getClientService().sendNotification(session, 3, "", "+ " + quantity + " " + title, texture);
         } catch (Exception e) {
             log.warn("Failed to send collect notification for {}: {}", itemId, e.getMessage());

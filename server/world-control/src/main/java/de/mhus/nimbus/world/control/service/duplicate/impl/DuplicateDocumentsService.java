@@ -25,7 +25,6 @@ public class DuplicateDocumentsService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating documents from world {} to {}", sourceWorldId, targetWorldId);
         int duplicatedCount = documentService.duplicateToWorld(sourceWorldId, targetWorldId);
-        log.info("Duplicated {} documents from world {} to {}",
-                duplicatedCount, sourceWorldId, targetWorldId);
+        log.info("Duplicated {} documents from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
     }
 }

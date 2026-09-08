@@ -1,15 +1,14 @@
 package de.mhus.nimbus.world.shared.world;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 
 /**
  * Generates human-readable instance IDs from UUIDs.
@@ -34,7 +33,8 @@ public class InstanceIdGenerator {
     void init() {
         try {
             var resource = new ClassPathResource(WORD_LIST_RESOURCE);
-            try (var reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            try (var reader =
+                    new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 words = reader.lines()
                         .map(String::trim)
                         .filter(line -> !line.isEmpty())
@@ -65,9 +65,9 @@ public class InstanceIdGenerator {
         long lsb = uuid.getLeastSignificantBits();
 
         // Extract 16-bit segments for word selection
-        int seg1 = (int) ((msb >> 16) & 0xFFFF);  // from UUID segment 3 (4782)
-        int seg2 = (int) ((lsb >> 48) & 0xFFFF);   // from UUID segment 4 (9ada)
-        int seg3 = (int) ((lsb >> 32) & 0xFFFF);   // from UUID segment 5 first part (2f7c)
+        int seg1 = (int) ((msb >> 16) & 0xFFFF); // from UUID segment 3 (4782)
+        int seg2 = (int) ((lsb >> 48) & 0xFFFF); // from UUID segment 4 (9ada)
+        int seg3 = (int) ((lsb >> 32) & 0xFFFF); // from UUID segment 5 first part (2f7c)
 
         // Trailing 8 hex chars from first UUID segment
         String trailingHex = String.format("%08x", (int) (msb >> 32));

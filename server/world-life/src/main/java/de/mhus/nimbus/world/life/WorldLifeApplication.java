@@ -25,34 +25,22 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * - Supports multi-pod deployment with entity ownership coordination
  */
 @EnableMongoAuditing
-@ReflectiveScan(basePackages = {
-        "de.mhus.nimbus.world.life",
-        "de.mhus.nimbus.world.shared",
-        "de.mhus.nimbus.shared"
-})
-@EnableMongoRepositories(basePackages = {
-        "de.mhus.nimbus.world.life",
-        "de.mhus.nimbus.world.shared",
-        "de.mhus.nimbus.shared"
-})
+@ReflectiveScan(basePackages = {"de.mhus.nimbus.world.life", "de.mhus.nimbus.world.shared", "de.mhus.nimbus.shared"})
+@EnableMongoRepositories(
+        basePackages = {"de.mhus.nimbus.world.life", "de.mhus.nimbus.world.shared", "de.mhus.nimbus.shared"})
 @OpenAPIDefinition(
-        info = @Info(
-                title = "World Life API",
-                version = "v1",
-                description = "API for entity simulation and world life systems",
-                contact = @Contact(name = "Nimbus"),
-                license = @License(name = "Apache-2.0")
-        )
-)
+        info =
+                @Info(
+                        title = "World Life API",
+                        version = "v1",
+                        description = "API for entity simulation and world life systems",
+                        contact = @Contact(name = "Nimbus"),
+                        license = @License(name = "Apache-2.0")))
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableAsync
 @EnableScheduling
-@ComponentScan(basePackages = {
-        "de.mhus.nimbus.world.life",
-        "de.mhus.nimbus.world.shared",
-        "de.mhus.nimbus.shared"
-})
+@ComponentScan(basePackages = {"de.mhus.nimbus.world.life", "de.mhus.nimbus.world.shared", "de.mhus.nimbus.shared"})
 public class WorldLifeApplication {
 
     public static void main(String[] args) {

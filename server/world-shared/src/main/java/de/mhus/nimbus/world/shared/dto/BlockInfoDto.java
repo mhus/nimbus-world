@@ -12,23 +12,17 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 public record BlockInfoDto(
         @TypeScript(importLine = "import type { Block } from '../../types/Block';")
         Block block,
+
         boolean readOnly,
 
-        @TypeScript(optional = true)
-        String layer,
+        @TypeScript(optional = true) String layer,
 
-        @TypeScript(optional = true)
-        String group,
+        @TypeScript(optional = true) String group,
 
-        @TypeScript(optional = true)
-        String groupName,
+        @TypeScript(optional = true) String groupName,
 
         /** Layer (and model) this block originates from, from WChunkInfo. */
-        @TypeScript(optional = true)
-        String chunkInfoLayer,
+        @TypeScript(optional = true) String chunkInfoLayer,
 
         /** Group this block belongs to, from WChunkInfo. */
-        @TypeScript(optional = true)
-        String chunkInfoGroup
-) {
-}
+        @TypeScript(optional = true) String chunkInfoGroup) {}

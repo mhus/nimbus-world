@@ -4,11 +4,10 @@ import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Random;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * Lakes manipulator.
@@ -58,8 +57,7 @@ public class LakesManipulator implements FlatManipulator {
     }
 
     @Override
-    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ,
-                          Map<String, String> parameters) {
+    public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
         log.debug("Starting lakes manipulation: region=({},{},{},{})", x, z, sizeX, sizeZ);
 
         // Parse parameters
@@ -131,8 +129,12 @@ public class LakesManipulator implements FlatManipulator {
         // Smooth lake edges for natural appearance
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.5);
 
-        log.info("Lakes manipulation completed: mainRadius={}, mainDepth={}, smallLakes created={}/{}, " +
-                "mainLake={}", mainRadius, mainDepth, smallLakesCreated, smallCount,
+        log.info(
+                "Lakes manipulation completed: mainRadius={}, mainDepth={}, smallLakes created={}/{}, " + "mainLake={}",
+                mainRadius,
+                mainDepth,
+                smallLakesCreated,
+                smallCount,
                 mainLakeCreated ? "created" : "skipped");
     }
 
@@ -154,9 +156,8 @@ public class LakesManipulator implements FlatManipulator {
      * @param seaLevel Sea level (lakes must be above this)
      * @return true if lake was created, false if skipped (would be below sea level)
      */
-    private boolean drawLake(FlatPainter painter, WFlat flat,
-                            int centerX, int centerZ, int radius,
-                            int depth, int seaLevel) {
+    private boolean drawLake(
+            FlatPainter painter, WFlat flat, int centerX, int centerZ, int radius, int depth, int seaLevel) {
 
         // Step 1: Find the lowest point in the lake area
         int lowestLevel = Integer.MAX_VALUE;
@@ -183,8 +184,7 @@ public class LakesManipulator implements FlatManipulator {
 
         // Step 2: Check if lowest point is above sea level
         if (lowestLevel <= seaLevel) {
-            log.debug("Lake at ({}, {}) would be at or below sea level ({}), skipping",
-                centerX, centerZ, lowestLevel);
+            log.debug("Lake at ({}, {}) would be at or below sea level ({}), skipping", centerX, centerZ, lowestLevel);
             return false;
         }
 
@@ -256,8 +256,13 @@ public class LakesManipulator implements FlatManipulator {
             }
         }
 
-        log.debug("Created lake at ({}, {}) with surface level {} (radius: {}, depth: {})",
-            centerX, centerZ, waterSurfaceLevel, radius, depth);
+        log.debug(
+                "Created lake at ({}, {}) with surface level {} (radius: {}, depth: {})",
+                centerX,
+                centerZ,
+                waterSurfaceLevel,
+                radius,
+                depth);
 
         return true;
     }
@@ -271,8 +276,7 @@ public class LakesManipulator implements FlatManipulator {
         try {
             return Integer.parseInt(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }
@@ -284,8 +288,7 @@ public class LakesManipulator implements FlatManipulator {
         try {
             return Long.parseLong(parameters.get(name));
         } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}",
-                    name, parameters.get(name), defaultValue);
+            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
         }
     }

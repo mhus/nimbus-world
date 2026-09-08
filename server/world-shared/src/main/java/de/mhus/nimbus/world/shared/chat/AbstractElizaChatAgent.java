@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract base class for Eliza-style chatbot agents.
@@ -42,15 +41,15 @@ public abstract class AbstractElizaChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+    public List<WChatMessage> chat(
+            WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
         var ac = activeChats.get(chatId);
         if (ac != null) {
             return ac.chat(worldId, chatId, playerId, message);
         }
         // Fallback if no active session (e.g. called via connector command)
         log.warn("{} chat without active session (queue will be null): chatId={}", getName(), chatId);
-        return new ElizaActiveChat(getAgentId(), chatService, null, null)
-                .chat(worldId, chatId, playerId, message);
+        return new ElizaActiveChat(getAgentId(), chatService, null, null).chat(worldId, chatId, playerId, message);
     }
 
     @Override
