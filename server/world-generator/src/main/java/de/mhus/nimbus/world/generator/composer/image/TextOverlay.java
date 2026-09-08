@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.image;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import java.awt.*;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
@@ -458,7 +459,7 @@ public class TextOverlay implements ImageOverlay {
         g.setColor(color);
 
         int currentX = imageX;
-        String upperText = text.toUpperCase();
+        String upperText = text.toUpperCase(Locale.ROOT);
 
         for (int i = 0; i < upperText.length(); i++) {
             char c = upperText.charAt(i);

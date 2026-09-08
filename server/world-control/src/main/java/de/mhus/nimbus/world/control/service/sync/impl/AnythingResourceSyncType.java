@@ -144,7 +144,6 @@ public class AnythingResourceSyncType implements ResourceSyncType {
         // Process all collection subdirectories
         try (Stream<Path> collectionDirs = Files.list(anythingDir)) {
             for (Path collectionDir : collectionDirs.filter(Files::isDirectory).toList()) {
-                String collection = collectionDir.getFileName().toString();
 
                 try (Stream<Path> files = Files.list(collectionDir)) {
                     for (Path file :

@@ -31,8 +31,8 @@ public class WorkflowEventJobExecutor implements JobExecutor {
         var workflowName = parts[1];
         var workflowId = parts[2];
 
-        String status = null;
-        if (event.equals(WorkflowEvent.START)) {
+        String status;
+        if (WorkflowEvent.START.equals(event)) {
             // Start workflow
             status = workflowService.startWorkflow(job.getWorldId(), workflowName, workflowId);
         } else {

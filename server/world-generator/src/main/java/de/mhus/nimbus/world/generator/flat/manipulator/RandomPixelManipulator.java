@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,7 @@ public class RandomPixelManipulator implements FlatManipulator {
 
         // Select painter based on mode
         FlatPainter.Painter selectedPainter;
-        switch (mode.toLowerCase()) {
+        switch (mode.toLowerCase(Locale.ROOT)) {
             case "add":
                 selectedPainter = FlatPainter.ADDITIVE;
                 break;

@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.player.api;
 
-import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.world.WItem;
@@ -121,15 +120,4 @@ public class ItemController {
     }
 
     // Helper method
-    private ItemSearchResult toSearchResult(WItem item) {
-        Item publicData = item.getPublicData();
-        if (publicData == null) {
-            return new ItemSearchResult(item.getName(), item.getName(), null);
-        }
-
-        return new ItemSearchResult(
-                publicData.getName(),
-                publicData.getTitle() != null ? publicData.getTitle() : publicData.getName(),
-                publicData.getTexture());
-    }
 }

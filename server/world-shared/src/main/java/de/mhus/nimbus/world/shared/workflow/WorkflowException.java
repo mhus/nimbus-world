@@ -4,6 +4,7 @@ package de.mhus.nimbus.world.shared.workflow;
  * Exception thrown during workflow execution.
  */
 public class WorkflowException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     private final String workflowId;
 

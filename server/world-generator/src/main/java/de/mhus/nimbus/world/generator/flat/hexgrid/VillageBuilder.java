@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
 import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -11,6 +10,7 @@ import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.List;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -204,7 +204,7 @@ public class VillageBuilder extends HexGridBuilder {
             return FlatMaterialService.STREET;
         }
 
-        switch (type.toLowerCase()) {
+        switch (type.toLowerCase(Locale.ROOT)) {
             case "street":
                 return FlatMaterialService.STREET;
             case "path":
@@ -409,7 +409,7 @@ public class VillageBuilder extends HexGridBuilder {
             return FlatMaterialService.GRASS;
         }
 
-        switch (kind.toUpperCase()) {
+        switch (kind.toUpperCase(Locale.ROOT)) {
             case "PARK":
             case "GARDEN":
                 return FlatMaterialService.GRASS;
@@ -504,7 +504,7 @@ public class VillageBuilder extends HexGridBuilder {
             return FlatMaterialService.STREET;
         }
 
-        switch (style.toLowerCase()) {
+        switch (style.toLowerCase(Locale.ROOT)) {
             case "medieval":
                 return FlatMaterialService.STREET; // Stone
             case "modern":
@@ -660,132 +660,6 @@ public class VillageBuilder extends HexGridBuilder {
                     place.getHexR(),
                     localX,
                     localZ);
-        }
-    }
-
-    /**
-     * Draw debug markers at the center of each place (only if g_village_debug=true)
-     * Creates a high marker (level 250) at each local position to visualize placement
-     */
-    private void drawDebugMarkers(WFlat flat, TownGridConfig config) {
-        if (config.getPlaces() == null || config.getPlaces().isEmpty()) {
-            return;
-        }
-
-        log.debug(
-                "Drawing {} debug markers for village district '{}'",
-                config.getPlaces().size(),
-                config.getDistrictName());
-
-        for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
-            int x = place.getLocalX();
-            int z = place.getLocalZ();
-
-            // Draw a small 3x3 marker at level 250
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    int markerX = x + dx;
-                    int markerZ = z + dz;
-
-                    if (markerX >= 0 && markerX < flat.getSizeX() && markerZ >= 0 && markerZ < flat.getSizeZ()) {
-                        flat.setLevel(markerX, markerZ, 250);
-                        flat.setColumn(markerX, markerZ, FlatMaterialService.STREET);
-                    }
-                }
-            }
-
-            log.debug("Debug marker for '{}' ({}) at [{},{}]", place.getName(), place.getType(), x, z);
-        }
-
-        log.debug("Debug markers completed");
-    }
-
-    /**
-     * Draw debug text labels at the center of each place (only if g_village_debug=true)
-     * Uses the same bitmap font as TextOverlay to draw place names on level 250
-     */
-    private void drawDebugLabels(WFlat flat, TownGridConfig config) {
-        if (config.getPlaces() == null || config.getPlaces().isEmpty()) {
-            return;
-        }
-
-        log.debug(
-                "Drawing {} debug labels for village district '{}'",
-                config.getPlaces().size(),
-                config.getDistrictName());
-
-        for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
-            String label = place.getName();
-            if (label == null || label.isEmpty()) {
-                continue;
-            }
-
-            int centerX = place.getLocalX();
-            int centerZ = place.getLocalZ();
-
-            // Calculate text width to center it
-            int textWidth = calculateTextWidth(label);
-            int startX = centerX - textWidth / 2;
-            int startZ = centerZ + 5; // Offset below the marker
-
-            drawTextOnFlat(flat, label, startX, startZ);
-
-            log.debug("Debug label '{}' at [{},{}]", label, startX, startZ);
-        }
-
-        log.debug("Debug labels completed");
-    }
-
-    /**
-     * Calculate the width of text in blocks using the bitmap font
-     */
-    private int calculateTextWidth(String text) {
-        if (text == null || text.isEmpty()) {
-            return 0;
-        }
-        return text.length() * (TextOverlay.CHAR_WIDTH + TextOverlay.CHAR_SPACING) - TextOverlay.CHAR_SPACING;
-    }
-
-    /**
-     * Draw text on the flat using the bitmap font from TextOverlay
-     * Each pixel of the font is drawn as a block at level 250
-     */
-    private void drawTextOnFlat(WFlat flat, String text, int startX, int startZ) {
-        if (text == null || text.isEmpty()) {
-            return;
-        }
-
-        String upperText = text.toUpperCase();
-        int currentX = startX;
-
-        for (int i = 0; i < upperText.length(); i++) {
-            char c = upperText.charAt(i);
-            int[][] charBitmap = TextOverlay.FONT.get(c);
-
-            if (charBitmap != null) {
-                drawCharacterOnFlat(flat, charBitmap, currentX, startZ);
-            }
-
-            currentX += TextOverlay.CHAR_WIDTH + TextOverlay.CHAR_SPACING;
-        }
-    }
-
-    /**
-     * Draw a single character bitmap on the flat at level 250
-     */
-    private void drawCharacterOnFlat(WFlat flat, int[][] bitmap, int startX, int startZ) {
-        for (int row = 0; row < TextOverlay.CHAR_HEIGHT; row++) {
-            for (int col = 0; col < TextOverlay.CHAR_WIDTH; col++) {
-                if (bitmap[row][col] == 1) {
-                    int x = startX + col;
-                    int z = startZ + row;
-
-                    if (x >= 0 && x < flat.getSizeX() && z >= 0 && z < flat.getSizeZ()) {
-                        flat.setLevel(x, z, 250);
-                        flat.setColumn(x, z, FlatMaterialService.STREET);
-                    }
-                }
-            }
         }
     }
 

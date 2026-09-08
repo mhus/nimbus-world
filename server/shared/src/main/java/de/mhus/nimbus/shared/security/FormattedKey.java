@@ -18,6 +18,7 @@ public class FormattedKey {
         return Optional.of(new FormattedKey(keyId, key));
     }
 
+    @Override
     public String toString() {
         return keyId.toString() + ";" + key;
     }

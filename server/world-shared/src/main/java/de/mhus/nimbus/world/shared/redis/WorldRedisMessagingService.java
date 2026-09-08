@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.redis;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -30,7 +31,7 @@ public class WorldRedisMessagingService {
         String t = topic(worldId, channel);
         MessageListener listener = (msg, pattern) -> {
             try {
-                String body = new String(msg.getBody());
+                String body = new String(msg.getBody(), StandardCharsets.UTF_8);
                 handler.accept(t, body);
             } catch (Exception e) {
                 log.warn("Failed to process redis message on {}: {}", t, e.getMessage(), e);
@@ -62,8 +63,8 @@ public class WorldRedisMessagingService {
 
         MessageListener listener = (msg, patternBytes) -> {
             try {
-                String topic = new String(msg.getChannel());
-                String body = new String(msg.getBody());
+                String topic = new String(msg.getChannel(), StandardCharsets.UTF_8);
+                String body = new String(msg.getBody(), StandardCharsets.UTF_8);
                 handler.accept(topic, body);
             } catch (Exception e) {
                 log.warn("Failed to process redis message on pattern {}: {}", pattern, e.getMessage(), e);
@@ -107,7 +108,7 @@ public class WorldRedisMessagingService {
         String t = "world:global:" + channel;
         MessageListener listener = (msg, pattern) -> {
             try {
-                String body = new String(msg.getBody());
+                String body = new String(msg.getBody(), StandardCharsets.UTF_8);
                 handler.accept(t, body);
             } catch (Exception e) {
                 log.warn("Failed to process redis message on {}: {}", t, e.getMessage(), e);

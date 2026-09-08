@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WEntityType;
 import java.util.*;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -234,7 +235,7 @@ public class EntityTools implements McpToolBean {
                 }
                 if (Strings.isNotBlank(entityType)) {
                     try {
-                        entity.setType(WEntityType.valueOf(entityType.toUpperCase()));
+                        entity.setType(WEntityType.valueOf(entityType.toUpperCase(Locale.ROOT)));
                     } catch (IllegalArgumentException e) {
                         log.warn("Invalid entity type: {}", entityType);
                     }
@@ -245,7 +246,7 @@ public class EntityTools implements McpToolBean {
 
             return Map.of("entityId", saved.getName(), "worldId", worldId, "modelId", modelId, "status", "created");
         } catch (Exception e) {
-            throw new McpToolException("Failed to create entity: " + e.getMessage());
+            throw new McpToolException("Failed to create entity: " + e.getMessage(), e);
         }
     }
 
@@ -335,7 +336,7 @@ public class EntityTools implements McpToolBean {
             }
             if (entityType != null) {
                 try {
-                    entity.setType(WEntityType.valueOf(entityType.toUpperCase()));
+                    entity.setType(WEntityType.valueOf(entityType.toUpperCase(Locale.ROOT)));
                 } catch (IllegalArgumentException e) {
                     log.warn("Invalid entity type: {}", entityType);
                 }

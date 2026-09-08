@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import java.util.Locale;
 import org.apache.logging.log4j.util.Strings;
 
 public record WorldCollection(TYPE type, WorldId worldId, String path) {
@@ -24,22 +25,22 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
                     };
             int pos = path.indexOf(':');
             if (pos >= 0) {
-                var group = path.substring(0, pos).toLowerCase();
+                var group = path.substring(0, pos).toLowerCase(Locale.ROOT);
                 path = path.substring(pos + 1);
                 if (type == TYPE.REGION || type == TYPE.PUBLIC) {
                     // could switch if needed
-                    if (group.equals("rp")) {
+                    if ("rp".equals(group)) {
                         type = TYPE.PUBLIC;
                         worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getWorldName())
                                 .get();
-                    } else if (group.equals("r")) {
+                    } else if ("r".equals(group)) {
                         worldId = WorldId.of(WorldId.COLLECTION_REGION, worldId.getWorldName())
                                 .get();
                     } else {
                         type = TYPE.SHARED;
                         worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
                     }
-                } else if (group.equals("rp")) {
+                } else if ("rp".equals(group)) {
                     type = TYPE.PUBLIC;
                     worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId())
                             .get();
@@ -57,7 +58,7 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
             if (worldId.isPublicRegion()) return new WorldCollection(TYPE.PUBLIC, worldId, path);
             return new WorldCollection(TYPE.REGION, worldId.toRegionCollection(), path);
         }
-        var group = path.substring(0, pos).toLowerCase();
+        var group = path.substring(0, pos).toLowerCase(Locale.ROOT);
         path = path.substring(pos + 1);
 
         switch (group) {

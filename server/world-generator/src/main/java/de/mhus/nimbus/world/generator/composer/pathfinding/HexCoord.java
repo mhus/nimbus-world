@@ -117,7 +117,7 @@ public class HexCoord {
      */
     public void linkToOppositeEdge(HexCoord opposite) {
         this.linkedEdgeCoord = opposite;
-        if (opposite.linkedEdgeCoord != this) {
+        if (opposite.linkedEdgeCoord != this) { // NOPMD: identity comparison is deliberate
             opposite.linkedEdgeCoord = this;
         }
     }

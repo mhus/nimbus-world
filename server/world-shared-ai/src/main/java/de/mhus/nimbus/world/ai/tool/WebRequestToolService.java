@@ -85,10 +85,10 @@ public class WebRequestToolService {
         try {
             uri = new URI(url);
         } catch (Exception e) {
-            throw new SecurityException("Invalid URL");
+            throw new SecurityException("Invalid URL", e);
         }
         String scheme = uri.getScheme();
-        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+        if (scheme == null || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
             throw new SecurityException("Only http/https URLs are allowed");
         }
         String host = uri.getHost();
@@ -99,7 +99,7 @@ public class WebRequestToolService {
         try {
             addresses = InetAddress.getAllByName(host);
         } catch (UnknownHostException e) {
-            throw new SecurityException("Host cannot be resolved");
+            throw new SecurityException("Host cannot be resolved", e);
         }
         for (InetAddress addr : addresses) {
             if (isInternal(addr)) {

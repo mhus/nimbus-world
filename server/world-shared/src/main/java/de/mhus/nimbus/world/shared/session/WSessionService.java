@@ -339,15 +339,11 @@ public class WSessionService {
                 .count(props.getCleanupScanCount())
                 .build();
         boolean usedFallback = false;
-        try (var connection = redis.getConnectionFactory().getConnection()) {
-            Cursor<byte[]> cursor = connection.scan(scanOptions);
-            if (cursor != null) {
-                while (cursor.hasNext() && deleted < props.getCleanupMaxDeletes()) {
-                    String key = new String(cursor.next());
-                    deleted += tryDeleteIfExpired(key);
-                }
-            } else {
-                usedFallback = true;
+        try (var connection = redis.getConnectionFactory().getConnection();
+                Cursor<byte[]> cursor = connection.scan(scanOptions)) {
+            while (cursor.hasNext() && deleted < props.getCleanupMaxDeletes()) {
+                String key = new String(cursor.next(), java.nio.charset.StandardCharsets.UTF_8);
+                deleted += tryDeleteIfExpired(key);
             }
         } catch (Exception e) {
             log.warn("Cleanup Fehler: {}", e.getMessage());

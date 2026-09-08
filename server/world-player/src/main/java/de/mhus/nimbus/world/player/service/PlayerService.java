@@ -159,8 +159,8 @@ public class PlayerService implements SessionPingConsumer {
         }
 
         // Parse target string: <worldId>@<position> or worldId or @<position>
-        String worldIdPart = null;
-        String positionPart = null;
+        String worldIdPart;
+        String positionPart;
 
         int hashIndex = target.indexOf('@');
         if (hashIndex >= 0) {
@@ -169,7 +169,7 @@ public class PlayerService implements SessionPingConsumer {
             positionPart = target.substring(hashIndex + 1).trim();
 
             // Handle "@return" teleportation
-            if (positionPart.equals("return")) {
+            if ("return".equals(positionPart)) {
                 return handleReturnTeleportation(session);
             }
 

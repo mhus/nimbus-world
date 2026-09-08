@@ -11,6 +11,7 @@ import de.mhus.nimbus.world.generator.composer.point.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
@@ -148,9 +149,9 @@ public class TownExternalConnectionGenerator {
 
             // Create external connection point
             TownConnectionPoint point = new TownConnectionPoint();
-            point.setName(village.getName() + "-" + direction.name().toLowerCase());
+            point.setName(village.getName() + "-" + direction.name().toLowerCase(Locale.ROOT));
             point.setTitle("Connection " + direction.name());
-            point.setFeatureId(village.getName() + "-" + direction.name().toLowerCase());
+            point.setFeatureId(village.getName() + "-" + direction.name().toLowerCase(Locale.ROOT));
             point.setVillageId(village.getName());
             point.setInternalConnectionPointName(internalPointName);
             point.setExternalDirection(direction);
@@ -260,7 +261,8 @@ public class TownExternalConnectionGenerator {
 
         // Look for grid with "center" in the name (e.g., "small-village - center")
         for (FeatureHexGrid grid : village.getHexGrids()) {
-            if (grid.getName() != null && grid.getName().toLowerCase().contains("center")) {
+            if (grid.getName() != null
+                    && grid.getName().toLowerCase(Locale.ROOT).contains("center")) {
                 return grid.getCoordinate();
             }
         }

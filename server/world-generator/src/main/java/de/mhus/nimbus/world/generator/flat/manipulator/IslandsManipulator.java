@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -245,7 +246,7 @@ public class IslandsManipulator implements FlatManipulator {
         if (parameters == null || !parameters.containsKey(name)) {
             return defaultValue;
         }
-        String value = parameters.get(name).toLowerCase();
+        String value = parameters.get(name).toLowerCase(Locale.ROOT);
         return "true".equals(value) || "1".equals(value) || "yes".equals(value);
     }
 }

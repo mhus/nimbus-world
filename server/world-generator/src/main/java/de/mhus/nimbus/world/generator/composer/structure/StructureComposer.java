@@ -13,6 +13,7 @@ import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
 import de.mhus.nimbus.world.generator.composer.town.Town;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -269,7 +270,7 @@ public class StructureComposer {
         int r = center.getR();
 
         // North = r+ = Z+ in 3D world. No exceptions.
-        switch (direction.toUpperCase()) {
+        switch (direction.toUpperCase(Locale.ROOT)) {
             case "N":
                 r += distance;
                 break;

@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -179,7 +180,7 @@ public class DoorAction implements GameplayAction {
             toggleType = getDefaultToggleType();
         }
 
-        return switch (toggleType.toLowerCase()) {
+        return switch (toggleType.toLowerCase(Locale.ROOT)) {
             case "single" -> List.of(targetKey);
             case "group" -> collectGroupTargets(worldId, serverInfo, chunkKey, targetKey);
             default -> collectAutoTargets(worldId, chunkKey, targetX, targetY, targetZ, targetKey);
@@ -248,7 +249,7 @@ public class DoorAction implements GameplayAction {
 
     protected String resolveStatus(
             String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
-        return switch (value.toLowerCase()) {
+        return switch (value.toLowerCase(Locale.ROOT)) {
             case "open" -> "open";
             case "close", "closed" -> "closed";
             case "toggle" -> {

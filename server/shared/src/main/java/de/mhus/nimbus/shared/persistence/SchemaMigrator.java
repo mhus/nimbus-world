@@ -94,6 +94,7 @@ public interface SchemaMigrator extends Comparable<SchemaMigrator> {
         return new java.io.ByteArrayInputStream(migrated.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
+    @Override
     default int compareTo(SchemaMigrator other) {
         int entityComp = this.getEntityType().compareTo(other.getEntityType());
         if (entityComp != 0) return entityComp;

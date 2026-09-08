@@ -82,8 +82,8 @@ public class CoastBuilder extends HexGridBuilder {
      * - No neighbor: Will be blended later with default noise
      */
     private void adjustSidesBasedOnNeighbors(WFlat flat, int oceanLevel, long seed, float frequency) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
+        flat.getSizeX();
+        flat.getSizeZ();
 
         // Initialize noise for variation
         FastNoiseLite noise = new FastNoiseLite((int) seed);

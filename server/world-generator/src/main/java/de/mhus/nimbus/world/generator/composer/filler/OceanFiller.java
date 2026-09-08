@@ -294,7 +294,7 @@ public class OceanFiller {
         if (xDiff > yDiff && xDiff > zDiff) {
             rx = -ry - rz;
         } else if (yDiff > zDiff) {
-            ry = -rx - rz;
+            // y axis is dominant: keep rx, rz; the constraint recomputes below
         } else {
             rz = -rx - ry;
         }

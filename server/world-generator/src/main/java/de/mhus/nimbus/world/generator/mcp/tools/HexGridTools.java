@@ -139,9 +139,9 @@ public class HexGridTools implements McpToolBean {
 
             return Map.of("id", created.getId(), "worldId", worldId, "position", q + ";" + r, "status", "created");
         } catch (IllegalStateException e) {
-            throw new McpToolException("Conflict: " + e.getMessage());
+            throw new McpToolException("Conflict: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new McpToolException("Failed to create hex grid: " + e.getMessage());
+            throw new McpToolException("Failed to create hex grid: " + e.getMessage(), e);
         }
     }
 
@@ -200,7 +200,7 @@ public class HexGridTools implements McpToolBean {
         } catch (McpToolException e) {
             throw e;
         } catch (Exception e) {
-            throw new McpToolException("Failed to update hex grid: " + e.getMessage());
+            throw new McpToolException("Failed to update hex grid: " + e.getMessage(), e);
         }
     }
 
@@ -252,7 +252,7 @@ public class HexGridTools implements McpToolBean {
         } catch (McpToolException e) {
             throw e;
         } catch (Exception e) {
-            throw new McpToolException("Failed to delete hex grid: " + e.getMessage());
+            throw new McpToolException("Failed to delete hex grid: " + e.getMessage(), e);
         }
     }
 

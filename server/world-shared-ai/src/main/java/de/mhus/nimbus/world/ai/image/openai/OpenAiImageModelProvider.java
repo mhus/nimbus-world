@@ -112,7 +112,7 @@ public class OpenAiImageModelProvider implements LangchainImageModel {
 
         // DALL-E 3 specific sizes
         if (modelName.contains("dall-e-3")) {
-            if (size.equals("1024x1024") || size.equals("1024x1792") || size.equals("1792x1024")) {
+            if ("1024x1024".equals(size) || "1024x1792".equals(size) || "1792x1024".equals(size)) {
                 return size;
             }
             // Default to 1024x1024 for DALL-E 3
@@ -121,7 +121,7 @@ public class OpenAiImageModelProvider implements LangchainImageModel {
         }
 
         // DALL-E 2 specific sizes
-        if (size.equals("256x256") || size.equals("512x512") || size.equals("1024x1024")) {
+        if ("256x256".equals(size) || "512x512".equals(size) || "1024x1024".equals(size)) {
             return size;
         }
 

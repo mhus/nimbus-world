@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+// PMD: this is a runtime service for logic rule testing, not a unit test class
+@SuppressWarnings("PMD.UnitTestShouldUseTestAnnotation")
 public class LogicTestService {
 
     private static final String LOGIC_PLAYER_ID = "logic";

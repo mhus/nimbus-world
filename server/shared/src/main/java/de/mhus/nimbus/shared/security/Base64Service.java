@@ -57,6 +57,8 @@ public class Base64Service {
     // Custom exception
 
     public static class Base64Exception extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public Base64Exception(String message) {
             super(message);
         }

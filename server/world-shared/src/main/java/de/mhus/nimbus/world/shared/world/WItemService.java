@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -395,7 +396,7 @@ public class WItemService {
     }
 
     private List<WItem> filterByQuery(List<WItem> items, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return items.stream()
                 .filter(item -> {
                     Item publicData = item.getPublicData();
@@ -403,11 +404,20 @@ public class WItemService {
 
                     // Match query against name, title, or description
                     return (publicData.getName() != null
-                                    && publicData.getName().toLowerCase().contains(lowerQuery))
+                                    && publicData
+                                            .getName()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery))
                             || (publicData.getTitle() != null
-                                    && publicData.getTitle().toLowerCase().contains(lowerQuery))
+                                    && publicData
+                                            .getTitle()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery))
                             || (publicData.getDescription() != null
-                                    && publicData.getDescription().toLowerCase().contains(lowerQuery));
+                                    && publicData
+                                            .getDescription()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
     }

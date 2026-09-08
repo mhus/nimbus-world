@@ -119,7 +119,7 @@ public class DialogFreeTextService {
             throw e;
         } catch (Exception e) {
             log.warn("Free text AI processing failed: {}", e.getMessage());
-            throw new DialogService.DialogException("Failed to process input");
+            throw new DialogService.DialogException("Failed to process input", e);
         }
     }
 

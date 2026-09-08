@@ -46,7 +46,7 @@ public class JudgeVerdict {
             for (JudgeFinding f : findings) {
                 if (f != null
                         && f.getSeverity() != null
-                        && f.getSeverity().trim().equalsIgnoreCase("major")) {
+                        && "major".equalsIgnoreCase(f.getSeverity().trim())) {
                     out.add(f);
                 }
             }

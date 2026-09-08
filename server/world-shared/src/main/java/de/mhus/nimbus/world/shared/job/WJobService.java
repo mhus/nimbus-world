@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -341,7 +342,7 @@ public class WJobService {
     }
 
     private List<WJob> filterByQuery(List<WJob> jobs, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return jobs.stream()
                 .filter(job -> {
                     String id = job.getId();
@@ -349,20 +350,15 @@ public class WJobService {
                     String title = job.getTitle();
                     String type = job.getType();
                     String status = job.getStatus();
-                    return (id != null && id.toLowerCase().contains(lowerQuery))
-                            || (executor != null && executor.toLowerCase().contains(lowerQuery))
-                            || (title != null && title.toLowerCase().contains(lowerQuery))
-                            || (type != null && type.toLowerCase().contains(lowerQuery))
-                            || (status != null && status.toLowerCase().contains(lowerQuery));
+                    return (id != null && id.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (executor != null
+                                    && executor.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (title != null && title.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (type != null && type.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (status != null
+                                    && status.toLowerCase(Locale.ROOT).contains(lowerQuery));
                 })
                 .toList();
-    }
-
-    private Long calculateDuration(WJob job) {
-        if (job.getStartedAt() != null && job.getCompletedAt() != null) {
-            return job.getCompletedAt().toEpochMilli() - job.getStartedAt().toEpochMilli();
-        }
-        return null;
     }
 
     @Transactional(readOnly = true)

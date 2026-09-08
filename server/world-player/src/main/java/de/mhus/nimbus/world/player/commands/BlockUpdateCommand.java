@@ -35,7 +35,7 @@ public class BlockUpdateCommand implements Command {
     @Override
     public CommandResult execute(CommandContext context, List<String> args) {
         // Args: [blockDataObjectAsString]
-        if (args.size() < 1) {
+        if (args.isEmpty()) {
             return CommandResult.error(-3, "Usage: BlockUpdate <blockDataObjectAsString>");
         }
 

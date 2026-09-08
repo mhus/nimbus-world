@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.*;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -382,7 +383,7 @@ public class SwampBuilder extends HexGridBuilder {
      * Parse material name to material ID.
      */
     private int parseMaterialName(String name, String paramName, int defaultValue) {
-        switch (name.toUpperCase().trim()) {
+        switch (name.toUpperCase(Locale.ROOT).trim()) {
             case "GRASS":
                 return FlatMaterialService.GRASS;
             case "DIRT":
@@ -439,7 +440,8 @@ public class SwampBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(
+                            groundTypeStr.toUpperCase(Locale.ROOT));
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

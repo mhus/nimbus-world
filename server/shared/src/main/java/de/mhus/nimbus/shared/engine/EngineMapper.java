@@ -1,6 +1,7 @@
 package de.mhus.nimbus.shared.engine;
 
 import de.mhus.nimbus.types.TsEnum;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JsonGenerator;
@@ -49,7 +50,7 @@ public class EngineMapper {
                 if (value instanceof TsEnum) {
                     gen.writeString(((TsEnum) value).tsString());
                 } else {
-                    gen.writeString(value.name().toLowerCase());
+                    gen.writeString(value.name().toLowerCase(Locale.ROOT));
                 }
             }
         });

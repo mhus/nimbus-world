@@ -316,7 +316,7 @@ public class PlayerTeleportController {
             return null;
         }
 
-        String worldIdPart = null;
+        String worldIdPart;
         String entryPoint = null;
 
         int hashIndex = target.indexOf('@');

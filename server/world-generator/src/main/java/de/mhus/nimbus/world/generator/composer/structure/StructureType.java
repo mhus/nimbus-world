@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.structure;
 import de.mhus.nimbus.world.generator.composer.town.Town;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -103,9 +104,9 @@ public enum StructureType {
             return null;
         }
         try {
-            return StructureType.valueOf(value.toUpperCase());
+            return StructureType.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid StructureType value: " + value);
+            throw new IllegalArgumentException("Invalid StructureType value: " + value, e);
         }
     }
 }

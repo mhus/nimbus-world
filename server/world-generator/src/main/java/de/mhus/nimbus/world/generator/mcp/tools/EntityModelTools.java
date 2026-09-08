@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,8 +110,8 @@ public class EntityModelTools implements McpToolBean {
         List<String> errors = new ArrayList<>();
 
         try (var files = Files.list(dir)) {
-            var jsonFiles = files.filter(
-                            f -> f.getFileName().toString().toLowerCase().endsWith(".json"))
+            var jsonFiles = files.filter(f ->
+                            f.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".json"))
                     .sorted()
                     .toList();
 
@@ -128,7 +129,7 @@ public class EntityModelTools implements McpToolBean {
                         // Fallback: derive from filename
                         String fileName = jsonFile.getFileName().toString();
                         modelId = fileName.substring(0, fileName.lastIndexOf('.'))
-                                .toLowerCase()
+                                .toLowerCase(Locale.ROOT)
                                 .replace(' ', '-')
                                 .replace('_', '-');
                     }
@@ -145,7 +146,7 @@ public class EntityModelTools implements McpToolBean {
 
                     var saved = entityModelService.save(wid, modelId, entityModel);
                     // Derive title from modelId
-                    String title = modelId.substring(0, 1).toUpperCase()
+                    String title = modelId.substring(0, 1).toUpperCase(Locale.ROOT)
                             + modelId.substring(1).replace('-', ' ').replace('_', ' ');
                     saved.setTitle(title);
 
@@ -158,7 +159,7 @@ public class EntityModelTools implements McpToolBean {
                 }
             }
         } catch (IOException e) {
-            throw new McpToolException("Failed to list directory: " + directoryPath + " - " + e.getMessage());
+            throw new McpToolException("Failed to list directory: " + directoryPath + " - " + e.getMessage(), e);
         }
 
         Map<String, Object> result = new HashMap<>();

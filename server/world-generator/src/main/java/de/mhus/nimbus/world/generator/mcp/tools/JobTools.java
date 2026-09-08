@@ -96,7 +96,7 @@ public class JobTools implements McpToolBean {
             return response;
 
         } catch (McpJobException e) {
-            throw new McpToolException("Job execution failed: " + e.getMessage());
+            throw new McpToolException("Job execution failed: " + e.getMessage(), e);
         }
     }
 

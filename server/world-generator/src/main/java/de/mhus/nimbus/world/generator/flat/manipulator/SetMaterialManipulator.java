@@ -56,7 +56,7 @@ public class SetMaterialManipulator implements FlatManipulator {
         } catch (NumberFormatException e) {
             // If not a number, try to resolve as material name
             throw new IllegalArgumentException(
-                    "Material must be an integer ID (material names not yet supported): " + materialParam);
+                    "Material must be an integer ID (material names not yet supported): " + materialParam, e);
         }
 
         // Validate parameters

@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -52,6 +53,6 @@ public enum VitalType {
      * @return lowercase vital name
      */
     public String vitalName() {
-        return name().toLowerCase();
+        return name().toLowerCase(Locale.ROOT);
     }
 }

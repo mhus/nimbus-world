@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flat.manipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +75,7 @@ public class MountainManipulator implements FlatManipulator {
 
         // Determine start and end points based on direction
         int startX, startZ, endX, endZ;
-        switch (direction.toLowerCase()) {
+        switch (direction.toLowerCase(Locale.ROOT)) {
             case "corner":
                 startX = x;
                 startZ = z;

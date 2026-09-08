@@ -9,6 +9,7 @@ import de.mhus.nimbus.shared.settings.SettingOptions;
 import de.mhus.nimbus.shared.settings.SettingPassword;
 import de.mhus.nimbus.shared.settings.SettingString;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -195,7 +196,7 @@ public class SSettingsService {
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-        value = value.trim().toLowerCase();
+        value = value.trim().toLowerCase(Locale.ROOT);
         return "true".equals(value) || "1".equals(value) || "yes".equals(value) || "on".equals(value);
     }
 

@@ -77,7 +77,7 @@ public class InitSetupProvider {
 
     private Optional<RRegion> getRegion(String regionId) {
         String resourcePath = regionDataResourceDirectory + "/" + normalizePath(regionId) + ".json";
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         try (var inputStream = classLoader.getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
                 log.debug("Region data resource not found at path: {}", resourcePath);
@@ -93,7 +93,7 @@ public class InitSetupProvider {
 
     private String[] getRegions() {
         String resourceDir = regionDataResourceDirectory;
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         var resource = classLoader.getResource(resourceDir);
         if (resource == null) return new String[0];
         try {
@@ -168,7 +168,7 @@ public class InitSetupProvider {
     // Gibt alle PlayerIds aus den relevanten JSON-Dateien zurück (Dateiname: _userId_characterId_clientType.json)
     private PlayerId[] getPlayers() {
         String resourceDir = playerDataResourceDirectory;
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         var resource = classLoader.getResource(resourceDir);
         if (resource == null) return new PlayerId[0];
         try {
@@ -196,7 +196,7 @@ public class InitSetupProvider {
     public Optional<PlayerData> getPlayer(PlayerId playerId, ClientType clientType) {
         String resourcePath = playerDataResourceDirectory + "/"
                 + normalizePath(playerId.getRawId() + "_" + clientType.tsString()) + ".json";
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         try (var inputStream = classLoader.getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
                 log.debug("Player data resource not found at path: {}", resourcePath);

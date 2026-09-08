@@ -54,7 +54,7 @@ public class GenerateJavaToTsMojo extends AbstractMojo {
         }
 
         // Konfiguration laden (optional)
-        Configuration configuration = null;
+        Configuration configuration;
         try {
             configuration = Configuration.loadIfExists(configFile, getLog());
         } catch (IOException e) {

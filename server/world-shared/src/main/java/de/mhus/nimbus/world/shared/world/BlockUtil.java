@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import java.util.Locale;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -53,7 +54,7 @@ public class BlockUtil {
             return "r"; // default collection
         }
         String[] parts = blockId.split(":", 2);
-        String group = parts[0].toLowerCase();
+        String group = parts[0].toLowerCase(Locale.ROOT);
         // Validate group format
         if (group.matches("^[a-z0-9_-]+$")) {
             return group;

@@ -116,8 +116,7 @@ public class FlatMaterialJobExecutor implements JobExecutor {
         boolean hasOcean = parts.length > 2 && Boolean.parseBoolean(parts[2]);
 
         // Set material definition (using database ID)
-        WFlat updated =
-                flatMaterialService.setMaterialDefinition(flat.getId(), materialId, blockDef, nextBlockDef, hasOcean);
+        flatMaterialService.setMaterialDefinition(flat.getId(), materialId, blockDef, nextBlockDef, hasOcean);
 
         log.info("Set material definition: flatId={}, materialId={}", flatId, materialId);
         return JobResult.success("Material definition set successfully: materialId=" + materialId);
@@ -146,7 +145,7 @@ public class FlatMaterialJobExecutor implements JobExecutor {
         }
 
         // Set material definitions (using database ID)
-        WFlat updated = flatMaterialService.setMaterialDefinitions(flat.getId(), properties);
+        flatMaterialService.setMaterialDefinitions(flat.getId(), properties);
 
         log.info("Set material definitions: flatId={}, count={}", flatId, properties.size());
         return JobResult.success("Material definitions set successfully: count=" + properties.size());
@@ -167,7 +166,7 @@ public class FlatMaterialJobExecutor implements JobExecutor {
         WFlat flat = loadFlat(job, flatId);
 
         // Set palette (using database ID)
-        WFlat updated = flatMaterialService.setPalette(flat.getId(), paletteName);
+        flatMaterialService.setPalette(flat.getId(), paletteName);
 
         log.info("Set material palette: flatId={}, paletteName={}", flatId, paletteName);
         return JobResult.success("Material palette set successfully: " + paletteName);
@@ -227,7 +226,7 @@ public class FlatMaterialJobExecutor implements JobExecutor {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value);
+            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value, e);
         }
     }
 

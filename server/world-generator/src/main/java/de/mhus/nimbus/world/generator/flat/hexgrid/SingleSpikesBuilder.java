@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.generator.flat.manipulator.SpikesManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
@@ -127,7 +128,7 @@ public class SingleSpikesBuilder extends HexGridBuilder {
             return FlatMaterialService.STONE;
         }
 
-        return switch (materialType.toLowerCase()) {
+        return switch (materialType.toLowerCase(Locale.ROOT)) {
             case "stone" -> FlatMaterialService.STONE;
             case "ice", "snow" -> FlatMaterialService.SNOW;
             case "crystal" -> FlatMaterialService.STONE; // Could be special crystal material if available

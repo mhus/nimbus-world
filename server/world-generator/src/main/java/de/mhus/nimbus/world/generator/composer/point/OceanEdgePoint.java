@@ -252,16 +252,6 @@ public class OceanEdgePoint extends Point {
         };
     }
 
-    private de.mhus.nimbus.world.shared.world.HexLocalPosition createCenterPosition(ComposeContext context) {
-        de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-                de.mhus.nimbus.generated.types.HexVector2.builder().q(0).r(0).build();
-
-        int divider = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_POSITION_DIVIDER;
-        int size = context.getHexGridSize() / divider;
-
-        return new de.mhus.nimbus.world.shared.world.HexLocalPosition(hexPosition, divider, size);
-    }
-
     private boolean isAtBiomeEdge(de.mhus.nimbus.generated.types.HexVector2 coord, Area biome, ComposeContext context) {
         // Check all 6 neighbors - if any neighbor is not in this biome, this is an edge
         for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge :
@@ -377,7 +367,6 @@ public class OceanEdgePoint extends Point {
             Direction direction) {
         int dq = coord.getQ() - center.getQ();
         int dr = coord.getR() - center.getR();
-        int ds = -dq - dr; // s = -q-r in cube coordinates
 
         // Score based on direction in hex coordinates (higher score = better match)
         // In pointy-top hex: q-axis is E-W, r-axis is diagonal, s-axis is diagonal

@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -251,7 +252,7 @@ public class EditService {
     private EditAction toAction(String command) {
         if (command == null) return null;
         try {
-            return EditAction.valueOf(command.trim().toUpperCase());
+            return EditAction.valueOf(command.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.debug("Invalid edit action command: {}", command);
         }

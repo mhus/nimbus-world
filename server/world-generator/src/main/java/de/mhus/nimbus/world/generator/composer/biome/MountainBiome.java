@@ -2,9 +2,7 @@ package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.shared.utils.TypeUtil;
 import java.util.*;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -146,67 +144,6 @@ public class MountainBiome extends Biome {
         // No-op: FeatureHexGrids are now managed centrally by BiomeComposer
         // Ridge configuration needs to be implemented in BiomeComposer
         // TODO: Implement ridge configuration in BiomeComposer.configureHexGridsForPlacedBiomes()
-    }
-
-    /**
-     * Configures ridge parameters for mountain grids.
-     * This method is kept for future implementation in BiomeComposer.
-     *
-     * @deprecated Kept for reference - needs to be refactored to work with central registry
-     */
-    @Deprecated(since = "1.0.0", forRemoval = true)
-    private void configureRidgesOld(List<HexVector2> coordinates) {
-        // Build coordinate set for fast neighbor lookups
-        Set<String> coordSet = coordinates.stream()
-                .map(c -> TypeUtil.toStringHexCoord(c.getQ(), c.getR()))
-                .collect(Collectors.toSet());
-
-        // Calculate ridge level: landLevel + landOffset + ridgeOffset (+ oceanLevel in builder)
-        int ridgeLevel = height.getAboveSeaLevel() + height.getLandOffset() + height.getRidgeOffset();
-
-        // For each grid, check neighbors and create ridge configuration
-        // Note: This code is kept for reference but doesn't work without hexGrids
-        /* OLD CODE - doesn't work with central registry
-        for (FeatureHexGrid hexGrid : getHexGrids()) {
-            HexVector2 coord = hexGrid.getCoordinate();
-            if (coord == null) {
-                continue;
-            }
-
-            List<Map<String, Object>> ridgeEntries = new ArrayList<>();
-
-            // Check all 6 hex neighbors using odd-r offset coordinates
-            for (EDGE edge : EDGE.values()) {
-                HexVector2 neighbor = HexMathUtil.getNeighborPosition(coord, edge);
-                String neighborKey = TypeUtil.toStringHexCoord(neighbor.getQ(), neighbor.getR());
-
-                // If neighbor is part of this mountain, add ridge entry
-                if (coordSet.contains(neighborKey)) {
-                    Map<String, Object> entry = new HashMap<>();
-                    entry.put("side", edge.name());
-                    entry.put("level", ridgeLevel);
-                    ridgeEntries.add(entry);
-                }
-            }
-
-            // Add ridge configuration if there are connected neighbors
-            if (!ridgeEntries.isEmpty()) {
-                try {
-                    ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
-                    String ridgeJson = mapper.writeValueAsString(ridgeEntries);
-                    hexGrid.addParameter("g_ridge", ridgeJson);
-                    log.debug("Added ridge config to grid {}: {} neighbors",
-                        coord.getQ() + ";" + coord.getR(), ridgeEntries.size());
-                } catch (Exception e) {
-                    log.error("Failed to create ridge JSON for grid {}: {}",
-                        coord.getQ() + ";" + coord.getR(), e.getMessage());
-                }
-            }
-        }
-
-        log.debug("Configured {} mountain grids with ridge parameters (ridgeLevel={})",
-            getHexGrids().size(), ridgeLevel);
-        */
     }
 
     // getHexNeighbor, getHexDirectionDelta, getDirectionSide replaced by

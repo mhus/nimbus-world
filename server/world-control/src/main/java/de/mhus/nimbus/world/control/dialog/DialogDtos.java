@@ -9,6 +9,8 @@ import java.util.Map;
  * DTOs for the NPC dialog system.
  * Used for JSON deserialization from WAnything.data and REST API responses.
  */
+// PMD: intentional namespace holder for the dialog DTO records below
+@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
 public final class DialogDtos {
 
     private DialogDtos() {}

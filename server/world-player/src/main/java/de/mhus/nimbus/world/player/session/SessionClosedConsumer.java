@@ -4,6 +4,7 @@ package de.mhus.nimbus.world.player.session;
  * Consumer interface for session close events.
  * Implementations are notified when a session is closed or removed.
  */
+@FunctionalInterface
 public interface SessionClosedConsumer {
 
     /**

@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -117,13 +118,13 @@ public class DocumentTools implements McpToolBean {
 
         List<WDocument> allDocs = documentService.findByCollection(nimbusShared, "mcp");
 
-        String queryLower = query.toLowerCase();
+        String queryLower = query.toLowerCase(Locale.ROOT);
         List<WDocument> filtered = allDocs.stream()
                 .filter(doc -> {
                     boolean matchTitle = doc.getTitle() != null
-                            && doc.getTitle().toLowerCase().contains(queryLower);
+                            && doc.getTitle().toLowerCase(Locale.ROOT).contains(queryLower);
                     boolean matchContent = doc.getContent() != null
-                            && doc.getContent().toLowerCase().contains(queryLower);
+                            && doc.getContent().toLowerCase(Locale.ROOT).contains(queryLower);
                     return matchTitle || matchContent;
                 })
                 .collect(Collectors.toList());

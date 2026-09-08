@@ -158,7 +158,6 @@ public class WorldTimeService {
         // Normalize month to year range
         currentMonth = ((currentMonth % monthsPerYear) + monthsPerYear) % monthsPerYear;
 
-        int winterStart = seasonMonths.get(0);
         int springStart = seasonMonths.get(1);
         int summerStart = seasonMonths.get(2);
         int autumnStart = seasonMonths.get(3);

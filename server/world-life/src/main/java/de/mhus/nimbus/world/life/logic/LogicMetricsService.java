@@ -117,8 +117,8 @@ public class LogicMetricsService {
         final AtomicLong errorCount = new AtomicLong();
         final AtomicLong totalDurationMs = new AtomicLong();
         volatile long minDurationMs = Long.MAX_VALUE;
-        volatile long maxDurationMs = 0;
-        volatile long lastDurationMs = 0;
+        volatile long maxDurationMs;
+        volatile long lastDurationMs;
         volatile Instant lastFired;
         volatile Instant lastError;
 

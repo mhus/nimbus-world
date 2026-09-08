@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.area;
 
+import java.util.Locale;
 import lombok.Getter;
 
 @Getter
@@ -22,9 +23,9 @@ public enum DistanceRange {
             return null;
         }
         try {
-            return DistanceRange.valueOf(value.toUpperCase());
+            return DistanceRange.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid DistanceRange value: " + value);
+            throw new IllegalArgumentException("Invalid DistanceRange value: " + value, e);
         }
     }
 }

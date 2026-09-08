@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -86,14 +87,16 @@ public class EProgressController extends BaseEditorController {
 
             // Apply text search filter
             if (Strings.isNotBlank(query)) {
-                String q = query.toLowerCase();
+                String q = query.toLowerCase(Locale.ROOT);
                 all = all.stream()
                         .filter(p -> (p.getPlayerId() != null
-                                        && p.getPlayerId().toLowerCase().contains(q))
+                                        && p.getPlayerId()
+                                                .toLowerCase(Locale.ROOT)
+                                                .contains(q))
                                 || (p.getType() != null
-                                        && p.getType().toLowerCase().contains(q))
+                                        && p.getType().toLowerCase(Locale.ROOT).contains(q))
                                 || (p.getQuest() != null
-                                        && p.getQuest().toLowerCase().contains(q)))
+                                        && p.getQuest().toLowerCase(Locale.ROOT).contains(q)))
                         .collect(Collectors.toList());
             }
 

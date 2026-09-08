@@ -234,13 +234,13 @@ public class WFlat implements Identifiable {
     public void setLevels(byte[] levels) {
         if (levels == null) throw new IllegalArgumentException("Levels cannot be null");
         if (levels.length != sizeX * sizeZ) throw new IllegalArgumentException("Levels array size mismatch");
-        this.levels = levels;
+        this.levels = levels.clone();
     }
 
     public void setColumns(byte[] columns) {
         if (columns == null) throw new IllegalArgumentException("Columns cannot be null");
         if (columns.length != sizeX * sizeZ) throw new IllegalArgumentException("Columns array size mismatch");
-        this.columns = columns;
+        this.columns = columns.clone();
     }
 
     @Getter
@@ -276,10 +276,10 @@ public class WFlat implements Identifiable {
     // default, so there is nothing for Jackson's constructor creator to lose.
     @AllArgsConstructor
     public static class OffsetDefinition {
-        private double one = 0;
-        private double two = 0;
-        private double oneEdge = 0;
-        private double twoEdge = 0;
+        private double one;
+        private double two;
+        private double oneEdge;
+        private double twoEdge;
     }
 
     @Data

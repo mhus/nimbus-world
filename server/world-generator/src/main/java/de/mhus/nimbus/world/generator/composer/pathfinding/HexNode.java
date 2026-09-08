@@ -143,7 +143,7 @@ public class HexNode {
     public void linkToOppositeEdge(HexNode oppositeNode) {
         this.linkedEdgeNode = oppositeNode;
         // Bidirectional link
-        if (oppositeNode.linkedEdgeNode != this) {
+        if (oppositeNode.linkedEdgeNode != this) { // NOPMD: identity comparison is deliberate
             oppositeNode.linkedEdgeNode = this;
         }
     }

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
+import java.util.Locale;
+
 public enum Direction {
     N,
     NE,
@@ -15,9 +17,9 @@ public enum Direction {
             return null;
         }
         try {
-            return Direction.valueOf(value.toUpperCase());
+            return Direction.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid Direction value: " + value);
+            throw new IllegalArgumentException("Invalid Direction value: " + value, e);
         }
     }
 }

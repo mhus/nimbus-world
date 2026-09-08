@@ -114,8 +114,8 @@ public class MessageSessionService {
                         && session.getWorldId() != null
                         && session.getWorldId().getFullId().startsWith(target);
             case HEX_GRID ->
-                target != null
-                        && hexQ != null
+                // target null check omitted: equals() handles null arguments
+                hexQ != null
                         && hexR != null
                         && session.getWorldId() != null
                         && session.getWorldId().getFullId().equals(target)

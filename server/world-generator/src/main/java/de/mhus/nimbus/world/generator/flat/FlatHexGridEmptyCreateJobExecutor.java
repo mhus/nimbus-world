@@ -155,7 +155,7 @@ public class FlatHexGridEmptyCreateJobExecutor implements JobExecutor {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value);
+            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value, e);
         }
     }
 }

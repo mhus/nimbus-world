@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
+import java.util.Locale;
+
 /**
  * Width categories for flow features.
  * This enum is server-side only and not exposed to TypeScript.
@@ -30,9 +32,9 @@ public enum FlowWidth {
             return null;
         }
         try {
-            return FlowWidth.valueOf(value.toUpperCase());
+            return FlowWidth.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid FlowWidth value: " + value);
+            throw new IllegalArgumentException("Invalid FlowWidth value: " + value, e);
         }
     }
 }

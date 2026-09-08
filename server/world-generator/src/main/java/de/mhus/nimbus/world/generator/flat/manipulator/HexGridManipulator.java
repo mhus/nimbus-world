@@ -15,6 +15,7 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +77,8 @@ public class HexGridManipulator implements FlatManipulator {
 
         WWorld world = worldService.getByWorldId(flat.getWorldId()).orElseThrow();
 
-        String stepStr = parameters.getOrDefault("step", "ALL").toUpperCase().trim();
+        String stepStr =
+                parameters.getOrDefault("step", "ALL").toUpperCase(Locale.ROOT).trim();
         HexGridBuilderService.STEP step = HexGridBuilderService.STEP.valueOf(stepStr);
 
         // Load hex grid configuration

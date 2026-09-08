@@ -105,7 +105,7 @@ public class PathwayBroadcastListener {
                 int cz = chunkNode.has("cz") ? chunkNode.get("cz").asInt() : 0;
 
                 for (Map.Entry<String, List<EntityPathway>> entry : pathwaysByOriginSession.entrySet()) {
-                    String originSessionId = entry.getKey().equals("none") ? null : entry.getKey();
+                    String originSessionId = "none".equals(entry.getKey()) ? null : entry.getKey();
                     List<EntityPathway> pathways = entry.getValue();
 
                     JsonNode pathwaysArray = engineMapper.valueToTree(pathways);

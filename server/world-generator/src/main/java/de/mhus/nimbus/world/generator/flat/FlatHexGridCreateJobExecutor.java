@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -166,10 +167,12 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                 // Parse border direction
                 WHexGrid.EDGE border;
                 try {
-                    border = WHexGrid.EDGE.valueOf(borderStr.toUpperCase());
+                    border = WHexGrid.EDGE.valueOf(borderStr.toUpperCase(Locale.ROOT));
                 } catch (IllegalArgumentException e) {
-                    throw new JobExecutionException("Invalid border direction: " + borderStr
-                            + ". Valid values: TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT");
+                    throw new JobExecutionException(
+                            "Invalid border direction: " + borderStr
+                                    + ". Valid values: TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT",
+                            e);
                 }
 
                 log.info(
@@ -271,7 +274,7 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value);
+            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value, e);
         }
     }
 

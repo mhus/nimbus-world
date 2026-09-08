@@ -4,6 +4,7 @@ package de.mhus.nimbus.world.generator.modelbuilder;
  * Exception thrown when model building fails.
  */
 public class ModelBuilderException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     public ModelBuilderException(String message) {
         super(message);

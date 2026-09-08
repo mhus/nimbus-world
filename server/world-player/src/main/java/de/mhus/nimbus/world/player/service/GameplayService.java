@@ -307,7 +307,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param world   WWorld whose gameplay settings to use
      */
     public void initSessionGameplay(PlayerSession session, WWorld world) {
-        String gameplay = null;
+        String gameplay;
         if (session.isEditActor()) {
             gameplay = EditorGameplay.class.getSimpleName();
         } else {
@@ -498,7 +498,6 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         boolean removed = currentCount - quantity <= 0;
 
         // If item fully removed, clean up shortcuts referencing this item
-        boolean shortcutsChanged = false;
         if (removed
                 && character.getPublicData() != null
                 && character.getPublicData().getShortcuts() != null) {
@@ -515,7 +514,6 @@ public class GameplayService implements SessionAuthenticatedConsumer {
                     shortcuts.remove(key);
                 }
                 characterService.updateCharater(character);
-                shortcutsChanged = true;
             }
         }
 

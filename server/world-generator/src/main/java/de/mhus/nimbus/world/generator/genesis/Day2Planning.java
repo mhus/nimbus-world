@@ -36,12 +36,12 @@ public class Day2Planning extends MethodBasedWorkflow {
 
         var instructionsId = params.get(GenesisConst.INSTRUCTIONS_DOCUMENT_ID);
         if (Strings.isBlank(instructionsId)) {
-            throw new WorkflowException(null, "instructions is required");
+            throw new WorkflowException((String) null, "instructions is required");
         }
 
         WorldId wid = WorldId.of(worldId).orElseThrow();
         if (documentService.findByDocumentId(wid, instructionsId).isEmpty()) {
-            throw new WorkflowException(null, "instructions document not found: " + instructionsId);
+            throw new WorkflowException((String) null, "instructions document not found: " + instructionsId);
         }
 
         // Optional epoch parameters (default: epoch=0, parentEpoch=null)
@@ -76,7 +76,8 @@ public class Day2Planning extends MethodBasedWorkflow {
         if (documentService
                 .findByDocumentId(WorldId.of(context.getWorldId()).orElseThrow(), translationDocumentId)
                 .isEmpty()) {
-            throw new WorkflowException(null, "translated instruction document not found: " + translationDocumentId);
+            throw new WorkflowException(
+                    (String) null, "translated instruction document not found: " + translationDocumentId);
         }
 
         context.updateWorkflowStatus("applyInstruction");
@@ -101,7 +102,7 @@ public class Day2Planning extends MethodBasedWorkflow {
         if (documentService
                 .findByDocumentId(WorldId.of(context.getWorldId()).orElseThrow(), compositionDocumentId)
                 .isEmpty()) {
-            throw new WorkflowException(null, "composition document not found: " + compositionDocumentId);
+            throw new WorkflowException((String) null, "composition document not found: " + compositionDocumentId);
         }
 
         // Store result data for later completion
@@ -133,7 +134,8 @@ public class Day2Planning extends MethodBasedWorkflow {
 
         // Verify enriched document exists
         if (documentService.findByDocumentId(wid, enrichedDocumentId).isEmpty()) {
-            throw new WorkflowException(null, "enriched composition document not found: " + enrichedDocumentId);
+            throw new WorkflowException(
+                    (String) null, "enriched composition document not found: " + enrichedDocumentId);
         }
 
         // Write epoch/parentEpoch into composition document
@@ -181,7 +183,8 @@ public class Day2Planning extends MethodBasedWorkflow {
                 }
             });
         } catch (RuntimeException e) {
-            throw new WorkflowException(null, "Failed to update composition with epoch data: " + e.getMessage());
+            throw new WorkflowException(
+                    (String) null, "Failed to update composition with epoch data: " + e.getMessage(), e);
         }
     }
 
@@ -201,5 +204,5 @@ public class Day2Planning extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {}
 }

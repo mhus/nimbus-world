@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,9 @@ public class PlayerAssetController extends BaseEditorController {
         @ApiResponse(responseCode = "400", description = "Not authenticated or invalid request"),
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
+    // PMD: the stream is handed over to Spring; ResourceHttpMessageConverter
+    // closes it while writing the response body
+    @SuppressWarnings("PMD.CloseResource")
     public ResponseEntity<?> getAssetFile(
             @Parameter(description = "Asset path") @PathVariable String path, HttpServletRequest request) {
 
@@ -107,7 +111,7 @@ public class PlayerAssetController extends BaseEditorController {
         if (path == null || !path.contains(".")) {
             return "application/octet-stream";
         }
-        String ext = path.substring(path.lastIndexOf('.')).toLowerCase();
+        String ext = path.substring(path.lastIndexOf('.')).toLowerCase(Locale.ROOT);
         return switch (ext) {
             case ".png" -> "image/png";
             case ".jpg", ".jpeg" -> "image/jpeg";

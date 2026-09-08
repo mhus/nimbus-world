@@ -11,6 +11,7 @@ import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +79,7 @@ public class LoginHandler implements MessageHandler {
         // waiting forever without a response.
         ClientType webClientType;
         try {
-            webClientType = ClientType.valueOf(clientTypeStr.trim().toUpperCase());
+            webClientType = ClientType.valueOf(clientTypeStr.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warn("Unknown clientType '{}', defaulting to WEB", clientTypeStr);
             webClientType = ClientType.WEB;

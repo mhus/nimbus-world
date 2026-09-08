@@ -36,7 +36,7 @@ public class CompositionContext {
      * Placement tolerance (jitter) in hex distance.
      * 0 = exact placement, higher values allow more offset.
      */
-    private int placementTolerance = 0;
+    private int placementTolerance;
 
     /**
      * Maximum retries for placing a single biome

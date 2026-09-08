@@ -56,7 +56,6 @@ public final class EpochArrayHelper {
         List<Document> docs = mongoTemplate.find(worldQuery, Document.class, collection);
 
         Set<Integer> usedEpochs = new HashSet<>();
-        int invalidEpochDocs = 0;
         int duplicateRepairs = 0;
         int undefinedRepairs = 0;
 
@@ -107,9 +106,6 @@ public final class EpochArrayHelper {
 
             for (Integer epoch : epoches) {
                 usedEpochs.add(epoch);
-                if (!definedEpochs.contains(epoch)) {
-                    invalidEpochDocs++;
-                }
             }
         }
 

@@ -52,5 +52,5 @@ public interface Workflow {
      * @param status
      * @throws WorkflowException
      */
-    void finalize(WorkflowContext context, String status) throws WorkflowException;
+    void completeWorkflow(WorkflowContext context, String status) throws WorkflowException;
 }

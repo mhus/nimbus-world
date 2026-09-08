@@ -128,7 +128,6 @@ public class NpcGeneratorService {
      */
     private String loadLoreContext(WorldId worldId, List<String> loreNames) {
         var sb = new StringBuilder();
-        String npcDescription = null;
 
         // Auto-load all lore: documents for general context
         try {
@@ -591,6 +590,8 @@ public class NpcGeneratorService {
             Double speed) {}
 
     public static class NpcGenerationException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public NpcGenerationException(String message) {
             super(message);
         }

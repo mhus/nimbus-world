@@ -95,7 +95,6 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 if (itemOpt.isPresent()) {
                     Item publicData = itemOpt.get().getPublicData();
                     if (publicData != null) {
-                        itemType = publicData.getItemType();
                         texture = publicData.getTexture();
                         if (!Strings.isBlank(publicData.getName())) {
                             name = publicData.getName();
@@ -215,14 +214,12 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         // Enrich item to build ShortcutDefinition server-side
         String texture = null;
         String name = body.itemId();
-        String itemType = null;
         boolean shortcutAllowed = false;
 
         Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, body.itemId());
         if (itemOpt.isPresent()) {
             Item publicData = itemOpt.get().getPublicData();
             if (publicData != null) {
-                itemType = publicData.getItemType();
                 texture = publicData.getTexture();
                 if (!Strings.isBlank(publicData.getName())) {
                     name = publicData.getName();

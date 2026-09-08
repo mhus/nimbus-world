@@ -116,7 +116,7 @@ public class ProgressTools implements McpToolBean {
                     "type", saved.getType(),
                     "status", "saved");
         } catch (Exception e) {
-            throw new McpToolException("Failed to save progress: " + e.getMessage());
+            throw new McpToolException("Failed to save progress: " + e.getMessage(), e);
         }
     }
 

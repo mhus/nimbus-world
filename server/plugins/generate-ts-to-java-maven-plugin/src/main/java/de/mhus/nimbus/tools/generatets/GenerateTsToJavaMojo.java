@@ -288,23 +288,6 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         return parts.toArray(new String[0]);
     }
 
-    private void deleteRecursively(File f) throws IOException {
-        if (f == null || !f.exists()) return;
-        if (f.isFile()) {
-            if (!f.delete()) throw new IOException("Failed to delete file: " + f);
-            return;
-        }
-        java.nio.file.Path root = f.toPath();
-        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root)) {
-            java.util.List<java.nio.file.Path> list =
-                    walk.sorted(java.util.Comparator.reverseOrder()).collect(java.util.stream.Collectors.toList());
-            for (java.nio.file.Path p : list) {
-                java.io.File x = p.toFile();
-                if (!x.delete() && x.exists()) throw new IOException("Failed to delete: " + x);
-            }
-        }
-    }
-
     private void writeModelToFile(TsModel model) throws IOException {
         // Ensure target directory
         if (modelFile == null) {
@@ -642,7 +625,7 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         List<File> result = new ArrayList<>();
         if (sourceDirs != null) {
             for (String s : sourceDirs) {
-                if (s == null || s.trim().isEmpty()) continue;
+                if (s == null || s.isBlank()) continue;
                 File f = new File(s);
                 if (!f.exists()) {
                     getLog().warn("sourceDir does not exist: " + s);
@@ -699,7 +682,7 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
         }
 
         // Add interface to implements list if found
-        if (interfaceName != null && !interfaceName.trim().isEmpty()) {
+        if (interfaceName != null && !interfaceName.isBlank()) {
             enumType.getImplementsNames().add(interfaceName.trim());
             getLog().info("DEBUG: Added interface " + interfaceName + " to enum " + enumName
                     + ". Implements list size: " + enumType.getImplementsNames().size());

@@ -18,7 +18,7 @@ public class FlatPainter {
      * column painter (or an explicit definition). Without this, setColumnPainter
      * had no effect because the guards checked the never-set {@code definition}.
      */
-    private boolean paintColumns = false;
+    private boolean paintColumns;
 
     private Painter painter = DEFAULT_PAINTER;
 
@@ -26,6 +26,7 @@ public class FlatPainter {
         this.flat = flat;
     }
 
+    @FunctionalInterface
     public interface Painter {
         int getLevel(WFlat flat, int x, int z, int level);
     }
@@ -34,7 +35,7 @@ public class FlatPainter {
         private final Painter[] painters;
 
         public ChainPainter(Painter... painters) {
-            this.painters = painters;
+            this.painters = painters.clone();
         }
 
         @Override
@@ -69,6 +70,7 @@ public class FlatPainter {
         else this.painter = painter;
     }
 
+    @FunctionalInterface
     public interface ColumnPainter {
         int getColumn(WFlat flat, int x, int z, int level, int definition);
     }

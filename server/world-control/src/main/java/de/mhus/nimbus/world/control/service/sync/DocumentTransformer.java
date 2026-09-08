@@ -98,7 +98,7 @@ public class DocumentTransformer {
                     applyPrefixMappingWithContext(item, prefixMapping, parentKey);
                 } else if (item instanceof String && list instanceof java.util.ArrayList) {
                     // For string lists that might be paths (only in specific contexts)
-                    if (parentKey != null && (parentKey.equals("textures") || parentKey.contains("texture"))) {
+                    if (parentKey != null && ("textures".equals(parentKey) || parentKey.contains("texture"))) {
                         String mappedValue = applyPrefixToPath((String) item, prefixMapping);
                         if (!mappedValue.equals(item)) {
                             ((java.util.ArrayList<Object>) list).set(i, mappedValue);
@@ -142,7 +142,7 @@ public class DocumentTransformer {
         }
 
         // Map audio.path
-        return fieldName.equals("path") && parentKey != null && parentKey.equals("audio");
+        return "path".equals(fieldName) && parentKey != null && "audio".equals(parentKey);
     }
 
     /**
@@ -184,7 +184,7 @@ public class DocumentTransformer {
         String pathWithoutPrefix;
 
         if (path.contains(":")) {
-            int colonIndex = path.indexOf(":");
+            int colonIndex = path.indexOf(':');
             currentPrefix = path.substring(0, colonIndex);
             pathWithoutPrefix = path.substring(colonIndex + 1);
 

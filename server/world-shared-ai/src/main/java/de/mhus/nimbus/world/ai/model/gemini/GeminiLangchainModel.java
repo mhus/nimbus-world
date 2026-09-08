@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.ai.model.SimpleRateLimiter;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +177,7 @@ public class GeminiLangchainModel implements LangchainModel {
     private int getModelMaxTokens(String modelName) {
         if (modelName == null) return 32000; // Default for modern models
 
-        String lowerName = modelName.toLowerCase();
+        String lowerName = modelName.toLowerCase(Locale.ROOT);
 
         // Gemini 2.5 Pro and Gemini 3 Pro: up to 64,000 tokens
         if (lowerName.contains("2.5") && lowerName.contains("pro")) {
@@ -208,7 +209,7 @@ public class GeminiLangchainModel implements LangchainModel {
      */
     private boolean isFlashModel(String modelName) {
         if (modelName == null) return false;
-        String lowerName = modelName.toLowerCase();
+        String lowerName = modelName.toLowerCase(Locale.ROOT);
         return lowerName.contains("flash");
     }
 

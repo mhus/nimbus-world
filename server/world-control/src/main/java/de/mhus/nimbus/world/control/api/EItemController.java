@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -271,13 +272,13 @@ public class EItemController extends BaseEditorController {
             }
             // Trading/price fields
             if (!Strings.isBlank(request.itemTier())) {
-                result.setItemTier(
-                        ItemTier.valueOf(request.itemTier().toUpperCase().trim()));
+                result.setItemTier(ItemTier.valueOf(
+                        request.itemTier().toUpperCase(Locale.ROOT).trim()));
                 needsSave = true;
             }
             if (!Strings.isBlank(request.rarityCategory())) {
                 result.setRarityCategory(RarityCategory.valueOf(
-                        request.rarityCategory().toUpperCase().trim()));
+                        request.rarityCategory().toUpperCase(Locale.ROOT).trim()));
                 needsSave = true;
             }
             if (request.basePrice() != null) {

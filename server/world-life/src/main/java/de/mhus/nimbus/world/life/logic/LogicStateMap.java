@@ -21,6 +21,7 @@ import java.util.Set;
  * Changed flags are tracked as qualified names: "puzzle_door.key1".
  */
 public class LogicStateMap extends HashMap<String, Object> {
+    private static final long serialVersionUID = 1L;
 
     private final Set<String> changedKeys = new HashSet<>();
 
@@ -124,6 +125,7 @@ public class LogicStateMap extends HashMap<String, Object> {
      * Inner map that tracks changes and reports them to the parent LogicStateMap.
      */
     class TrackingMap extends HashMap<String, Object> {
+        private static final long serialVersionUID = 1L;
         private final String packageName;
 
         TrackingMap(String packageName, Map<String, Object> source) {

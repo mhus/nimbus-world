@@ -62,8 +62,8 @@ public class ClientCommandHandler implements MessageHandler {
     private final ObjectMapper objectMapper;
 
     // Server IP and port for origin in CommandContext (cached)
-    private String serverIp = null;
-    private Integer serverPort = null;
+    private String serverIp;
+    private Integer serverPort;
 
     // Static prefix mapping for command routing
     private static final Map<String, String> PREFIX_ROUTING = Map.of(

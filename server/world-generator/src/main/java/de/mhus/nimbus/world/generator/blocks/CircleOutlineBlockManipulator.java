@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.blocks;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -93,9 +94,9 @@ public class CircleOutlineBlockManipulator implements BlockManipulator {
         if (plane == null || plane.isBlank()) {
             plane = "Y";
         }
-        plane = plane.toUpperCase();
+        plane = plane.toUpperCase(Locale.ROOT);
 
-        if (!plane.equals("Y") && !plane.equals("X") && !plane.equals("Z")) {
+        if (!"Y".equals(plane) && !"X".equals(plane) && !"Z".equals(plane)) {
             return ManipulatorResult.error("Invalid plane '" + plane + "'. Must be Y, X, or Z");
         }
 

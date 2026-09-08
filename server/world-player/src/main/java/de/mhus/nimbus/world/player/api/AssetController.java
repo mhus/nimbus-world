@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.InputStream;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +48,9 @@ public class AssetController {
         @ApiResponse(responseCode = "200", description = "Asset binary"),
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
+    // PMD: the stream is handed over to Spring; ResourceHttpMessageConverter
+    // closes it while writing the response body
+    @SuppressWarnings("PMD.CloseResource")
     public ResponseEntity<?> getAssetByPath(
             @PathVariable String worldId, @PathVariable String assetPath, HttpServletRequest request) {
 
@@ -136,7 +140,7 @@ public class AssetController {
         String path = asset.getPath();
         if (path == null) return MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-        String lowerPath = path.toLowerCase();
+        String lowerPath = path.toLowerCase(Locale.ROOT);
         if (lowerPath.endsWith(".png")) return "image/png";
         if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) return "image/jpeg";
         if (lowerPath.endsWith(".gif")) return "image/gif";

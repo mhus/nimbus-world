@@ -1,5 +1,7 @@
 package de.mhus.nimbus.shared.service;
 
+import java.util.Locale;
+
 /**
  * Import mode for handling existing entities during import.
  */
@@ -27,7 +29,7 @@ public enum ImportMode {
             return SKIP;
         }
         try {
-            return ImportMode.valueOf(value.toUpperCase());
+            return ImportMode.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return SKIP;
         }

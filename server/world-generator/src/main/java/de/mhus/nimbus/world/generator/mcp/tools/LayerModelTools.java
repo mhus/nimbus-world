@@ -311,7 +311,7 @@ public class LayerModelTools implements McpToolBean {
                     .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
             sourceModel = reader.readValue(jsonData);
         } catch (Exception e) {
-            throw new McpToolException("Failed to parse JSON: " + e.getMessage());
+            throw new McpToolException("Failed to parse JSON: " + e.getMessage(), e);
         }
 
         // Apply overrides

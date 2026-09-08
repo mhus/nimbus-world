@@ -126,7 +126,7 @@ public class RealityValidator {
             return;
         }
         RealityPlan.ItemClass resolved = classes.get(key);
-        if (resolved != null && resolved != owner) {
+        if (resolved != null && resolved != owner) { // NOPMD: owner identity comparison is deliberate
             report.error(
                     "item_class_key_collision",
                     "Item class '" + identity + "' collides on '" + key + "' with item class '"

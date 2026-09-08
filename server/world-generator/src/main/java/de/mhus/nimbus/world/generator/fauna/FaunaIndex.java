@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.world.WAnything;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -39,7 +40,7 @@ public class FaunaIndex {
      */
     public List<String> getFaunaOptionsForBiome(String biomePrefix) {
         if (biomePrefix == null) return new ArrayList<>();
-        return new ArrayList<>(faunaByBiomePrefix.getOrDefault(biomePrefix.toLowerCase(), List.of()));
+        return new ArrayList<>(faunaByBiomePrefix.getOrDefault(biomePrefix.toLowerCase(Locale.ROOT), List.of()));
     }
 
     /**
@@ -85,8 +86,8 @@ public class FaunaIndex {
     private static String extractBiomePrefix(String name) {
         int underscoreIndex = name.indexOf('_');
         if (underscoreIndex > 0) {
-            return name.substring(0, underscoreIndex).toLowerCase();
+            return name.substring(0, underscoreIndex).toLowerCase(Locale.ROOT);
         }
-        return name.toLowerCase();
+        return name.toLowerCase(Locale.ROOT);
     }
 }

@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.shared.util.ModelSelector;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import java.util.*;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -367,7 +368,7 @@ public class BlockManipulatorService {
         // Parse comma-separated transformations
         String[] transformations = transformStr.split(",");
         for (String transformation : transformations) {
-            transformation = transformation.trim().toLowerCase();
+            transformation = transformation.trim().toLowerCase(Locale.ROOT);
 
             switch (transformation) {
                 case "position":
@@ -622,7 +623,7 @@ public class BlockManipulatorService {
         if (painterType != null && !painterType.isBlank()) {
             initializePainterProvidersIfNeeded();
             de.mhus.nimbus.world.generator.blocks.painter.BlockPainterProvider provider =
-                    painterProviderMap.get(painterType.toLowerCase());
+                    painterProviderMap.get(painterType.toLowerCase(Locale.ROOT));
 
             if (provider != null) {
                 EditCachePainter.BlockPainter customPainter = provider.createPainter(context);
@@ -677,7 +678,7 @@ public class BlockManipulatorService {
             return null;
         }
 
-        return switch (flavorName.toLowerCase()) {
+        return switch (flavorName.toLowerCase(Locale.ROOT)) {
             case "no-overwrite" -> new EditCachePainter.NoOverwritePainter(basePainter);
             default -> {
                 log.warn("Unknown painter flavor: {}", flavorName);

@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -106,10 +107,12 @@ public class ChestTools implements McpToolBean {
 
         WChest.ChestType chestType;
         try {
-            chestType = WChest.ChestType.valueOf(type.toUpperCase());
+            chestType = WChest.ChestType.valueOf(type.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid chest type: " + type
-                    + ". Must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL");
+            throw new McpToolException(
+                    "Invalid chest type: " + type
+                            + ". Must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL",
+                    e);
         }
 
         if ((chestType == WChest.ChestType.PLAYER
@@ -129,7 +132,7 @@ public class ChestTools implements McpToolBean {
 
             return Map.of("name", chest.getName(), "worldId", worldId, "type", chestType.name(), "status", "created");
         } catch (Exception e) {
-            throw new McpToolException("Failed to create chest: " + e.getMessage());
+            throw new McpToolException("Failed to create chest: " + e.getMessage(), e);
         }
     }
 
@@ -196,7 +199,8 @@ public class ChestTools implements McpToolBean {
             throw new McpToolException("worldId and name are required");
         }
 
-        WChest chest = chestService
+        // Fail early if the chest does not exist
+        chestService
                 .getByWorldIdAndName(worldId, name)
                 .orElseThrow(() -> new McpToolException("Chest not found: " + name));
 

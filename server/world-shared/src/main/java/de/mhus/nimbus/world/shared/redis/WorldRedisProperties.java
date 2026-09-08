@@ -13,9 +13,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class WorldRedisProperties {
     private String host = "localhost";
     private int port = 6379;
-    private int database = 0;
+    private int database;
     private String password; // optional
-    private boolean ssl = false;
+    private boolean ssl;
 
     @Value("${world.client.redis-url:}")
     private String redisUrl;
@@ -37,7 +37,7 @@ public class WorldRedisProperties {
                     } catch (Exception ignored) {
                     }
                 }
-                ssl = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("rediss");
+                ssl = uri.getScheme() != null && "rediss".equalsIgnoreCase(uri.getScheme());
             } catch (Exception ignored) {
             }
         }

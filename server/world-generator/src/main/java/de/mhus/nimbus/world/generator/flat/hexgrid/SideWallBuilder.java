@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
@@ -120,7 +121,7 @@ public class SideWallBuilder extends HexGridBuilder {
      * Parse side string to SIDE enum.
      */
     private WHexGrid.EDGE parseSide(String sideStr) {
-        switch (sideStr.toUpperCase()) {
+        switch (sideStr.toUpperCase(Locale.ROOT)) {
             case "NW":
             case "NORTH_WEST":
                 return WHexGrid.EDGE.NORTH_WEST;

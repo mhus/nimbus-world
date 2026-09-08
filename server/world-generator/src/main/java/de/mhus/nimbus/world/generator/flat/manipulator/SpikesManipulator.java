@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -252,7 +253,7 @@ public class SpikesManipulator implements FlatManipulator {
     private SpikesPoint.Density parseDensity(String value) {
         if (value == null) return SpikesPoint.Density.MEDIUM;
         try {
-            return SpikesPoint.Density.valueOf(value.toUpperCase());
+            return SpikesPoint.Density.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warn("Invalid density value '{}', using MEDIUM", value);
             return SpikesPoint.Density.MEDIUM;
@@ -265,7 +266,7 @@ public class SpikesManipulator implements FlatManipulator {
     private SpikesPoint.Amount parseAmount(String value) {
         if (value == null) return SpikesPoint.Amount.NORMAL;
         try {
-            return SpikesPoint.Amount.valueOf(value.toUpperCase());
+            return SpikesPoint.Amount.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warn("Invalid amount value '{}', using NORMAL", value);
             return SpikesPoint.Amount.NORMAL;

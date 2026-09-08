@@ -289,7 +289,6 @@ public class EBlockTypeController extends BaseEditorController {
         WorldId actualWid = WorldId.of(actualWorldId)
                 .orElseThrow(() -> new IllegalStateException("Invalid worldId in entity: " + actualWorldId));
 
-        final String finalBlockId = blockId;
         Optional<WBlockType> updated = blockTypeService.update(actualWid, blockId, blockType -> {
             if (request.publicData() != null) {
                 blockType.setPublicData(request.publicData());

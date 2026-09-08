@@ -21,6 +21,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Locale;
 import java.util.Optional;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -226,7 +227,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
 
             // Legacy color-key transparency (fallback only). Skipped when a real transparent
             // background was requested, because the model already returns a genuine alpha channel then.
-            if (!transparent && transparency != null && !transparency.equalsIgnoreCase("false")) {
+            if (!transparent && transparency != null && !"false".equalsIgnoreCase(transparency)) {
                 image = makeColorTransparent(image, transparency, uniquePath);
             }
 
@@ -613,7 +614,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
 
             // Calculate Y offset based on preset
             int yOffset;
-            switch (preset.toLowerCase()) {
+            switch (preset.toLowerCase(Locale.ROOT)) {
                 case "squaretop":
                     yOffset = 0;
                     break;
@@ -693,7 +694,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      */
     private int[] parseSize(String sizeStr) throws JobExecutionException {
         try {
-            String[] parts = sizeStr.toLowerCase().split("x");
+            String[] parts = sizeStr.toLowerCase(Locale.ROOT).split("x");
             if (parts.length != 2) {
                 throw new JobExecutionException("Invalid size format: " + sizeStr + " (expected: WxH, e.g., 16x16)");
             }
@@ -712,7 +713,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             return new int[] {width, height};
 
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid size format: " + sizeStr + " (expected: WxH, e.g., 16x16)");
+            throw new JobExecutionException("Invalid size format: " + sizeStr + " (expected: WxH, e.g., 16x16)", e);
         }
     }
 
@@ -724,7 +725,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
      */
     private String getMimeTypeFromPath(String path) {
         if (path == null) return "image/png";
-        String lowerPath = path.toLowerCase();
+        String lowerPath = path.toLowerCase(Locale.ROOT);
 
         if (lowerPath.endsWith(".png")) return "image/png";
         if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) return "image/jpeg";
@@ -908,7 +909,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             int targetR, targetG, targetB;
             int threshold = 40; // Range for similar colors
 
-            switch (colorName.toLowerCase()) {
+            switch (colorName.toLowerCase(Locale.ROOT)) {
                 case "true":
                 case "black":
                     targetR = 0;
@@ -957,7 +958,6 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     int rgb = originalImage.getRGB(x, y);
 
                     // Extract RGB components
-                    int alpha = (rgb >> 24) & 0xFF;
                     int red = (rgb >> 16) & 0xFF;
                     int green = (rgb >> 8) & 0xFF;
                     int blue = rgb & 0xFF;

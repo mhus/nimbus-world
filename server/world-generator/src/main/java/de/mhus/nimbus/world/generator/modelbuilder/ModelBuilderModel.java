@@ -75,6 +75,8 @@ public class ModelBuilderModel {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Step {
         /** Name/lookup key for this step - used to find the matching definition */
+        // PMD: the field name is part of the JSON contract
+        @SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
         private String step;
         /** Optional override for definition lookup (if different from step name) */
         private String definition;

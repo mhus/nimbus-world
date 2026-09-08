@@ -85,7 +85,6 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
         }
 
         Integer x = positionNode.has("x") ? positionNode.get("x").asInt() : null;
-        Integer y = positionNode.has("y") ? positionNode.get("y").asInt() : null;
         Integer z = positionNode.has("z") ? positionNode.get("z").asInt() : null;
 
         if (x == null || z == null) {
@@ -127,10 +126,8 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
             log.debug("Using world ground level: {}", level);
         }
 
-        // Use y from position if provided, otherwise use level
-        if (y == null) {
-            y = level;
-        }
+        // Note: the y coordinate of the position is currently ignored;
+        // the blocks are always placed at the resolved level.
 
         // Extract blockType (optional - will try to match neighbors or use world default)
         String explicitBlockType = context.getParameter("blockType");

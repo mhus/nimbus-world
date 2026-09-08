@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +113,7 @@ public class CompositionManipulator implements FlatManipulator {
      * @return List of manipulator names to execute
      */
     private List<String> getSteps(String preset, Map<String, String> parameters) {
-        switch (preset.toLowerCase()) {
+        switch (preset.toLowerCase(Locale.ROOT)) {
             case "volcanic-island":
                 return List.of("islands", "crater", "sharp-peak", "water-soften");
 

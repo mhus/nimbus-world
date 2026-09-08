@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.util;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * Utility for encoding inline multilingual texts using the ¶-prefix format.
@@ -76,7 +77,7 @@ public final class I18nUtil {
         String encoded = text.substring(1); // skip ¶
         if (encoded.isEmpty()) return "";
 
-        String targetLang = lang != null ? lang.toLowerCase() : "en";
+        String targetLang = lang != null ? lang.toLowerCase(Locale.ROOT) : "en";
         if (targetLang.length() > 2) targetLang = targetLang.substring(0, 2);
 
         String exact = null;
@@ -88,7 +89,7 @@ public final class I18nUtil {
             // Find '='
             int eqIdx = encoded.indexOf('=', pos);
             if (eqIdx < 0) break;
-            String key = encoded.substring(pos, eqIdx).trim().toLowerCase();
+            String key = encoded.substring(pos, eqIdx).trim().toLowerCase(Locale.ROOT);
 
             // Find '&' or end
             int ampIdx = encoded.indexOf('&', eqIdx + 1);
@@ -156,7 +157,10 @@ public final class I18nUtil {
      * Fluent builder for i18n texts. Reuses a single StringBuilder.
      */
     public static final class Builder {
+        // PMD: the builder is short-lived, so a StringBuilder field is fine
+        @SuppressWarnings("PMD.AvoidStringBufferField")
         private final StringBuilder sb = new StringBuilder(64);
+
         private boolean hasEntry = false;
 
         private Builder() {

@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +34,7 @@ public class ConditionHandler {
         String condition = serverInfo.get("condition");
         if (condition == null) return true;
 
-        return switch (condition.toLowerCase()) {
+        return switch (condition.toLowerCase(Locale.ROOT)) {
             case "key" -> checkKeyCondition(session, serverInfo);
             default -> {
                 log.warn("Unknown block condition '{}' at ({},{},{})", condition, x, y, z);

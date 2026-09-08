@@ -96,5 +96,5 @@ public class Day1WorldCreate extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {}
 }

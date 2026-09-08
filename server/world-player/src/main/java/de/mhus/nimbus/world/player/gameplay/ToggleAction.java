@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -86,7 +87,7 @@ public class ToggleAction implements GameplayAction {
         }
 
         String newStatus =
-                switch (type.toLowerCase()) {
+                switch (type.toLowerCase(Locale.ROOT)) {
                     case "random" -> resolveRandom(states, currentStatus);
                     default -> resolveCycle(states, currentStatus);
                 };

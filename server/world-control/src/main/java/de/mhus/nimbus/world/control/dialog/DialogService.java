@@ -528,8 +528,14 @@ public class DialogService {
      * Exception type for dialog-specific errors.
      */
     public static class DialogException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public DialogException(String message) {
             super(message);
+        }
+
+        public DialogException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

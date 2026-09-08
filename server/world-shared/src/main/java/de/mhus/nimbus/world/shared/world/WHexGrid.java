@@ -63,12 +63,12 @@ public class WHexGrid implements Identifiable, EpochEntity {
         public static EDGE fromString(String side) {
             if (side == null) return null;
             for (EDGE s : EDGE.values()) {
-                if (s.equals(side)) return s;
+                if (s.matches(side)) return s;
             }
             return null;
         }
 
-        public boolean equals(String other) {
+        public boolean matches(String other) {
             if (other == null) return false;
             return other.equalsIgnoreCase(name()) || shortName.equalsIgnoreCase(other);
         }
@@ -111,7 +111,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
             this.shortName = shortName;
         }
 
-        public boolean equals(String other) {
+        public boolean matches(String other) {
             if (other == null) return false;
             return other.equalsIgnoreCase(name()) || shortName.equalsIgnoreCase(other);
         }
@@ -391,6 +391,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
             try {
                 result.add(TypeUtil.parseArea(key));
             } catch (Exception ignore) {
+                // skip unparseable area keys
             }
         }
         return result;
@@ -415,6 +416,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
                     }
                 }
             } catch (Exception ignore) {
+                // skip unparseable area keys
             }
         }
         return best;
@@ -469,6 +471,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 chunkSize = Integer.parseInt(parameters.get("chunkSize"));
             }
         } catch (Exception ignore) {
+            // skip unparseable area keys
         }
         int minX = cx * chunkSize;
         int minZ = cz * chunkSize;
@@ -486,6 +489,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 boolean overlap = (minX <= amaxX && maxX >= ax && minZ <= amaxZ && maxZ >= az);
                 if (overlap) result.put(area, entry.getValue());
             } catch (Exception ignore) {
+                // skip unparseable area keys
             }
         }
         return result;
@@ -504,6 +508,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
                     Area area = TypeUtil.parseArea(entry.getKey());
                     result.put(area, data);
                 } catch (Exception ignore) {
+                    // skip unparseable area keys
                 }
             }
         }
@@ -528,6 +533,7 @@ public class WHexGrid implements Identifiable, EpochEntity {
                 boolean contains = (x >= ax && x <= amaxX && z >= az && z <= amaxZ);
                 if (contains) result.put(area, entry.getValue());
             } catch (Exception ignore) {
+                // skip unparseable area keys
             }
         }
         return result;

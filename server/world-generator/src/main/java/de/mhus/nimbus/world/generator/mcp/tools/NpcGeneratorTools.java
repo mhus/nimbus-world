@@ -81,7 +81,7 @@ public class NpcGeneratorTools implements McpToolBean {
 
             return npcGeneratorService.generateNpc(request);
         } catch (NpcGeneratorService.NpcGenerationException e) {
-            throw new McpToolException("NPC generation failed: " + e.getMessage());
+            throw new McpToolException("NPC generation failed: " + e.getMessage(), e);
         }
     }
 }

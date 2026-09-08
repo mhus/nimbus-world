@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
+import java.util.Locale;
+
 /**
  * Snap mode defining how a Point should be positioned relative to a target feature.
  */
@@ -30,9 +32,9 @@ public enum SnapMode {
             return null;
         }
         try {
-            return SnapMode.valueOf(value.toUpperCase());
+            return SnapMode.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid SnapMode value: " + value);
+            throw new IllegalArgumentException("Invalid SnapMode value: " + value, e);
         }
     }
 }

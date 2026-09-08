@@ -6,6 +6,7 @@ import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -116,7 +117,7 @@ public class MigrateSchemaCommand implements Command {
                 targetVersion);
 
         try {
-            return switch (idOrPattern.toLowerCase()) {
+            return switch (idOrPattern.toLowerCase(Locale.ROOT)) {
                 case "*" -> migrateAllDocuments(collectionName, entityType, targetVersion);
                 case "no-schema" -> migrateDocumentsWithoutSchema(collectionName, entityType, targetVersion);
                 default -> migrateSingleDocument(collectionName, idOrPattern, entityType, targetVersion);
@@ -301,12 +302,12 @@ public class MigrateSchemaCommand implements Command {
             return SchemaVersion.create("0"); // Default to version 0 if no schema field
         }
 
-        int valueStart = documentJson.indexOf("\"", schemaIndex + 10);
+        int valueStart = documentJson.indexOf('"', schemaIndex + 10);
         if (valueStart == -1) {
             return SchemaVersion.create("0");
         }
 
-        int valueEnd = documentJson.indexOf("\"", valueStart + 1);
+        int valueEnd = documentJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return SchemaVersion.create("0");
         }

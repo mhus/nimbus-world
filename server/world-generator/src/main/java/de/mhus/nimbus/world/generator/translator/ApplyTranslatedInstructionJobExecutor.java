@@ -140,7 +140,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             }
 
             // Load structures index from region collection
-            StructuresIndex structuresIndex = null;
+            StructuresIndex structuresIndex;
             try {
                 structuresIndex = structuresService.findStructuresForWorldId(job.getWorldId());
                 log.info(
@@ -154,7 +154,6 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
             // Retry loop for composition
             CompositionResult result = null;
-            String previousError = null;
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++) {
                 log.info("Composition attempt {}/{}", attempt, maxAttempts);
@@ -193,7 +192,6 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                         log.warn("Composition attempt {}/{} failed: {}", attempt, maxAttempts, errorMsg);
 
                         if (attempt < maxAttempts) {
-                            previousError = String.format("Attempt %d/%d failed: %s", attempt, maxAttempts, errorMsg);
 
                             // Reload composition for retry (it might have been modified)
                             LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), translationDocumentId);
@@ -210,8 +208,6 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                     log.error("Unexpected error during composition attempt {}/{}", attempt, maxAttempts, e);
 
                     if (attempt < maxAttempts) {
-                        previousError =
-                                String.format("Attempt %d/%d crashed: %s", attempt, maxAttempts, e.getMessage());
 
                         // Reload composition for retry
                         try {
@@ -219,8 +215,9 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             composition = reloaded.composition;
                         } catch (Exception reloadEx) {
                             log.error("Failed to reload composition for retry", reloadEx);
-                            throw new JobExecutionException(
-                                    "Composition failed and cannot reload: " + e.getMessage(), e);
+                            throw new JobExecutionException( // NOPMD: reloadEx is the immediate cause, e is part of the
+                                    // message
+                                    "Composition failed and cannot reload: " + e.getMessage(), reloadEx);
                         }
                     } else {
                         String finalError = String.format(
@@ -373,16 +370,15 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         metadata.put("instructionsDocumentId", originalInstruction);
 
         // Save document with composition as direct JSON content
-        WDocument document =
-                documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
-                    doc.setName(documentName);
-                    doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
-                    doc.setFormat("json");
-                    doc.setContent(compositionJson); // Direct model JSON
-                    doc.setMetadata(metadata);
-                    doc.setType("composer-composed");
-                    doc.setReadOnly(false);
-                });
+        documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
+            doc.setName(documentName);
+            doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
+            doc.setFormat("json");
+            doc.setContent(compositionJson); // Direct model JSON
+            doc.setMetadata(metadata);
+            doc.setType("composer-composed");
+            doc.setReadOnly(false);
+        });
 
         log.info(
                 "Saved composed model document: worldId={}, collection={}, documentId={}, name={}",

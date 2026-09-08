@@ -312,13 +312,8 @@ public class WTraderService {
 
         // Add to target
         if (targetRef != null) {
+            // The stored amount is updated atomically by the chest service
             chestService.incItemAmountAtomic(target.getId(), itemId, sourceRef.getAmount());
-            targetRef = ItemRef.builder()
-                    .itemId(targetRef.getItemId())
-                    .name(targetRef.getName())
-                    .texture(targetRef.getTexture())
-                    .amount(targetRef.getAmount() + sourceRef.getAmount())
-                    .build();
         } else {
             chestService.addItemAtomic(target.getId(), sourceRef);
             if (target.getItems() == null) {

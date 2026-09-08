@@ -140,9 +140,7 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
             throws JobExecutionException {
         boolean recreateLayer = parseBooleanParameter(params, "recreateLayer", false);
 
-        WWorld world = worldService
-                .getByWorldId(wid)
-                .orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
+        worldService.getByWorldId(wid).orElseThrow(() -> new JobExecutionException("World not found: " + worldId));
 
         Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
         if (layerOpt.isEmpty()) {

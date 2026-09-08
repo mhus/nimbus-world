@@ -18,14 +18,10 @@ import java.util.Set;
  */
 public class JavaGenerator {
 
-    private final Configuration configuration;
-
-    public JavaGenerator() {
-        this.configuration = null;
-    }
+    public JavaGenerator() {}
 
     public JavaGenerator(Configuration configuration) {
-        this.configuration = configuration;
+        // configuration is currently unused but kept for API stability
     }
 
     public JavaModel generate(TsModel tsModel) {

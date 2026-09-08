@@ -477,24 +477,6 @@ public class HexCompositeBuilder {
     }
 
     /**
-     * Finds a PlacedBiome by its biome name.
-     *
-     * @param placedBiomes List of placed biomes
-     * @param biomeName The biome name to search for
-     * @return The PlacedBiome with matching biome name, or null if not found
-     */
-    private PlacedBiome findPlacedBiomeByName(List<PlacedBiome> placedBiomes, String biomeName) {
-        if (biomeName == null || placedBiomes == null) {
-            return null;
-        }
-
-        return placedBiomes.stream()
-                .filter(placed -> biomeName.equals(placed.getBiome().getName()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
      * Populates the central FeatureHexGrid registry from Structure features.
      * Transfers FeatureHexGrids from Structures' local storage into the central registry.
      *

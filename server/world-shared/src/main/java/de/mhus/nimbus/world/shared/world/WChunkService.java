@@ -145,12 +145,12 @@ public class WChunkService implements StorageProvider {
                 if (inputStream == null) {
                     return Optional.empty();
                 }
-                InputStream stream = inputStream;
                 if (entity.isCompressed()) {
-                    stream = new GZIPInputStream(inputStream);
+                    try (InputStream stream = new GZIPInputStream(inputStream)) {
+                        return Optional.ofNullable(objectMapper.readValue(stream, ChunkData.class));
+                    }
                 }
-                ChunkData chunkData = objectMapper.readValue(stream, ChunkData.class);
-                return Optional.ofNullable(chunkData);
+                return Optional.ofNullable(objectMapper.readValue(inputStream, ChunkData.class));
             } catch (Exception e) {
                 log.warn(
                         "ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={} epoch={}",
@@ -301,13 +301,13 @@ public class WChunkService implements StorageProvider {
                 if (inputStream == null) {
                     return Optional.empty();
                 }
-                InputStream stream = inputStream;
-                if (entity.isCompressed()) {
-                    stream = new GZIPInputStream(inputStream);
-                }
-
                 // Direkte Deserialisierung vom Stream ohne Memory-Verschwendung
-                ChunkData chunkData = objectMapper.readValue(stream, ChunkData.class);
+                if (entity.isCompressed()) {
+                    try (InputStream stream = new GZIPInputStream(inputStream)) {
+                        return Optional.ofNullable(objectMapper.readValue(stream, ChunkData.class));
+                    }
+                }
+                ChunkData chunkData = objectMapper.readValue(inputStream, ChunkData.class);
                 return Optional.ofNullable(chunkData);
 
             } catch (Exception e) {
@@ -371,8 +371,6 @@ public class WChunkService implements StorageProvider {
             Integer waterLevel = world.getSeaLevel();
             String groundBlockType = world.getGroundBlockType();
             String waterBlockType = world.getSeaBlockType();
-            int minHeight = (int) world.getPublicData().getStart().getY();
-            int maxHeight = (int) world.getPublicData().getStop().getY();
 
             var chunkSize = world.getPublicData().getChunkSize();
 
@@ -455,23 +453,6 @@ public class WChunkService implements StorageProvider {
         Block block = new Block();
 
         // Create position inline to reduce overhead
-        Vector3Int position = new Vector3Int();
-        position.setX(x);
-        position.setY(y);
-        position.setZ(z);
-        block.setPosition(position);
-
-        block.setBlockTypeId(blockTypeId);
-
-        return block;
-    }
-
-    /**
-     * Create a simple block at the given position.
-     */
-    private Block createBlock(int x, int y, int z, String blockTypeId) {
-        Block block = new Block();
-
         Vector3Int position = new Vector3Int();
         position.setX(x);
         position.setY(y);
@@ -776,9 +757,7 @@ public class WChunkService implements StorageProvider {
 
         // If chunk is compressed in storage, use storage data directly
         if (chunk.isCompressed() && chunk.getStorageId() != null) {
-            try {
-                // Load compressed storage data directly (no decompression!)
-                InputStream compressedStream = storageService.load(chunk.getStorageId());
+            try (InputStream compressedStream = storageService.load(chunk.getStorageId())) {
                 if (compressedStream == null) {
                     log.warn("Compressed chunk has no storage data: chunkKey={}", chunkKey);
                     return null;

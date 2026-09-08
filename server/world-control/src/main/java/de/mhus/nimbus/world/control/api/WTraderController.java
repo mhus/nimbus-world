@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.TraderType;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import de.mhus.nimbus.world.shared.world.WTraderService;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -98,7 +99,7 @@ public class WTraderController extends BaseEditorController {
 
         if (!Strings.isBlank(req.traderType())) {
             trader.setTraderType(
-                    TraderType.valueOf(req.traderType().toUpperCase().trim()));
+                    TraderType.valueOf(req.traderType().toUpperCase(Locale.ROOT).trim()));
         }
         if (req.categories() != null) trader.setCategories(req.categories());
         if (req.personalityModifier() != null) trader.setPersonalityModifier(req.personalityModifier());

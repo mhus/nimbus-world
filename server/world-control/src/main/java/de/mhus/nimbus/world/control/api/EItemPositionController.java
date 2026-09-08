@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -127,7 +128,6 @@ public class EItemPositionController extends BaseEditorController {
 
         // If chunk coordinates provided, filter by chunk
         if (cx != null && cz != null) {
-            List<ItemBlockRef> chunkItems = itemRegistryService.getItemsInChunk(wid, cx, cz);
             // Convert ItemBlockRef back to WItemPosition for filtering (simplified approach)
             all = itemRegistryService.getAllItems(wid).stream()
                     .filter(item -> {
@@ -328,15 +328,18 @@ public class EItemPositionController extends BaseEditorController {
     }
 
     private List<WItemPosition> filterByQuery(List<WItemPosition> items, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return items.stream()
                 .filter(item -> {
                     String itemId = item.getItemId();
                     ItemBlockRef publicData = item.getPublicData();
-                    return (itemId != null && itemId.toLowerCase().contains(lowerQuery))
+                    return (itemId != null && itemId.toLowerCase(Locale.ROOT).contains(lowerQuery))
                             || (publicData != null
                                     && publicData.getTexture() != null
-                                    && publicData.getTexture().toLowerCase().contains(lowerQuery));
+                                    && publicData
+                                            .getTexture()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }

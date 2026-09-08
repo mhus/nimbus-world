@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.area;
 
+import java.util.Locale;
+
 /**
  * Size categories for area features.
  * This enum is server-side only and not exposed to TypeScript.
@@ -31,9 +33,9 @@ public enum AreaSize {
             return null;
         }
         try {
-            return AreaSize.valueOf(value.toUpperCase());
+            return AreaSize.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid AreaSize value: " + value);
+            throw new IllegalArgumentException("Invalid AreaSize value: " + value, e);
         }
     }
 }

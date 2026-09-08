@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.biome;
 import de.mhus.nimbus.types.TsEnum;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -196,7 +197,7 @@ public enum BiomeType implements TsEnum {
 
     @Override
     public String tsString() {
-        return name().toLowerCase();
+        return name().toLowerCase(Locale.ROOT);
     }
 
     public static BiomeType fromString(String value) {
@@ -204,9 +205,9 @@ public enum BiomeType implements TsEnum {
             return null;
         }
         try {
-            return BiomeType.valueOf(value.toUpperCase());
+            return BiomeType.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid BiomeType value: " + value);
+            throw new IllegalArgumentException("Invalid BiomeType value: " + value, e);
         }
     }
 }

@@ -5,7 +5,6 @@ import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
-import de.mhus.nimbus.world.generator.composer.pathfinding.EdgeSide;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexCoord;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexNodeType;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexPath;
@@ -18,6 +17,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -1114,19 +1114,6 @@ public class TownDesigner {
     }
 
     /**
-     * Gets edge side from direction vector.
-     */
-    private EdgeSide getEdgeSideFromDirection(int dq, int dr) {
-        if (dq == 0 && dr == -1) return EdgeSide.N;
-        if (dq == 1 && dr == -1) return EdgeSide.NE;
-        if (dq == 1 && dr == 0) return EdgeSide.SE;
-        if (dq == 0 && dr == 1) return EdgeSide.S;
-        if (dq == -1 && dr == 1) return EdgeSide.SW;
-        if (dq == -1 && dr == 0) return EdgeSide.NW;
-        return EdgeSide.N; // default
-    }
-
-    /**
      * Calculates the edge connection points where a street crosses between two adjacent districts.
      */
     private EdgeConnection calculateEdgeConnection(
@@ -1390,7 +1377,6 @@ public class TownDesigner {
 
         int availableSlots = slotSize.getSlotCount();
         int usedSlots = districtGrid.getPlacedPlaces().size();
-        int emptySlots = availableSlots - usedSlots;
 
         // Get target fill rate: district-level overrides village-level
         // If district.fillRate is null, use village-level fillRate as fallback
@@ -1501,7 +1487,7 @@ public class TownDesigner {
                     FreePlace.FreeKind kind =
                             random.nextBoolean() ? FreePlace.FreeKind.PLAZA : FreePlace.FreeKind.SQUARE;
                     newPlace = FreePlace.builder()
-                            .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                            .name("/" + kind.name().toLowerCase(Locale.ROOT) + "-" + candidate.getSlotIndex())
                             .kind(kind)
                             .connectionPoint(false)
                             .build();
@@ -1511,7 +1497,7 @@ public class TownDesigner {
                 // Far from street: Always create free place (park or garden)
                 FreePlace.FreeKind kind = random.nextBoolean() ? FreePlace.FreeKind.PARK : FreePlace.FreeKind.GARDEN;
                 newPlace = FreePlace.builder()
-                        .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                        .name("/" + kind.name().toLowerCase(Locale.ROOT) + "-" + candidate.getSlotIndex())
                         .kind(kind)
                         .connectionPoint(false)
                         .build();
@@ -1534,7 +1520,7 @@ public class TownDesigner {
             filledCount++;
 
             log.debug(
-                    "Filled slot {} with {} '{}' (distance to street: {:.1f}, near: {})",
+                    "Filled slot {} with {} '{}' (distance to street: {}, near: {})",
                     candidate.getSlotIndex(),
                     newPlace instanceof BuildingPlace ? "building" : "free place",
                     newPlace instanceof BuildingPlace

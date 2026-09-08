@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.config;
 
 import de.mhus.nimbus.types.TsEnum;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,7 +71,7 @@ public class JacksonConfig {
                 if (value instanceof TsEnum) {
                     gen.writeString(((TsEnum) value).tsString());
                 } else {
-                    gen.writeString(value.name().toLowerCase());
+                    gen.writeString(value.name().toLowerCase(Locale.ROOT));
                 }
             }
         });

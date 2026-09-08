@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -460,17 +461,18 @@ public class WChatService {
     }
 
     private List<WChat> filterByQuery(List<WChat> chats, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return chats.stream()
                 .filter(chat -> {
                     String chatId = chat.getChatId();
                     String name = chat.getName();
                     String type = chat.getType();
                     String ownerId = chat.getOwnerId();
-                    return (chatId != null && chatId.toLowerCase().contains(lowerQuery))
-                            || (name != null && name.toLowerCase().contains(lowerQuery))
-                            || (type != null && type.toLowerCase().contains(lowerQuery))
-                            || (ownerId != null && ownerId.toLowerCase().contains(lowerQuery));
+                    return (chatId != null && chatId.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (name != null && name.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (type != null && type.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (ownerId != null
+                                    && ownerId.toLowerCase(Locale.ROOT).contains(lowerQuery));
                 })
                 .toList();
     }

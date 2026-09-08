@@ -3,6 +3,7 @@ package de.mhus.nimbus.shared.config;
 import de.mhus.nimbus.shared.security.KeyKind;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -23,9 +24,9 @@ public class MongoConvertersConfig {
             if (source == null) return null;
             String normalized = source.trim();
             if (normalized.isEmpty()) return null;
-            String upper = normalized.toUpperCase();
+            String upper = normalized.toUpperCase(Locale.ROOT);
             // Sonderfall: alte Bezeichnung 'symmetric' => SECRET
-            if (upper.equals("SYMMETRIC")) upper = "SECRET";
+            if ("SYMMETRIC".equals(upper)) upper = "SECRET";
             try {
                 return KeyKind.valueOf(upper);
             } catch (IllegalArgumentException ex) {

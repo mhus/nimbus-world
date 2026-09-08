@@ -161,7 +161,7 @@ public class GroundControlJobExecutor implements JobExecutor {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Parameter '" + key + "' must be an integer, got: " + value);
+            throw new JobExecutionException("Parameter '" + key + "' must be an integer, got: " + value, e);
         }
     }
 

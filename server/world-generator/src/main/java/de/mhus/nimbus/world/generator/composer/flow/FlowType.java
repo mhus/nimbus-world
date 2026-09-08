@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -81,9 +82,9 @@ public enum FlowType {
             return null;
         }
         try {
-            return FlowType.valueOf(value.toUpperCase());
+            return FlowType.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid FlowType value: " + value);
+            throw new IllegalArgumentException("Invalid FlowType value: " + value, e);
         }
     }
 }

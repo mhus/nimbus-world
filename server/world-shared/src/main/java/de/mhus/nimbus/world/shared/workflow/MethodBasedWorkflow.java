@@ -39,7 +39,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
         if (maybeEventHandler.isPresent()) {
             final var handler = maybeEventHandler.get();
             if (!handler.canAccess(this)) {
-                handler.setAccessible(true);
+                handler.setAccessible(true); // NOPMD: invoke annotation-driven handlers
             }
             try {
                 ReflectionUtils.invokeMethod(handler, this, findArgsForMethod(handler, context, status, data));
@@ -72,7 +72,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
         if (maybeEventHandler.isPresent()) {
             final var handler = maybeEventHandler.get();
             if (!handler.canAccess(this)) {
-                handler.setAccessible(true);
+                handler.setAccessible(true); // NOPMD: invoke annotation-driven handlers
             }
             try {
                 ReflectionUtils.invokeMethod(handler, this, findArgsForMethod(handler, context, status, data));

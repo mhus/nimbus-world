@@ -7,6 +7,7 @@ import java.awt.*;
  * Interface for drawing overlays on composite images.
  * Overlays are drawn after all hex grids have been rendered.
  */
+@FunctionalInterface
 public interface ImageOverlay {
 
     /**

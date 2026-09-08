@@ -120,10 +120,10 @@ public class TerrainPathFinder {
         }
 
         log.debug(
-                "TerrainPathFinder: Found path with {} points, traveled distance: {:.1f} (direct: {:.1f})",
+                "TerrainPathFinder: Found path with {} points, traveled distance: {} (direct: {})",
                 path.size(),
-                traveledDistance,
-                directDistance);
+                String.format("%.1f", traveledDistance),
+                String.format("%.1f", directDistance));
 
         return path;
     }
@@ -182,8 +182,6 @@ public class TerrainPathFinder {
 
             // Calculate required level to reach target from here
             double remainingSteps = distanceToTarget;
-            int levelDiff = targetLevel - terrainLevel;
-            double requiredSlopePerBlock = remainingSteps > 0 ? Math.abs(levelDiff) / remainingSteps : 0;
 
             // Choose level: follow terrain if slope allows, otherwise adjust minimally
             int nextLevel;

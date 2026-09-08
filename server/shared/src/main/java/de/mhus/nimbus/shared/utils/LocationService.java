@@ -3,6 +3,7 @@ package de.mhus.nimbus.shared.utils;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isEmpty;
 
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -106,11 +107,13 @@ public class LocationService {
      * Detect the real IP address of the server.
      * Tries multiple approaches to find the actual IP, especially in containerized environments.
      */
+    // PMD: the 127.x literals below are loopback checks, not connection targets
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private String detectRealIpAddress() {
         try {
             // Try Kubernetes pod IP first (common environment variable)
             String podIp = System.getenv("POD_IP");
-            if (podIp != null && !podIp.isBlank() && !podIp.equals("127.0.0.1")) {
+            if (podIp != null && !podIp.isBlank() && !"127.0.0.1".equals(podIp)) {
                 log.info("Using Kubernetes POD_IP: {}", podIp);
                 return podIp;
             }
@@ -121,7 +124,7 @@ public class LocationService {
                 try {
                     java.net.InetAddress hostAddr = java.net.InetAddress.getByName(hostname);
                     String hostIp = hostAddr.getHostAddress();
-                    if (!hostIp.equals("127.0.0.1") && !hostIp.startsWith("127.")) {
+                    if (!"127.0.0.1".equals(hostIp) && !hostIp.startsWith("127.")) {
                         log.info("Using hostname IP: {} ({})", hostIp, hostname);
                         return hostIp;
                     }
@@ -178,7 +181,7 @@ public class LocationService {
     }
 
     public SERVER toServer(String name) {
-        switch (name != null ? name.toLowerCase() : "") {
+        switch (name != null ? name.toLowerCase(Locale.ROOT) : "") {
             case "player":
             case "world-player":
             case "nimbus-world-player":

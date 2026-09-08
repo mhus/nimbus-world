@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -160,7 +161,7 @@ public class MountainBuilder extends HexGridBuilder {
      * Parse side string to SIDE enum.
      */
     private WHexGrid.EDGE parseSide(String sideStr) {
-        switch (sideStr.toUpperCase()) {
+        switch (sideStr.toUpperCase(Locale.ROOT)) {
             case "NW":
             case "NORTH_WEST":
                 return WHexGrid.EDGE.NORTH_WEST;
@@ -222,7 +223,7 @@ public class MountainBuilder extends HexGridBuilder {
                     int ridgeHeight = ridge.getLevel();
 
                     // Interpolate between current height and ridge height
-                    int newLevel = 0;
+                    int newLevel;
                     if (currentLevel == 0) {
                         newLevel = (int) (ridgeFactor * ridgeHeight);
                     } else {
@@ -398,18 +399,6 @@ public class MountainBuilder extends HexGridBuilder {
         return getCenterAsl();
     }
 
-    private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {
-        if (parameters == null || !parameters.containsKey(name)) {
-            return defaultValue;
-        }
-        try {
-            return Long.parseLong(parameters.get(name));
-        } catch (NumberFormatException e) {
-            log.warn("Invalid long parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
-            return defaultValue;
-        }
-    }
-
     private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {
         if (parameters == null || !parameters.containsKey(name)) {
             return defaultValue;
@@ -453,7 +442,7 @@ public class MountainBuilder extends HexGridBuilder {
      * Parse material name to material ID.
      */
     private int parseMaterialName(String name, String paramName, int defaultValue) {
-        switch (name.toUpperCase().trim()) {
+        switch (name.toUpperCase(Locale.ROOT).trim()) {
             case "GRASS":
                 return FlatMaterialService.GRASS;
             case "DIRT":
@@ -500,7 +489,8 @@ public class MountainBuilder extends HexGridBuilder {
 
         try {
             de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
-                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+                    de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(
+                            groundTypeStr.toUpperCase(Locale.ROOT));
             groundType.applyToParameters(parameters);
             log.debug("Applied ground type: {}", groundType);
         } catch (IllegalArgumentException e) {

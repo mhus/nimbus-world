@@ -23,6 +23,7 @@ public class WorldDiscoveryService {
      * Called immediately when a new world is registered, so subscribers
      * can set up per-world Redis subscriptions without polling delay.
      */
+    @FunctionalInterface
     public interface WorldActivationListener {
         void onWorldActivated(WorldId worldId);
     }

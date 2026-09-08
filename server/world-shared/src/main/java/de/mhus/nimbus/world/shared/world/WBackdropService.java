@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Backdrop;
 import de.mhus.nimbus.shared.types.WorldId;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -232,11 +233,12 @@ public class WBackdropService {
     }
 
     private List<WBackdrop> filterByQuery(List<WBackdrop> backdrops, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return backdrops.stream()
                 .filter(backdrop -> {
                     String backdropId = backdrop.getBackdropId();
-                    return (backdropId != null && backdropId.toLowerCase().contains(lowerQuery));
+                    return (backdropId != null
+                            && backdropId.toLowerCase(Locale.ROOT).contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
     }

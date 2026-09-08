@@ -39,6 +39,8 @@ public class AesEncryptionService {
     /**
      * Derives a 256-bit AES key from the password using SHA-256 hashing
      */
+    // PMD: the key is derived from the configured password, not hardcoded
+    @SuppressWarnings("PMD.HardCodedCryptoKey")
     private SecretKey deriveKeyFromPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

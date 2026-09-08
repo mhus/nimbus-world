@@ -28,6 +28,7 @@ public class Biome extends Area {
      * Applies default configuration for this biome type.
      * Override in subclasses for type-specific defaults.
      */
+    @Override
     public void applyDefaults() {
         if (type == null) {
             return;

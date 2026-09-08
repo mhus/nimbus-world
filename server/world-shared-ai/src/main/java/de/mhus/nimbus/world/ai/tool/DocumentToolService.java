@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.world.WDocumentMetadata;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.agent.tool.Tool;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -68,10 +69,10 @@ public class DocumentToolService {
             List<WDocumentMetadata> documents = documentService.findMetadataByCollection(wid, collection);
 
             // Filter by search term in summary
-            String lowerSearchTerm = searchTerm.toLowerCase();
+            String lowerSearchTerm = searchTerm.toLowerCase(Locale.ROOT);
             List<WDocumentMetadata> matching = documents.stream()
                     .filter(doc -> doc.getSummary() != null
-                            && doc.getSummary().toLowerCase().contains(lowerSearchTerm))
+                            && doc.getSummary().toLowerCase(Locale.ROOT).contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
@@ -138,10 +139,10 @@ public class DocumentToolService {
             List<WDocumentMetadata> documents = documentService.lookupDocumentsMetadata(wid, collection);
 
             // Filter by search term in summary
-            String lowerSearchTerm = searchTerm.toLowerCase();
+            String lowerSearchTerm = searchTerm.toLowerCase(Locale.ROOT);
             List<WDocumentMetadata> matching = documents.stream()
                     .filter(doc -> doc.getSummary() != null
-                            && doc.getSummary().toLowerCase().contains(lowerSearchTerm))
+                            && doc.getSummary().toLowerCase(Locale.ROOT).contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
@@ -213,10 +214,10 @@ public class DocumentToolService {
             List<WDocument> documents = documentService.findByCollection(wid, collection);
 
             // Filter by search term in content
-            String lowerSearchTerm = searchTerm.toLowerCase();
+            String lowerSearchTerm = searchTerm.toLowerCase(Locale.ROOT);
             List<WDocument> matching = documents.stream()
                     .filter(doc -> doc.getContent() != null
-                            && doc.getContent().toLowerCase().contains(lowerSearchTerm))
+                            && doc.getContent().toLowerCase(Locale.ROOT).contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
@@ -234,7 +235,7 @@ public class DocumentToolService {
 
                 // Extract excerpt around search term (up to 200 chars before and after)
                 String content = doc.getContent();
-                int index = content.toLowerCase().indexOf(lowerSearchTerm);
+                int index = content.toLowerCase(Locale.ROOT).indexOf(lowerSearchTerm);
                 int start = Math.max(0, index - 200);
                 int end = Math.min(content.length(), index + searchTerm.length() + 200);
                 String excerpt = content.substring(start, end);
@@ -292,10 +293,10 @@ public class DocumentToolService {
             List<WDocument> documents = documentService.lookupDocuments(wid, collection);
 
             // Filter by search term in content
-            String lowerSearchTerm = searchTerm.toLowerCase();
+            String lowerSearchTerm = searchTerm.toLowerCase(Locale.ROOT);
             List<WDocument> matching = documents.stream()
                     .filter(doc -> doc.getContent() != null
-                            && doc.getContent().toLowerCase().contains(lowerSearchTerm))
+                            && doc.getContent().toLowerCase(Locale.ROOT).contains(lowerSearchTerm))
                     .collect(Collectors.toList());
 
             if (matching.isEmpty()) {
@@ -317,7 +318,7 @@ public class DocumentToolService {
 
                 // Extract excerpt around search term (up to 200 chars before and after)
                 String content = doc.getContent();
-                int index = content.toLowerCase().indexOf(lowerSearchTerm);
+                int index = content.toLowerCase(Locale.ROOT).indexOf(lowerSearchTerm);
                 int start = Math.max(0, index - 200);
                 int end = Math.min(content.length(), index + searchTerm.length() + 200);
                 String excerpt = content.substring(start, end);

@@ -9,6 +9,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -243,12 +244,6 @@ public class TsParser {
         }
     }
 
-    private void extractPropertiesFromBody(String body, List<TsDeclarations.TsProperty> out) {
-        // This method is called with stripped source, we need the original for javaType hints
-        // For now, use the existing logic without javaType hints
-        extractPropertiesFromBodyWithOriginal(body, body, out);
-    }
-
     private void extractPropertiesFromBodyWithOriginal(
             String strippedBody, String originalBody, List<TsDeclarations.TsProperty> out) {
         if (strippedBody == null || out == null) return;
@@ -376,110 +371,6 @@ public class TsParser {
     }
 
     /**
-     * Robust parsing of javaType hints from a TypeScript line
-     * Handles various formats: //javaType:type, // javaType: type, //javaType=type
-     */
-    private String parseJavaTypeHintFromLine(String line) {
-        if (line == null || line.trim().isEmpty()) {
-            return null;
-        }
-
-        // Find the last // comment in the line
-        int commentStart = line.lastIndexOf("//");
-        if (commentStart == -1) {
-            return null;
-        }
-
-        String comment = line.substring(commentStart + 2).trim();
-        String lowerComment = comment.toLowerCase();
-
-        // Search for "javatype" (case insensitive) followed by : or =
-        int javaTypeStart = lowerComment.indexOf("javatype");
-        if (javaTypeStart == -1) {
-            return null;
-        }
-
-        // Find the separator after "javatype"
-        int separatorPos = javaTypeStart + "javatype".length();
-
-        // Skip whitespace
-        while (separatorPos < lowerComment.length() && Character.isWhitespace(lowerComment.charAt(separatorPos))) {
-            separatorPos++;
-        }
-
-        // Check for : or =
-        if (separatorPos >= lowerComment.length()) {
-            return null;
-        }
-
-        char separator = lowerComment.charAt(separatorPos);
-        if (separator != ':' && separator != '=') {
-            return null;
-        }
-
-        // Extract the type after the separator
-        int typeStart = separatorPos + 1;
-
-        // Skip whitespace after the separator
-        while (typeStart < comment.length() && Character.isWhitespace(comment.charAt(typeStart))) {
-            typeStart++;
-        }
-
-        if (typeStart >= comment.length()) {
-            return null;
-        }
-
-        String typeStr = comment.substring(typeStart);
-
-        // Remove trailing comments (if any)
-        int nextComment = typeStr.indexOf("//");
-        if (nextComment != -1) {
-            typeStr = typeStr.substring(0, nextComment).trim();
-        }
-
-        // Remove trailing whitespace and semicolon
-        typeStr = typeStr.replaceAll("[\\s;]*$", "");
-
-        return typeStr.isEmpty() ? null : typeStr;
-    }
-
-    /**
-     * Find the start of the line containing the given position
-     */
-    private int findLineStart(String body, int fromPos) {
-        for (int i = fromPos - 1; i >= 0; i--) {
-            if (body.charAt(i) == '\n') {
-                return i + 1;
-            }
-        }
-        return 0; // Beginning of file
-    }
-
-    /**
-     * Find the start of the next line after the given position
-     */
-    private int findNextLineStart(String body, int fromPos) {
-        for (int i = fromPos; i < body.length(); i++) {
-            if (body.charAt(i) == '\n') {
-                return i + 1 < body.length() ? i + 1 : -1;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Find the end of the line starting from the given position
-     */
-    private int findLineEnd(String body, int fromPos) {
-        for (int i = fromPos; i < body.length(); i++) {
-            if (body.charAt(i) == '\n') {
-                return i;
-            }
-        }
-        return body.length();
-    }
-
-    /**
      * Compute the brace nesting depth at a given position within a block that includes outer braces.
      * Depth starts at 0 before the first '{'. After the first '{' it becomes 1 for the outer body.
      */
@@ -535,7 +426,7 @@ public class TsParser {
             }
             if (!ok) continue;
 
-            String value = null;
+            String value;
             if (m.group(3) != null) {
                 // String value in quotes
                 value = m.group(3);
@@ -623,8 +514,7 @@ public class TsParser {
      */
     private void extractInlineObjectTypes(TsModel model) {
         if (model == null || model.getFiles() == null) return;
-
-        List<TsSourceFile> filesToUpdate = new ArrayList<>();
+        new ArrayList<>();
         List<TsDeclarations.TsInterface> newInterfaces = new ArrayList<>();
 
         for (TsSourceFile file : model.getFiles()) {
@@ -687,7 +577,7 @@ public class TsParser {
             return parentName + "InlineDTO";
         }
         // Capitalize first letter of property name
-        String capitalizedProp = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
+        String capitalizedProp = propertyName.substring(0, 1).toUpperCase(Locale.ROOT) + propertyName.substring(1);
         return parentName + capitalizedProp + "DTO";
     }
 

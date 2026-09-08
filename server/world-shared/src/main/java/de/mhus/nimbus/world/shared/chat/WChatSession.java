@@ -31,7 +31,7 @@ public class WChatSession implements Runnable {
     private final LinkedBlockingQueue<WChatSessionMessage> queue = new LinkedBlockingQueue<>();
     private final WChatSessionQueue sessionQueue = new SessionQueueAdapter();
     private volatile boolean running = true;
-    private volatile boolean archiveRequested = false;
+    private volatile boolean archiveRequested;
     private volatile Thread sessionThread;
     private long lastRedisRefresh;
     private long lastMessageTime;

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -343,7 +344,7 @@ public class WChatController extends BaseEditorController {
         log.debug("GET available agents, scope={}", scope);
 
         try {
-            WChatAgentScope agentScope = WChatAgentScope.valueOf(scope.toUpperCase());
+            WChatAgentScope agentScope = WChatAgentScope.valueOf(scope.toUpperCase(Locale.ROOT));
             List<WChatAgent> agents = chatService.getAvailableAgents(agentScope);
 
             List<AgentResponse> responses = agents.stream()

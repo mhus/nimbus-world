@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -212,11 +213,11 @@ public class WEntityModelService {
     }
 
     private List<WEntityModel> filterByQuery(List<WEntityModel> models, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return models.stream()
                 .filter(model -> {
                     String modelId = model.getName();
-                    return (modelId != null && modelId.toLowerCase().contains(lowerQuery));
+                    return (modelId != null && modelId.toLowerCase(Locale.ROOT).contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
     }

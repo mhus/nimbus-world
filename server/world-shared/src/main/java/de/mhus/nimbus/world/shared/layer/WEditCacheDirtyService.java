@@ -456,7 +456,6 @@ public class WEditCacheDirtyService {
      * @param cachedBlocks Blocks to merge
      */
     private void mergeBlocksIntoSingleModel(String worldId, WLayerModel model, List<WEditCache> cachedBlocks) {
-        WLayerModel finalModel = model;
         log.debug(
                 "Merging blocks into model: modelId={}, mountPoint=({},{},{}), rotation={}",
                 model.getId(),

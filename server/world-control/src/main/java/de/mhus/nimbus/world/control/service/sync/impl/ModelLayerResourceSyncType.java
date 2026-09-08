@@ -183,7 +183,7 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                     try (Stream<Path> modelFiles = Files.list(layerDir)) {
                         for (Path modelFile : modelFiles
                                 .filter(f -> f.toString().endsWith(".yaml")
-                                        && !f.getFileName().toString().equals("_info.yaml"))
+                                        && !"_info.yaml".equals(f.getFileName().toString()))
                                 .toList()) {
                             try {
                                 Document modelDoc = yamlMapper.readValue(modelFile.toFile(), Document.class);

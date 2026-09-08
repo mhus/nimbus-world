@@ -5,6 +5,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,7 @@ public class SignService {
 
     private boolean isAsymmetricAlgorithm(String algorithm) {
         if (algorithm == null) return false;
-        String u = algorithm.toUpperCase();
+        String u = algorithm.toUpperCase(Locale.ROOT);
         return u.contains("ECDSA") || u.contains("RSA");
     }
 
@@ -138,6 +139,8 @@ public class SignService {
     // Custom exception
 
     public static class SignatureException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public SignatureException(String message) {
             super(message);
         }

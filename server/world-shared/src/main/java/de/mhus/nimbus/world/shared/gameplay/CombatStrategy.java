@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.shared.gameplay;
 
+import java.util.Locale;
+
 /**
  * Combat strategy for NPC entities when attacked by a player.
  *
@@ -25,7 +27,7 @@ public enum CombatStrategy {
     public static CombatStrategy fromString(String value) {
         if (value == null || value.isBlank()) return FLEE;
         try {
-            return valueOf(value.trim().toUpperCase());
+            return valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return FLEE;
         }

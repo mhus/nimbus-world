@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.world.*;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -201,7 +202,7 @@ public class ItemPriceGeneratorService {
     private ItemTier parseItemTier(String value) {
         if (value == null || value.isBlank()) return ItemTier.NONE;
         try {
-            return ItemTier.valueOf(value.toUpperCase().trim());
+            return ItemTier.valueOf(value.toUpperCase(Locale.ROOT).trim());
         } catch (IllegalArgumentException e) {
             log.warn("Unknown ItemTier: {}", value);
             return ItemTier.NONE;
@@ -211,7 +212,7 @@ public class ItemPriceGeneratorService {
     private RarityCategory parseRarityCategory(String value) {
         if (value == null || value.isBlank()) return RarityCategory.COMMON;
         try {
-            return RarityCategory.valueOf(value.toUpperCase().trim());
+            return RarityCategory.valueOf(value.toUpperCase(Locale.ROOT).trim());
         } catch (IllegalArgumentException e) {
             log.warn("Unknown RarityCategory: {}", value);
             return RarityCategory.COMMON;

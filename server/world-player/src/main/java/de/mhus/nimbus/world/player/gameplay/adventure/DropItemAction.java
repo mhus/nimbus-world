@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
@@ -90,7 +91,7 @@ public class DropItemAction implements GameplayAction {
         int targetX = x;
         int targetY = y;
         int targetZ = z;
-        switch (location.toLowerCase()) {
+        switch (location.toLowerCase(Locale.ROOT)) {
             case "top" -> targetY = y + 1;
             case "bottom" -> targetY = y - 1;
             case "left" -> targetX = x - 1;

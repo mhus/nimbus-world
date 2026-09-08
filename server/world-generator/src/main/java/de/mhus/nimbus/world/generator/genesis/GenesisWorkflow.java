@@ -66,7 +66,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
         // Validate instructions parameter
         var instructions = params.get(PARAM_INSTRUCTIONS);
         if (Strings.isBlank(instructions)) {
-            throw new WorkflowException(null, "Parameter 'instructions' is required");
+            throw new WorkflowException((String) null, "Parameter 'instructions' is required");
         }
 
         return Map.of(PARAM_INSTRUCTIONS, instructions);
@@ -305,7 +305,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
 
         Optional<AiChat> chatOpt = aiModelService.createChat("default:chat", options);
         if (chatOpt.isEmpty()) {
-            throw new WorkflowException(null, "AI model not available. Cannot generate world name.");
+            throw new WorkflowException((String) null, "AI model not available. Cannot generate world name.");
         }
 
         AiChat chat = chatOpt.get();
@@ -345,11 +345,11 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
             response = chat.ask(prompt);
         } catch (AiChatException e) {
             log.error("AI chat failed during world name generation", e);
-            throw new WorkflowException(null, "Failed to generate world name: " + e.getMessage());
+            throw new WorkflowException((String) null, "Failed to generate world name: " + e.getMessage(), e);
         }
 
         if (Strings.isBlank(response)) {
-            throw new WorkflowException(null, "AI returned empty world name");
+            throw new WorkflowException((String) null, "AI returned empty world name");
         }
 
         // Clean response (remove any surrounding whitespace or quotes)
@@ -387,7 +387,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {
         // Cleanup if needed
     }
 }

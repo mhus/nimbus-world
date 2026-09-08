@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -312,7 +313,7 @@ public class PlayerChestController extends BaseEditorController {
         var playerId = PlayerId.of(userId, characterId).orElse(null);
         if (playerId == null) return null;
 
-        return switch (chestType.toLowerCase()) {
+        return switch (chestType.toLowerCase(Locale.ROOT)) {
             case "bank" -> chestService.getOrCreateUserBankChest(worldId, playerId);
             case "transfer" -> chestService.getOrCreateUserTransferChest(worldId, playerId);
             default -> null;

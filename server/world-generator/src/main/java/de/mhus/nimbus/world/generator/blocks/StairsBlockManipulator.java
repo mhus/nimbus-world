@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.blocks;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -82,7 +83,7 @@ public class StairsBlockManipulator implements BlockManipulator {
 
         // Convert direction to dirX, dirZ
         int dirX = 0, dirZ = 0;
-        switch (direction.toLowerCase()) {
+        switch (direction.toLowerCase(Locale.ROOT)) {
             case "north" -> dirZ = -1;
             case "south" -> dirZ = 1;
             case "east" -> dirX = 1;

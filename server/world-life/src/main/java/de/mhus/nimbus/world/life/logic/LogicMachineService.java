@@ -104,7 +104,7 @@ public class LogicMachineService {
             throw new LogicEvaluationException("Could not acquire lock for worldId=" + worldId, null);
         }
 
-        List<LogicContext.DelayedEffect> delayedEffects = List.of();
+        List<LogicContext.DelayedEffect> delayedEffects;
         try {
             String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
             LogicStateMap flags = loadFlags(worldId);

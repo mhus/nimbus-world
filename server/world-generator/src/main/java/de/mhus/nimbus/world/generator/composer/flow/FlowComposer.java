@@ -2,8 +2,6 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.area.Area;
-import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
@@ -16,6 +14,7 @@ import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import java.util.*;
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import lombok.Builder;
@@ -1205,35 +1204,6 @@ public class FlowComposer {
     }
 
     /**
-     * Finds a FeatureHexGrid in central registry at the given coordinate.
-     * Returns null if no FeatureHexGrid exists at that coordinate.
-     */
-    private FeatureHexGrid findFeatureHexGridInBiome(
-            HexVector2 coord, Map<String, Biome> gridMap, HexComposition composition) {
-        // Find the biome at this coordinate
-        Biome biome = gridMap.get(coordKey(coord));
-
-        if (biome == null) {
-            // No biome at this coordinate (flow crosses empty space or filler)
-            return null;
-        }
-
-        // Find existing FeatureHexGrid in central registry
-        String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
-        FeatureHexGrid existing = null;
-        if (composition.getFeatureHexGridRegistry() != null) {
-            existing = composition.getFeatureHexGridRegistry().get(coordKey);
-        }
-
-        if (existing == null) {
-            // Should not happen - biomes should already have FeatureHexGrids from BiomeComposer
-            log.warn("Biome {} has no FeatureHexGrid at {} in central registry", biome.getName(), coord);
-        }
-
-        return existing;
-    }
-
-    /**
      * Builds a grid map from placement result
      */
     private Map<String, Biome> buildGridMap(BiomePlacementResult placementResult) {
@@ -1536,8 +1506,6 @@ public class FlowComposer {
             return;
         }
 
-        Wall wall = (Wall) flow;
-
         // Iterate directly over central registry instead of flow.getHexGrids()
         if (composition.getFeatureHexGridRegistry() == null) {
             log.warn("Central registry is null, cannot convert wall segments");
@@ -1653,109 +1621,6 @@ public class FlowComposer {
     }
 
     /**
-     * Collects Area grids from composition into a map by coordinate key
-     */
-    private void collectAllAreaGrids(HexComposition composition, Map<String, FeatureHexGrid> areaGridMap) {
-        // Collect Area grids from all features
-        if (composition.getFeatures() != null) {
-            for (Feature feature : composition.getFeatures()) {
-                if (feature instanceof Area) {
-                    collectAreaGrids((Area) feature, areaGridMap);
-                }
-            }
-        }
-
-        // Collect Area grids from composites
-        if (composition.getComposites() != null) {
-            for (Composite composite : composition.getComposites()) {
-                for (Feature nestedFeature : composite.getFeatures()) {
-                    if (nestedFeature instanceof Area) {
-                        collectAreaGrids((Area) nestedFeature, areaGridMap);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Collects Area grids into a map by coordinate key.
-     * Only Structures have hexGrids - Biomes store them in central registry.
-     * Note: Flows are not Areas, they are handled separately.
-     */
-    private void collectAreaGrids(Area area, Map<String, FeatureHexGrid> areaGridMap) {
-        List<FeatureHexGrid> hexGrids = null;
-
-        // Only Structures have local hexGrids (Flows are not Areas)
-        if (area instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
-            hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) area).getHexGrids();
-        }
-        // Note: Biomes no longer have local hexGrids - they use central registry
-
-        if (hexGrids == null) {
-            return;
-        }
-
-        for (FeatureHexGrid hexGrid : hexGrids) {
-            String coordKey = hexGrid.getPositionKey();
-            if (coordKey != null) {
-                areaGridMap.put(coordKey, hexGrid);
-            }
-        }
-    }
-
-    /**
-     * Collects Area grids from all PlacedBiomes (including Filler-Biomes!)
-     * This is CRITICAL for flows that cross Filler grids (CoastFiller, OceanFiller, etc.)
-     *
-     * Note: Biomes no longer have local hexGrids - they are stored in central registry.
-     * This method now collects from central HexComposition.featureHexGridRegistry.
-     *
-     * @param placementResult The placement result with all PlacedBiomes
-     * @param areaGridMap Map to add grids to
-     * @param composition The composition with central FeatureHexGrid registry
-     */
-    private void collectAreaGridsFromPlacedBiomes(
-            BiomePlacementResult placementResult, Map<String, FeatureHexGrid> areaGridMap, HexComposition composition) {
-        if (placementResult == null || placementResult.getPlacedBiomes() == null) {
-            log.warn("placementResult or PlacedBiomes is null!");
-            return;
-        }
-
-        // Collect from central FeatureHexGrid registry instead of biome.getHexGrids()
-        if (composition.getFeatureHexGridRegistry() == null
-                || composition.getFeatureHexGridRegistry().isEmpty()) {
-            log.warn("Central FeatureHexGrid registry is empty!");
-            return;
-        }
-
-        int collectedCount = 0;
-
-        // Iterate through all PlacedBiomes and collect their coordinates from central registry
-        for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
-            Biome biome = placedBiome.getBiome();
-            if (biome == null) {
-                continue;
-            }
-
-            // For each coordinate of this biome, get the FeatureHexGrid from central registry
-            for (HexVector2 coord : placedBiome.getCoordinates()) {
-                String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
-                FeatureHexGrid hexGrid = composition.getFeatureHexGridRegistry().get(coordKey);
-                if (hexGrid != null) {
-                    // Add to map (may overwrite, but that's OK - same coordinate)
-                    areaGridMap.put(coordKey, hexGrid);
-                    collectedCount++;
-                }
-            }
-        }
-
-        log.debug(
-                "Collected {} FeatureHexGrids from central registry for {} PlacedBiomes",
-                collectedCount,
-                placementResult.getPlacedBiomes().size());
-    }
-
-    /**
      * Creates coordinate key
      */
     private String coordKey(HexVector2 coord) {
@@ -1848,7 +1713,7 @@ public class FlowComposer {
         // Find PlacedBiome for this biome
         PlacedBiome placedBiome = null;
         for (PlacedBiome pb : placementResult.getPlacedBiomes()) {
-            if (pb.getBiome() == biome) {
+            if (pb.getBiome() == biome) { // NOPMD: matches the exact placed biome instance
                 placedBiome = pb;
                 break;
             }
@@ -1903,7 +1768,7 @@ public class FlowComposer {
         // Find PlacedBiome for this biome
         PlacedBiome placedBiome = null;
         for (PlacedBiome pb : placementResult.getPlacedBiomes()) {
-            if (pb.getBiome() == biome) {
+            if (pb.getBiome() == biome) { // NOPMD: matches the exact placed biome instance
                 placedBiome = pb;
                 break;
             }
@@ -2022,6 +1887,6 @@ public class FlowComposer {
      * All other characters are replaced with underscore.
      */
     private String normalizeName(String name) {
-        return name.toLowerCase().replaceAll("[^a-z0-9_.\\-]", "_");
+        return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.\\-]", "_");
     }
 }

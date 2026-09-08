@@ -229,5 +229,5 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {}
 }

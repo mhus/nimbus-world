@@ -53,7 +53,7 @@ public class FlatExportJobExecutor implements JobExecutor {
             String flatId = getRequiredParameter(job, "flatId");
 
             // Extract optional layerDataId for compound key lookup
-            String layerDataId = getOptionalParameter(job, "layerDataId", null);
+            getOptionalParameter(job, "layerDataId", null);
 
             // Load flat using compound key or search
             WFlat flat = loadFlat(job, flatId);

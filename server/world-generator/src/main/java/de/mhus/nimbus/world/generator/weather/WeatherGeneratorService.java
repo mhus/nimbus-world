@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,7 +123,7 @@ public class WeatherGeneratorService {
         }
 
         try {
-            BiomeType biomeType = BiomeType.valueOf(biomeTypeStr.toUpperCase());
+            BiomeType biomeType = BiomeType.valueOf(biomeTypeStr.toUpperCase(Locale.ROOT));
             return biomeType.getDefaultParameters().get(PARAM_WEATHER);
         } catch (IllegalArgumentException e) {
             log.debug("Unknown biomeType for weather derivation: {}", biomeTypeStr);

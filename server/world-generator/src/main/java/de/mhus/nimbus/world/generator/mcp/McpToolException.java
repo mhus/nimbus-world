@@ -5,6 +5,7 @@ package de.mhus.nimbus.world.generator.mcp;
  * Spring AI MCP catches these and sends them as MCP Error-Response.
  */
 public class McpToolException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     public McpToolException(String message) {
         super(message);

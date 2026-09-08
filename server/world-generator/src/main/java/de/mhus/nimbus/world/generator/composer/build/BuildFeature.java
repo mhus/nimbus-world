@@ -10,6 +10,7 @@ package de.mhus.nimbus.world.generator.composer.build;
  * The build() method is called before the feature is placed in the composition,
  * allowing it to determine its size and prepare its HexGrid coordinates.
  */
+@FunctionalInterface
 public interface BuildFeature {
 
     /**

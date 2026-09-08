@@ -28,11 +28,11 @@ public class ChunkedOutputStream extends OutputStream {
     private final String schemaVersion;
 
     private byte[] buffer;
-    private int bufferPosition = 0;
-    private int chunkIndex = 0;
-    private long totalBytesWritten = 0;
-    private boolean closed = false;
-    private StorageData lastChunk = null; // Track last saved chunk to mark as final
+    private int bufferPosition;
+    private int chunkIndex;
+    private long totalBytesWritten;
+    private boolean closed;
+    private StorageData lastChunk;
 
     /**
      * Creates a new ChunkedOutputStream.

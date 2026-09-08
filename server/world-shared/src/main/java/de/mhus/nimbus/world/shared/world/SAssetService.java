@@ -88,101 +88,106 @@ public class SAssetService implements StorageProvider {
         asset.setCreatedAt(Instant.now());
         asset.removeWorldPrefix();
 
-        // Read first threshold bytes to determine if we should compress
-        byte[] initialBuffer = new byte[compressionThreshold];
-        int bytesRead;
-        try {
-            bytesRead = stream.readNBytes(initialBuffer, 0, compressionThreshold);
-        } catch (Exception e) {
-            log.error("Failed to read asset content: path={}", collection.path(), e);
+        // The stream is fully consumed and closed by this method
+        try (stream) {
+            // Read first threshold bytes to determine if we should compress
+            byte[] initialBuffer = new byte[compressionThreshold];
+            int bytesRead;
+            try {
+                bytesRead = stream.readNBytes(initialBuffer, 0, compressionThreshold);
+            } catch (Exception e) {
+                log.error("Failed to read asset content: path={}", collection.path(), e);
+                throw new IllegalStateException("Failed to read asset content", e);
+            }
+
+            // Check if there's more data beyond threshold
+            byte[] remainingData;
+            try {
+                remainingData = stream.readAllBytes();
+            } catch (Exception e) {
+                log.error("Failed to read remaining asset content: path={}", collection.path(), e);
+                throw new IllegalStateException("Failed to read remaining asset content", e);
+            }
+
+            long originalSize = bytesRead + remainingData.length;
+
+            // Compression if enabled and size exceeds threshold
+            java.io.ByteArrayInputStream finalStream;
+            if (compressionEnabled && originalSize >= compressionThreshold) {
+                try {
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                    try (GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
+                        gzip.write(initialBuffer, 0, bytesRead);
+                        if (remainingData.length > 0) {
+                            gzip.write(remainingData);
+                        }
+                        gzip.finish();
+                    }
+                    byte[] compressedData = buffer.toByteArray();
+                    finalStream = new ByteArrayInputStream(compressedData);
+                    asset.setCompressed(true);
+                    log.debug(
+                            "Asset compressed: path={} original={} compressed={} ratio={} threshold={}",
+                            collection.path(),
+                            originalSize,
+                            compressedData.length,
+                            String.format("%.1f%%", 100.0 * compressedData.length / originalSize),
+                            compressionThreshold);
+                } catch (Exception e) {
+                    log.warn("Failed to compress asset, storing uncompressed: path={}", collection.path(), e);
+                    ByteArrayOutputStream fallback = new ByteArrayOutputStream();
+                    fallback.write(initialBuffer, 0, bytesRead);
+                    if (remainingData.length > 0) {
+                        fallback.write(remainingData, 0, remainingData.length);
+                    }
+                    finalStream = new ByteArrayInputStream(fallback.toByteArray());
+                    asset.setCompressed(false);
+                }
+            } else {
+                // Store uncompressed (below threshold or compression disabled)
+                ByteArrayOutputStream uncompressed = new ByteArrayOutputStream();
+                try {
+                    uncompressed.write(initialBuffer, 0, bytesRead);
+                    if (remainingData.length > 0) {
+                        uncompressed.write(remainingData, 0, remainingData.length);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to write uncompressed data: path={}", collection.path(), e);
+                    throw new IllegalStateException("Failed to write uncompressed data", e);
+                }
+                finalStream = new ByteArrayInputStream(uncompressed.toByteArray());
+                asset.setCompressed(false);
+                if (compressionEnabled) {
+                    log.debug(
+                            "Asset below compression threshold: path={} size={} threshold={}",
+                            collection.path(),
+                            originalSize,
+                            compressionThreshold);
+                }
+            }
+
+            var storageInfo = storageService.store(
+                    STORAGE_SCHEMA,
+                    STORAGE_SCHEMA_VERSION,
+                    collection.worldId().getId(),
+                    "assets/" + collection.path(),
+                    finalStream);
+            asset.setStorageId(storageInfo.id());
+            // Always store original uncompressed size
+            asset.setSize(originalSize);
+            log.debug(
+                    "Storing asset externally path={} originalSize={} storageSize={} storageId={} world={} compressed={}",
+                    collection.path(),
+                    asset.getSize(),
+                    storageInfo.size(),
+                    storageInfo.id(),
+                    collection.worldId(),
+                    asset.isCompressed());
+
+            return repository.save(asset);
+        } catch (IOException e) {
             throw new IllegalStateException("Failed to read asset content", e);
         }
-
-        // Check if there's more data beyond threshold
-        byte[] remainingData;
-        try {
-            remainingData = stream.readAllBytes();
-        } catch (Exception e) {
-            log.error("Failed to read remaining asset content: path={}", collection.path(), e);
-            throw new IllegalStateException("Failed to read remaining asset content", e);
-        }
-
-        long originalSize = bytesRead + remainingData.length;
-
-        // Compression if enabled and size exceeds threshold
-        InputStream finalStream;
-        if (compressionEnabled && originalSize >= compressionThreshold) {
-            try {
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                try (GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
-                    gzip.write(initialBuffer, 0, bytesRead);
-                    if (remainingData.length > 0) {
-                        gzip.write(remainingData);
-                    }
-                    gzip.finish();
-                }
-                byte[] compressedData = buffer.toByteArray();
-                finalStream = new ByteArrayInputStream(compressedData);
-                asset.setCompressed(true);
-                log.debug(
-                        "Asset compressed: path={} original={} compressed={} ratio={} threshold={}",
-                        collection.path(),
-                        originalSize,
-                        compressedData.length,
-                        String.format("%.1f%%", 100.0 * compressedData.length / originalSize),
-                        compressionThreshold);
-            } catch (Exception e) {
-                log.warn("Failed to compress asset, storing uncompressed: path={}", collection.path(), e);
-                ByteArrayOutputStream fallback = new ByteArrayOutputStream();
-                fallback.write(initialBuffer, 0, bytesRead);
-                if (remainingData.length > 0) {
-                    fallback.write(remainingData, 0, remainingData.length);
-                }
-                finalStream = new ByteArrayInputStream(fallback.toByteArray());
-                asset.setCompressed(false);
-            }
-        } else {
-            // Store uncompressed (below threshold or compression disabled)
-            ByteArrayOutputStream uncompressed = new ByteArrayOutputStream();
-            try {
-                uncompressed.write(initialBuffer, 0, bytesRead);
-                if (remainingData.length > 0) {
-                    uncompressed.write(remainingData, 0, remainingData.length);
-                }
-            } catch (Exception e) {
-                log.error("Failed to write uncompressed data: path={}", collection.path(), e);
-                throw new IllegalStateException("Failed to write uncompressed data", e);
-            }
-            finalStream = new ByteArrayInputStream(uncompressed.toByteArray());
-            asset.setCompressed(false);
-            if (compressionEnabled) {
-                log.debug(
-                        "Asset below compression threshold: path={} size={} threshold={}",
-                        collection.path(),
-                        originalSize,
-                        compressionThreshold);
-            }
-        }
-
-        var storageInfo = storageService.store(
-                STORAGE_SCHEMA,
-                STORAGE_SCHEMA_VERSION,
-                collection.worldId().getId(),
-                "assets/" + collection.path(),
-                finalStream);
-        asset.setStorageId(storageInfo.id());
-        // Always store original uncompressed size
-        asset.setSize(originalSize);
-        log.debug(
-                "Storing asset externally path={} originalSize={} storageSize={} storageId={} world={} compressed={}",
-                collection.path(),
-                asset.getSize(),
-                storageInfo.size(),
-                storageInfo.id(),
-                collection.worldId(),
-                asset.isCompressed());
-
-        return repository.save(asset);
     }
 
     /**
@@ -518,53 +523,56 @@ public class SAssetService implements StorageProvider {
         source.removeWorldPrefix();
 
         // Load RAW content from storage (without decompression) to preserve exact binary data
-        InputStream sourceContent = storageService.load(source.getStorageId());
-        if (sourceContent == null) {
-            throw new IllegalStateException("Failed to load source asset content: " + source.getId());
+        try (InputStream sourceContent = storageService.load(source.getStorageId())) {
+            if (sourceContent == null) {
+                throw new IllegalStateException("Failed to load source asset content: " + source.getId());
+            }
+
+            // Handle world collection prefix in newPath
+            var collection = WorldCollection.of(targetWorldId.toMainWorld(), newPath);
+
+            // Create new asset entity with target worldId
+            // Copy compression state and metadata from source
+            SAsset duplicate = SAsset.builder()
+                    .worldId(collection.worldId().getId())
+                    .path(collection.path())
+                    .name(extractName(collection.path()))
+                    .createdBy(createdBy)
+                    .enabled(true)
+                    .compressed(source.isCompressed()) // Preserve compression state
+                    .publicData(source.getPublicData()) // Copy metadata
+                    .build();
+            duplicate.setCreatedAt(Instant.now());
+            duplicate.removeWorldPrefix();
+
+            // Store content in new location (use target worldId)
+            // Store as-is without re-compression to preserve exact size
+            StorageService.StorageInfo storageInfo = storageService.store(
+                    STORAGE_SCHEMA,
+                    STORAGE_SCHEMA_VERSION,
+                    collection.worldId().getId(),
+                    "assets/" + collection.path(),
+                    sourceContent);
+
+            duplicate.setStorageId(storageInfo.id());
+            // Copy original size from source (source.size is already the uncompressed size)
+            duplicate.setSize(source.getSize());
+
+            log.debug(
+                    "Duplicated asset: sourcePath={}, sourceWorldId={}, newPath={}, targetWorldId={}, originalSize={}, storageSize={}, storageId={}, compressed={}",
+                    source.getPath(),
+                    source.getWorldId(),
+                    collection.path(),
+                    collection.worldId().getId(),
+                    duplicate.getSize(),
+                    storageInfo.size(),
+                    storageInfo.id(),
+                    duplicate.isCompressed());
+
+            return repository.save(duplicate);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read source asset stream", e);
         }
-
-        // Handle world collection prefix in newPath
-        var collection = WorldCollection.of(targetWorldId.toMainWorld(), newPath);
-
-        // Create new asset entity with target worldId
-        // Copy compression state and metadata from source
-        SAsset duplicate = SAsset.builder()
-                .worldId(collection.worldId().getId())
-                .path(collection.path())
-                .name(extractName(collection.path()))
-                .createdBy(createdBy)
-                .enabled(true)
-                .compressed(source.isCompressed()) // Preserve compression state
-                .publicData(source.getPublicData()) // Copy metadata
-                .build();
-        duplicate.setCreatedAt(Instant.now());
-        duplicate.removeWorldPrefix();
-
-        // Store content in new location (use target worldId)
-        // Store as-is without re-compression to preserve exact size
-        StorageService.StorageInfo storageInfo = storageService.store(
-                STORAGE_SCHEMA,
-                STORAGE_SCHEMA_VERSION,
-                collection.worldId().getId(),
-                "assets/" + collection.path(),
-                sourceContent);
-
-        duplicate.setStorageId(storageInfo.id());
-        // Copy original size from source (source.size is already the uncompressed size)
-        duplicate.setSize(source.getSize());
-
-        log.debug(
-                "Duplicated asset: sourcePath={}, sourceWorldId={}, newPath={}, targetWorldId={}, originalSize={}, storageSize={}, storageId={}, compressed={}",
-                source.getPath(),
-                source.getWorldId(),
-                collection.path(),
-                collection.worldId().getId(),
-                duplicate.getSize(),
-                storageInfo.size(),
-                storageInfo.id(),
-                duplicate.isCompressed());
-
-        return repository.save(duplicate);
     }
 
     private String extractName(String path) {
@@ -735,9 +743,9 @@ public class SAssetService implements StorageProvider {
      * Build FolderInfo DTO from folder path and statistics.
      */
     private FolderInfo buildFolderInfo(String path, FolderStats stats) {
-        String name = path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
+        String name = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
 
-        String parentPath = path.contains("/") ? path.substring(0, path.lastIndexOf("/")) : "";
+        String parentPath = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
 
         return new FolderInfo(
                 path, name, stats.getAssetCount(), stats.getTotalAssetCount(), stats.getSubfolderCount(), parentPath);

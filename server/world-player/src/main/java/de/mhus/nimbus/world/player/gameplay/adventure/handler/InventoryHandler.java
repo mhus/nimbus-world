@@ -192,7 +192,7 @@ public class InventoryHandler {
 
         String itemId = resolveShortcutItemId(session, shortcutKey);
         if (itemId == null) return null;
-        if (itemId.equals(BasicGameplay.SHORTCUT_INTERACT_ACTION)) {
+        if (BasicGameplay.SHORTCUT_INTERACT_ACTION.equals(itemId)) {
             return BasicGameplay.SHORTCUT_INTERACT_ACTION;
         }
 

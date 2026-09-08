@@ -333,10 +333,6 @@ public class EditorController extends BaseEditorController {
         }
     }
 
-    private ResponseEntity<?> error(String message) {
-        return ResponseEntity.status(500).body(Map.of("error", message));
-    }
-
     // ===== DTOs =====
 
     /**

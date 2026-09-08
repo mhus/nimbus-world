@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.blocks;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -104,7 +105,7 @@ public class WallBlockManipulator implements BlockManipulator {
             return ManipulatorResult.error("Missing required parameter 'direction' (N/E/S/W/X/Z)");
         }
 
-        direction = direction.toUpperCase();
+        direction = direction.toUpperCase(Locale.ROOT);
         boolean alongX = false; // true = X-axis (E-W), false = Z-axis (N-S)
 
         switch (direction) {

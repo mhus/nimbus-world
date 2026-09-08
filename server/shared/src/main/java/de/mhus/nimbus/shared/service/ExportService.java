@@ -74,7 +74,7 @@ public class ExportService {
         Files.createDirectories(outputFile.getParent());
 
         long startTime = System.currentTimeMillis();
-        int totalCount = 0;
+        int totalCount;
         int successCount = 0;
         int errorCount = 0;
 

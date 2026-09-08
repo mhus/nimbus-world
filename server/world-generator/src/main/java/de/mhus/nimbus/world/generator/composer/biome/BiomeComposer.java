@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.build.CompositionContext;
@@ -10,6 +9,7 @@ import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.*;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -548,41 +548,6 @@ public class BiomeComposer {
     private static final WHexGrid.EDGE[] DIRECTION_EDGES = WHexGrid.EDGE.values();
 
     /**
-     * Generates scattered hexes around center
-     */
-    private List<HexVector2> generateScatteredCoordinates(HexVector2 center, int size, Random random) {
-        List<HexVector2> coords = new ArrayList<>();
-        coords.add(center);
-
-        if (size <= 1) return coords;
-
-        // Add scattered hexes within radius
-        int radius = Math.max(2, size / 2);
-        Set<String> used = new HashSet<>();
-        used.add(TypeUtil.toStringHexCoord(center));
-
-        int attempts = 0;
-        while (coords.size() < size && attempts < size * 10) {
-            attempts++;
-
-            int ring = random.nextInt(radius) + 1;
-            List<HexVector2> candidates = getHexRing(center, ring);
-
-            if (!candidates.isEmpty()) {
-                HexVector2 candidate = candidates.get(random.nextInt(candidates.size()));
-                String key = TypeUtil.toStringHexCoord(candidate);
-
-                if (!used.contains(key)) {
-                    coords.add(candidate);
-                    used.add(key);
-                }
-            }
-        }
-
-        return coords;
-    }
-
-    /**
      * Gets all hexes in a ring around center using odd-r offset coordinates.
      */
     private List<HexVector2> getHexRing(HexVector2 center, int radius) {
@@ -723,7 +688,7 @@ public class BiomeComposer {
                         try {
                             de.mhus.nimbus.world.generator.composer.filler.FillerType fillerType =
                                     de.mhus.nimbus.world.generator.composer.filler.FillerType.valueOf(
-                                            fillerTypeStr.toUpperCase());
+                                            fillerTypeStr.toUpperCase(Locale.ROOT));
                             featureHexGrid.setFillerType(fillerType);
                         } catch (IllegalArgumentException e) {
                             log.warn(
@@ -769,6 +734,8 @@ public class BiomeComposer {
      * Exception for biome placement failures
      */
     private static class BiomePlacementException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public BiomePlacementException(String message) {
             super(message);
         }

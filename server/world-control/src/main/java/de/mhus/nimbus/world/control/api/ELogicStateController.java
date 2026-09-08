@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,10 +49,10 @@ public class ELogicStateController extends BaseEditorController {
         List<WLogicStateDef> all = stateService.findByWorldId(lookupWorldId);
 
         if (!Strings.isBlank(query)) {
-            String lowerQuery = query.toLowerCase();
+            String lowerQuery = query.toLowerCase(Locale.ROOT);
             all = all.stream()
-                    .filter(f ->
-                            f.getName() != null && f.getName().toLowerCase().contains(lowerQuery))
+                    .filter(f -> f.getName() != null
+                            && f.getName().toLowerCase(Locale.ROOT).contains(lowerQuery))
                     .collect(Collectors.toList());
         }
 

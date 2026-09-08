@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import java.util.*;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,9 +94,9 @@ public class LayerTools implements McpToolBean {
 
         de.mhus.nimbus.world.shared.layer.LayerType type;
         try {
-            type = de.mhus.nimbus.world.shared.layer.LayerType.valueOf(layerType.toUpperCase());
+            type = de.mhus.nimbus.world.shared.layer.LayerType.valueOf(layerType.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid layerType: " + layerType + " (must be GROUND or MODEL)");
+            throw new McpToolException("Invalid layerType: " + layerType + " (must be GROUND or MODEL)", e);
         }
 
         if (layerService.findByWorldIdAndName(worldId, name).isPresent()) {

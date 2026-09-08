@@ -23,7 +23,6 @@ public class JavaModelWriter {
     private final JavaModel model;
     private final Configuration configuration;
     private final java.util.Map<String, JavaType> indexByName;
-    private final java.util.Set<String> typesExtendedByOthers;
     // Helper types that should be rendered as nested classes instead of separate top-level files
     private final java.util.Map<String, JavaType> nestedHelperOwnerByName = new java.util.HashMap<>();
 
@@ -55,7 +54,6 @@ public class JavaModelWriter {
             }
         }
         this.indexByName = idx;
-        this.typesExtendedByOthers = extendedByOthers;
 
         // Discover backdrop helper types that should be nested inside their parent class
         if (model != null && model.getTypes() != null) {
@@ -583,17 +581,11 @@ public class JavaModelWriter {
         }
         StringBuilder sb = new StringBuilder();
         for (String name : implementsNames) {
-            if (name == null || name.trim().isEmpty()) continue;
+            if (name == null || name.isBlank()) continue;
             if (!sb.isEmpty()) sb.append(", ");
             sb.append(qualifyType(name.trim(), currentPkg));
         }
         return sb.toString();
-    }
-
-    private String combineCsv(String a, String b) {
-        if (a == null || a.isEmpty()) return b == null ? "" : b;
-        if (b == null || b.isEmpty()) return a;
-        return a + ", " + b;
     }
 
     private boolean isValidJavaIdentifier(String s) {

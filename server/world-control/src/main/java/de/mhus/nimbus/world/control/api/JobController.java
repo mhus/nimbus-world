@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
@@ -156,7 +157,7 @@ public class JobController extends BaseEditorController {
         if (error != null) return error;
 
         try {
-            JobStatus jobStatus = JobStatus.valueOf(status.toUpperCase());
+            JobStatus jobStatus = JobStatus.valueOf(status.toUpperCase(Locale.ROOT));
             List<JobResponse> result = jobService.getJobsByWorldAndStatus(worldId, jobStatus).stream()
                     .map(this::toResponse)
                     .toList();

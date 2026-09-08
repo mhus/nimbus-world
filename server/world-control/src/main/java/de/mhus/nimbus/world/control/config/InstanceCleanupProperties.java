@@ -44,5 +44,5 @@ public class InstanceCleanupProperties {
      * Useful for testing and monitoring.
      * Default: false
      */
-    private boolean dryRun = false;
+    private boolean dryRun;
 }

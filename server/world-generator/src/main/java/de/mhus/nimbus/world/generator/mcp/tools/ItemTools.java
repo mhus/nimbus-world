@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.world.RarityCategory;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -196,7 +197,7 @@ public class ItemTools implements McpToolBean {
                     "worldId", saved.getWorldId(),
                     "status", "created");
         } catch (Exception e) {
-            throw new McpToolException("Failed to create item: " + e.getMessage());
+            throw new McpToolException("Failed to create item: " + e.getMessage(), e);
         }
     }
 
@@ -231,7 +232,7 @@ public class ItemTools implements McpToolBean {
                     "status",
                     "duplicated");
         } catch (IllegalArgumentException e) {
-            throw new McpToolException(e.getMessage());
+            throw new McpToolException(e.getMessage(), e);
         }
     }
 
@@ -323,17 +324,18 @@ public class ItemTools implements McpToolBean {
         // Trading/price fields
         if (!Strings.isBlank(itemTier)) {
             try {
-                item.setItemTier(ItemTier.valueOf(itemTier.toUpperCase().trim()));
+                item.setItemTier(
+                        ItemTier.valueOf(itemTier.toUpperCase(Locale.ROOT).trim()));
             } catch (IllegalArgumentException e) {
-                throw new McpToolException("Invalid itemTier: " + itemTier);
+                throw new McpToolException("Invalid itemTier: " + itemTier, e);
             }
         }
         if (!Strings.isBlank(rarityCategory)) {
             try {
-                item.setRarityCategory(
-                        RarityCategory.valueOf(rarityCategory.toUpperCase().trim()));
+                item.setRarityCategory(RarityCategory.valueOf(
+                        rarityCategory.toUpperCase(Locale.ROOT).trim()));
             } catch (IllegalArgumentException e) {
-                throw new McpToolException("Invalid rarityCategory: " + rarityCategory);
+                throw new McpToolException("Invalid rarityCategory: " + rarityCategory, e);
             }
         }
         if (basePrice != null) item.setBasePrice(basePrice);
@@ -378,7 +380,7 @@ public class ItemTools implements McpToolBean {
                     "status",
                     "renamed");
         } catch (IllegalArgumentException e) {
-            throw new McpToolException(e.getMessage());
+            throw new McpToolException(e.getMessage(), e);
         }
     }
 

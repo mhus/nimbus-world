@@ -137,17 +137,4 @@ public class HillyTerrainManipulator implements FlatManipulator {
             return defaultValue;
         }
     }
-
-    private double parseDoubleParameter(Map<String, String> parameters, String name, double defaultValue) {
-        if (parameters == null || !parameters.containsKey(name)) {
-            return defaultValue;
-        }
-
-        try {
-            return Double.parseDouble(parameters.get(name));
-        } catch (NumberFormatException e) {
-            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
-            return defaultValue;
-        }
-    }
 }

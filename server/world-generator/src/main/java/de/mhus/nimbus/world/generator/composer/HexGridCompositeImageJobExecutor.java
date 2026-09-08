@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.Locale;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -335,7 +336,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                             && "true".equals(featureGrid.getParameters().get("filler"))) {
                         String fillerType = featureGrid.getParameters().get("fillerType");
                         if (fillerType != null) {
-                            biomeName = fillerType.toLowerCase();
+                            biomeName = fillerType.toLowerCase(Locale.ROOT);
                         }
                     }
                 }

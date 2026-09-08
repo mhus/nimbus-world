@@ -391,7 +391,6 @@ public class EditBlockPainter {
     public void arch(int x, int y, int z, int width, int height, int depth) {
         if (width < 3 || height < 2 || depth < 1) return;
         int radius = width / 2;
-        int centerX = x + radius;
         for (int d = 0; d < depth; d++) {
             for (int h = 0; h < height; h++) {
                 paint(x, y + h, z + d);

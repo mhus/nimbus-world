@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.town;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -51,8 +52,8 @@ public class StructuresIndex {
         }
 
         // Normalize style and kind to lowercase for case-insensitive matching
-        String normalizedStyle = style.toLowerCase();
-        String normalizedKind = kind.toLowerCase();
+        String normalizedStyle = style.toLowerCase(Locale.ROOT);
+        String normalizedKind = kind.toLowerCase(Locale.ROOT);
 
         // Check if style exists in index
         Map<String, List<BuildingDefinition>> styleMap = buildings.get(normalizedStyle);
@@ -92,7 +93,7 @@ public class StructuresIndex {
             return new ArrayList<>();
         }
 
-        String normalizedStyle = style.toLowerCase();
+        String normalizedStyle = style.toLowerCase(Locale.ROOT);
         Map<String, List<BuildingDefinition>> styleMap = buildings.get(normalizedStyle);
 
         if (styleMap == null) {
@@ -123,8 +124,8 @@ public class StructuresIndex {
             return;
         }
 
-        String normalizedStyle = building.getStyle().toLowerCase();
-        String normalizedKind = building.getKind().toLowerCase();
+        String normalizedStyle = building.getStyle().toLowerCase(Locale.ROOT);
+        String normalizedKind = building.getKind().toLowerCase(Locale.ROOT);
 
         // Ensure style map exists
         buildings.putIfAbsent(normalizedStyle, new HashMap<>());

@@ -8,6 +8,7 @@ import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -62,8 +63,8 @@ public class SharedKeyController {
         KeyType keyType;
         KeyKind keyKind;
         try {
-            keyType = KeyType.valueOf(req.getType().trim().toUpperCase());
-            keyKind = KeyKind.valueOf(req.getKind().trim().toUpperCase());
+            keyType = KeyType.valueOf(req.getType().trim().toUpperCase(Locale.ROOT));
+            keyKind = KeyKind.valueOf(req.getKind().trim().toUpperCase(Locale.ROOT));
         } catch (Exception ex) {
             return ResponseEntity.badRequest().build();
         }
@@ -93,7 +94,8 @@ public class SharedKeyController {
             @RequestParam("kind") String kind,
             @RequestParam("owner") String owner,
             @RequestParam("intent") String intent) {
-        boolean ex = keyService.existsByTypeKindOwnerIntent(type.toUpperCase(), kind.toUpperCase(), owner, intent);
+        boolean ex = keyService.existsByTypeKindOwnerIntent(
+                type.toUpperCase(Locale.ROOT), kind.toUpperCase(Locale.ROOT), owner, intent);
         return java.util.Map.of("exists", ex);
     }
 

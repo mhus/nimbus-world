@@ -4,7 +4,6 @@ import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.WallConfigPart;
@@ -95,7 +94,6 @@ public class HexGridRoadConfigurator {
 
                 // Check for overlaps (multiple grids at same coordinate)
                 if (index.containsKey(coordKey)) {
-                    GridEntry existing = index.get(coordKey);
                     log.debug("Grid overlap at {}: using latest", coordKey);
                     overlapping.add(coordKey);
                     overlappingCount++;
@@ -117,44 +115,6 @@ public class HexGridRoadConfigurator {
             }
 
             return gridIndex;
-        }
-
-        private static int indexAreaGrids(Area area, Map<String, GridEntry> index, List<String> overlapping) {
-            // Only Structures have local hexGrids (Flows are not Areas)
-            List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> hexGrids = null;
-            if (area instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
-                hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) area).getHexGrids();
-            }
-            // Note: Flows are not Areas, so they cannot be cast here
-
-            if (hexGrids == null) {
-                return 0;
-            }
-
-            int overlapCount = 0;
-
-            for (FeatureHexGrid hexGrid : hexGrids) {
-                String coordKey = hexGrid.getPositionKey();
-                if (coordKey == null) {
-                    continue;
-                }
-
-                // Check for overlaps (multiple areas at same coordinate)
-                if (index.containsKey(coordKey)) {
-                    GridEntry existing = index.get(coordKey);
-                    log.debug(
-                            "Area grid overlap at {}: {} vs {} (using latest)",
-                            coordKey,
-                            existing.getArea().getName(),
-                            area.getName());
-                    overlapping.add(coordKey);
-                    overlapCount++;
-                }
-
-                index.put(coordKey, new GridEntry(area, hexGrid));
-            }
-
-            return overlapCount;
         }
 
         /**
@@ -386,7 +346,7 @@ public class HexGridRoadConfigurator {
 
             // Parse existing road parameter if present (from Village)
             Map<String, Object> existingRoadConfig = null;
-            if (existingRoad != null && !existingRoad.isEmpty() && !existingRoad.equals("{}")) {
+            if (existingRoad != null && !existingRoad.isEmpty() && !"{}".equals(existingRoad)) {
                 try {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> parsed = objectMapper.readValue(existingRoad, Map.class);
@@ -818,24 +778,6 @@ public class HexGridRoadConfigurator {
             log.error("Failed to build wall JSON from parts for grid {}", grid.getPositionKey(), e);
             return "{}";
         }
-    }
-
-    /**
-     * Calculates road level based on grid terrain height + offset.
-     *
-     * @param terrainLevel The base terrain level of the grid
-     * @param segment The flow segment
-     * @return Calculated road level
-     */
-    private int calculateRoadLevel(int terrainLevel, FlowSegment segment) {
-        // Roads are "on top" of terrain
-        // Use segment level if provided, otherwise terrain + default offset
-        if (segment.getLevel() != null) {
-            return segment.getLevel();
-        }
-
-        // Default: terrain level + 1 (roads slightly above ground)
-        return terrainLevel + 1;
     }
 
     /**

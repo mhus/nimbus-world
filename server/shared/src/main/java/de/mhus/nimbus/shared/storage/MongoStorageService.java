@@ -255,7 +255,7 @@ public class MongoStorageService extends StorageService {
         mongoQuery.addCriteria(Criteria.where("isFinal").is(true));
 
         // Add search criteria if a query is provided.
-        if (query != null && !query.trim().isEmpty()) {
+        if (query != null && !query.isBlank()) {
             // Escape the user input to a literal pattern so regex metacharacters
             // cannot inject a catastrophic/backtracking expression (ReDoS) or
             // a ".*" match-all against the shared MongoDB instance.
@@ -349,14 +349,13 @@ public class MongoStorageService extends StorageService {
             return null;
         }
 
-        // Load source data
-        InputStream sourceStream = load(sourceStorageId);
-        if (sourceStream == null) {
-            log.error("Cannot load source storage data: {}", sourceStorageId);
-            return null;
-        }
+        // Load source data (try-with-resources also handles the null case)
+        try (InputStream sourceStream = load(sourceStorageId)) {
+            if (sourceStream == null) {
+                log.error("Cannot load source storage data: {}", sourceStorageId);
+                return null;
+            }
 
-        try {
             // Store with new worldId
             StorageInfo newInfo = store(
                     sourceInfo.schema(), sourceInfo.schemaVersion(), targetWorldId, sourceInfo.path(), sourceStream);
@@ -373,13 +372,9 @@ public class MongoStorageService extends StorageService {
                     targetWorldId);
 
             return newInfo.id();
-
-        } finally {
-            try {
-                sourceStream.close();
-            } catch (IOException e) {
-                log.warn("Error closing source stream", e);
-            }
+        } catch (IOException e) {
+            log.warn("Error closing source stream", e);
+            return null;
         }
     }
 }

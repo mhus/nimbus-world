@@ -50,7 +50,7 @@ public class EpochDeleteJobExecutor implements JobExecutor {
             try {
                 epoch = Integer.parseInt(epochStr);
             } catch (NumberFormatException e) {
-                throw new JobExecutionException("Invalid epoch parameter: " + epochStr);
+                throw new JobExecutionException("Invalid epoch parameter: " + epochStr, e);
             }
 
             log.info("Starting epoch deletion for world {}: epoch={}", worldId, epoch);

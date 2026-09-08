@@ -103,7 +103,7 @@ public class FlatExportService {
             throw new IllegalArgumentException("Layer must be of type GROUND, but is: " + layer.getLayerType());
         }
 
-        int chunkSize = world.getPublicData().getChunkSize();
+        world.getPublicData().getChunkSize();
         String layerDataId = layer.getLayerDataId();
 
         // Map to store modified chunks: chunkKey -> LayerChunkData
@@ -456,23 +456,6 @@ public class FlatExportService {
     }
 
     /**
-     * Check if a block exists at a specific position.
-     */
-    private boolean hasBlockAtPosition(LayerChunkData chunkData, int worldX, int y, int worldZ) {
-        for (LayerBlock layerBlock : chunkData.getBlocks()) {
-            Block block = layerBlock.getBlock();
-            if (block == null || block.getPosition() == null) {
-                continue;
-            }
-            Vector3Int pos = block.getPosition();
-            if (pos.getX() == worldX && pos.getY() == y && pos.getZ() == worldZ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Delete all blocks below a specific level in a column.
      * Keeps blocks at and above the specified level.
      */
@@ -672,7 +655,6 @@ public class FlatExportService {
 
         // Fill from level down to lowestSiblingLevel (or level if lower than all siblings)
         // do not start at level, start at 255 - there could be extra blocks above
-        boolean hasGround = false;
         int lowestY = Math.min(lowestSiblingLevel, level);
         for (int y = 255; y >= lowestY; y--) {
             // Get block definition for this Y level
@@ -714,8 +696,6 @@ public class FlatExportService {
                         worldZ,
                         blockDefString);
                 continue;
-            } else {
-                hasGround = true;
             }
 
             // Create block with position

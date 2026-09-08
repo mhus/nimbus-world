@@ -54,7 +54,6 @@ public class ScriptEffectTriggerHandler implements MessageHandler {
         // Extract effect data
         String effectId = data.has("effectId") ? data.get("effectId").asText() : null;
         String entityId = data.has("entityId") ? data.get("entityId").asText() : null;
-        JsonNode chunks = data.has("chunks") ? data.get("chunks") : null;
         JsonNode effect = data.has("effect") ? data.get("effect") : null;
 
         if (effectId == null || effect == null) {

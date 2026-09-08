@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,21 +97,20 @@ public class StorageController {
             throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Storage id not found");
         }
         response.setContentType(findContentType(info.path()));
-        var stream = storageService.load(id);
-        if (stream == null) {
-            throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Storage content not found");
-        }
-        try (stream) {
+        try (var stream = storageService.load(id)) {
+            if (stream == null) {
+                throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Storage content not found");
+            }
             stream.transferTo(response.getOutputStream());
         } catch (Exception e) {
             log.warn("Cannot stream storage id {}", id, e);
-            throw new ResponseStatusException(HttpStatusCode.valueOf(500), "Cannot stream content");
+            throw new ResponseStatusException(HttpStatusCode.valueOf(500), "Cannot stream content", e);
         }
     }
 
     private String findContentType(String path) {
         if (path == null) return "application/octet-stream";
-        path = path.toLowerCase();
+        path = path.toLowerCase(Locale.ROOT);
         if (path.endsWith(".png")) return "image/png";
         if (path.endsWith(".jpg")) return "image/jpeg";
         if (path.endsWith(".jpeg")) return "image/jpeg";

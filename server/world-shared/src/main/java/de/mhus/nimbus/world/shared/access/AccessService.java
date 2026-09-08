@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -216,12 +217,12 @@ public class AccessService {
 
         // Filter by search query if provided (searches in username and email)
         if (searchQuery != null && !searchQuery.isBlank()) {
-            String queryLower = searchQuery.toLowerCase();
+            String queryLower = searchQuery.toLowerCase(Locale.ROOT);
             users = users.stream()
-                    .filter(u ->
-                            (u.getName() != null && u.getName().toLowerCase().contains(queryLower))
-                                    || (u.getEmail() != null
-                                            && u.getEmail().toLowerCase().contains(queryLower)))
+                    .filter(u -> (u.getName() != null
+                                    && u.getName().toLowerCase(Locale.ROOT).contains(queryLower))
+                            || (u.getEmail() != null
+                                    && u.getEmail().toLowerCase(Locale.ROOT).contains(queryLower)))
                     .collect(Collectors.toList());
         }
 

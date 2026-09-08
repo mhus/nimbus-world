@@ -5,7 +5,6 @@ import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
-import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -227,7 +226,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                                 : 0));
         metadata.put("instructionsDocumentId", instructionsDocumentId);
 
-        WDocument document = documentService.save(wid, TRANSLATIONS_COLLECTION, documentId, doc -> {
+        documentService.save(wid, TRANSLATIONS_COLLECTION, documentId, doc -> {
             doc.setName(finalDocumentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Generated World");
             doc.setFormat("json");

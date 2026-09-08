@@ -159,23 +159,7 @@ public class FlatCreateJobExecutor implements JobExecutor {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value);
-        }
-    }
-
-    /**
-     * Get optional integer parameter from job with default value.
-     */
-    private int getOptionalIntParameter(WJob job, String paramName, int defaultValue) {
-        String value = job.getParameters().get(paramName);
-        if (value == null || value.isBlank()) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}", paramName, value, defaultValue);
-            return defaultValue;
+            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value, e);
         }
     }
 }

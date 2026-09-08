@@ -164,10 +164,7 @@ public class Day3Generation extends MethodBasedWorkflow {
         log.info("Parsed {} hexgrid coordinates", hexCoordinates.size());
 
         // Initialize flatIds list with empty values
-        List<String> flatIds = new ArrayList<>(hexCoordinates.size());
-        for (int i = 0; i < hexCoordinates.size(); i++) {
-            flatIds.add(null);
-        }
+        List<String> flatIds = new ArrayList<>(java.util.Collections.nCopies(hexCoordinates.size(), (String) null));
 
         // Store processing state - start with first configured phase
         String phases = (String) context.getParameters().get(GenesisConst.PHASES);
@@ -505,5 +502,5 @@ public class Day3Generation extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {}
 }

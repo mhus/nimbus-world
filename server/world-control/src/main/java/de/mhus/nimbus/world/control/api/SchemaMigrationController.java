@@ -7,6 +7,7 @@ import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
@@ -125,7 +126,7 @@ public class SchemaMigrationController {
 
             // Route to appropriate migration method
             MigrationResponse response =
-                    switch (request.documentId.toLowerCase()) {
+                    switch (request.documentId.toLowerCase(Locale.ROOT)) {
                         case "*" -> migrateAllDocuments(request);
                         case "no-schema" -> migrateDocumentsWithoutSchema(request);
                         default -> migrateSingleDocument(request);
@@ -337,12 +338,12 @@ public class SchemaMigrationController {
             return SchemaVersion.NULL;
         }
 
-        int valueStart = documentJson.indexOf("\"", schemaIndex + 10);
+        int valueStart = documentJson.indexOf('"', schemaIndex + 10);
         if (valueStart == -1) {
             return SchemaVersion.NULL;
         }
 
-        int valueEnd = documentJson.indexOf("\"", valueStart + 1);
+        int valueEnd = documentJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return SchemaVersion.NULL;
         }

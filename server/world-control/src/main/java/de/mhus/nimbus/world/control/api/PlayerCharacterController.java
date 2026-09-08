@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -167,7 +168,7 @@ public class PlayerCharacterController extends BaseEditorController {
             return bad("gender required");
         }
 
-        String gender = body.gender().trim().toUpperCase();
+        String gender = body.gender().trim().toUpperCase(Locale.ROOT);
         if (!VALID_GENDERS.contains(gender)) {
             return bad("Invalid gender. Allowed: '', 'M', 'F', 'D'");
         }

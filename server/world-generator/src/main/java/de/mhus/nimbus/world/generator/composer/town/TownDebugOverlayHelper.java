@@ -39,21 +39,9 @@ public class TownDebugOverlayHelper {
             return;
         }
 
-        int addedOverlays = 0;
-
-        for (Map.Entry<de.mhus.nimbus.generated.types.HexVector2, de.mhus.nimbus.world.shared.generator.WFlat> entry :
-                flats.entrySet()) {
-            de.mhus.nimbus.generated.types.HexVector2 coord = entry.getKey();
-
-            // Get g_village parameter from flat
-            // Note: We need to access the WHexGrid to get the parameters
-            // Since we only have WFlat here, we need to get the parameters differently
-            // For now, skip this implementation - see addVillageSlotOverlaysFromHexGrids method
-        }
-
-        if (addedOverlays > 0) {
-            log.debug("Added {} village slot overlays to composite image", addedOverlays);
-        }
+        // WFlat does not carry the village parameters; the overlay logic lives in
+        // addVillageSlotOverlaysFromHexGrids (called with the WHexGrid objects).
+        log.debug("Skipped village slot overlays: {} flats without hex grid parameters", flats.size());
     }
 
     /**

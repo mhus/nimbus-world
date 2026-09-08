@@ -100,15 +100,10 @@ public class BlockStatusSenderService {
      */
     public void broadcastStatusRemoval(String worldId, int cx, int cz, String blockKey) {
         // Send with null value to indicate removal
-        BlockProgressStatusData data = BlockProgressStatusData.builder()
-                .cx(cx)
-                .cz(cz)
-                .s(new java.util.HashMap<>() {
-                    {
-                        put(blockKey, null);
-                    }
-                })
-                .build();
+        java.util.Map<String, String> removal = new java.util.HashMap<>();
+        removal.put(blockKey, null);
+        BlockProgressStatusData data =
+                BlockProgressStatusData.builder().cx(cx).cz(cz).s(removal).build();
 
         sendToChunkSessions(worldId, cx, cz, data);
     }

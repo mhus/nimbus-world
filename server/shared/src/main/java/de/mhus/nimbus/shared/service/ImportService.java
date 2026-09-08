@@ -112,7 +112,7 @@ public class ImportService {
                 lineNumber++;
                 totalCount++;
 
-                if (line.trim().isEmpty()) {
+                if (line.isBlank()) {
                     continue;
                 }
 
@@ -217,12 +217,12 @@ public class ImportService {
             return null;
         }
 
-        int valueStart = entityJson.indexOf("\"", classIndex + 10);
+        int valueStart = entityJson.indexOf('"', classIndex + 10);
         if (valueStart == -1) {
             return null;
         }
 
-        int valueEnd = entityJson.indexOf("\"", valueStart + 1);
+        int valueEnd = entityJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return null;
         }
@@ -249,12 +249,12 @@ public class ImportService {
             return null;
         }
 
-        int valueStart = entityJson.indexOf("\"", idIndex + 5);
+        int valueStart = entityJson.indexOf('"', idIndex + 5);
         if (valueStart == -1) {
             return null;
         }
 
-        int valueEnd = entityJson.indexOf("\"", valueStart + 1);
+        int valueEnd = entityJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return null;
         }
@@ -292,12 +292,12 @@ public class ImportService {
             return false;
         }
 
-        int valueStart = entityJson.indexOf("\"", worldIdIndex + 10);
+        int valueStart = entityJson.indexOf('"', worldIdIndex + 10);
         if (valueStart == -1) {
             return false;
         }
 
-        int valueEnd = entityJson.indexOf("\"", valueStart + 1);
+        int valueEnd = entityJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return false;
         }

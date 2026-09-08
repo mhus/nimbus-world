@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
@@ -12,7 +11,6 @@ import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
-import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.*;
 import lombok.Builder;
@@ -558,13 +556,9 @@ public class PointComposer {
         // Apply movement with factor
         int newQ = current.coordinate.getQ() + (int) Math.round(deltaQ * factor);
         int newR = current.coordinate.getR() + (int) Math.round(deltaR * factor);
-        int newLx = current.lx + (int) Math.round(deltaLx * factor);
-        int newLz = current.lz + (int) Math.round(deltaLz * factor);
 
         // Update point position
         // Convert absolute lx/lz back to HexLocal position (relative to grid center)
-        int relativeLx = newLx - context.getHexGridSize() / 2;
-        int relativeLz = newLz - context.getHexGridSize() / 2;
 
         // TODO: Convert pixel coordinates back to hex coordinates
         // For now: approximate by creating a position at (0,0) center
@@ -586,25 +580,6 @@ public class PointComposer {
                 + (deltaLx * deltaLx + deltaLz * deltaLz) / (context.getHexGridSize() * context.getHexGridSize()));
 
         return movement;
-    }
-
-    /**
-     * Calculates local position (lx, lz) from side and offset.
-     * Uses denominator=4 as specified (numerator 1-3: NORTH, CENTER, SOUTH).
-     */
-    private int[] calculateLocalPositionFromSide(WHexGrid.EDGE side, Double offset, int hexGridSize) {
-        if (offset == null) offset = 0.5; // Default to center
-
-        // Convert offset to numerator (0.0->0, 0.25->1, 0.5->2, 0.75->3, 1.0->4)
-        int numerator = (int) Math.round(offset * 4);
-        numerator = Math.max(0, Math.min(4, numerator));
-
-        // Create HexLocalEdgeVector
-        HexLocalEdgeVector vector = new HexLocalEdgeVector(side, numerator, 4);
-
-        // Use HexLocalUtil to calculate actual lx, lz from side coordinates
-        Vector2Int pos = HexLocalUtil.toHexgridLocalCenter(vector, hexGridSize);
-        return new int[] {pos.getX(), pos.getZ()};
     }
 
     // ========== Inner Classes ==========

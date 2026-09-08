@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import java.util.Locale;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.DeserializationFeature;
@@ -187,7 +188,7 @@ public class SingleMountainBuilder extends HexGridBuilder {
             return FlatMaterialService.STONE;
         }
 
-        return switch (materialType.toLowerCase()) {
+        return switch (materialType.toLowerCase(Locale.ROOT)) {
             case "stone" -> FlatMaterialService.STONE;
             case "snow" -> FlatMaterialService.SNOW;
             case "volcanic", "lava" -> FlatMaterialService.STONE; // Could be lava material if available

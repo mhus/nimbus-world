@@ -300,13 +300,14 @@ public class WLayerOverlayService {
             }
 
             // Decompress if needed
-            InputStream dataStream = stream;
+            LayerChunkData chunkData;
             if (terrain.isCompressed()) {
-                dataStream = new java.util.zip.GZIPInputStream(stream);
+                try (var dataStream = new java.util.zip.GZIPInputStream(stream)) {
+                    chunkData = objectMapper.readValue(dataStream, LayerChunkData.class);
+                }
+            } else {
+                chunkData = objectMapper.readValue(stream, LayerChunkData.class);
             }
-
-            LayerChunkData chunkData = objectMapper.readValue(dataStream, LayerChunkData.class);
-            dataStream.close();
 
             // Overlay blocks (later blocks overwrite earlier ones)
             if (chunkData.getBlocks() != null) {

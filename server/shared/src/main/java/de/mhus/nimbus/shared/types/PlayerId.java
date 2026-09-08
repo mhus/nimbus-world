@@ -70,6 +70,7 @@ public class PlayerId {
         return id.matches("@[a-zA-Z0-9_\\-]{2,64}:[a-zA-Z0-9_\\-]{2,64}");
     }
 
+    @Override
     public String toString() {
         return id;
     }

@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +40,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
         HashMap<WHexGrid.EDGE, String> sideFlats = new HashMap<>();
         // Note: parameters come from HexGridBuilderService which already strips the "g_" prefix
         for (var side : WHexGrid.EDGE.values()) {
-            String key = "edge_flat_" + side.name().toLowerCase();
+            String key = "edge_flat_" + side.name().toLowerCase(Locale.ROOT);
             String flatId = parameters.get(key);
             if (flatId != null) {
                 sideFlats.put(side, flatId);

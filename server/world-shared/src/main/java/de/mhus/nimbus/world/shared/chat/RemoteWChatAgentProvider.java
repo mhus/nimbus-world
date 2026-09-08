@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
@@ -137,7 +138,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
             return WChatAgentScope.ALL;
         }
         try {
-            return WChatAgentScope.valueOf(scopeStr.toUpperCase());
+            return WChatAgentScope.valueOf(scopeStr.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warn("Unknown agent scope: {}, defaulting to ALL", scopeStr);
             return WChatAgentScope.ALL;

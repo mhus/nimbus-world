@@ -46,7 +46,7 @@ public class RepositoryControlWithJGit implements RepositoryControl {
                     cloneCommand.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
                 }
 
-                try (Git git = cloneCommand.call()) {
+                try (Git git = cloneCommand.call()) { // NOPMD: closing the resource is the point
                     log.info("Repository cloned successfully: {}", localPath);
                 }
             } catch (GitAPIException e) {
@@ -57,7 +57,9 @@ public class RepositoryControlWithJGit implements RepositoryControl {
             log.info("Initializing git repository: {}", localPath);
             try {
                 try (Git git = Git.init().setDirectory(localPath.toFile()).call()) {
-                    log.info("Git repository initialized: {}", localPath);
+                    log.info(
+                            "Git repository initialized: {}",
+                            git.getRepository().getDirectory());
                 }
             } catch (GitAPIException e) {
                 throw new IOException("Failed to initialize repository: " + e.getMessage(), e);
@@ -169,6 +171,8 @@ public class RepositoryControlWithJGit implements RepositoryControl {
 
             // Try to get repository info
             try (Git git = openRepository(localPath)) {
+                // PMD: closing the Git object also closes the underlying Repository
+                @SuppressWarnings("PMD.CloseResource")
                 Repository repo = git.getRepository();
                 String branch = repo.getBranch();
                 result.append("✅ Current branch: ").append(branch).append("\n");

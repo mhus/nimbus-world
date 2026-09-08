@@ -106,7 +106,7 @@ public class RestoreConstitutionAction implements GameplayAction {
         // Check for individual restore.<category> entries
         for (var entry : serverInfo.entrySet()) {
             String key = entry.getKey();
-            if (!key.startsWith("restore.") || key.equals("restore.all")) continue;
+            if (!key.startsWith("restore.") || "restore.all".equals(key)) continue;
 
             String category = key.substring("restore.".length());
             double targetPercent = parsePercent(entry.getValue());

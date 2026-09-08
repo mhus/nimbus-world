@@ -5,6 +5,7 @@ import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import java.lang.reflect.Field;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -198,7 +199,7 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             String collectionName = docAnnotation.collection();
             if (collectionName.isEmpty()) {
                 // Use default collection name (lowercase class name)
-                collectionName = entity.getClass().getSimpleName().toLowerCase();
+                collectionName = entity.getClass().getSimpleName().toLowerCase(Locale.ROOT);
             }
 
             // Load the document from MongoDB
@@ -226,7 +227,7 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
             // Update the document in MongoDB with all fields from migrated document
             Update update = new Update();
             migratedDocument.forEach((key, value) -> {
-                if (!key.equals("_id")) { // Don't update _id field
+                if (!"_id".equals(key)) { // Don't update _id field
                     update.set(key, value);
                 }
             });
@@ -270,6 +271,8 @@ public class SchemaVersionEventListener extends AbstractMongoEventListener<Objec
      * @param entity the entity to update
      * @param migratedDocument the migrated MongoDB document
      */
+    // PMD: reflection-based field copy is required for the schema migration
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private void updateEntityFromDocument(Object entity, Document migratedDocument) {
         try {
             // Convert migrated document back to entity type using MongoTemplate converter

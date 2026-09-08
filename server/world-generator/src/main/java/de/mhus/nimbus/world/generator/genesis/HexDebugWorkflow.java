@@ -54,13 +54,13 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         String coordinate = params.getOrDefault("coordinate", "0;0");
         String[] parts = coordinate.split(";");
         if (parts.length != 2) {
-            throw new WorkflowException(null, "Invalid coordinate format, expected 'q;r': " + coordinate);
+            throw new WorkflowException((String) null, "Invalid coordinate format, expected 'q;r': " + coordinate);
         }
         try {
             Integer.parseInt(parts[0].trim());
             Integer.parseInt(parts[1].trim());
         } catch (NumberFormatException e) {
-            throw new WorkflowException(null, "Invalid coordinate values: " + coordinate);
+            throw new WorkflowException((String) null, "Invalid coordinate values: " + coordinate, e);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -119,7 +119,7 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
             grids.add(createDebugHexGrid(
                     nq,
                     nr,
-                    "" + (140 - i * 10),
+                    String.valueOf(140 - i * 10),
                     //                    String.valueOf(FlatMaterialService.GRASS),
                     //                    String.valueOf(FlatMaterialService.DIRT),
                     //                    String.valueOf(FlatMaterialService.STONE),
@@ -147,7 +147,7 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         try {
             compositionJson = objectMapper.writeValueAsString(composition);
         } catch (Exception e) {
-            throw new WorkflowException(null, "Failed to serialize debug composition: " + e.getMessage());
+            throw new WorkflowException((String) null, "Failed to serialize debug composition: " + e.getMessage(), e);
         }
 
         // Save to generator_composed collection
@@ -222,5 +222,5 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {}
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {}
 }

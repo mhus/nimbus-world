@@ -49,6 +49,7 @@ public record KeyId(String owner, String intent, String id) {
         return new KeyId(owner.trim(), intent.trim(), id.trim());
     }
 
+    @Override
     public String toString() {
         return owner + ";" + intent + ";" + id;
     }

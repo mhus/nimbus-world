@@ -271,7 +271,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 }
 
                 de.mhus.nimbus.world.shared.world.WHexGrid grid = gridList.getFirst();
-                boolean modified = false;
+                boolean modified;
 
                 // Note: In the actual BLENDER builder, it calculates neighbor flat IDs based on the center flat's
                 // coordinates.
@@ -449,14 +449,6 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             return defaultValue;
         }
         return value;
-    }
-
-    /**
-     * Get neighbor coordinate for a given hex side.
-     * Uses offset coordinates (odd-r stagger) via HexMathUtil.getNeighborPosition.
-     */
-    private HexVector2 getNeighborCoordinate(HexVector2 coord, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side) {
-        return de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, side);
     }
 
     /**

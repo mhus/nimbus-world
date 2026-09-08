@@ -238,7 +238,7 @@ public class WorkflowService {
         String status = context.getStatus();
         if (isStatusFinal(status)) {
             try {
-                workflow.finalize(context, status);
+                workflow.completeWorkflow(context, status);
             } catch (Exception e) {
                 log.error("Error during workflow finalization: workflowId={}", context.getWorkflowId(), e);
             }
@@ -312,6 +312,7 @@ public class WorkflowService {
         try {
             Thread.sleep(1); // Ensure different timestamp
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
         journalService.addWorkflowJournalRecord(worldId, workflowId, workflowStatus);
         log.debug("Updated workflow status: workflowId={}, status={}", workflowId, status);

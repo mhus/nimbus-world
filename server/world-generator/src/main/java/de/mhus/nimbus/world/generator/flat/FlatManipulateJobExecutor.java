@@ -107,12 +107,12 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             for (Map.Entry<String, String> entry : job.getParameters().entrySet()) {
                 String key = entry.getKey();
                 // Skip parameters that are already handled
-                if (!key.equals("flatId")
-                        && !key.equals("x")
-                        && !key.equals("z")
-                        && !key.equals("sizeX")
-                        && !key.equals("sizeZ")
-                        && !key.equals("parameters")) {
+                if (!"flatId".equals(key)
+                        && !"x".equals(key)
+                        && !"z".equals(key)
+                        && !"sizeX".equals(key)
+                        && !"sizeZ".equals(key)
+                        && !"parameters".equals(key)) {
                     parameters.put(key, entry.getValue());
                 }
             }
@@ -132,7 +132,7 @@ public class FlatManipulateJobExecutor implements JobExecutor {
 
             // Save updated flat
             flat.touchUpdate();
-            WFlat updated = flatService.update(flat);
+            flatService.update(flat);
 
             // Build successful result
             String resultData = String.format(
@@ -174,18 +174,6 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             return defaultValue;
         }
         return value;
-    }
-
-    /**
-     * Get required integer parameter from job.
-     */
-    private int getRequiredIntParameter(WJob job, String paramName) throws JobExecutionException {
-        String value = getRequiredParameter(job, paramName);
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            throw new JobExecutionException("Invalid integer parameter '" + paramName + "': " + value);
-        }
     }
 
     /**

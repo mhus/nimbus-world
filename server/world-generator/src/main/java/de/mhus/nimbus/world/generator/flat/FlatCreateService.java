@@ -672,7 +672,7 @@ public class FlatCreateService {
 
         // Initialize with size (sets all levels to 0)
         flat.initWithSize(sizeX, sizeZ);
-        int chunkSize = world.getPublicData().getChunkSize();
+        world.getPublicData().getChunkSize();
 
         // Calculate hex center in cartesian coordinates
         de.mhus.nimbus.generated.types.HexVector2 hexPosition = de.mhus.nimbus.generated.types.HexVector2.builder()
@@ -702,9 +702,6 @@ public class FlatCreateService {
 
         int hexCellsSet = 0;
         int outsideCellsImported = 0;
-
-        int gapX = (sizeX - HexMathUtil.getGridWidth(gridSize)) / 2;
-        int gapZ = (sizeZ - gridSize) / 2;
 
         // Process each cell in the flat
         // The hex grid is positioned with a 10-pixel offset to allow for border connections

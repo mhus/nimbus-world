@@ -365,7 +365,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     /**
      * Periodic diagnostic counter — logs state every 60 ticks (~1 minute).
      */
-    private long diagnosticCounter = 0;
+    private long diagnosticCounter;
 
     /**
      * Simulate entities for a single world.
@@ -903,7 +903,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         long now = System.currentTimeMillis();
 
         for (SimulationState neighborState : worldStates.values()) {
-            if (neighborState == attackedState) continue;
+            if (neighborState == attackedState) continue; // NOPMD: skip self by identity
             if (neighborState.getLifecycleState() != SimulationState.LifecycleState.ALIVE) continue;
             if (neighborState.isInCombat()) continue;
             if (neighborState.getCombatData() == null) continue;

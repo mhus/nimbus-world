@@ -17,8 +17,10 @@ import de.mhus.nimbus.world.shared.world.SAssetService;
 import jakarta.annotation.PostConstruct;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -256,16 +258,19 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
             return false;
         }
 
-        // Load asset content
-        InputStream contentStream = assetService.loadContent(asset);
-        if (contentStream == null) {
-            log.warn("Failed to load content for asset: {}", asset.getPath());
+        // Load asset content and read all bytes (try-with-resources also
+        // covers the null case)
+        byte[] contentBytes;
+        try (InputStream contentStream = assetService.loadContent(asset)) {
+            if (contentStream == null) {
+                log.warn("Failed to load content for asset: {}", asset.getPath());
+                return false;
+            }
+            contentBytes = contentStream.readAllBytes();
+        } catch (IOException e) {
+            log.warn("Failed to read asset content: {}", asset.getPath(), e);
             return false;
         }
-
-        // Read all bytes
-        byte[] contentBytes = contentStream.readAllBytes();
-        contentStream.close();
 
         // Verify it's a valid image
         try {
@@ -342,7 +347,7 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
      */
     private boolean isSupportedImageType(String path) {
         if (path == null) return false;
-        String lowerPath = path.toLowerCase();
+        String lowerPath = path.toLowerCase(Locale.ROOT);
         return SUPPORTED_EXTENSIONS.stream().anyMatch(lowerPath::endsWith);
     }
 
@@ -351,7 +356,7 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
      */
     private String getMimeType(String path) {
         if (path == null) return "application/octet-stream";
-        String lowerPath = path.toLowerCase();
+        String lowerPath = path.toLowerCase(Locale.ROOT);
 
         if (lowerPath.endsWith(".png")) return "image/png";
         if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) return "image/jpeg";

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -634,7 +635,7 @@ public class FlatController extends BaseEditorController {
                 .replaceAll("[\\s]+", "_") // Replace whitespace with underscore
                 .replaceAll("[^a-zA-Z0-9_-]", "") // Remove special characters except underscore and dash
                 .replaceAll("_{2,}", "_") // Replace multiple underscores with single
-                .toLowerCase();
+                .toLowerCase(Locale.ROOT);
 
         // Limit length to 50 characters
         if (normalized.length() > 50) {
@@ -950,9 +951,9 @@ public class FlatController extends BaseEditorController {
         if (ac != null) return ac;
         log.info("Applying palette: flatId={}, palette={}", id, request.paletteName());
 
-        String paletteName = request.paletteName().toLowerCase();
+        String paletteName = request.paletteName().toLowerCase(Locale.ROOT);
 
-        if (!paletteName.equals("nimbus") && !paletteName.equals("legacy")) {
+        if (!"nimbus".equals(paletteName) && !"legacy".equals(paletteName)) {
             log.warn("Invalid palette title: {}", paletteName);
             return ResponseEntity.badRequest().build();
         }
@@ -1008,7 +1009,7 @@ public class FlatController extends BaseEditorController {
      */
     private void applyPaletteToFlat(WFlat flat, String paletteName) {
         // Palette definitions from FlatMaterialService
-        if (paletteName.equals("nimbus")) {
+        if ("nimbus".equals(paletteName)) {
             // Nimbus palette
             flat.setMaterial((byte) 1, createMaterialDef("n:g", "n:d", true)); // GRASS
             flat.setMaterial((byte) 2, createMaterialDef("n:d", "n:s", false)); // DIRT
@@ -1019,7 +1020,7 @@ public class FlatController extends BaseEditorController {
             flat.setMaterial((byte) 7, createMaterialDef("n:sn", "n:d", true)); // SNOW
             flat.setMaterial((byte) 8, createMaterialDef("n:2", "n:2", false)); // INVISIBLE
             flat.setMaterial((byte) 9, createMaterialDef("n:3", "n:3", false)); // INVISIBLE_SOLID
-        } else if (paletteName.equals("legacy")) {
+        } else if ("legacy".equals(paletteName)) {
             // Legacy palette
             flat.setMaterial((byte) 1, createMaterialDef("w:310", "w:279", true)); // GRASS
             flat.setMaterial((byte) 2, createMaterialDef("w:279", "w:553", false)); // DIRT

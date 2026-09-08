@@ -27,15 +27,22 @@ public class UserId implements Comparable<UserId> {
         return id.matches("[a-zA-Z0-9_\\-]{2,64}");
     }
 
+    @Override
     public String toString() {
         return id;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         UserId other = (UserId) obj;
         return id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 
     @Override

@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.*;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -295,13 +296,13 @@ public class WLayerService implements StorageProvider {
     }
 
     private List<WLayer> filterByQuery(List<WLayer> layers, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return layers.stream()
                 .filter(layer -> {
                     String name = layer.getName();
                     String id = layer.getId();
-                    return (name != null && name.toLowerCase().contains(lowerQuery))
-                            || (id != null && id.toLowerCase().contains(lowerQuery));
+                    return (name != null && name.toLowerCase(Locale.ROOT).contains(lowerQuery))
+                            || (id != null && id.toLowerCase(Locale.ROOT).contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }
@@ -580,13 +581,14 @@ public class WLayerService implements StorageProvider {
             if (inputStream == null) {
                 return Optional.empty();
             }
-            InputStream stream = inputStream;
             // Decompression if needed
             // Note: If compressed field is not set in DB (legacy data), it defaults to false (uncompressed)
             if (terrain.isCompressed()) {
-                stream = new GZIPInputStream(inputStream);
+                try (InputStream stream = new GZIPInputStream(inputStream)) {
+                    return Optional.of(objectMapper.readValue(stream, LayerChunkData.class));
+                }
             }
-            LayerChunkData chunkData = objectMapper.readValue(stream, LayerChunkData.class);
+            LayerChunkData chunkData = objectMapper.readValue(inputStream, LayerChunkData.class);
             return Optional.of(chunkData);
         } catch (Exception e) {
             log.error("Failed to load terrain chunk: layerDataId={} chunkKey={}", layerDataId, chunkKey, e);

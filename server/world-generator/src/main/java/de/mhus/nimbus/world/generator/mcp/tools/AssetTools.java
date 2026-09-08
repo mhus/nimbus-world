@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -129,7 +130,7 @@ public class AssetTools implements McpToolBean {
             log.info("Imported asset: localPath={}, assetPath={}, size={}", filePath, assetPath, asset.getSize());
             return Map.of("status", "ok", "asset", toAssetDto(asset));
         } catch (IOException e) {
-            throw new McpToolException("Failed to read file: " + filePath + " - " + e.getMessage());
+            throw new McpToolException("Failed to read file: " + filePath + " - " + e.getMessage(), e);
         }
     }
 
@@ -144,7 +145,10 @@ public class AssetTools implements McpToolBean {
         try (var files = Files.list(dirPath)) {
             var fileList = files.filter(Files::isRegularFile)
                     .filter(f -> fileExtension == null
-                            || f.getFileName().toString().toLowerCase().endsWith("." + fileExtension.toLowerCase()))
+                            || f.getFileName()
+                                    .toString()
+                                    .toLowerCase(Locale.ROOT)
+                                    .endsWith("." + fileExtension.toLowerCase(Locale.ROOT)))
                     .sorted()
                     .toList();
 
@@ -162,7 +166,7 @@ public class AssetTools implements McpToolBean {
                 }
             }
         } catch (IOException e) {
-            throw new McpToolException("Failed to list directory: " + dirPath + " - " + e.getMessage());
+            throw new McpToolException("Failed to list directory: " + dirPath + " - " + e.getMessage(), e);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -174,7 +178,7 @@ public class AssetTools implements McpToolBean {
     }
 
     private String detectMimeType(String fileName) {
-        String lower = fileName.toLowerCase();
+        String lower = fileName.toLowerCase(Locale.ROOT);
         if (lower.endsWith(".glb")) return "model/gltf-binary";
         if (lower.endsWith(".gltf")) return "model/gltf+json";
         if (lower.endsWith(".png")) return "image/png";

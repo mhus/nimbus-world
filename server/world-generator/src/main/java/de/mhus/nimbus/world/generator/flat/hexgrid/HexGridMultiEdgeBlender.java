@@ -183,13 +183,9 @@ public class HexGridMultiEdgeBlender {
      * read/write access across all flats.
      */
     private static class FlatProjection {
-        private final WFlat centerFlat;
-        private final HashMap<WHexGrid.EDGE, WFlat> neighbors;
         private final java.util.List<WFlat> allFlats;
 
         public FlatProjection(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors) {
-            this.centerFlat = centerFlat;
-            this.neighbors = neighbors;
             this.allFlats = new java.util.ArrayList<>();
             this.allFlats.add(centerFlat);
             this.allFlats.addAll(neighbors.values());
@@ -267,6 +263,6 @@ public class HexGridMultiEdgeBlender {
             return found; // Coordinate not in any flat
         }
 
-        private int writeCount = 0;
+        private int writeCount;
     }
 }

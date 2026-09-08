@@ -43,9 +43,9 @@ public class StorageResourceRepairer implements ResourceRepairer {
     public ResourceRepairService.ProcessResult repair(WorldId worldId) {
         log.info("Starting storage repair for world {}", worldId);
 
-        int orphanedStorageFound = 0;
+        int orphanedStorageFound;
         int orphanedStorageRemoved = 0;
-        int nonFinalStorageFound = 0;
+        int nonFinalStorageFound;
         int nonFinalStorageRemoved = 0;
 
         // Calculate minimum age timestamp (2 hours ago)

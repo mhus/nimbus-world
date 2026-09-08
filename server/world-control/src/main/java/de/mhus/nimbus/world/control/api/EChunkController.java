@@ -137,8 +137,7 @@ public class EChunkController extends BaseEditorController {
         String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Load chunk data using WChunkService.getStream for memory efficiency
-        try {
-            InputStream stream = chunkService.getStream(wid, chunkKey);
+        try (InputStream stream = chunkService.getStream(wid, chunkKey)) {
             if (stream == null || stream.available() == 0) {
                 log.warn("Chunk data not found: worldId={}, chunkKey={}", lookupWorldId, chunkKey);
                 return notFound("chunk data not found");

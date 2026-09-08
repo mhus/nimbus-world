@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -77,10 +78,10 @@ public class ELogicRuleController extends BaseEditorController {
 
         // Filter by query (name contains)
         if (!Strings.isBlank(query)) {
-            String lowerQuery = query.toLowerCase();
+            String lowerQuery = query.toLowerCase(Locale.ROOT);
             all = all.stream()
-                    .filter(r ->
-                            r.getName() != null && r.getName().toLowerCase().contains(lowerQuery))
+                    .filter(r -> r.getName() != null
+                            && r.getName().toLowerCase(Locale.ROOT).contains(lowerQuery))
                     .collect(Collectors.toList());
         }
 
@@ -384,15 +385,6 @@ public class ELogicRuleController extends BaseEditorController {
         dto.put("createdAt", rule.getCreatedAt());
         dto.put("updatedAt", rule.getUpdatedAt());
         return dto;
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> toStringList(Object value) {
-        if (value == null) return new ArrayList<>();
-        if (value instanceof List<?> list) {
-            return list.stream().map(Object::toString).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
     }
 
     @SuppressWarnings("unchecked")

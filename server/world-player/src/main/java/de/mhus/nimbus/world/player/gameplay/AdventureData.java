@@ -43,13 +43,13 @@ public class AdventureData extends EntityCombatData {
     private transient Map<String, Double> cachedConstitution;
 
     /** Timestamp until which collecting is blocked (transient, not persisted) */
-    private transient long nextCollectAllowed = 0;
+    private transient long nextCollectAllowed;
 
     /** Timestamp until which attacking is blocked by attack speed cooldown (transient, not persisted) */
-    private transient long nextAttackAllowed = 0;
+    private transient long nextAttackAllowed;
 
     /** Last stamina speed override sent to client (0 = no override, >0 = speed factor) */
-    private transient double lastStaminaSpeed = 0;
+    private transient double lastStaminaSpeed;
 
     /** Cached hex key "q;r" of the last explored hex check (transient, not persisted) */
     private transient String lastCheckedHexKey;

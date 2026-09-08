@@ -180,8 +180,6 @@ public class HexGridEdgeBlender {
                 return;
             }
 
-            int blendedCount = 0;
-
             // Walk along the outer line
             for (int step = 0; step <= steps; step++) {
                 // Interpolate position along outer line
@@ -203,9 +201,7 @@ public class HexGridEdgeBlender {
                 }
 
                 // Blend from outer to inner
-                if (blendLineInward(outerX, outerZ, innerX, innerZ)) {
-                    blendedCount++;
-                }
+                blendLineInward(outerX, outerZ, innerX, innerZ);
             }
 
             // Post-processing: Apply shake effect to make transitions more organic
@@ -503,107 +499,6 @@ public class HexGridEdgeBlender {
          */
         private double[] getCenterPosition() {
             return new double[] {flat.getSizeX() / 2.0, flat.getSizeZ() / 2.0};
-        }
-
-        /**
-         * Calculate the outward direction (perpendicular to edge, away from center).
-         */
-        private double[] getOutwardDirection(int[] corner1, int[] corner2, double[] center) {
-            // Edge direction vector
-            double edgeDx = corner2[0] - corner1[0];
-            double edgeDz = corner2[1] - corner1[1];
-
-            // Perpendicular to edge (rotate 90 degrees)
-            double perpDx = -edgeDz;
-            double perpDz = edgeDx;
-
-            // Normalize
-            double length = Math.sqrt(perpDx * perpDx + perpDz * perpDz);
-            if (length > 0) {
-                perpDx /= length;
-                perpDz /= length;
-            }
-
-            // Edge midpoint
-            double midX = (corner1[0] + corner2[0]) / 2.0;
-            double midZ = (corner1[1] + corner2[1]) / 2.0;
-
-            // Vector from center to edge midpoint
-            double toCenterDx = midX - center[0];
-            double toCenterDz = midZ - center[1];
-
-            // Check if perpendicular points away from center (dot product)
-            double dot = perpDx * toCenterDx + perpDz * toCenterDz;
-
-            // If pointing inward, flip direction
-            if (dot < 0) {
-                perpDx = -perpDx;
-                perpDz = -perpDz;
-            }
-
-            return new double[] {perpDx, perpDz};
-        }
-
-        /**
-         * Sample outward from edge point to get average height from neighbor.
-         * Uses multiple sample points with slight random offsets for more natural results.
-         * Returns -1 if no valid samples found.
-         */
-        private double sampleOutward(int edgeX, int edgeZ, double[] outwardDir) {
-            double sumHeight = 0;
-            int validSamples = 0;
-
-            // Sample at multiple distances outward with slight variations
-            // Use more samples for better averaging and smoothness
-            int maxSampleDist = Math.min(width, 15);
-
-            boolean loggedFirst = false;
-
-            for (int dist = 1; dist <= maxSampleDist; dist++) {
-                // Sample main direction
-                int sampleX = edgeX + (int) Math.round(outwardDir[0] * dist);
-                int sampleZ = edgeZ + (int) Math.round(outwardDir[1] * dist);
-
-                // Get height at this sample point
-                double height = getNeighborHeight(sampleX, sampleZ);
-                if (height >= 0) {
-                    sumHeight += height;
-                    validSamples++;
-
-                    if (!loggedFirst && validSamples == 1) {
-                        log.debug(
-                                "First sample at edge({},{}) + outward({},{}) * {} = sample({},{}) -> height={}",
-                                edgeX,
-                                edgeZ,
-                                String.format("%.2f", outwardDir[0]),
-                                String.format("%.2f", outwardDir[1]),
-                                dist,
-                                sampleX,
-                                sampleZ,
-                                height);
-                        loggedFirst = true;
-                    }
-                }
-
-                // Add lateral samples for better smoothing (±1 pixel perpendicular)
-                if (randomness > 0.3) { // Only if we want some variation
-                    double perpDx = -outwardDir[1];
-                    double perpDz = outwardDir[0];
-
-                    for (int lateral = -1; lateral <= 1; lateral += 2) {
-                        int lateralX = sampleX + (int) Math.round(perpDx * lateral);
-                        int lateralZ = sampleZ + (int) Math.round(perpDz * lateral);
-
-                        double lateralHeight = getNeighborHeight(lateralX, lateralZ);
-                        if (lateralHeight >= 0) {
-                            sumHeight += lateralHeight * 0.5; // Lower weight for lateral samples
-                            validSamples += 0.5;
-                        }
-                    }
-                }
-            }
-
-            return validSamples > 0 ? sumHeight / validSamples : -1;
         }
 
         /**

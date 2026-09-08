@@ -43,13 +43,13 @@ public class SimulationState {
     /**
      * Timestamp when last pathway was generated (milliseconds).
      */
-    private long lastPathwayTime = 0;
+    private long lastPathwayTime;
 
     /**
      * Timestamp when current pathway ends (milliseconds).
      * Calculated from pathway waypoints.
      */
-    private long pathwayEndTime = 0;
+    private long pathwayEndTime;
 
     /**
      * Target position for current movement (if any).
@@ -68,7 +68,7 @@ public class SimulationState {
     private LifecycleState lifecycleState = LifecycleState.ALIVE;
 
     /** Timestamp when the current lifecycle phase started (millis). */
-    private long lifecycleTimestamp = 0;
+    private long lifecycleTimestamp;
 
     /** Player entity IDs that attacked this entity during current life. Eligible for loot on death. */
     private Set<String> attackers = new HashSet<>();

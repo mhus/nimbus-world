@@ -84,7 +84,7 @@ public class GeneratorAccessFilter extends AccessFilterBase {
      * as MCP endpoints and fall through to standard authentication.
      */
     private boolean isMcpPath(String uri) {
-        return uri.equals("/sse") || uri.startsWith("/sse/") || uri.equals("/mcp") || uri.startsWith("/mcp/");
+        return "/sse".equals(uri) || uri.startsWith("/sse/") || "/mcp".equals(uri) || uri.startsWith("/mcp/");
     }
 
     private boolean tokenMatches(String authHeader, String mcpToken) {

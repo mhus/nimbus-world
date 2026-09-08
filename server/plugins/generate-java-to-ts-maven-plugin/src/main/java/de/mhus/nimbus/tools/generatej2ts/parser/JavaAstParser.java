@@ -45,7 +45,7 @@ public class JavaAstParser {
 
     public static boolean hasGenerateTypeScriptAnnotation(TypeDeclaration<?> type) {
         return type.getAnnotations().stream()
-                .anyMatch(a -> simpleName(a.getNameAsString()).equals("GenerateTypeScript"));
+                .anyMatch(a -> "GenerateTypeScript".equals(simpleName(a.getNameAsString())));
     }
 
     public static JavaClassModel toModel(CompilationUnit cu, TypeDeclaration<?> typeDecl) {
@@ -64,7 +64,7 @@ public class JavaAstParser {
                         String folder = v.substring(0, idx);
                         String file = v.substring(idx + 1);
                         // normalize leading/trailing slashes
-                        if (folder.equals(".")) folder = "";
+                        if (".".equals(folder)) folder = "";
                         if (folder.startsWith("/")) folder = folder.substring(1);
                         if (folder.endsWith("/")) folder = folder.substring(0, folder.length() - 1);
                         model.setGenerateSubfolder(folder);
@@ -124,7 +124,7 @@ public class JavaAstParser {
                     // analyze annotations on the field
                     for (AnnotationExpr an : fd.getAnnotations()) {
                         String n = simpleName(an.getNameAsString());
-                        if (n.equals("TypeScript")) {
+                        if ("TypeScript".equals(n)) {
                             // read attributes: follow, type, import, ignore, optional
                             f.setFollow(getBooleanAttribute(an, "follow").orElse(false));
                             getStringAttribute(an, "type").ifPresent(f::setTsTypeOverride);
@@ -184,7 +184,7 @@ public class JavaAstParser {
                     // analyze annotations on the component (same as field)
                     for (AnnotationExpr an : p.getAnnotations()) {
                         String n = simpleName(an.getNameAsString());
-                        if (n.equals("TypeScript")) {
+                        if ("TypeScript".equals(n)) {
                             f.setFollow(getBooleanAttribute(an, "follow").orElse(false));
                             getStringAttribute(an, "type").ifPresent(f::setTsTypeOverride);
                             getStringAttribute(an, "importLine").ifPresent(f::setInlineImportLine);
@@ -226,14 +226,14 @@ public class JavaAstParser {
     private static Optional<String> extractGenerateTypeScriptSubfolder(TypeDeclaration<?> type) {
         for (AnnotationExpr an : type.getAnnotations()) {
             String n = simpleName(an.getNameAsString());
-            if (n.equals("GenerateTypeScript")) {
+            if ("GenerateTypeScript".equals(n)) {
                 // Single value case
                 if (an instanceof SingleMemberAnnotationExpr sm) {
                     return Optional.of(stripQuotes(sm.getMemberValue().toString()));
                 }
                 if (an instanceof NormalAnnotationExpr nn) {
                     for (MemberValuePair p : nn.getPairs()) {
-                        if (p.getNameAsString().equals("value")) {
+                        if ("value".equals(p.getNameAsString())) {
                             return Optional.of(stripQuotes(p.getValue().toString()));
                         }
                     }
@@ -247,9 +247,9 @@ public class JavaAstParser {
     private static Optional<String> extractGenerateTypeScriptName(TypeDeclaration<?> type) {
         for (AnnotationExpr an : type.getAnnotations()) {
             String n = simpleName(an.getNameAsString());
-            if (n.equals("GenerateTypeScript") && an instanceof NormalAnnotationExpr nn) {
+            if ("GenerateTypeScript".equals(n) && an instanceof NormalAnnotationExpr nn) {
                 for (MemberValuePair p : nn.getPairs()) {
-                    if (p.getNameAsString().equals("name")) {
+                    if ("name".equals(p.getNameAsString())) {
                         String s = stripQuotes(p.getValue().toString());
                         if (s != null && !s.isBlank()) return Optional.of(s);
                     }
@@ -263,7 +263,7 @@ public class JavaAstParser {
     private static Optional<String> extractTypeScriptImport(TypeDeclaration<?> type) {
         for (AnnotationExpr an : type.getAnnotations()) {
             String n = simpleName(an.getNameAsString());
-            if (n.equals("TypeScriptImport")) {
+            if ("TypeScriptImport".equals(n)) {
                 if (an instanceof SingleMemberAnnotationExpr sm) {
                     Expression val = sm.getMemberValue();
                     if (val instanceof ArrayInitializerExpr arr) {
@@ -279,7 +279,7 @@ public class JavaAstParser {
                 }
                 if (an instanceof NormalAnnotationExpr nn) {
                     for (MemberValuePair p : nn.getPairs()) {
-                        if (p.getNameAsString().equals("value")) {
+                        if ("value".equals(p.getNameAsString())) {
                             Expression val = p.getValue();
                             if (val instanceof ArrayInitializerExpr arr) {
                                 StringBuilder sb = new StringBuilder();

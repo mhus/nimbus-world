@@ -454,7 +454,6 @@ public class WorldConfigController {
         // Ensure all states have complete values with defaults
         for (Map.Entry<String, MovementStateValues> entry :
                 playerInfo.getStateValues().entrySet()) {
-            String stateKey = entry.getKey();
             MovementStateValues state = entry.getValue();
 
             if (state == null) continue;

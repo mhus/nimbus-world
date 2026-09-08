@@ -84,12 +84,15 @@ public class JavaScriptToolService {
 
         // Run the eval on a dedicated daemon thread so the wall-clock timeout
         // can interrupt a runaway script via context.close(true).
+        // PMD: shut down explicitly with shutdownNow() in the finally block below;
+        // try-with-resources close() would only do a graceful shutdown
+        @SuppressWarnings("PMD.CloseResource")
         ExecutorService watchdog = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "js-tool-eval");
             thread.setDaemon(true);
             return thread;
         });
-        try {
+        try { // NOPMD: explicit close in finally is deliberate, see below
             Source source = Source.newBuilder("js", javaScriptCode, "<js-tool>").buildLiteral();
             Future<Value> future = watchdog.submit(() -> context.eval(source));
             try {

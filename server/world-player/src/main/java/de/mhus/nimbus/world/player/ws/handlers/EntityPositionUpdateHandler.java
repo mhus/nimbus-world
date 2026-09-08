@@ -76,10 +76,9 @@ public class EntityPositionUpdateHandler implements MessageHandler {
             JsonNode rotNode = update.has("r") ? update.get("r") : null;
             JsonNode velNode = update.has("v") ? update.get("v") : null;
             Integer poseId = update.has("po") ? update.get("po").asInt() : null;
-            Long timestamp = update.has("ts") ? update.get("ts").asLong() : null;
 
             // Only process player entity (not other entities)
-            if (playerId == null || !playerId.equals("player")) {
+            if (playerId == null || !"player".equals(playerId)) {
                 return;
             }
 

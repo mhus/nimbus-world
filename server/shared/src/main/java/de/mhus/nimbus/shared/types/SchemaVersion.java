@@ -15,9 +15,9 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
 
     public static final SchemaVersion NULL = SchemaVersion.create("0");
 
-    private int major = 0;
-    private int minor = 0;
-    private int patch = 0;
+    private int major;
+    private int minor;
+    private int patch;
 
     public SchemaVersion(String version) {
         if (Strings.isNotEmpty(version)) {
@@ -86,6 +86,7 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
         return Integer.compare(this.patch, o.patch);
     }
 
+    @Override
     public String toString() {
         return major + "." + minor + "." + patch;
     }

@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.shared.types.WorldId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -100,7 +101,7 @@ public class WBlockTypeService {
         }
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
         var entityOpt = repository.findByWorldIdAndName(collection.worldId().getId(), collection.path());
-        WBlockType entity = null;
+        WBlockType entity;
         if (entityOpt.isEmpty()) {
             entity = WBlockType.builder()
                     .name(collection.path())
@@ -305,21 +306,31 @@ public class WBlockTypeService {
     }
 
     private List<WBlockType> filterByQuery(List<WBlockType> blockTypes, String query) {
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return blockTypes.stream()
                 .filter(blockType -> {
                     String blockId = blockType.getName();
                     BlockType publicData = blockType.getPublicData();
-                    return (blockId != null && blockId.toLowerCase().contains(lowerQuery))
+                    return (blockId != null && blockId.toLowerCase(Locale.ROOT).contains(lowerQuery))
                             || (publicData != null
                                     && publicData.getTitle() != null
-                                    && publicData.getTitle().toLowerCase().contains(lowerQuery))
+                                    && publicData
+                                            .getTitle()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery))
                             || (publicData != null
                                     && publicData.getDescription() != null
-                                    && publicData.getDescription().toLowerCase().contains(lowerQuery))
+                                    && publicData
+                                            .getDescription()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery))
                             || (publicData != null
                                     && publicData.getType() != null
-                                    && publicData.getType().name().toLowerCase().contains(lowerQuery));
+                                    && publicData
+                                            .getType()
+                                            .name()
+                                            .toLowerCase(Locale.ROOT)
+                                            .contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }

@@ -164,7 +164,7 @@ public class TerrainService {
      * Check if block type ID represents a solid block.
      */
     public boolean isSolidBlock(String blockTypeId) {
-        return blockTypeId != null && !blockTypeId.equals("0") && !blockTypeId.isBlank();
+        return blockTypeId != null && !"0".equals(blockTypeId) && !blockTypeId.isBlank();
     }
 
     /**

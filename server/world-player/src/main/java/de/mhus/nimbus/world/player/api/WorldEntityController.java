@@ -58,7 +58,7 @@ public class WorldEntityController {
                 .getWorldId(request)
                 .orElseThrow(() -> new IllegalStateException("World ID not found in request"));
 
-        log.debug("GET /player/world/entity/{}", worldId, entityId);
+        log.debug("GET /player/world/entity/{} entity={}", worldId, entityId);
 
         // Check if this is a player entity (starts with "@")
         if (entityId.startsWith("@")) {

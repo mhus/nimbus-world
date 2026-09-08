@@ -22,11 +22,11 @@ public class ChunkedInputStream extends InputStream {
     private final StorageDataRepository repository;
     private final String uuid;
 
-    private int currentChunkIndex = 0;
-    private byte[] currentChunkData = null;
-    private int positionInChunk = 0;
-    private boolean isEOF = false;
-    private boolean closed = false;
+    private int currentChunkIndex;
+    private byte[] currentChunkData;
+    private int positionInChunk;
+    private boolean isEOF;
+    private boolean closed;
 
     /**
      * Creates a new ChunkedInputStream.
@@ -135,7 +135,7 @@ public class ChunkedInputStream extends InputStream {
      */
     private void loadNextChunk() {
         try {
-            StorageData chunk = null;
+            StorageData chunk;
             try {
                 chunk = repository.findByUuidAndIndex(uuid, currentChunkIndex);
             } catch (IncorrectResultSizeDataAccessException e) {

@@ -2,6 +2,7 @@ package de.mhus.nimbus.shared.types;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.BlockStatus;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.Getter;
 import org.apache.logging.log4j.util.Strings;
@@ -75,7 +76,7 @@ public class BlockDef {
             for (String part : parts) {
                 if (part.equals(parts[0])) continue; // blockId
                 if (part.startsWith("s:")) {
-                    state = part.substring(2).toLowerCase();
+                    state = part.substring(2).toLowerCase(Locale.ROOT);
                 } else if (part.startsWith("o:")) {
                     String[] offsetParts = part.substring(2).split(",");
                     offsets = new int[offsetParts.length];
@@ -91,7 +92,7 @@ public class BlockDef {
                 } else if (part.startsWith("l:")) {
                     level = Integer.parseInt(part.substring(2));
                 } else if (part.startsWith("f:")) {
-                    String s = part.substring(2).toLowerCase();
+                    String s = part.substring(2).toLowerCase(Locale.ROOT);
                     if (s.matches("[0-9]+")) faceVisibility = Integer.parseInt(part.substring(2));
                     else {
                         int f = 0;

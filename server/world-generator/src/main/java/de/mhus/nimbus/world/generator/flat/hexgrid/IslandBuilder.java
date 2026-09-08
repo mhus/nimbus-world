@@ -113,6 +113,7 @@ public class IslandBuilder extends HexGridBuilder {
         }
     }
 
+    @Override
     public int getLandSideLevel(WHexGrid.EDGE side) {
         return getCenterAsl();
     }

@@ -469,12 +469,12 @@ public class RoadBuilder extends HexGridBuilder {
     private void drawRoadSegment(
             WFlat flat, int centerX, int centerZ, int width, int level, String type, double dirX, double dirZ) {
         // Determine material based on type
-        boolean isTrail = type.equalsIgnoreCase("trail") || type.equalsIgnoreCase("path");
-        int centerMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
+        boolean isTrail = "trail".equalsIgnoreCase(type) || "path".equalsIgnoreCase(type);
+        int centerMaterial = "trail".equalsIgnoreCase(type) ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
         int borderMaterial =
-                type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BORDER : FlatMaterialService.STREET_BORDER;
+                "trail".equalsIgnoreCase(type) ? FlatMaterialService.TRAIL_BORDER : FlatMaterialService.STREET_BORDER;
         int bridgeMaterial =
-                type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BRIDGE : FlatMaterialService.STREET_BRIDGE;
+                "trail".equalsIgnoreCase(type) ? FlatMaterialService.TRAIL_BRIDGE : FlatMaterialService.STREET_BRIDGE;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -785,7 +785,7 @@ public class RoadBuilder extends HexGridBuilder {
     private void fillCenterPoint(WFlat flat, int centerX, int centerZ, int centerLevel, RoadConfiguration config) {
         // Determine material and maximum width from roads
         String plazaMaterial = determinePlazaMaterial(config);
-        int material = plazaMaterial.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
+        int material = "trail".equalsIgnoreCase(plazaMaterial) ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -850,7 +850,7 @@ public class RoadBuilder extends HexGridBuilder {
                 "Building plaza at ({}, {}) with size {} and material {}", centerX, centerZ, plazaSize, plazaMaterial);
 
         // Determine material based on type
-        int material = plazaMaterial.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
+        int material = "trail".equalsIgnoreCase(plazaMaterial) ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);

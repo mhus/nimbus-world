@@ -13,6 +13,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -311,7 +312,8 @@ public class KeyService {
                         intentStr,
                         keyId.id(),
                         ex.toString());
-                throw new IllegalArgumentException("Public Key Algorithmus nicht erkannt", ex);
+                throw new IllegalArgumentException( // NOPMD: EC probe failure is irrelevant if RSA succeeds
+                        "Public Key Algorithmus nicht erkannt", ex);
             }
         }
         try {
@@ -349,8 +351,8 @@ public class KeyService {
     public List<SKey> searchKeys(String type, String kind, String name, String algorithm) {
         Query query = new Query();
         List<Criteria> criteria = new ArrayList<>();
-        if (type != null) criteria.add(Criteria.where("type").is(type.toUpperCase()));
-        if (kind != null) criteria.add(Criteria.where("kind").is(kind.toUpperCase()));
+        if (type != null) criteria.add(Criteria.where("type").is(type.toUpperCase(Locale.ROOT)));
+        if (kind != null) criteria.add(Criteria.where("kind").is(kind.toUpperCase(Locale.ROOT)));
         if (name != null) criteria.add(Criteria.where("keyId").is(name));
         if (algorithm != null) criteria.add(Criteria.where("algorithm").is(algorithm));
         if (!criteria.isEmpty()) {

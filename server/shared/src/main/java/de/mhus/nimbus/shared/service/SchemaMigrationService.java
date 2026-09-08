@@ -185,12 +185,12 @@ public class SchemaMigrationService {
             return SchemaVersion.NULL;
         }
 
-        int valueStart = entityJson.indexOf("\"", schemaIndex + 10);
+        int valueStart = entityJson.indexOf('"', schemaIndex + 10);
         if (valueStart == -1) {
             return SchemaVersion.NULL;
         }
 
-        int valueEnd = entityJson.indexOf("\"", valueStart + 1);
+        int valueEnd = entityJson.indexOf('"', valueStart + 1);
         if (valueEnd == -1) {
             return SchemaVersion.NULL;
         }
@@ -216,7 +216,7 @@ public class SchemaMigrationService {
         int schemaIndex = trimmed.indexOf("\"_schema\"");
         if (schemaIndex != -1) {
             // Find the end of the _schema field (next comma or end)
-            int fieldEnd = trimmed.indexOf(",", schemaIndex);
+            int fieldEnd = trimmed.indexOf(',', schemaIndex);
             if (fieldEnd == -1) {
                 fieldEnd = trimmed.length();
             } else {
@@ -488,6 +488,8 @@ public class SchemaMigrationService {
      * Exception thrown when schema migration fails.
      */
     public static class MigrationException extends Exception {
+        private static final long serialVersionUID = 1L;
+
         public MigrationException(String message) {
             super(message);
         }

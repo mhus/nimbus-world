@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import java.util.*;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -211,7 +212,7 @@ public class BlockTypeTools implements McpToolBean {
             return de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
         }
         try {
-            return de.mhus.nimbus.generated.types.BlockTypeType.valueOf(type.toUpperCase());
+            return de.mhus.nimbus.generated.types.BlockTypeType.valueOf(type.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warn("Invalid block type: {}, using BLOCK as default", type);
             return de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;

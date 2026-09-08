@@ -111,7 +111,7 @@ public class AnythingTools implements McpToolBean {
                     "collection", entity.getCollection(),
                     "name", entity.getName());
         } catch (IllegalStateException e) {
-            throw new McpToolException(e.getMessage());
+            throw new McpToolException(e.getMessage(), e);
         }
     }
 

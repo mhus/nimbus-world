@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.chat;
 import de.mhus.nimbus.shared.types.WorldId;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -125,7 +126,7 @@ public class ElizaActiveChat {
                     .build());
         }
 
-        String lower = message != null ? message.toLowerCase().trim() : "";
+        String lower = message != null ? message.toLowerCase(Locale.ROOT).trim() : "";
 
         // Sleep request
         if (matchesSleep(lower)) {
@@ -231,7 +232,7 @@ public class ElizaActiveChat {
             return randomFrom(DEFAULT_RESPONSES);
         }
 
-        String lower = message.toLowerCase().trim();
+        String lower = message.toLowerCase(Locale.ROOT).trim();
 
         if (lower.matches("^(hi|hello|hey|greetings).*")) return randomFrom(GREETINGS);
         if (lower.endsWith("?")) return randomFrom(QUESTION_RESPONSES);

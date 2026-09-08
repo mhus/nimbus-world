@@ -48,8 +48,7 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
             return Set.of();
         }
 
-        String targetPackage = parameters.getOrDefault(
-                "rulePackage", context.getRulePackage() != null ? context.getRulePackage() : "default");
+        parameters.getOrDefault("rulePackage", context.getRulePackage() != null ? context.getRulePackage() : "default");
 
         String worldId = context.getWorldId();
 

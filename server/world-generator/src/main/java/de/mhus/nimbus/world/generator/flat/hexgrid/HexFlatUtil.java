@@ -11,6 +11,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -188,7 +189,6 @@ public class HexFlatUtil {
         int sizeZ = centerFlat.getSizeZ();
 
         // Determine which chunks cover the neighbor area
-        int chunkSize = world.getPublicData().getChunkSize();
         Set<String> chunkKeys = new HashSet<>();
         int minCx = world.getChunkX(neighborMountX);
         int maxCx = world.getChunkX(neighborMountX + sizeX - 1);
@@ -251,7 +251,7 @@ public class HexFlatUtil {
                 sizeX * sizeZ);
 
         return WFlat.builder()
-                .flatId("chunk-backed-" + side.name().toLowerCase())
+                .flatId("chunk-backed-" + side.name().toLowerCase(Locale.ROOT))
                 .mountX(neighborMountX)
                 .mountZ(neighborMountZ)
                 .sizeX(sizeX)

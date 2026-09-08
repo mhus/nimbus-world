@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import javax.imageio.ImageIO;
 import lombok.Builder;
 import lombok.Data;
@@ -604,9 +605,9 @@ public class HexGridSchemaImageCreator {
 
         String structureName = hexGrid.getParameters().get("structureName");
         if (structureName != null && !structureName.isBlank()) {
-            return structureName + " [" + structureType.toUpperCase() + "]";
+            return structureName + " [" + structureType.toUpperCase(Locale.ROOT) + "]";
         }
-        return "[" + structureType.toUpperCase() + "]";
+        return "[" + structureType.toUpperCase(Locale.ROOT) + "]";
     }
 
     /**

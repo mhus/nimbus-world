@@ -350,7 +350,7 @@ public class WWorldController extends BaseEditorController {
             WorldId worldIdObj = WorldId.of(request.worldId())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + request.worldId()));
 
-            WWorld created = worldService.createWorld(worldIdObj, info);
+            worldService.createWorld(worldIdObj, info);
 
             // Set additional fields via update
             worldService.updateWorld(worldIdObj, w -> {
@@ -651,7 +651,7 @@ public class WWorldController extends BaseEditorController {
 
             WorldInfo targetInfo = source.getPublicData() != null ? source.getPublicData() : new WorldInfo();
 
-            WWorld targetWorld = worldService.createWorld(targetWorldIdObj, targetInfo);
+            worldService.createWorld(targetWorldIdObj, targetInfo);
 
             // Set additional fields
             worldService.updateWorld(targetWorldIdObj, w -> {

@@ -161,6 +161,7 @@ public class SharedClientService {
             try {
                 return Optional.of(KeyFactory.getInstance("EC").generatePublic(spec));
             } catch (Exception ignore) {
+                // not an EC key, fall through to RSA
             }
             return Optional.of(KeyFactory.getInstance("RSA").generatePublic(spec));
         } catch (Exception e) {

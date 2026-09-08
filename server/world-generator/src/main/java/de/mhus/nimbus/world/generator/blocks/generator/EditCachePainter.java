@@ -50,7 +50,7 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
         private final BlockPainter[] painters;
 
         public ConcatinatingPainter(BlockPainter... painters) {
-            this.painters = painters;
+            this.painters = painters.clone();
         }
 
         @Override

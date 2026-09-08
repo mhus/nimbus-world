@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -112,6 +113,9 @@ public class WorldAssetController extends BaseEditorController {
         @ApiResponse(responseCode = "200", description = "Asset found"),
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
+    // PMD: the stream is handed over to Spring; ResourceHttpMessageConverter
+    // closes it while writing the response body
+    @SuppressWarnings("PMD.CloseResource")
     public ResponseEntity<?> getAssetFile(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Asset path") @PathVariable String path) {
@@ -615,7 +619,7 @@ public class WorldAssetController extends BaseEditorController {
     }
 
     private String determineMimeType(String path) {
-        String ext = extractExtension(path).toLowerCase();
+        String ext = extractExtension(path).toLowerCase(Locale.ROOT);
         return switch (ext) {
             case ".png" -> "image/png";
             case ".jpg", ".jpeg" -> "image/jpeg";

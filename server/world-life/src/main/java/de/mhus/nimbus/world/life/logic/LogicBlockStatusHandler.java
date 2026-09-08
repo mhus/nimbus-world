@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -112,7 +113,7 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
             WorldId worldId, String chunkKey, int x, int y, int z, String toggleType, Map<String, String> parameters) {
         String targetKey = x + "," + y + "," + z;
 
-        return switch (toggleType.toLowerCase()) {
+        return switch (toggleType.toLowerCase(Locale.ROOT)) {
             case "auto" -> collectAutoTargets(worldId, chunkKey, x, y, z, targetKey, parameters);
             case "group" -> collectGroupTargets(worldId, chunkKey, targetKey, parameters);
             default -> List.of(targetKey);
@@ -177,7 +178,7 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
     }
 
     private String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultState) {
-        return switch (value.toLowerCase()) {
+        return switch (value.toLowerCase(Locale.ROOT)) {
             case "open" -> "open";
             case "close", "closed" -> "closed";
             case "toggle" -> {

@@ -377,7 +377,7 @@ public class HexMathUtil {
                 if (result.size() == 3) break; // maximal 3 Hexfelder
             }
         }
-        return result.toArray(new HexVector2[result.size()]);
+        return result.toArray(new HexVector2[0]);
     }
 
     public static HexVector2[] getHexesForArea(int hexSize, Area area) {
@@ -409,7 +409,7 @@ public class HexMathUtil {
                 if (result.size() == 3) break; // maximal 3 Hexfelder
             }
         }
-        return result.toArray(new HexVector2[result.size()]);
+        return result.toArray(new HexVector2[0]);
     }
 
     /**
@@ -569,10 +569,6 @@ public class HexMathUtil {
         int minZ = area.getPosition().getZ();
         int maxX = minX + area.getSize().getX();
         int maxZ = minZ + area.getSize().getZ();
-        int worldX1 = area.getPosition().getX();
-        int worldZ1 = area.getPosition().getZ();
-        int worldX2 = worldX1 + area.getSize().getX();
-        int worldZ2 = worldZ1 + area.getSize().getZ();
         // For each hex, estimate overlap area by sampling points in the chunk
         int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
         HexVector2 bestHex = hexes[0];

@@ -8,6 +8,7 @@ package de.mhus.nimbus.world.shared.world;
  * See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
  */
 public class EpochOverwriteException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     private final String entityType;
     private final String naturalKey;

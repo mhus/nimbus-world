@@ -186,10 +186,6 @@ public class EEntityModelController extends BaseEditorController {
         }
     }
 
-    private boolean isBlank(String s) {
-        return false;
-    }
-
     /**
      * Update existing EntityModel.
      * PUT /control/worlds/{worldId}/entitymodel/{modelId}

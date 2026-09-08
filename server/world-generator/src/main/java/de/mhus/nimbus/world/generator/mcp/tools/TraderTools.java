@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.world.TraderType;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import de.mhus.nimbus.world.shared.world.WTraderService;
 import java.util.*;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -111,9 +112,9 @@ public class TraderTools implements McpToolBean {
         TraderType type = TraderType.MERCHANT;
         if (!Strings.isBlank(traderType)) {
             try {
-                type = TraderType.valueOf(traderType.toUpperCase().trim());
+                type = TraderType.valueOf(traderType.toUpperCase(Locale.ROOT).trim());
             } catch (IllegalArgumentException e) {
-                throw new McpToolException("Invalid traderType: " + traderType);
+                throw new McpToolException("Invalid traderType: " + traderType, e);
             }
         }
 

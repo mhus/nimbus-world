@@ -63,7 +63,7 @@ public class HelloWorldWorkflow extends MethodBasedWorkflow {
     }
 
     @Override
-    public void finalize(WorkflowContext context, String status) throws WorkflowException {
+    public void completeWorkflow(WorkflowContext context, String status) throws WorkflowException {
         context.addRecord(new NoteRecord("Workflow finalized with status: " + status));
     }
 }

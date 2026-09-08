@@ -4,6 +4,7 @@ package de.mhus.nimbus.world.player.session;
  * Consumer interface for session authentication events.
  * Implementations are notified when a session is successfully authenticated.
  */
+@FunctionalInterface
 public interface SessionAuthenticatedConsumer {
 
     /**

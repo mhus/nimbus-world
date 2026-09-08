@@ -59,7 +59,7 @@ public class EpochCreateJobExecutor implements JobExecutor {
                 newEpoch = Integer.parseInt(newEpochStr);
             } catch (NumberFormatException e) {
                 throw new JobExecutionException(
-                        "Invalid epoch parameters: sourceEpoch=" + sourceEpochStr + ", newEpoch=" + newEpochStr);
+                        "Invalid epoch parameters: sourceEpoch=" + sourceEpochStr + ", newEpoch=" + newEpochStr, e);
             }
 
             log.info(

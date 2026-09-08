@@ -7,6 +7,7 @@ import java.util.List;
  * If you use StorageService to store data implement this interface to provide
  * a way to find all storage ids for a world.
  */
+@FunctionalInterface
 public interface StorageProvider {
 
     List<String> findDistinctStorageIds(WorldId worldId);
