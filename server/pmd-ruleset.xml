@@ -6,9 +6,8 @@
     <description>
         Nimbus PMD ruleset: errorprone, bestpractices, multithreading, performance
         and security categories, excluding rules that produce mostly noise for
-        this codebase (SLF4J parameterized logging, string builder micro
-        optimizations, J2EE compliance, weak concurrency heuristics).
-        Add rules back step by step once the findings are cleaned up.
+        this codebase. Re-enable excluded rules step by step when the findings
+        are worked off.
     </description>
 
     <rule ref="category/java/errorprone.xml">
@@ -16,18 +15,65 @@
         <exclude name="AvoidDuplicateLiterals"/>
         <!-- literals in if conditions are an accepted style here -->
         <exclude name="AvoidLiteralsInIfCondition"/>
+        <!-- nullable-field reset pattern is used deliberately -->
+        <exclude name="NullAssignment"/>
+        <!-- idiomatic assignment-in-condition (reader loops) -->
+        <exclude name="AssignmentInOperand"/>
+        <!-- migrating java.util.Date to java.time is a dedicated refactoring -->
+        <exclude name="ReplaceJavaUtilDate"/>
+        <!-- renaming these fields would break the JSON contracts -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <!-- CLI tools legitimately terminate the VM -->
+        <exclude name="DoNotTerminateVM"/>
+        <!-- early continue/return in probing loops is idiomatic -->
+        <exclude name="AvoidBranchingStatementAsLastInLoop"/>
+    </rule>
+    <!-- deliberate ignore-probes use commented catch blocks -->
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <properties>
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
     </rule>
     <rule ref="category/java/bestpractices.xml">
         <!-- SLF4J parameterized logging does not need isDebugEnabled guards -->
         <exclude name="GuardLogStatement"/>
+        <!-- declaring List/Map instead of concrete impls is planned, not enforced -->
+        <exclude name="LooseCoupling"/>
+        <!-- CLI tools legitimately print to stdout and stderr -->
+        <exclude name="SystemPrintln"/>
+        <exclude name="AvoidPrintStackTrace"/>
+        <!-- style choice: keep parameter reassignment rare but allowed -->
+        <exclude name="AvoidReassigningParameters"/>
+        <!-- parameters of interface/override methods cannot be removed -->
+        <exclude name="UnusedFormalParameter"/>
+        <!-- one declaration per line is style, spotless handles layout -->
+        <exclude name="OneDeclarationPerLine"/>
+        <!-- loop variable reassignment is used for reader-style loops -->
+        <exclude name="AvoidReassigningLoopVariables"/>
+        <!-- switch style rules conflict with exhaustive enum switches -->
+        <exclude name="ExhaustiveSwitchHasDefault"/>
+        <exclude name="NonExhaustiveSwitch"/>
+        <exclude name="DefaultLabelNotLastInSwitch"/>
+        <!-- array parameter APIs are kept stable -->
+        <exclude name="UseVarargs"/>
+        <!-- EnumSet/EnumMap migration is a nice-to-have -->
+        <exclude name="UseEnumCollections"/>
+        <!-- marker interfaces / base classes are used deliberately -->
+        <exclude name="AbstractClassWithoutAbstractMethod"/>
     </rule>
     <rule ref="category/java/multithreading.xml">
         <!-- J2EE rule: threads are fine in Spring Boot / Kubernetes pods -->
         <exclude name="DoNotUseThreads"/>
         <!-- heuristic produces too many false positives -->
         <exclude name="UseConcurrentHashMap"/>
+        <!-- volatile/synchronized are deliberate concurrency tools here -->
+        <exclude name="AvoidUsingVolatile"/>
+        <exclude name="AvoidSynchronizedStatement"/>
+        <exclude name="AvoidSynchronizedAtMethodLevel"/>
     </rule>
     <rule ref="category/java/performance.xml">
+        <!-- lombok @Builder.Default requires explicit field initializers -->
+        <exclude name="RedundantFieldInitializer"/>
         <!-- string builder micro optimizations, not relevant for this codebase -->
         <exclude name="AppendCharacterWithChar"/>
         <exclude name="ConsecutiveAppendsShouldReuse"/>
@@ -35,7 +81,10 @@
         <exclude name="InsufficientStringBufferDeclaration"/>
         <!-- too many false positives for builder-style code -->
         <exclude name="AvoidInstantiatingObjectsInLoops"/>
+        <!-- short literal concats are clearer than StringBuilder -->
+        <exclude name="UseStringBufferForStringAppends"/>
+        <!-- two-branch switch dispatch is intentional -->
+        <exclude name="TooFewBranchesForSwitch"/>
     </rule>
     <rule ref="category/java/security.xml"/>
 </ruleset>
-

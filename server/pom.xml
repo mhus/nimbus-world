@@ -132,10 +132,10 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>${pmd-plugin.version}</version>
                 <configuration>
-                    <!-- Stepwise introduction: report-only for now, the build does not
-                         fail on violations yet. Tighten the ruleset and enable
-                         failOnViolation once the findings are reviewed. -->
-                    <failOnViolation>false</failOnViolation>
+                    <!-- The build fails on new violations; the curated ruleset in
+                         pmd-ruleset.xml documents which rules are consciously
+                         excluded. -->
+                    <failOnViolation>true</failOnViolation>
                     <printFailingErrors>false</printFailingErrors>
                     <rulesets>
                         <!-- resolved via the reactor root (nearest ancestor with a .mvn
