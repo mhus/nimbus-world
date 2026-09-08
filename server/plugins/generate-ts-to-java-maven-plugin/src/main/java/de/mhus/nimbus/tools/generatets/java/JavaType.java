@@ -14,6 +14,7 @@ public class JavaType {
     private String sourcePath; // originating TS source file path
     private String packageName; // optional, from configuration
     private String originalTsKind; // e.g. interface, class, enum, type
+    private List<String> typeParams = new ArrayList<>(); // TS type parameters (e.g. 'T')
 
     // Members
     private List<JavaProperty> properties = new ArrayList<>();
@@ -87,6 +88,14 @@ public class JavaType {
 
     public void setOriginalTsKind(String originalTsKind) {
         this.originalTsKind = originalTsKind;
+    }
+
+    public List<String> getTypeParams() {
+        return typeParams;
+    }
+
+    public void setTypeParams(List<String> typeParams) {
+        this.typeParams = typeParams;
     }
 
     public List<JavaProperty> getProperties() {

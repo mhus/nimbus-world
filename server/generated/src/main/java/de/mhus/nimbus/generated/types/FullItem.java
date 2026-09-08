@@ -1,6 +1,6 @@
 /*
  * Source TS: Item.ts
- * Original TS: 'interface FullItem'
+ * Original TS: 'type FullItem'
  */
 package de.mhus.nimbus.generated.types;
 

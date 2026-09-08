@@ -10,6 +10,6 @@ package de.mhus.nimbus.generated.network.messages;
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-public class PingMessage extends de.mhus.nimbus.generated.network.BaseMessage {
+public class PingMessage extends de.mhus.nimbus.generated.network.BaseMessage<PingData> {
     private String i;
 }

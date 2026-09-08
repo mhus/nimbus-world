@@ -40,6 +40,7 @@ public class TsDeclarations {
 
     public static class TsInterface {
         public String name;
+        public List<String> typeParams = new ArrayList<>();
         public List<String> extendsList = new ArrayList<>();
         public List<TsProperty> properties = new ArrayList<>();
         public List<TsMethod> methods = new ArrayList<>();
@@ -68,6 +69,7 @@ public class TsDeclarations {
 
     public static class TsClass {
         public String name;
+        public List<String> typeParams = new ArrayList<>();
         public String extendsClass;
         public List<String> implementsList = new ArrayList<>();
         public List<TsProperty> properties = new ArrayList<>();

@@ -295,15 +295,15 @@ public class JavaModelWriter {
             // Always provide a no-args constructor
             sb.append("@lombok.NoArgsConstructor\n");
             // Add protected all-args constructor only if the class declares at least one field to avoid duplicate
-            // no-arg constructors
+            // no-arg constructors. Reference aliases (type X = Y) extend Y and declare no own fields.
             boolean hasAnyField =
-                    (t.getProperties() != null && !t.getProperties().isEmpty())
-                            || (t.getAliasTargetName() != null
-                                    && !t.getAliasTargetName().isBlank());
+                    t.getProperties() != null && !t.getProperties().isEmpty();
             if (hasAnyField) {
                 sb.append("@lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)\n");
             }
             sb.append("public class ").append(name);
+            String typeParams = renderTypeParams(t);
+            if (!typeParams.isEmpty()) sb.append(typeParams);
             String ext = renderExtends(t.getExtendsName(), currentPkg);
             if (!ext.isEmpty()) sb.append(" ").append(ext);
             String impls = renderImplements(t.getImplementsNames(), currentPkg);
@@ -328,8 +328,10 @@ public class JavaModelWriter {
                     emittedAnyField = true;
                 }
             }
-            // If this CLASS actually comes from a TS type alias (no properties) then emit a single 'value' field
+            // If this CLASS actually comes from a TS type alias (no properties, no superclass)
+            // then emit a single 'value' field
             if (!emittedAnyField
+                    && t.getExtendsName() == null
                     && t.getAliasTargetName() != null
                     && !t.getAliasTargetName().isBlank()) {
                 String qualified = qualifyType(t.getAliasTargetName(), currentPkg);
@@ -340,7 +342,7 @@ public class JavaModelWriter {
             }
             // Fallback: If this CLASS originates from a TS type alias but aliasTargetName couldn't be parsed,
             // still generate a value field so the alias is usable. Default to String as the most common alias target.
-            if (!emittedAnyField && ("type".equalsIgnoreCase(t.getOriginalTsKind()))) {
+            if (!emittedAnyField && t.getExtendsName() == null && ("type".equalsIgnoreCase(t.getOriginalTsKind()))) {
                 String qualified =
                         t.getAliasTargetName() == null ? "String" : qualifyType(t.getAliasTargetName(), currentPkg);
                 emitFieldAnnotations(sb, /*optional=*/ false);
@@ -521,6 +523,11 @@ public class JavaModelWriter {
             if (ann.charAt(0) != '@') ann = "@" + ann;
             sb.append("    ").append(ann).append('\n');
         }
+    }
+
+    private String renderTypeParams(JavaType t) {
+        if (t.getTypeParams() == null || t.getTypeParams().isEmpty()) return "";
+        return "<" + String.join(", ", t.getTypeParams()) + ">";
     }
 
     private String renderExtends(String name, String currentPkg) {

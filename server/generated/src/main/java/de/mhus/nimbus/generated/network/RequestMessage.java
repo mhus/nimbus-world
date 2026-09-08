@@ -10,6 +10,6 @@ package de.mhus.nimbus.generated.network;
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-public class RequestMessage extends BaseMessage {
+public class RequestMessage<T> extends BaseMessage<T> {
     private String i;
 }

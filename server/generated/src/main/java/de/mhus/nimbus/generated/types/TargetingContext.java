@@ -11,6 +11,6 @@ package de.mhus.nimbus.generated.types;
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class TargetingContext {
-    private TargetingMode mode;
+    private String mode;
     private ResolvedTarget target;
 }

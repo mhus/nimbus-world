@@ -112,10 +112,11 @@ public class TsParser {
         for (NameOccur n : findNamed(src, DECL_INTERFACE, '{')) {
             TsDeclarations.TsInterface d = new TsDeclarations.TsInterface();
             d.name = n.name;
-            // Parse header between name and opening '{' to capture extends list
+            // Parse header between name and opening '{' to capture type parameters and extends list
             int braceIdx = src.indexOf('{', n.startIndex);
             if (braceIdx > n.startIndex) {
                 String header = src.substring(n.startIndex, braceIdx);
+                extractTypeParams(header, d.typeParams);
                 java.util.regex.Matcher em = java.util.regex.Pattern.compile("\\bextends\\s+([^\\{]+)")
                         .matcher(header);
                 if (em.find()) {
@@ -123,9 +124,7 @@ public class TsParser {
                     if (list != null) {
                         for (String part : list.split(",")) {
                             String id = part.trim();
-                            // strip generic args if any, keep simple identifier
-                            int lt = id.indexOf('<');
-                            if (lt > 0) id = id.substring(0, lt).trim();
+                            // keep generic args ('BaseMessage<T>'), just collapse whitespace
                             id = id.replaceAll("\\s+", "");
                             if (!id.isEmpty()) d.extendsList.add(id);
                         }
@@ -150,6 +149,11 @@ public class TsParser {
         for (NameOccur n : findNamed(src, DECL_CLASS, '{')) {
             TsDeclarations.TsClass d = new TsDeclarations.TsClass();
             d.name = n.name;
+            int braceIdx = src.indexOf('{', n.startIndex);
+            if (braceIdx > n.startIndex) {
+                String header = src.substring(n.startIndex, braceIdx);
+                extractTypeParams(header, d.typeParams);
+            }
             String body = safeSub(src, n.startIndex, n.endIndex);
             String originalBody = safeSub(originalSrc, n.startIndex, n.endIndex);
             extractPropertiesFromBodyWithOriginal(body, originalBody, d.properties);
@@ -159,28 +163,86 @@ public class TsParser {
         for (NameOccur n : findNamed(src, DECL_TYPE, ';')) {
             TsDeclarations.TsTypeAlias d = new TsDeclarations.TsTypeAlias();
             d.name = n.name;
-            // Extract target type between '=' and ';'
+            // The DECL_TYPE match ends right after '=', so the declaration substring
+            // already starts at the target type expression. There is no further '='
+            // to search for (the old indexOf('=') logic never found one and left
+            // the target null for virtually every alias).
             String decl = safeSub(src, n.startIndex, n.endIndex);
             if (decl != null) {
-                int eq = decl.indexOf('=');
-                if (eq >= 0) {
-                    String rhs = decl.substring(eq + 1).trim();
-                    // remove trailing semicolon if present (safeSub ends before ';' but keep safety)
-                    if (rhs.endsWith(";"))
-                        rhs = rhs.substring(0, rhs.length() - 1).trim();
-                    // collapse multiple spaces
-                    rhs = rhs.replaceAll("\n|\r", " ").trim();
-                    d.target = rhs.isEmpty() ? null : rhs;
-                }
+                String rhs = removeLineComments(decl);
+                if (rhs.endsWith(";")) rhs = rhs.substring(0, rhs.length() - 1);
+                // collapse line breaks and multiple spaces to single spaces
+                rhs = rhs.replaceAll("\\s+", " ").trim();
+                d.target = rhs.isEmpty() ? null : rhs;
             }
             file.getTypeAliases().add(d);
         }
+    }
+
+    /**
+     * Remove '// ...' line comments that are not inside string literals, so
+     * multi-line alias targets (unions, tuples) stay parseable.
+     */
+    private String removeLineComments(String s) {
+        StringBuilder out = new StringBuilder(s.length());
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            char next = i + 1 < s.length() ? s.charAt(i + 1) : '\0';
+            if (!inSingle && !inDouble && c == '/' && next == '/') {
+                // skip until end of line, keep the newline itself
+                while (i < s.length() && s.charAt(i) != '\n') i++;
+                if (i < s.length()) out.append('\n');
+                continue;
+            }
+            if (inSingle) {
+                if (c == '\'') inSingle = false;
+            } else if (inDouble) {
+                if (c == '"') inDouble = false;
+            } else if (c == '\'') {
+                inSingle = true;
+            } else if (c == '"') {
+                inDouble = true;
+            }
+            out.append(c);
+        }
+        return out.toString();
     }
 
     private String safeSub(String s, int start, int end) {
         int a = Math.max(0, Math.min(s.length(), start));
         int b = Math.max(a, Math.min(s.length(), end));
         return s.substring(a, b);
+    }
+
+    /**
+     * Extract type parameter names from a declaration header like '<T = any> extends ...'.
+     * The default values after '=' are dropped.
+     */
+    private void extractTypeParams(String header, List<String> out) {
+        if (header == null || !header.startsWith("<")) return;
+        int depth = 0;
+        int end = -1;
+        for (int i = 0; i < header.length(); i++) {
+            char c = header.charAt(i);
+            if (c == '<') depth++;
+            else if (c == '>') {
+                depth--;
+                if (depth == 0) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+        if (end < 0) return;
+        String params = header.substring(1, end);
+        for (String part : params.split(",")) {
+            String p = part.trim();
+            int eq = p.indexOf('=');
+            if (eq >= 0) p = p.substring(0, eq).trim();
+            if (!p.isEmpty() && p.matches("[A-Za-z_$][A-Za-z0-9_$]*")) out.add(p);
+        }
     }
 
     private void extractPropertiesFromBody(String body, List<TsDeclarations.TsProperty> out) {

@@ -9,6 +9,8 @@ package de.mhus.nimbus.generated.network.messages;
 @lombok.Data
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
+@lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class ChunkUpdateMessage {
-    private String value;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private de.mhus.nimbus.generated.network.BaseMessage<java.util.List<ChunkDataTransferObject>> value;
 }

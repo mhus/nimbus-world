@@ -9,6 +9,8 @@ package de.mhus.nimbus.generated.types;
 @lombok.Data
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
+@lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class ChunkSize {
-    private String value;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.lang.Double value;
 }

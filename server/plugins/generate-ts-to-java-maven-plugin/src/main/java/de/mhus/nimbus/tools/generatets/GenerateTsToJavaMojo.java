@@ -149,18 +149,21 @@ public class GenerateTsToJavaMojo extends AbstractMojo {
                             String base = t.getExtendsName();
                             if (base != null && !base.isBlank()) {
                                 boolean keep = false;
+                                // strip generic args ('BaseMessage<T>' -> 'BaseMessage') for the lookup
+                                int lt = base.indexOf('<');
+                                String baseSimple = lt > 0 ? base.substring(0, lt) : base;
                                 // If refers to another generated type by simple name
-                                if (idx.containsKey(base)) {
+                                if (idx.containsKey(baseSimple)) {
                                     keep = true;
                                 }
                                 // If already FQCN, assume external type is valid
-                                if (!keep && base.contains(".")) {
+                                if (!keep && baseSimple.contains(".")) {
                                     keep = true;
                                 }
                                 if (!keep) {
                                     // Check configured replacement for unknown base
                                     String repl = configuration.interfaceExtendsMappings != null
-                                            ? configuration.interfaceExtendsMappings.get(base)
+                                            ? configuration.interfaceExtendsMappings.get(baseSimple)
                                             : null;
                                     if (repl != null && !repl.isBlank()) {
                                         t.setExtendsName(repl.trim());

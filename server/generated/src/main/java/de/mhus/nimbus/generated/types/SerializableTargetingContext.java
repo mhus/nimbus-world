@@ -11,7 +11,7 @@ package de.mhus.nimbus.generated.types;
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class SerializableTargetingContext {
-    private TargetingMode mode;
+    private String mode;
     @com.fasterxml.jackson.annotation.JsonProperty("targetType")
     private String targetType;
     @com.fasterxml.jackson.annotation.JsonProperty("entityId")

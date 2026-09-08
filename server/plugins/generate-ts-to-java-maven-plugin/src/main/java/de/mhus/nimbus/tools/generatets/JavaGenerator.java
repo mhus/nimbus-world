@@ -42,6 +42,9 @@ public class JavaGenerator {
                     // Convert TS interface to Java class with fields
                     JavaType t = new JavaType(i.name, JavaKind.CLASS, srcPath);
                     t.setOriginalTsKind("interface");
+                    if (i.typeParams != null) {
+                        t.getTypeParams().addAll(i.typeParams);
+                    }
                     // capture extends list; TS allows multiple, Java class supports one extends
                     if (i.extendsList != null && !i.extendsList.isEmpty()) {
                         t.setExtendsName(i.extendsList.get(0));
@@ -51,9 +54,15 @@ public class JavaGenerator {
                     if (i.properties != null) {
                         for (TsDeclarations.TsProperty p : i.properties) {
                             if (p == null || p.name == null) continue;
-                            String jt = (p.javaTypeHint != null && !p.javaTypeHint.isBlank())
-                                    ? p.javaTypeHint
-                                    : mapTsTypeToJava(p.type, p.optional);
+                            String jt;
+                            if (p.javaTypeHint != null && !p.javaTypeHint.isBlank()) {
+                                jt = p.javaTypeHint;
+                            } else if (p.type != null && t.getTypeParams().contains(p.type.trim())) {
+                                // property typed with a declared type parameter (e.g. 'd?: T')
+                                jt = p.type.trim();
+                            } else {
+                                jt = mapTsTypeToJava(p.type, p.optional);
+                            }
                             t.getProperties().add(new JavaProperty(p.name, jt, p.optional, p.visibility));
                         }
                     }
@@ -81,6 +90,9 @@ public class JavaGenerator {
                     if (c == null || c.name == null) continue;
                     JavaType t = new JavaType(c.name, JavaKind.CLASS, srcPath);
                     t.setOriginalTsKind("class");
+                    if (c.typeParams != null) {
+                        t.getTypeParams().addAll(c.typeParams);
+                    }
                     if (c.extendsClass != null && !c.extendsClass.isEmpty()) {
                         t.setExtendsName(c.extendsClass);
                     }
@@ -130,7 +142,11 @@ public class JavaGenerator {
         for (JavaType t : jm.getTypes()) {
             // extends
             if (t.getExtendsName() != null) {
-                JavaType ref = idx.get(t.getExtendsName());
+                // strip generic args ('BaseMessage<T>' -> 'BaseMessage') for the lookup
+                String base = t.getExtendsName();
+                int lt = base.indexOf('<');
+                if (lt > 0) base = base.substring(0, lt);
+                JavaType ref = idx.get(base);
                 if (ref != null) t.setExtendsType(ref);
             }
             // implements
@@ -147,11 +163,97 @@ public class JavaGenerator {
             // alias
             if (t.getAliasTargetName() != null) {
                 JavaType ref = idx.get(t.getAliasTargetName());
-                if (ref != null) t.setAliasTargetType(ref);
+                if (ref != null) {
+                    t.setAliasTargetType(ref);
+                    // Reference alias ('type X = Y'): in TS this is a plain synonym of Y.
+                    // Java has no type aliases, so model it as a subclass of Y (same
+                    // fields, same JSON shape) instead of a broken value wrapper.
+                    if (ref.getKind() == JavaKind.CLASS && t.getKind() == JavaKind.CLASS) {
+                        if (t.getExtendsName() == null) {
+                            t.setExtendsName(ref.getName());
+                        }
+                        t.getProperties().removeIf(p -> "value".equals(p.getName()));
+                    }
+                }
+            }
+        }
+
+        // Step 3: TS aliases are transparent type synonyms. Replace references to
+        // scalar alias types (type X = string, number, string-unions) inside property
+        // types with their effective Java type so that wrapper classes do not leak
+        // into field or map key types. Complex aliases (unions of objects, inline
+        // objects, arrays) keep their named wrapper class to preserve typing.
+        Map<String, String> aliasReplacements = new java.util.HashMap<>();
+        for (JavaType t : jm.getTypes()) {
+            if (t == null || t.getName() == null) continue;
+            if (!("type".equalsIgnoreCase(t.getOriginalTsKind()))) continue;
+            if (t.getExtendsName() != null && !t.getExtendsName().isBlank()) {
+                // Reference alias ('type FullItem = Item'): synonym of the base type
+                aliasReplacements.put(t.getName(), t.getExtendsName());
+            } else if (t.getProperties() != null && t.getProperties().size() == 1) {
+                // Scalar wrapper alias ('type ShortcutKey = string'): synonym of the
+                // mapped scalar type; only these are safe to inline everywhere
+                JavaProperty v = t.getProperties().get(0);
+                if (v != null && "value".equals(v.getName()) && isScalarJavaType(v.getType())) {
+                    aliasReplacements.put(t.getName(), v.getType());
+                }
+            }
+        }
+        if (!aliasReplacements.isEmpty()) {
+            for (JavaType t : jm.getTypes()) {
+                if (t == null || t.getProperties() == null) continue;
+                for (JavaProperty p : t.getProperties()) {
+                    if (p == null || p.getType() == null) continue;
+                    p.setType(replaceAliasReferences(p.getType(), aliasReplacements));
+                }
             }
         }
 
         return jm;
+    }
+
+    /**
+     * Whether the given mapped Java type is a scalar type that is safe to inline
+     * wherever the alias is referenced (scalars serialize to the same JSON shape
+     * as the TS alias itself).
+     */
+    private boolean isScalarJavaType(String type) {
+        if (type == null) return false;
+        switch (type.trim()) {
+            case "String":
+            case "java.lang.String":
+            case "java.lang.Double":
+            case "java.lang.Boolean":
+            case "java.lang.Integer":
+            case "java.lang.Long":
+            case "java.lang.Float":
+            case "java.lang.Short":
+            case "java.lang.Byte":
+            case "java.lang.Character":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Replace alias references in a type string with their effective Java type.
+     * Matches whole words (also inside generics) and is applied repeatedly until
+     * stable, so aliases of aliases resolve transitively.
+     */
+    private String replaceAliasReferences(String type, Map<String, String> replacements) {
+        String result = type;
+        for (int round = 0; round < 5; round++) {
+            String next = result;
+            for (Map.Entry<String, String> e : replacements.entrySet()) {
+                next = next.replaceAll(
+                        "\\b" + java.util.regex.Pattern.quote(e.getKey()) + "\\b",
+                        java.util.regex.Matcher.quoteReplacement(e.getValue()));
+            }
+            if (next.equals(result)) break;
+            result = next;
+        }
+        return result;
     }
 
     /**
@@ -285,6 +387,8 @@ public class JavaGenerator {
             boolean allStringLike = true;
             for (String part : parts) {
                 String a = part.trim();
+                // skip empty parts from a leading '|' delimiter ('| 'a' | 'b'')
+                if (a.isEmpty()) continue;
                 // remove parentheses around parts like ("a")
                 while (a.startsWith("(") && a.endsWith(")") && a.length() > 1) {
                     a = a.substring(1, a.length() - 1).trim();
@@ -296,6 +400,22 @@ public class JavaGenerator {
             }
             if (allStringLike) return "String";
             return "Object";
+        }
+        // Generic type with a custom base (e.g. BaseMessage<SomeData>): keep the base
+        // type but map the type arguments recursively so raw TS types like
+        // 'Record<string, never>' never leak into generated Java.
+        int lt = s.indexOf('<');
+        if (lt > 0 && s.endsWith(">")) {
+            String base = s.substring(0, lt).trim();
+            String[] args = splitTopLevel(s.substring(lt + 1, s.length() - 1), ',');
+            StringBuilder b = new StringBuilder(base);
+            b.append('<');
+            for (int i = 0; i < args.length; i++) {
+                if (i > 0) b.append(", ");
+                b.append(mapTsTypeToJava(args[i].trim(), true));
+            }
+            b.append('>');
+            return b.toString();
         }
         switch (s) {
             case "string":
@@ -309,6 +429,8 @@ public class JavaGenerator {
             case "false":
                 return optional ? "java.lang.Boolean" : "boolean";
             case "any":
+                return "Object";
+            case "never":
                 return "Object";
             case "unknown":
                 return "Object";
@@ -345,15 +467,15 @@ public class JavaGenerator {
         return false;
     }
 
-    // Split a generic argument list by a delimiter at top-level (not inside nested <>)
+    // Split a generic argument list by a delimiter at top-level (not inside nested <>, [] or ())
     private String[] splitTopLevel(String s, char delimiter) {
         java.util.List<String> parts = new java.util.ArrayList<>();
         int depth = 0;
         int start = 0;
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (c == '<') depth++;
-            else if (c == '>') depth--;
+            if (c == '<' || c == '[' || c == '(') depth++;
+            else if (c == '>' || c == ']' || c == ')') depth--;
             else if (c == delimiter && depth == 0) {
                 parts.add(s.substring(start, i));
                 start = i + 1;
