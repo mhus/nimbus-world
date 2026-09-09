@@ -1,10 +1,14 @@
 # Build stage - compiles everything once
-FROM maven:3-eclipse-temurin-26 AS build
+# Build on JDK 25 to match the runtime stage (JDK 26 is not yet
+# supported by the PMD 7 java parser used in the build checks)
+FROM maven:3-eclipse-temurin-25 AS build
 
 WORKDIR /build
 
-# Copy root pom.xml
+# Copy root pom.xml and the pmd ruleset (required by the pmd build checks)
 COPY server/pom.xml .
+COPY server/pmd-ruleset.xml .
+COPY server/.mvn/maven.config .mvn/maven.config
 
 # Copy project directories (excluding exports, data, etc.)
 COPY server/plugins/ plugins/

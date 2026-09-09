@@ -1,0 +1,19 @@
+# Keep the docker build context small and deterministic: local
+# node_modules/target/dist artifacts must never be copied over the
+# dependencies installed inside the build stage (their symlinks point
+# into the local pnpm store and break the container build).
+.git
+.github
+docs
+exports
+**/node_modules
+**/target
+**/dist
+**/.vite
+**/.vite-temp
+playwright-report
+test-results
+.DS_Store
+*.md
+CLA.md
+LICENSE.txt
