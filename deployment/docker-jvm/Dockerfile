@@ -28,12 +28,12 @@ COPY client/packages/shared/src/ client_shared_src/
 RUN mvn clean install -DskipTests
 
 # Runtime stage for world-player
-FROM eclipse-temurin:25-jre AS world-player
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-player
 
 WORKDIR /app
 
 # Install wget for healthchecks
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN microdnf install -y wget && microdnf clean all
 
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
@@ -58,12 +58,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-control
-FROM eclipse-temurin:25-jre AS world-control
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-control
 
 WORKDIR /app
 
 # Install wget for healthchecks
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN microdnf install -y wget && microdnf clean all
 
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
@@ -88,12 +88,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-life
-FROM eclipse-temurin:25-jre AS world-life
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-life
 
 WORKDIR /app
 
 # Install wget for healthchecks
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN microdnf install -y wget && microdnf clean all
 
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
@@ -118,12 +118,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-generator
-FROM eclipse-temurin:25-jre AS world-generator
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-generator
 
 WORKDIR /app
 
 # Install wget for healthchecks
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN microdnf install -y wget && microdnf clean all
 
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
