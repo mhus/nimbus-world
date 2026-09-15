@@ -1,7 +1,7 @@
 # Build stage - compiles everything once
 # Build on JDK 25 to match the runtime stage (JDK 26 is not yet
 # supported by the PMD 7 java parser used in the build checks)
-FROM maven:3-eclipse-temurin-25 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 
 WORKDIR /build
 
