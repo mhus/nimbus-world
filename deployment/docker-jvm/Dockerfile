@@ -28,7 +28,7 @@ COPY client/packages/shared/src/ client_shared_src/
 RUN mvn clean install -DskipTests
 
 # Runtime stage for world-player
-FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-player
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1.1-ol9 AS world-player
 
 WORKDIR /app
 
@@ -58,7 +58,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-control
-FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-control
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1.1-ol9 AS world-control
 
 WORKDIR /app
 
@@ -88,7 +88,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-life
-FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-life
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1.1-ol9 AS world-life
 
 WORKDIR /app
 
@@ -118,7 +118,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Runtime stage for world-generator
-FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1-ol9 AS world-generator
+FROM container-registry.oracle.com/graalvm/jdk:25.0.4.1.1-ol9 AS world-generator
 
 WORKDIR /app
 
