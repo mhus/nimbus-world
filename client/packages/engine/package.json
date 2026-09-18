@@ -29,18 +29,18 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@babylonjs/core": "^9.22.2",
-    "@babylonjs/gui": "^9.22.2",
-    "@babylonjs/loaders": "^9.22.2",
-    "@babylonjs/materials": "^9.22.2",
+    "@babylonjs/core": "^9.25.0",
+    "@babylonjs/gui": "^9.25.0",
+    "@babylonjs/loaders": "^9.25.0",
+    "@babylonjs/materials": "^9.25.0",
     "@nimbus/shared": "workspace:*",
     "dotenv": "^17.2.3",
     "fflate": "^0.8.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.4.0",
-    "babylonjs-gltf2interface": "^9.22.2",
+    "@types/node": "^26.4.1",
+    "babylonjs-gltf2interface": "^9.25.0",
     "jest": "^30.5.0",
     "ts-jest": "^29.4.12",
     "typescript": "6.0.3",
