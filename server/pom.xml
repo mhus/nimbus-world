@@ -35,7 +35,7 @@
              leaves Boot's junit-platform.version untouched and the two drift apart.
              Jupiter and platform both come from spring-boot-dependencies. -->
         <!-- byte-buddy and byte-buddy-agent must stay on the same version -->
-        <byte-buddy.version>1.18.11</byte-buddy.version>
+        <byte-buddy.version>1.18.14</byte-buddy.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- JUnit tags excluded from normal builds; override with -DexcludedGroups= to include them -->
