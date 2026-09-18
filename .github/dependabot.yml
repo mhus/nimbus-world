@@ -9,6 +9,13 @@ updates:
     directory: "/client" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      # TS 7 is the native (Go) compiler without the classic JS API. ts-jest
+      # requires <7 and vue-tsc needs the typescript/lib/tsc deep import,
+      # which TS 7 no longer exports. Stay on the TS 6 bridge until Volar
+      # supports TS 7 (expected with TS 7.1), see 6e6e00c1 in the history.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
   - package-ecosystem: "maven" # See documentation for possible values
     directory: "/server" # Location of package manifests
     schedule:
@@ -22,6 +29,13 @@ updates:
       - "/deployment/*"
     schedule:
       interval: "weekly"
+    ignore:
+      # The maven build stage runs the PMD 7 build checks, and PMD 7's java
+      # parser does not support JDK 26 yet. No temurin major bumps until it
+      # does - see the comment in deployment/docker-jvm/Dockerfile.
+      - dependency-name: "maven"
+        update-types: ["version-update:semver-major"]
+        versions: ["3-eclipse-temurin-26", "3.9-eclipse-temurin-26"]
   # Watches the `uses:` pins in .github/workflows. The directory is always "/"
   # for this ecosystem — it is the repository root, not the workflow folder.
   # Grouped into one pull request: these are all major-tag pins, so separate
