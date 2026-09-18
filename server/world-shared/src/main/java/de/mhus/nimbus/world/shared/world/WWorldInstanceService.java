@@ -40,14 +40,18 @@ public class WWorldInstanceService {
      * @param repository The repository
      * @param mongoTemplate The MongoTemplate for atomic operations
      * @param worldService The world service (lazy to break circular dependency)
-     * @param jobService The job service for scheduling async jobs (optional, lazy)
+     * @param jobService The job service for scheduling async jobs (optional, no @Lazy:
+     *                    WJobService is a conditional bean, plain Optional<T> injection
+     *                    gives the absence semantics; @Lazy would make Spring CGLIB-proxy
+     *                    the final class java.util.Optional, which fails under AOT/native
+     *                    image processing)
      * @param listeners List of listeners (lazy initialized)
      */
     public WWorldInstanceService(
             WWorldInstanceRepository repository,
             MongoTemplate mongoTemplate,
             @Lazy WWorldService worldService,
-            @Lazy Optional<WJobService> jobService,
+            Optional<WJobService> jobService,
             @Lazy List<WWorldInstanceListener> listeners,
             WorldRedisMessagingService redisMessaging,
             InstanceIdGenerator instanceIdGenerator,

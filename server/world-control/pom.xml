@@ -60,6 +60,16 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>7.8.0.202609011348-r</version>
         </dependency>
+        <!-- Required on the classpath for AOT processing: Spring Data's
+             repository AOT support walks the type closure of the Mongo
+             repositories, which reaches into the reactive API that
+             spring-data-mongodb ships in the same jar. Without the reactive
+             driver the walk fails with TypeNotPresentException
+             (com.mongodb.reactivestreams.client.MongoCollection). -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-reactivestreams</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

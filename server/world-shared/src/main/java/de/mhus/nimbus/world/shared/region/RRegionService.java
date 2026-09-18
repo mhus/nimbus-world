@@ -148,7 +148,7 @@ public class RRegionService {
     }
 
     public Optional<String> getRegionNameById(String regionId) {
-        return repository.getRegionNameByIdAndEnabled(regionId, true);
+        return repository.findByIdAndEnabled(regionId, true).map(RRegion::getName);
     }
 
     public RRegion setEnabled(String id, boolean enabled) {

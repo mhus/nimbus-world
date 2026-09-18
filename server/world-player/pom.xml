@@ -58,7 +58,17 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>3.1.1</version>
         </dependency>
-    </dependencies>
+        <!-- Required on the classpath for AOT processing: Spring Data's
+             repository AOT support walks the type closure of the Mongo
+             repositories, which reaches into the reactive API that
+             spring-data-mongodb ships in the same jar. Without the reactive
+             driver the walk fails with TypeNotPresentException
+             (com.mongodb.reactivestreams.client.MongoCollection). -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-reactivestreams</artifactId>
+        </dependency>
+</dependencies>
 
     <build>
         <plugins>

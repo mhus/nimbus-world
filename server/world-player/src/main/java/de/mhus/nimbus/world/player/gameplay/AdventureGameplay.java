@@ -76,9 +76,10 @@ public class AdventureGameplay extends BasicGameplay {
     @Getter
     private EntityStatusPublisher entityStatusPublisher;
 
-    @Autowired
-    @Getter
-    private de.mhus.nimbus.world.shared.world.WProgressService progressService;
+    // progressService is inherited from BasicGameplay (@Getter on the
+    // protected field). It must NOT be re-declared here: a private duplicate
+    // shadowed the parent field and broke AOT processing, whose generated
+    // __Autowiring classes need at least package-private access.
 
     @Getter
     private final EffectProcessor effectProcessor = new EffectProcessor();
