@@ -5,8 +5,12 @@ WORKDIR /build
 
 # Install pnpm. Match the local dev toolchain (pnpm 11); it still reads and
 # writes the lockfileVersion 9.0 format. Node 26 no longer bundles corepack,
-# so install pnpm via npm instead.
-RUN npm install -g pnpm@11
+# so install pnpm via npm instead. pnpm 11 enforces a 24h minimum-release-age
+# supply-chain policy by default; fresh upstream releases (e.g. babylon 9.27)
+# would fail the build. The lockfile is reviewed and verified locally, so the
+# policy is relaxed in this container for reproducible image builds, for every
+# pnpm invocation including the implicit deps check in "pnpm build".
+RUN npm install -g pnpm@11 && pnpm config set minimum-release-age 0
 
 # Copy workspace files
 COPY client/package.json client/pnpm-lock.yaml client/pnpm-workspace.yaml ./
