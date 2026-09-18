@@ -17,7 +17,7 @@
 
     <properties>
         <maven.plugin.tools.version>3.15.2</maven.plugin.tools.version>
-        <maven.api.version>3.9.12</maven.api.version>
+        <maven.api.version>3.9.16</maven.api.version>
         <java.version>21</java.version>
     </properties>
 
