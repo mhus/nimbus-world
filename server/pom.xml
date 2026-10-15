@@ -28,7 +28,7 @@
     </modules>
 
     <properties>
-        <lombok.version>1.18.42</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
         <spring.boot.version>4.1.1</spring.boot.version>
         <java.version>25</java.version>
         <!-- JUnit is not pinned here on purpose: overriding junit-jupiter.version alone
