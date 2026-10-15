@@ -2,18 +2,21 @@
 
 ## Licensing
 
-Nimbus is provided under a restrictive source-available license.
+Copyright (c) 2025 Mike Hummel
 
-The default license permits free-of-charge, non-commercial,
-non-production use for testing, evaluation, research, and
-experimentation only.
+Nimbus is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, version 3 (`AGPL-3.0-only`).
+See [LICENSE.txt](LICENSE.txt) for the full license text.
 
-Production use, operational deployment, continuous execution,
-or commercial use is not permitted under the default license.
+Nimbus is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public
+License for more details.
 
-Any modifications to the software that are made available to
-third parties must be released under the same license terms as
-the original software.
+If you run a modified version of Nimbus as a network service, the AGPL
+requires you to offer the complete corresponding source code of that
+version to its users.
 
 Nimbus may additionally be made available under a separate
 commercial license with different terms, subject to an explicit
@@ -32,10 +35,11 @@ third-party components and to comply with their license terms.
 
 Unless explicitly stated otherwise, third-party components remain
 subject to their original licenses and are not relicensed under the
-Nimbus license.
+GNU Affero General Public License.
 
 All original contributions made as part of the Nimbus project are
-licensed under the Nimbus license, unless explicitly stated otherwise.
+licensed under the GNU Affero General Public License v3.0, unless
+explicitly stated otherwise.
 
 This information is provided on a best-effort basis and may not be
 complete.

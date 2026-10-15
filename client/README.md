@@ -188,4 +188,5 @@ This is the Version 2.0 development. Key principles:
 
 ## License
 
-[License information to be added]
+GNU Affero General Public License v3.0 only (`AGPL-3.0-only`), see
+[`LICENSE.txt`](../LICENSE.txt) in the repository root.

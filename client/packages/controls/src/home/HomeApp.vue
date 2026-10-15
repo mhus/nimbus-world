@@ -470,9 +470,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="text-sm">
             <p class="font-semibold text-white mb-1">Nimbus – NOTICE</p>
-            <p>This software is provided free of charge under a restrictive license.</p>
-            <p>Permitted use: <span class="text-blue-300">non-commercial, non-production, testing/evaluation/research only</span></p>
-            <p class="mt-1 text-xs text-gray-400">Production, operational, or commercial use is NOT permitted.</p>
+            <p>Copyright (c) 2025 Mike Hummel</p>
+            <p>Licensed under the <span class="text-blue-300">GNU Affero General Public License v3.0</span> (AGPL-3.0-only).</p>
+            <p class="mt-1 text-xs text-gray-400">Free software, provided without any warranty. Modified versions offered as a network service must make their source code available.</p>
           </div>
           <div class="text-sm text-center md:text-right">
             <a
@@ -580,13 +580,12 @@ onMounted(() => {
   console.log('\n' + '='.repeat(70));
   console.log('Nimbus – NOTICE');
   console.log('='.repeat(70));
-  console.log('\nThis software is provided free of charge under a restrictive license.\n');
-  console.log('Permitted use:');
-  console.log('  - non-commercial');
-  console.log('  - non-production');
-  console.log('  - testing, evaluation, research only\n');
-  console.log('Production, operational, or commercial use is NOT permitted.\n');
-  console.log('Any modifications must be released under the same license.\n');
+  console.log('\nCopyright (c) 2025 Mike Hummel');
+  console.log('Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only).\n');
+  console.log('This program comes with ABSOLUTELY NO WARRANTY. It is free software,');
+  console.log('and you are welcome to redistribute it under the terms of the AGPL.');
+  console.log('If you run a modified version as a network service, you must offer');
+  console.log('its source code to its users.\n');
   console.log('See LICENSE for full terms.');
   console.log('https://github.com/mhus/nimbus-world/blob/main/LICENSE.txt');
   console.log('='.repeat(70) + '\n');

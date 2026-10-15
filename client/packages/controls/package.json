@@ -1,6 +1,7 @@
 {
   "name": "@nimbus/controls",
   "version": "2.0.0",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "description": "UI controls and components for Nimbus",
   "main": "./dist/index.js",
