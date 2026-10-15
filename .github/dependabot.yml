@@ -31,11 +31,14 @@ updates:
       interval: "weekly"
     ignore:
       # The maven build stage runs the PMD 7 build checks, and PMD 7's java
-      # parser does not support JDK 26 yet. No temurin major bumps until it
-      # does - see the comment in deployment/docker-jvm/Dockerfile.
+      # parser does not support JDK 26 yet - see the comment in
+      # deployment/docker-jvm/Dockerfile. The JDK lives in the tag suffix
+      # (3-eclipse-temurin-25), so Dependabot proposes every new JDK major
+      # (26, then 27, ...) and a version list never stays complete.
+      # "3-eclipse-temurin-25" is a floating tag that already pulls maven and
+      # JDK patches, so the only proposals left are JDK majors. Those must move
+      # together with the graalvm runtime stages and PMD, so they are manual.
       - dependency-name: "maven"
-        update-types: ["version-update:semver-major"]
-        versions: ["3-eclipse-temurin-26", "3.9-eclipse-temurin-26"]
   # Watches the `uses:` pins in .github/workflows. The directory is always "/"
   # for this ecosystem — it is the repository root, not the workflow folder.
   # Grouped into one pull request: these are all major-tag pins, so separate
