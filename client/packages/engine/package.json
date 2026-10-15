@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.2",
     "babylonjs-gltf2interface": "^9.25.0",
     "jest": "^30.5.1",
     "ts-jest": "^29.4.12",
